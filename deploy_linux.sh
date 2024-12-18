@@ -3,7 +3,7 @@
 targetDir="/var/www/html/Apps"
 appName="Grayjay.Desktop"
 
-SSH_KEY_PRIV_FILE="/tmp/deploy_key"
+SSH_KEY_PRIV_FILE="$(pwd)/deploy_key"
 echo "$SSH_KEY_PRIV" | base64 -d > $SSH_KEY_PRIV_FILE
 chmod 600 $SSH_KEY_PRIV_FILE
 SSH_CMD="ssh -i $SSH_KEY_PRIV_FILE -o StrictHostKeyChecking=no"
