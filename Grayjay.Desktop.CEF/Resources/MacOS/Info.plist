@@ -9,7 +9,7 @@
         <key>CFBundleIdentifier</key>
         <string>com.futo.grayjay.desktop</string>
         <key>CFBundleExecutable</key>
-        <string>Grayjay.Desktop.CEF</string>
+        <string>Grayjay</string>
         <key>CFBundleShortVersionString</key>
         <string>1.0</string>
         <key>CFBundleVersion</key>
