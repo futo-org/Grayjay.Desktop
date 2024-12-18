@@ -1,4 +1,14 @@
-#NixOS config
+#Grayjay Desktop
+
+Website: https://grayjay.app/desktop/
+
+README still todo
+
+
+
+
+
+# NixOS config
 
 ```
 (pkgs.buildFHSUserEnv {
