@@ -24,8 +24,9 @@ else
 fi
 
 printf "Version to deploy: $version\n"
-printf "To server: $server\n"
 
+# Remove old files
+rm -f GrayjayDesktop-linux-x64.zip
 
 # Build front-end
 cd Grayjay.Desktop.Web
@@ -34,7 +35,7 @@ rm -rf dist
 npm run build
 cd ..
 
-runtimes=("win-x64")
+runtimes=("linux-x64")
 
 # Loop over each runtime
 rm -rf Grayjay.Desktop.CEF/bin/Release
@@ -53,31 +54,25 @@ do
     
     cd Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish	
 	
-	if [ "$runtime" = "win-x64" ]; then
-	   ../../../../../../rcedit-x64.exe "cef/dotcefnative.exe" --set-icon "../../../../../logo.ico"
-	   ../../../../../../rcedit-x64.exe "cef/dotcefnative.exe" --set-version-string "ProductName" "Grayjay"
-	   ../../../../../../rcedit-x64.exe "cef/dotcefnative.exe" --set-version-string "FileDescription" "Grayjay"
-	   #../../../../../../rcedit-x64.exe "Grayjay.Desktop.CEF.exe" --set-icon "../../../../../logo.ico"
-	   #../../../../../../rcedit-x64.exe "Grayjay.Desktop.CEF.exe" --set-version-string "ProductName" "Grayjay.Desktop"
-
-    	   echo "Signing..."
-	   ../../../../../../sign_windows.sh "Grayjay.exe"
-	   ../../../../../../sign_windows.sh "cef/dotcefnative.exe"
-	   ../../../../../../sign_windows.sh "FUTO.Updater.Client.exe"
-	fi
+	chmod u=rwx Grayjay.Desktop.CEF
+	chmod u=rwx cef/dotcefnative
+	chmod u=rwx FUTO.Updater.Client
+	chmod u=rwx ffmpeg
     
     cd ../../../../../..
 done
+
+printf " - Deleting existing files\n"
 	
 #Loop over each runtime for deploy
 for runtime in "${runtimes[@]}"
-do
-	echo "Deleting existing on remote for $runtime\n"
+do	
+	echo "Deleting existing on remote for $runtime"
 	$SSH_CMD $server "rm -R $targetDir/$appName/$version/$runtime"
 	$SSH_CMD $server "rm -R $targetDir/$appName/$version/Grayjay.Desktop-$runtime-v$version.zip"
 	$SSH_CMD $server "rm $targetDir/$appName/Grayjay.Desktop-$runtime.zip"
-
-	echo "Deploying for $runtime\n"
+	
+	echo "Deploying for $runtime"
 
 	cd Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish
 	printf "Deploying from $PWD\n"
@@ -88,6 +83,7 @@ do
 	cd ../
 	rm -f Grayjay.Desktop-$runtime-v$version.zip
 	zip -r "Grayjay.Desktop-$runtime-v$version.zip" "Grayjay.Desktop-$runtime-v$version"
+	cp "Grayjay.Desktop-$runtime-v$version" "Grayjay.Desktop-$runtime.zip"
 	cd publish
 	
 	outDir=$targetDir/$appName/$version/$runtime
@@ -98,7 +94,6 @@ do
 	
 	printf " - Creating maintenance file...\n"
 	$SSH_CMD $server "touch $targetDir/$appName/maintenance"
-	
 	
 	printf " - Copying zip\n"
 	$SCP_CMD "../Grayjay.Desktop-$runtime-v$version.zip" $server:$targetDir/$appName/$version
@@ -116,7 +111,6 @@ do
 	printf " - Deleting maintenace file...\n"
 	$SSH_CMD "$server" "rm $targetDir/$appName/maintenance"
 	
-
 	cd ../../../../../..
 	
 	printf " - Done\n\n"

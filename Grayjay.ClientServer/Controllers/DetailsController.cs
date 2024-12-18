@@ -912,10 +912,10 @@ namespace Grayjay.ClientServer.Controllers
             {
                 if (proxySettings != null && proxySettings.Value.ShouldProxy)
                 {
-                    return new SourceDescriptor($"/details/SourceHLS?audioIndex={videoIndex}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}", "application/vnd.apple.mpegurl", videoIndex, -1, -1, false, false, false);
+                    return new SourceDescriptor($"/details/SourceHLS?audioIndex={audioIndex}&videoIndex=-1&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}", "application/vnd.apple.mpegurl", -1, audioIndex, -1, false, false, false);
                 }
                 else
-                    return new SourceDescriptor(hlsa.Url, "application/vnd.apple.mpegurl", videoIndex, -1, -1, false, false, false);
+                    return new SourceDescriptor(hlsa.Url, "application/vnd.apple.mpegurl", -1, audioIndex, -1, false, false, false);
             }
 
             throw new Exception("Expected either HLS audio or video source.");

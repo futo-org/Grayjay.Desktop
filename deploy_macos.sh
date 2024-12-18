@@ -1,8 +1,15 @@
 #!/bin/bash
 
-targetDir="/var/www/html/Apps"
-appName="Grayjay.Desktop.Unstable"
+#THIS IS FULLY NOT CORRECT YET
 
+targetDir="/var/www/html/Apps"
+appName="Grayjay.Desktop"
+
+SSH_KEY_PRIV_FILE="/tmp/deploy_key"
+echo "$SSH_KEY_PRIV" | base64 -d > $SSH_KEY_PRIV_FILE
+chmod 600 $SSH_KEY_PRIV_FILE
+SSH_CMD="ssh -i $SSH_KEY_PRIV_FILE -o StrictHostKeyChecking=no"
+SCP_CMD="scp -i $SSH_KEY_PRIV_FILE -o StrictHostKeyChecking=no"
 
 if [[ "$1" != "" ]]; then
    version="$1"
@@ -35,7 +42,7 @@ rm -rf dist
 npm run build
 cd ..
 
-runtimes=("linux-x64" "osx-x64" "osx-arm64")
+runtimes=("osx-x64" "osx-arm64")
 
 # Loop over each runtime
 rm -rf Grayjay.Desktop.CEF/bin/Release
@@ -103,8 +110,9 @@ printf " - Deleting existing files\n"
 for runtime in "${runtimes[@]}"
 do	
 	echo "Deleting existing on remote for $runtime"
-	ssh $server "rm -R $targetDir/$appName/$version/$runtime"
-	ssh $server "rm -R $targetDir/$appName/$version/Grayjay.Desktop-$runtime-v$version.zip"
+	$SSH_CMD $server "rm -R $targetDir/$appName/$version/$runtime"
+	$SSH_CMD $server "rm -R $targetDir/$appName/$version/Grayjay.Desktop-$runtime-v$version.zip"
+	$SSH_CMD $server "rm $targetDir/$appName/Grayjay.Desktop-$runtime.zip"
 	
 	echo "Deploying for $runtime"
 
@@ -123,25 +131,27 @@ do
 	printf "Deploying to $outDir:\n"
 	
 	printf " - Creating folder...\n"
-	ssh $server "mkdir -p $outDir"
+	$SSH_CMD $server "mkdir -p $outDir"
 	
 	printf " - Creating maintenance file...\n"
-	ssh $server "touch $targetDir/$appName/maintenance"
+	$SSH_CMD $server "touch $targetDir/$appName/maintenance"
 	
 	
 	printf " - Copying zip\n"
-	scp "../Grayjay.Desktop-$runtime-v$version.zip" $server:$targetDir/$appName/$version
+	$SCP_CMD "../Grayjay.Desktop-$runtime-v$version.zip" $server:$targetDir/$appName/$version
+	printf " - Copying zip global\n"
+	$SCP_CMD "../Grayjay.Desktop-$runtime.zip" $server:$targetDir/$appName
 	
 	printf " - Copy [${PWD}] => [$outDir]\n"
-	scp -r "../publish" $server:$outDir
+	$SCP_CMD -r "../publish" $server:$outDir
 	
 	printf " - Moving files..\n"
-	ssh $server "mv -f $outDir/publish/* $outDir"
-	ssh $server "rm -R $outDir/publish"
+	$SSH_CMD $server "mv -f $outDir/publish/* $outDir"
+	$SSH_CMD $server "rm -R $outDir/publish"
 	
 	
 	printf " - Deleting maintenace file...\n"
-	ssh "$server" "rm $targetDir/$appName/maintenance"
+	$SSH_CMD "$server" "rm $targetDir/$appName/maintenance"
 	
 
 	cd ../../../../../..
