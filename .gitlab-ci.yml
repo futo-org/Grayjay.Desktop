@@ -33,7 +33,7 @@ buildAndDeployStableLinux:
   except:
     - ^(dev)
   script:
-    - bash deploy.sh $CI_COMMIT_TAG $UPDATER_SERVER
+    - bash deploy_linux.sh $CI_COMMIT_TAG $UPDATER_SERVER
   artifacts:
     paths:
       - /builds/videostreaming/Grayjay.Desktop/Grayjay.Desktop.CEF/bin/Release/net8.0/linux-x64/Grayjay.Desktop-linux-x64-v$CI_COMMIT_TAG.zip
