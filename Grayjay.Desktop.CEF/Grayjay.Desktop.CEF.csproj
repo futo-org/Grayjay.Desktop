@@ -48,7 +48,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DotCef\DotCef.csproj" />
+    <ProjectReference Include="..\JustCef\DotCef.csproj" />
     <ProjectReference Include="..\Grayjay.ClientServer\Grayjay.ClientServer.csproj" />
   </ItemGroup>
 
