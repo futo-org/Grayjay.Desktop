@@ -33,7 +33,7 @@ buildAndDeployStableLinux:
   except:
     - ^(dev)
   script:
-    - echo "$CI_BUILDS_DIR/$CI_JOB_ID/$CI_PROJECT_NAME"
+    - echo "$(pwd)"
     - bash deploy_linux.sh $CI_COMMIT_TAG $UPDATER_SERVER
   artifacts:
     paths:
