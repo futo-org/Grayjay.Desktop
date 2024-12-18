@@ -1,4 +1,4 @@
-#Grayjay Desktop
+# Grayjay Desktop
 
 Website: https://grayjay.app/desktop/
 
@@ -8,7 +8,7 @@ README still todo
 
 
 
-# NixOS config
+## NixOS config
 
 ```
 (pkgs.buildFHSUserEnv {
