@@ -28,6 +28,9 @@ interface VideoProps {
     onFullscreenChange?: (isFullscreen: boolean) => void;
     onProgress?: (progress: number) => void;
     onEnded?: () => void;
+    onError?: (message: string) => void;
+    onPositionChanged?: (time: Duration) => void;
+    onIsPlayingChanged?: (isPlaying: boolean) => void;
     handleTheatre?: () => void;
     handleEscape?: () => void;
     onSetScrubbing?: (scrubbing: boolean) => void;
@@ -75,6 +78,14 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const [endControlsVisible$, setEndControlsVisible] = createSignal(false);
     let currentUrl: string | undefined;
     let castingEndedEmitted = false;
+
+    createEffect(() => {
+        props.onIsPlayingChanged?.(isPlaying());
+    });
+
+    createEffect(() => {
+        props.onPositionChanged?.(position());
+    });
 
     createEffect(() => {
         setCurrentVolume(props.volume ?? 1);
@@ -453,6 +464,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         props.onVolumeChanged?.(volume);
     };
 
+    const onError = (error: string) => {
+        props.onError?.(error);
+        setIsPlaying(false);
+    };
+
     createEffect(() => {
         const resumePosition = props.resumePosition;
         const pos = position();
@@ -470,6 +486,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     });
 
     const changeSource = (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
+        console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
+
         if (currentUrl === sourceUrl) {
             if (startTime) {
                 const startTime_ms = startTime.as('milliseconds');
@@ -621,16 +639,19 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (data) => {
                     console.error("DashJS ERROR", data);
+                    onError(`DashJS Error: ${JSON.stringify(data.error)}`);
                 });
 
                 dashPlayer.on(dashjs.MediaPlayer.events.PLAYBACK_ERROR, (data) => {
                     console.error("DashJS PLAYBACK_ERROR", data);
+                    onError(`DashJS Playback Error: ${JSON.stringify(data.error)}`);
                 });
 
                 dashPlayer.initialize(videoElement, sourceUrl, true, getResumePosition(shouldResume, startTime)?.as('seconds') ?? 0);
             } else if ((mediaType === 'application/vnd.apple.mpegurl' || mediaType === 'application/x-mpegURL') && !videoElement.canPlayType(mediaType)) {
                 videoElement.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
                     console.error("Player error", {source, lineno, colno, error});
+                    onError(`Video Error: ${JSON.stringify({ source, lineno, colno, error})}`);
                 };
 
                 videoElement.onloadedmetadata = () => {                   
@@ -709,6 +730,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 });
                 hlsPlayer.on(Hls.Events.ERROR, function(eventName, data) {
                     console.error("HLS player error", data);
+                    onError(`HLS Error: ${JSON.stringify({ details: data.details, error: data.error })}`);
                 });
                 hlsPlayer.loadSource(sourceUrl);
                 hlsPlayer.attachMedia(videoElement);

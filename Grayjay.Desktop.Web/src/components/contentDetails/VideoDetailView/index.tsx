@@ -1,4 +1,4 @@
-import { Accessor, Component, For, Match, Show, Switch, batch, catchError, createEffect, createMemo, createResource, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { Accessor, Component, For, Match, Show, Switch, batch, catchError, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, untrack } from "solid-js";
 import styles from './index.module.css';
 
 import ic_minimize from '../../../assets/icons/icon24_chevron_down.svg';
@@ -97,6 +97,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     let containerRef: HTMLDivElement | undefined;
     let videoContainer: HTMLDivElement | undefined;
     let isScrubbing = false;
+    let position: Duration | undefined = undefined;
+    let errorCounter: number = 0;
     const video = useVideo();
 
     const [videoLocal$, setVideoLocal] = createSignal<IVideoLocal | undefined>();
@@ -113,7 +115,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
         return queue[index];
     });
-    const [videoLoaded$, videoLoadedResource] = createResourceDefault(() => currentVideo$()?.backendUrl ?? currentVideo$()?.url, async (url) => {
+    const currentVideoUrl$ = createMemo(() => {
+        return currentVideo$()?.backendUrl ?? currentVideo$()?.url;
+    });
+    const [videoLoaded$, videoLoadedResource] = createResourceDefault(() => currentVideoUrl$(), async (url) => {
         if (!url || !url.length) {
             console.info("set video", {url});
             return undefined;
@@ -159,7 +164,12 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     createEffect(()=>{
         const newPlayerLevel = playerQuality$();
         updateQualityMenu();
-    })
+    });
+
+    createEffect(on(currentVideoUrl$, (url) => {
+        console.info("Reset error counter because video source changed", { url, errorCounter });
+        errorCounter = 0;
+    }));
 
     const [videoSourceQualities$] = createResource<any | undefined>(()=> videoSource$()?.video && !videoSource$()?.videoIsLocal, async () => {
         if(videoSource$()?.video < 0 && videoSource$()?.video != -999) {
@@ -265,6 +275,42 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     };
 
+    const handleError = (error: string) => {
+        errorCounter++;
+        console.info("Error occurred", { errorCounter });
+
+        const reloadMedia = () => {
+            video?.actions.setStartTime(position);
+            videoLoadedResource.mutate(undefined);
+            videoLoadedResource.refetch();
+        };
+
+        const nvi = nextVideoIndex();
+        if (nvi === undefined) {
+            console.error("Playback error: " + error, { errorCounter });
+            UIOverlay.overlayConfirm({
+                yes: () => {
+                    reloadMedia();
+                }
+            }, "An error occurred while playing the video, do you want to reload?");
+        } else {
+            if (errorCounter < 2) {
+                const waitTime_ms = Math.max((errorCounter - 1) * 1000, 0);
+                console.info("Attempting automatic error recovery since in playlist: " + error, { errorCounter, waitTime_ms });
+    
+                if (waitTime_ms > 0) {
+                    setTimeout(() => {
+                        reloadMedia();
+                    }, waitTime_ms);
+                } else {
+                    reloadMedia();
+                }
+            } else {
+                video?.actions?.setIndex(nvi);
+            }
+        }
+    };
+
     async function getDefaultPlaybackSpeed() {
         const value = (await SettingsBackend.settings())?.object?.playback?.defaultPlaybackSpeed;
         switch (value) {
@@ -366,6 +412,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             DetailsBackend.watchProgress(currentUrl, progress);
         }
     }
+
+    const handlePositionChanged = (p: Duration) => {
+        position = p;
+    };
     
     const [currentPlayerHeight$, setCurrentPlayerHeight] = createSignal<number>();
     const [minimizedHeight, setMinimizedHeight] = createSignal(500);
@@ -448,6 +498,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
     const handleVideoDimensions = (width: number, height: number) => {
         setVideoDimensions({ width: width, height: height });
+    };
+
+    const handleIsPlayingChanged = (isPlaying: boolean) => {
+        if (isPlaying) {
+            console.info("Error counter reset because video is playing", errorCounter);
+            errorCounter = 0;
+        }
     };
 
     const handleResize = () => {
@@ -1150,7 +1207,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             eventRestart={eventRestart}
                             resumePosition={resumePosition$()}
                             onProgress={handleVideoProgress}
+                            onPositionChanged={handlePositionChanged}
                             onVideoDimensionsChanged={handleVideoDimensions} 
+                            onIsPlayingChanged={handleIsPlayingChanged}
                             source={videoSource$()}
                             sourceQuality={videoQuality$()}
                             onPlayerQualityChanged={(number)=>{setPlayerQuality(number)}}
@@ -1161,6 +1220,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onVolumeChanged={(volume) => video?.actions?.setVolume?.(volume)}
                             onFullscreenChange={handleFullscreenChange}
                             onEnded={handleEnded}
+                            onError={handleError}
                             onSetScrubbing={(scrubbing) => {
                                 isScrubbing = scrubbing;
                             }}
