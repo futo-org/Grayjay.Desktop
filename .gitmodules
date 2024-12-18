@@ -6,4 +6,10 @@
 	url = ../Grayjay.Engine.git
 [submodule "FUTO.MDNS"]
 	path = FUTO.MDNS
-	url = ../mdns.git
+	url = ../FUTO.MDNS.git
+[submodule "Grayjay.Engine"]
+	path = Grayjay.Engine
+	url = ../Grayjay.Engine.git
+[submodule "JustCef"]
+	path = JustCef
+	url = ../JustCef.git
