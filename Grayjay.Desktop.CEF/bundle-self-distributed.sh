@@ -4,15 +4,15 @@ APP_NAME_BASE="Grayjay"
 BUNDLE_ID="com.futo.grayjay.desktop"
 APPLE_ID="koen@futo.org"
 TEAM_ID="2W7AC6T8T5"
-APP_CERT="3rd Party Mac Developer Application: FUTO Holdings, Inc. (2W7AC6T8T5)"
+APP_CERT="Developer ID Application: FUTO Holdings, Inc. (2W7AC6T8T5)"
 #APP_CERT="Apple Development: junk@koenj.com (UPVRSKNGC9)"
-INSTALLER_CERT="3rd Party Mac Developer Installer: FUTO Holdings, Inc. (2W7AC6T8T5)"
 KEYCHAIN_PROFILE="GRAYJAY_PROFILE"
 
 build_sign_notarize() {
     ARCH=$1
     APP_NAME="${APP_NAME_BASE}_${ARCH}.app"
     PKG_NAME="${APP_NAME_BASE}_${ARCH}.pkg"
+    ZIP_NAME="${APP_NAME_BASE}_${ARCH}.zip"
 
     echo "Building for architecture: $ARCH"
 
@@ -30,7 +30,7 @@ build_sign_notarize() {
     cp -a Resources/MacOS/Info.plist "$APP_NAME/Contents/Info.plist"
     cp -a Resources/MacOS/PkgInfo "$APP_NAME/Contents"
 
-    cp -a "$PUBLISH_PATH/Grayjay.Desktop.CEF" "$APP_NAME/Contents/MacOS"
+    cp -a "$PUBLISH_PATH/Grayjay" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/libe_sqlite3.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/libsodium.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/ClearScriptV8.osx-x64.dylib" "$APP_NAME/Contents/MacOS"
@@ -75,18 +75,23 @@ build_sign_notarize() {
         exit 1
     fi
 
-    echo "Creating the installer package..."
-    rm -f "$PKG_NAME"
-    pkgbuild --component "$APP_NAME" --install-location /Applications --sign "$INSTALLER_CERT" "$PKG_NAME"
-        
-    echo "Verifying the installer package signature..."
-    pkgutil --check-signature "$PKG_NAME"
+    zip -r $ZIP_NAME $APP_NAME
+
+    echo "Submitting $ZIP_NAME for notarization using notarytool..."
+    xcrun notarytool submit "$ZIP_NAME" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --keychain-profile "$KEYCHAIN_PROFILE"
     if [ $? -ne 0 ]; then
-        echo "Error: Signature verification failed for $PKG_NAME."
+        echo "Error: Notarization failed for $ZIP_NAME."
         exit 1
     fi
 
-    echo "$PKG_NAME is ready for upload!"
+    echo "Stapling notarization ticket to the package..."
+    xcrun stapler staple "$APP_NAME"
+    if [ $? -ne 0 ]; then
+        echo "Error: Stapling failed for $APP_NAME."
+        exit 1
+    fi
+
+    echo "$APP_NAME is submitted for notarization."
 }
 
 # Build front-end

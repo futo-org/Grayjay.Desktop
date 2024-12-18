@@ -283,7 +283,7 @@ namespace Grayjay.Desktop
                 if (msg != null && ShowCefLogs)
                     Logger.e("CEF", msg);
             };
-            if (OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 cef.Start("--disable-web-security " + extraArgs);
             else
                 cef.Start("--disable-web-security --use-views " + extraArgs);
