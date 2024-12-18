@@ -1,0 +1,164 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    
+    height: 100%;
+}
+
+.topBar {
+    display: flex;
+    flex-direction: row;
+    margin-left: 32px;
+    margin-bottom: 32px;
+}
+
+.searchBar {
+    width: 40%;
+}
+
+.grid {
+    margin-top: 24px;
+    margin-left: 24px;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+.postBody {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+}
+.postTitle{
+    font-size: 20px;
+    font-weight: bold;
+    padding-top: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.postContent{
+
+}
+.sourceIcon {
+    display: inline-block;
+    margin-left: 20px;
+    vertical-align: top;
+    marginp-top: 2px;
+}
+.sourceIcon img{
+    height: 28px;
+}
+
+.postMeta {
+    padding-left: 10px;
+    padding-right: 10px;
+    position: relative;
+}
+.postMeta .date {
+    padding-top: 10px;
+    color: #999;
+}
+.postMeta .right{
+    position: absolute;
+    right: 20px;
+    top: 0px;
+    vertical-align: top;
+}
+.postMeta .plugin {
+
+}
+.postMeta .rating {
+
+}
+
+
+.authorContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.authorRightButtonsContainer {
+    display: flex; 
+    flex-direction: row; 
+    justify-self: end; 
+    gap: 16px; 
+    margin-right: 40px;
+    margin-left: 40px;
+    margin-top: 29px;
+}
+
+.authorDescription {
+    display: flex;
+    flex-direction: column;
+    margin-left: 16px;
+    margin-right: 39px;
+    margin-top: 29px;
+}
+
+.authorName {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.authorMetadata {
+    color: #808080;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.authorThumbnail {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin-left: 10px;
+    cursor: pointer;
+    margin-top: 29px;
+}
+
+
+.postImages {
+    margin: 0px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-left: 15px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.postImage {
+    display: inline-block;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    margin: 10px;
+    transition: transform 0.25s ease;
+    transform: scale(1);
+}
+.postImage:hover {
+    transform: scale(1.1);
+}
+
+.postImage img {
+    min-width: 100%;
+    min-height: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    border-radius: 10px;
+}

@@ -1,0 +1,36 @@
+.containerGroup {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.containerButton {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+    justify-content: center;
+    height: 44px;
+    min-width: 145px;
+    padding: 0px 8px;
+    gap: 4px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(99, 101, 240, 0.00);
+    color: #8C8C8C;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 140%;
+}
+
+.containerButton:hover {
+    cursor: pointer;
+}
+
+.containerButton.active {
+    background: rgba(255, 255, 255, 0.06);
+    color: #FFF;
+}

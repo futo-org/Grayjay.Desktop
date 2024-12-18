@@ -1,0 +1,10 @@
+{
+
+  "Linux": {
+    "Executables": [
+      "Grayjay.Desktop.CEF",
+      "cef/dotcefnative",
+      "ffmpeg"
+    ]
+  }
+}

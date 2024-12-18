@@ -1,0 +1,16 @@
+.containerCreators {
+    display: flex;
+    flex-direction: column;
+    
+    height: 100%;
+}
+
+.containerFilters {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-left: 24px;
+    margin-right: 24px;
+    width: calc(100% - 48px);
+    gap: 12px;
+}

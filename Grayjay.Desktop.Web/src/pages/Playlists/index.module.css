@@ -1,0 +1,67 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    
+    height: 100%;
+}
+
+.textHeader {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+}
+
+.containerWatchLater {
+    margin-top: 24px;
+}
+
+.containerWatchLaterHeader {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
+    width: 100%;
+}
+
+.containerSeeAll {
+    display: flex; 
+    flex-direction: row;
+    align-items: center;
+    margin-right: 32px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    cursor: pointer;
+
+    color: #FFF;
+    text-align: center;
+    leading-trim: both;
+    text-edge: cap;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 140%; /* 19.6px */
+
+    border-radius: 6px;
+    border: 1px solid #2E2E2E;
+}
+
+.containerPlaylists {
+    margin-top: 24px;
+}
+
+.containerPlaylistsHeader {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
+    width: 100%;
+    padding-right: 24px;
+    padding-left: 24px;
+}

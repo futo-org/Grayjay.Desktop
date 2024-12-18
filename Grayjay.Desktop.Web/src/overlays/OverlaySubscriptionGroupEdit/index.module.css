@@ -1,0 +1,140 @@
+
+
+.container {
+    position: relative;
+    width: 750px;
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
+}
+
+.dialogHeader {
+    height: 55px;
+    margin-bottom: 10px;
+    margin-left: 16px;
+}
+.dialogHeader .headerText {
+    font-size: 25px;
+    font-weight: bold;
+
+}
+.dialogHeader .headerSubText {
+    font-size: 14px;
+    color: #AAA;
+}
+
+.closeButton {
+    position: absolute;
+    display: grid;
+    justify-content: center;
+    align-items: center;;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 48px;
+    background: #2E2E2E;
+    cursor: pointer;
+}
+.closeButton img {
+    width: 24px;
+    height: 24px;
+}
+
+.subscriptionsContainer {
+    height: 400px;
+    overflow-y: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.subscription {
+    display: inline-block;
+    position: relative;
+    width: 98px;
+    height: 130px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-align: center;
+    margin: 5px;
+}
+.subscription.enabled {
+    background-color: #212121;
+}
+.subscription .check {
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    border-radius: 72.727px;
+    border: 2px solid #454545;
+}
+.subscription .check img {
+    display: none;
+}
+.subscription.enabled .check {
+    background-color: #019BE7;
+}
+.subscription.enabled .check img {
+    display: block;
+}
+
+.subscription .image {
+    height: 60px;
+    width: 60px;
+    border-radius: 50px;
+    background-size: cover;
+    margin-top: 25px;
+    display: inline-block;
+}
+.subscription .name {
+    color: #FFF;
+
+    text-align: center;
+    
+    margin-left: 16px;
+    margin-right:16px;
+    max-lines: 2;
+
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 12px;
+    max-height: 24px;
+    margin-top: 3px;
+    overflow: hidden;
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: bold;
+}
+.sectionDescription {
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #595959;
+}
+
+.image {
+    width: 160px;
+    height: 80px;
+    border-radius: 6px;
+    opacity: 0.5;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+}
+.image .text{
+    text-align: center;
+    transform: translateY(30px);
+    color: black;
+}

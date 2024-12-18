@@ -1,0 +1,26 @@
+.toggle {
+    border-radius: 30px;
+    width: 52px;
+    height: 32px;
+    background-color: #ffffff22;
+    display: inline-block;
+    transition: background-color 0.5s;
+    cursor: pointer;
+}
+.toggle .thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: #FFF;
+    border-radius: 25px;
+    transition: margin-left 0.5s;
+}
+
+.toggle.enabled .thumb {
+    margin-left:25px;
+}
+
+.toggle.enabled {
+    background-color: #019BE7;
+}

@@ -1,0 +1,131 @@
+using Grayjay.ClientServer.Sync.Internal;
+using Noise;
+using System.Diagnostics;
+using System.IO.Pipes;
+
+namespace Grayjay.Desktop.Tests
+{
+    [TestClass]
+    public class SyncTests
+    {
+        private static byte[] GenerateRandomByteArray(int length)
+        {
+            Random random = new Random();
+            byte[] byteArray = new byte[length];
+            random.NextBytes(byteArray);
+            return byteArray;
+        }
+
+        private class Authorized : IAuthorizable
+        {
+            public bool IsAuthorized => true;
+        }
+
+        [TestMethod]
+        public void TestSyncSessionHandshakeAndCommunication()
+        {
+            var initiatorPipeOut = new AnonymousPipeServerStream(PipeDirection.Out);
+            var responderPipeIn = new AnonymousPipeClientStream(PipeDirection.In, initiatorPipeOut.ClientSafePipeHandle);
+            
+            var responderPipeOut = new AnonymousPipeServerStream(PipeDirection.Out);
+            var initiatorPipeIn = new AnonymousPipeClientStream(PipeDirection.In, responderPipeOut.ClientSafePipeHandle);
+
+            var initiatorOutput = initiatorPipeOut;
+            var initiatorInput = initiatorPipeIn;
+            var responderOutput = responderPipeOut;
+            var responderInput = responderPipeIn;
+
+            // Events to track when handshake and communication are complete
+            var handshakeInitiatorCompleted = new ManualResetEventSlim(false);
+            var handshakeResponderCompleted = new ManualResetEventSlim(false);
+
+            // Generate key pairs for the initiator and responder
+            var initiatorKeyPair = KeyPair.Generate();
+            var responderKeyPair = KeyPair.Generate();
+
+            var randomBytesExactlyOnePacket = GenerateRandomByteArray(SyncSocketSession.MAXIMUM_PACKET_SIZE - SyncSocketSession.HEADER_SIZE);
+            var randomBytes = GenerateRandomByteArray(2 * (SyncSocketSession.MAXIMUM_PACKET_SIZE - SyncSocketSession.HEADER_SIZE));
+            var randomBytesBig = GenerateRandomByteArray(SyncStream.MAXIMUM_SIZE);
+
+            // Create and start the initiator session
+            var initiatorSession = new SyncSocketSession("", initiatorKeyPair,
+                initiatorInput, initiatorOutput,
+                onClose: (session) => Console.WriteLine("Initiator session closed"),
+                onHandshakeComplete: (session) =>
+                {
+                    Console.WriteLine("Initiator handshake complete");
+                    handshakeInitiatorCompleted.Set();  // Handshake complete for initiator
+                },
+                onData: (session, opcode, subOpcode, data) => 
+                {
+                    Console.WriteLine($"Initiator received: Opcode {opcode}, Subopcode {subOpcode}, Data.Length: {data.Length}");
+                    if (data.Length == randomBytesExactlyOnePacket.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytesExactlyOnePacket, data);
+                        Console.WriteLine("randomBytesExactlyOnePacket valid");
+                    }
+                    else if (data.Length == randomBytes.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytes, data);
+                        Console.WriteLine("randomBytes valid");
+                    }
+                    else if (data.Length == randomBytesBig.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytesBig, data);
+                        Console.WriteLine("randomBytesBig valid");
+                    }
+                });
+
+            // Create and start the responder session
+            var responderSession = new SyncSocketSession("", responderKeyPair,
+                responderInput, responderOutput,
+                onClose: (session) => Console.WriteLine("Responder session closed"),
+                onHandshakeComplete: (session) =>
+                {
+                    Console.WriteLine("Responder handshake complete");
+                    handshakeResponderCompleted.Set();  // Handshake complete for responder
+                },
+                onData: (session, opcode, subOpcode, data) => 
+                {
+                    Console.WriteLine($"Responder received: Opcode {opcode}, Subopcode {subOpcode}, Data.Length: {data.Length}");
+                    if (data.Length == randomBytesExactlyOnePacket.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytesExactlyOnePacket, data);
+                        Console.WriteLine("randomBytesExactlyOnePacket valid");
+                    }
+                    else if (data.Length == randomBytes.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytes, data);
+                        Console.WriteLine("randomBytes valid");
+                    }
+                    else if (data.Length == randomBytesBig.Length)
+                    {
+                        CollectionAssert.AreEqual(randomBytes, data);
+                        Console.WriteLine("randomBytesBig valid");
+                    }
+                });
+
+            // Start the sessions in parallel using tasks
+            initiatorSession.StartAsInitiator(responderSession.LocalPublicKey);
+            responderSession.StartAsResponder();
+
+            WaitHandle.WaitAll([handshakeInitiatorCompleted.WaitHandle, handshakeResponderCompleted.WaitHandle], 10000);
+
+            initiatorSession.Authorizable = new Authorized();
+            responderSession.Authorizable = new Authorized();
+
+            // Simulate initiator sending a PING and responder replying with PONG
+            initiatorSession.Send((byte)SyncSocketSession.Opcode.PING);
+            responderSession.Send((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesExactlyOnePacket);
+
+            initiatorSession.Send((byte)SyncSocketSession.Opcode.DATA, 1, randomBytes);
+
+            var sw = Stopwatch.StartNew();
+            responderSession.Send((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesBig);
+            Console.WriteLine($"Sent 10MB in {sw.ElapsedMilliseconds}ms");
+
+            // Wait for a brief period to simulate some delay and allow communication
+            Thread.Sleep(1000);
+        }
+    }
+}

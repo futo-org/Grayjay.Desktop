@@ -1,0 +1,9 @@
+[submodule "DotCef"]
+	path = DotCef
+	url = ../dotcef.git
+[submodule "Grayjay.Engine.Temp"]
+	path = Grayjay.Engine
+	url = ../Grayjay.Engine.git
+[submodule "FUTO.MDNS"]
+	path = FUTO.MDNS
+	url = ../mdns.git

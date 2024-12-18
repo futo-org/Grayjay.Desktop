@@ -1,0 +1,63 @@
+.sideBarButton {
+    width: 100%;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    border-radius: 6px;
+    border-left: transparent 2px solid;
+    transition: border-left 0.3s;
+}
+
+.sideBarButton:hover {
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.sideBarButton.selected {
+    background: rgba(255, 255, 255, 0.105);
+}
+
+.sideBarButton.collapsed {
+        
+}
+
+.sideBarButton .icon {
+    height: 32px;
+    width: 32px;
+    margin-left: 12px;
+    opacity: 1.0;
+    border-radius: 100px;
+
+    transition: margin-left 0.3s;
+}
+
+.sideBarButton.selected .icon {
+    margin-left: 35px;
+}
+.sideBarButton.selected .icon {
+    opacity: 1.0;
+}
+
+.sideBarButton .text {
+    font-weight: 400;
+    font-size: 14px;
+    margin-left: 12px;
+    line-height: 32px;
+    transition: opacity 0.3s ease;
+    opacity: 1;
+    color: #BFBFBF;
+    
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+.sideBarButton.selected .text {
+    color: white;
+}
+
+.sideBarButton.collapsed .text {
+    opacity: 0;
+}

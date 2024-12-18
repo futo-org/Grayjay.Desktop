@@ -1,0 +1,84 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64</Platforms>
+    <OutputType>library</OutputType>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <None Remove="FUTO.Updater.Client.exe" />
+    <None Remove="logo.ico" />
+    <None Remove="logo.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ContentWithTargetPath Include="deps/win-x64/FUTO.Updater.Client.exe" Condition="'$(RuntimeIdentifier)'=='win-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>     
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>FUTO.Updater.Client.exe</TargetPath>
+    </ContentWithTargetPath>    
+     <ContentWithTargetPath Include="deps/linux-x64/FUTO.Updater.Client" Condition="'$(RuntimeIdentifier)'=='linux-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>FUTO.Updater.Client</TargetPath>
+    </ContentWithTargetPath>
+    
+    <ContentWithTargetPath Include="deps/win-x64/ffmpeg.exe" Condition="'$(RuntimeIdentifier)'=='win-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>ffmpeg.exe</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="deps/linux-x64/ffmpeg" Condition="'$(RuntimeIdentifier)'=='linux-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>ffmpeg</TargetPath>
+    </ContentWithTargetPath>
+
+    <Content Include="logo.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="logo.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\web\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.28" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.1" />
+    <PackageReference Include="ZstdNet" Version="1.4.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Grayjay.Engine\Grayjay.Engine\Grayjay.Engine.csproj" />
+    <ProjectReference Include="..\FUTO.MDNS\FUTO.MDNS\FUTO.MDNS.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\web\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

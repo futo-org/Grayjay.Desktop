@@ -1,0 +1,37 @@
+
+.root {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: display 0.5s;
+    animation: fadeIn 0.5s;
+}
+@keyframes fadeIn {
+    0% {opacity: 0;}
+    100% {opacity: 1;}
+}
+
+.toast {
+    background-color: rgba(20,20,20,.95);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #2b2a2a;
+    z-index: 999;
+}
+.toastText {
+    font-size: 22px;
+    font-weight: lighter;
+}
+.toastTitle {
+    font-weight: 400;
+    font-size: 26px;
+}

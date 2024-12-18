@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Grayjay.ClientServer": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:57249;http://localhost:57250"
+    }
+  }
+}

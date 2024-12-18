@@ -1,0 +1,31 @@
+.container {
+    display: flex;
+    height: 48px;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+
+    border-radius: 26px;
+    background-color: #212122;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    width: 24px;
+    height: 24px;
+}
+
+.text {
+    color: #FFF;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    margin-left: 2px;
+}

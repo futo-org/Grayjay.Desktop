@@ -1,0 +1,11 @@
+framework module Keychain {
+  umbrella header "Keychain.h"
+  export *
+
+  module * { export * }
+}
+
+module Keychain.Swift {
+  header "Keychain-Swift.h"
+  requires objc
+}

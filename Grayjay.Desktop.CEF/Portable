@@ -1,0 +1,6 @@
+﻿namespace Grayjay.ClientServer
+{
+    public class Portable
+    {
+    }
+}

@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>WinExe</OutputType>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <ApplicationIcon>logo.ico</ApplicationIcon>
+    <AssemblyName>Grayjay</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="CEFWindow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != 'osx-x64' And '$(RuntimeIdentifier)' != 'osx-x64'">
+    <None Remove="Portable" />
+    <Compile Include="Portable">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="logo.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="grayjay.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="libsodium" Version="1.0.20" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" Version="7.4.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotCef\DotCef.csproj" />
+    <ProjectReference Include="..\Grayjay.ClientServer\Grayjay.ClientServer.csproj" />
+  </ItemGroup>
+
+</Project>

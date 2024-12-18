@@ -1,0 +1,25 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    
+    height: 100%;
+}
+
+.topBar {
+    display: flex;
+    flex-direction: row;
+    margin-left: 32px;
+    margin-bottom: 32px;
+}
+
+.searchBar {
+    width: 40%;
+}
+
+.grid {
+    margin-top: 24px;
+    margin-left: 24px;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}

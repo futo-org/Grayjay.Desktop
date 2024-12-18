@@ -1,0 +1,54 @@
+.containerScroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    scrollbar-width: 8px;
+    scrollbar-color: #555 #333;
+    scrollbar-width: thin;
+    display: flex;
+    flex-direction: row;
+}
+
+.containerScroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+.containerScroll::-webkit-scrollbar-track {
+    background-color: #333;
+}
+
+.containerScroll::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
+.containerScrollSubtle {
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    scrollbar-width: 8px;
+    scrollbar-color: #292929 transparent;
+    scrollbar-width: thin;
+    display: flex;
+    flex-direction: row;
+}
+
+.containerScrollSubtle::-webkit-scrollbar-button {
+    display: none; 
+}
+
+.containerScrollSubtle::-webkit-scrollbar {
+    width: 8px;
+}
+
+.containerScrollSubtle::-webkit-scrollbar-corner {
+    background-color: transparent;
+}

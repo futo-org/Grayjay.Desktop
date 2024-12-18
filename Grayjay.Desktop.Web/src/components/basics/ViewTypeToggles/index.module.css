@@ -1,0 +1,24 @@
+.toggleViewTypes {
+    height: 36px;
+    margin: 4px;
+    border-radius: 6px;
+    border: 1px solid #2E2E2E;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.toggleViewType {
+    height:auto;
+    display: inline-block;
+    align-items: center;
+    justify-content: center;
+    background-color: #1B1B1B;
+}
+.toggleViewType.enabled {
+    background-color: #262626 !important;
+}
+
+.toggleViewType img {
+    padding: 10px;
+    width: 16px;
+    height: 16px;
+}

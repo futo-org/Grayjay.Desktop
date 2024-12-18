@@ -1,0 +1,51 @@
+.suggestionsContainer {
+    display: flex;
+    width: 700px;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-bottom: 24px;
+    padding-top: 24px;
+    margin-top: 12px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    border-radius: 10px;
+    border: 1px solid #2E2E2E;
+    background: #212121;
+    box-shadow: 0px 100px 80px 0px rgba(0, 0, 0, 0.16), 0px 64.815px 46.852px 0px rgba(0, 0, 0, 0.12), 0px 38.519px 25.481px 0px rgba(0, 0, 0, 0.10), 0px 20px 13px 0px rgba(0, 0, 0, 0.08), 0px 8.148px 6.519px 0px rgba(0, 0, 0, 0.06), 0px 1.852px 3.148px 0px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+
+    position: absolute;
+    z-index: 1;
+
+    color: #D9D9D9;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+
+    width: 100%;
+}
+
+.suggestionItem {
+    display: flex; 
+    flex-direction: row; 
+    width: 100%; 
+    font-weight: 500; 
+    font-size: 16px; 
+    align-items: center; 
+    height: 47px;
+    border-radius: 8px;
+    padding-left: 12px;
+    padding-right: 16px;
+    cursor: pointer;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.suggestionItem:hover {
+    background-color: #2C2C2C;
+}

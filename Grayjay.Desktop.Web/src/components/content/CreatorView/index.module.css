@@ -1,0 +1,49 @@
+.containerCreator {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    background: #1B1B1B;
+    margin-right: 16px;
+    margin-bottom: 16px;
+    height: calc(100% - 16px);
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.thumbnail {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.name {
+    overflow: hidden;
+    color: #F0F0F0;
+    text-align: center;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 20px;
+    margin-top: 12px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.metadata {
+    color: #6a6a6a;
+    text-align: center;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 14px;
+    line-height: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 140%;
+    margin-top: 4px;
+}

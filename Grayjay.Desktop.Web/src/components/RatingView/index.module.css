@@ -1,0 +1,31 @@
+.containerRating {
+}
+
+.containerLikeDislike {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
+    height: 100%;
+}
+
+.containerLikeDislike.editable {
+    cursor: pointer;
+}
+
+.text {
+    margin-left: 4px;
+    color: #FFF;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+
+.text.active {
+    color: #019BE7;
+}
+
+.text.editable {
+    cursor: pointer;
+}

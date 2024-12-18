@@ -1,0 +1,81 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 24px;
+    height: calc(100% - 24px);
+}
+
+.header {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 29px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+
+.metadata {
+    color: rgba(255, 255, 255, 0.60);
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+
+.authorBottomRow {
+    display: flex;
+    flex-direction: row;
+    font-size: 16px;
+    color: #808080;
+    align-items: center;
+}
+
+.authorThumbnail {
+    width: 32px;   
+    height: 32px;
+    border-radius: 50%;
+    border-radius: 100px;
+    overflow: hidden;
+}
+
+.authorColumn {
+    display: flex;
+    flex-direction: column;
+    margin-left: 8px;
+    height: 100%;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.authorName {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 1.2em;
+    height: 1.0em;
+    margin-bottom: 5px;
+    flex-grow: 1;
+}
+
+.itemTitle {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    flex: 1 0 0;
+    overflow: hidden;
+    color: #F0F0F0;
+    leading-trim: both;
+    text-edge: cap;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px; /* 125% */
+}

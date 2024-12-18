@@ -1,0 +1,177 @@
+
+
+.container {
+    position: relative;
+    overflow:hidden;
+    border-radius: 12px;
+    padding:0.5px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    max-width: 90%;
+    max-height: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
+}
+
+.dialogHeader {
+    height: 55px;
+    margin-bottom: 10px;
+    position: absolute;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    margin-left: 0px;
+    right: 0px;
+}
+.dialogImage {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: -3px;
+}
+.dialogHeader .headerText {
+    font-size: 25px;
+    font-weight: bold;
+
+}
+.dialogHeader .headerSubText {
+    font-size: 14px;
+    color: #AAA;
+}
+
+.closeButton {
+    position: absolute;
+    display: grid;
+    justify-content: center;
+    align-items: center;;
+    top: 70px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 48px;
+    background: #2E2E2E;
+    cursor: pointer;
+    box-shadow: 0px 0px 3px black;
+}
+.closeButton img {
+    width: 24px;
+    height: 24px;
+}
+
+.subscriptionsContainer {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.subscription {
+    display: inline-block;
+    position: relative;
+    width: 98px;
+    height: 130px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-align: center;
+    margin: 5px;
+}
+.subscription.enabled {
+    background-color: #212121;
+}
+.subscription .check {
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    border-radius: 72.727px;
+    border: 2px solid #454545;
+}
+.subscription .check img {
+    display: none;
+}
+.subscription.enabled .check {
+    background-color: #019BE7;
+}
+.subscription.enabled .check img {
+    display: block;
+}
+
+.subscription .image {
+    height: 60px;
+    width: 60px;
+    border-radius: 50px;
+    background-size: cover;
+    margin-top: 25px;
+    display: inline-block;
+}
+.subscription .name {
+    color: #FFF;
+
+    text-align: center;
+    
+    margin-left: 16px;
+    margin-right:15px;
+    max-lines: 2;
+
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 12px;
+    max-height: 24px;
+    margin-top: 3px;
+    overflow: hidden;
+}
+
+.image {
+    display: inline-block;
+    margin: 3px;
+    height: 80px;
+    width: 170px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-size: cover;
+    border: 3px solid transparent;
+    background-position: center;;
+}
+.image.enabled {
+    border: 3px solid white;
+}
+
+.horizontalList {
+    overflow-y: hidden;
+    overflow-x: auto;
+    width: 100%;
+    text-wrap: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #333;
+}
+.horizontalList::-webkit-scrollbar {
+    background-color: transparent;
+    width: 15px;
+  }
+  .horizontalList::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  .horizontalList::-webkit-scrollbar-thumb {
+    border-radius: 20px;
+    border: 4px solid transparent;
+    background-color: rgba(0,0,0,0.2);
+    background-clip: content-box;
+  }
+  .horizontalList::-webkit-scrollbar-button {
+    display: none;
+  }
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+.sectionDescription {
+    font-size: 14px;
+    color: #AAA;
+    margin-bottom: 10px;
+}

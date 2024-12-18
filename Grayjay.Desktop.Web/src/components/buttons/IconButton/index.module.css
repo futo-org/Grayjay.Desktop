@@ -1,0 +1,18 @@
+.container {
+    width: 24px;
+    height: 24px;
+    background-color: #212122;
+    border-radius: 50%;
+    display: flex;
+    flex-shrink: 0;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    margin: 4px;
+}

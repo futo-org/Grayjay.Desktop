@@ -1,0 +1,116 @@
+
+
+.container {
+    width: 500px;
+    position: relative;
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
+}
+
+.dialogHeader {
+    height: 55px;
+    margin-bottom: 10px;
+    margin-left: 16px;
+    margin-top: 10px;
+}
+.dialogHeader .headerText {
+    font-size: 25px;
+    font-weight: bold;
+
+}
+.dialogHeader .headerSubText {
+    font-size: 14px;
+    color: #AAA;
+    margin-top: 5px;
+}
+
+.closeButton {
+    position: absolute;
+    display: grid;
+    justify-content: center;
+    align-items: center;;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 48px;
+    background: #2E2E2E;
+    cursor: pointer;
+}
+.closeButton img {
+    width: 24px;
+    height: 24px;
+}
+
+.sources{
+    text-align: center;
+}
+.source {
+    position: relative;
+    width: 120px;
+    height: 130px;
+    margin: 10px;
+    display: inline-block;
+    vertical-align: top;
+    background-color: #222;
+    border-radius: 6px;
+}
+
+.source .imageContainer {
+    width: 70px;
+    height: 70px;
+    display: inline-block;
+    position: relative;
+    margin-top: 15px;
+}
+.source .image {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) translateX(-50%);
+    max-width: 60px;
+    max-height: 60px;
+}
+.source .name{
+    margin-top: 1px;
+    padding-left: 3px;
+    height: 35px;
+    padding-right: 3px;
+    display:table-cell;
+    vertical-align: middle;
+    width: 120px;
+}
+
+.source:hover {
+    background-color: #333;
+}
+
+
+.source.otherButton:hover {
+    cursor: pointer;
+
+}
+
+
+.checkContainer{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 17px;
+    height: 15px;
+}
+
+.error {
+    width: 100%;
+    margin-top: 5px;
+    background-color: rgba(0, 0, 0, .2);
+    padding: 5px;
+    text-align: center;
+    color: red;
+    border-radius: 10px;
+}

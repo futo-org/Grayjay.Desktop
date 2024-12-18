@@ -1,0 +1,34 @@
+.containerLoader {
+    height: 100%;
+    width: 100%;
+    position: relative;
+
+    scrollbar-width: 8px;
+    scrollbar-color: #555 #333;
+}
+
+
+.loaderWrapper {
+  width: 100%; 
+  height: 100%; 
+  display: grid; 
+  justify-content: center; 
+  align-content: center;
+}
+
+.loadingText {
+  position: absolute;
+  font-size: 18px;
+  top: calc(50% + 70px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.loadingSubText {
+  position: absolute;
+  font-size: 12px;
+  top: calc(50% + 95px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #AAA;
+}

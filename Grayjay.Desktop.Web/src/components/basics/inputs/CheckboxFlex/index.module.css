@@ -1,0 +1,36 @@
+.checkbox {
+    border-color: #8C8C8C;
+    border-radius: 8px;
+    border-width: 3.6px;
+    width: 22px;
+    height: 22px;
+    border-style: solid;
+
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox.checked {
+    border-color: #019BE7;
+    background-color: #019BE7;
+    border-radius: 8px;
+    border-width: 3.6px;
+    width: 22px;
+    height: 22px;
+    border-style: solid;
+}
+
+.checkbox .check {
+    width: 16px;
+    height: 16px;
+
+    transition: opacity 0.15s ease;
+    opacity: 0;
+}
+
+.checkbox.checked .check {
+    opacity: 1;
+}

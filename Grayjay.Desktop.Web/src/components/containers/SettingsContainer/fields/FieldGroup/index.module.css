@@ -1,0 +1,35 @@
+
+.container {
+    width: 100%;
+    border-top: 1px solid #363636;
+    border-bottom: 1px solid #363636;
+    padding-top: 24px;
+    padding-bottom: 8px;
+}
+
+.header {
+    color: #FFF;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 24px; /* 109.091% */
+}
+.description {
+    color: #8C8C8C;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 16px; /* 114.286% */
+    margin-top: 4px;
+    margin-bottom: 12px;
+}
+
+.key {
+    float: left;
+    width: 60%;
+}
+.value {
+    
+}

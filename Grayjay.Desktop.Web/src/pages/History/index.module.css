@@ -1,0 +1,73 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    /*margin-top: 24px;*/
+}
+
+.title {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    
+    /* Page Title */
+    font-family: Inter;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+
+    margin-left: 32px;
+}
+
+.videoTitle {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;  /* Number of lines you want to display before truncating */
+    -webkit-box-orient: vertical;
+    color: #F0F0F0;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px; /* 125% */
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.authorTitle {
+    color: #a3a3a3;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.authorMetadata {
+    color: #6a6a6a;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.itemContainer {
+    width: calc(100% - 64px); 
+    display: flex; 
+    flex-direction: row; 
+    height: 100%; 
+    border-top: 1px solid #2e2e2e; 
+    align-items: center; 
+    padding-top: 16px; 
+    padding-bottom: 16px; 
+    box-sizing: border-box; 
+    margin-left: 24px; 
+    margin-right: 24px; 
+}

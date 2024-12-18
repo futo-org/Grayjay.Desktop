@@ -1,0 +1,152 @@
+
+
+.container {
+    width: 500px;
+    position: relative;
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
+}
+
+.dialogHeader {
+    height: 55px;
+    margin-bottom: 10px;
+    margin-left: 16px;
+    margin-top: 10px;
+}
+.dialogHeader .headerText {
+    font-size: 25px;
+    font-weight: bold;
+
+}
+.dialogHeader .headerSubText {
+    font-size: 14px;
+    color: #AAA;
+    margin-top: 5px;
+}
+
+.closeButton {
+    position: absolute;
+    display: grid;
+    justify-content: center;
+    align-items: center;;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 48px;
+    background: #2E2E2E;
+    cursor: pointer;
+}
+.closeButton img {
+    width: 24px;
+    height: 24px;
+}
+.sources {
+    width: 350px;
+    display: inline-block;
+    vertical-align: top;
+    max-height: 80%;
+    overflow-y: auto;
+    max-height: 800px;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #333;
+}
+
+.source {
+    position: relative;
+    padding: 8px 12px 8px 40px;
+    margin-left: 12px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+.source .name {
+    color: #CDCDCD;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 24px; /* 150% */
+    max-width: 170px;
+}
+.source.full .name {
+    max-width: 100%;
+}
+.source .meta {
+    max-width: 100px;
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    color: #8C8C8C
+}
+.source.hasSubs .meta {
+    display: hidden;
+}
+.source .imgContainer {
+    height: 100%;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0px;
+    left: 10px;
+}
+.source img {
+    
+    height: 16px;
+    width: 16px;
+    display: none;
+}
+
+.source.enabled {
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+}
+.source.enabled img {
+    display: block;
+}
+.source.enabled .name {
+    color: #F0F0F0;
+    font-weight: 600;
+}
+
+.subSourceHeader {
+    font-size: 14px;
+    margin-left: 30px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.copyText {
+    width: calc(100% - 20px);
+    max-height: 100px;
+    white-space: pre-wrap;
+    max-height: 100%;
+    height: auto;
+    padding: 10px;
+    background-color: #212121;
+    border-radius: 8px;
+    user-select: text;
+    text-align: center;
+}
+
+.copyLabel {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+    bottom: -45px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background-color: #111;
+}
+.copyLabel.visible {
+    opacity: 1;
+}

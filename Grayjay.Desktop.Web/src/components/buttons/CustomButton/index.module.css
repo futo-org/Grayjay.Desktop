@@ -1,0 +1,23 @@
+.container {
+    border-radius: 8px;
+    display: flex;
+    height: 48px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-weight: 300;
+    font-size: 16px;
+    font-family: "Inter";
+    align-items: center;
+    width: fit-content;
+    border: #ff0000b1;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    height: 18px;
+    width: 18px;
+    margin-right: 10px;
+}

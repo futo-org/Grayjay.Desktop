@@ -1,0 +1,113 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.thumbnailContainer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-left: 16px;
+}
+
+.authorContainer {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.text {
+    color: #D9D9D9;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    white-space: pre-wrap;
+    margin-top: 12px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    user-select: text;
+}
+
+.text > a {
+    color: #019BE7;
+    text-decoration: none;
+}
+
+.buttonList {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    padding-top: 16px;
+    padding-left: 40px;
+    box-sizing: border-box;
+}
+
+
+.containerAuthorThumbnail { 
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.containerAuthorThumbnail svg { 
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    border-radius: 50%;
+}
+
+.containerAuthorThumbnail img { 
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.authorName {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+}
+
+.metadata {
+    color: #888;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    margin-left: 8px;
+}
+
+.repiesButton {
+    display: flex; 
+    padding: 6px 15px 6px 15px; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 4px; 
+    border-radius: 99px; 
+    border: 1px solid #454545; 
+    overflow: hidden; 
+    color: #FFF; 
+    text-align: center; 
+    font-family: Inter; 
+    font-size: 14px; 
+    font-style: normal; 
+    font-weight: 500; 
+    line-height: 140%; 
+    cursor: pointer;
+}

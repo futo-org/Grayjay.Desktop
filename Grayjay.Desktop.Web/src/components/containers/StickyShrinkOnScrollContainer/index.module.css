@@ -1,0 +1,10 @@
+.container {
+    top: 0;
+    z-index: 1;
+    width: 100%;
+    pointer-events: none;
+}
+
+.container > * {
+    pointer-events: auto;
+}

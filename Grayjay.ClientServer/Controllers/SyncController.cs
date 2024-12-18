@@ -1,0 +1,130 @@
+﻿using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using Grayjay.ClientServer.Dialogs;
+using Grayjay.ClientServer.States;
+using Grayjay.ClientServer.Sync;
+using Grayjay.ClientServer.Sync.Internal;
+using Grayjay.ClientServer.Sync.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Grayjay.ClientServer.Controllers
+{
+    [Route("[controller]/[action]")]
+    public class SyncController : ControllerBase
+    {
+        [HttpGet]
+        public ActionResult<string> GetPairingUrl()
+        {
+            return Ok(StateSync.Instance.GetPairingUrl());
+        }
+
+        [HttpGet]
+        public ActionResult<dynamic> GetDevices()
+        {
+            return Ok(StateSync.Instance.GetAllDevices().Select(pk => 
+            {
+                var session = StateSync.Instance.GetSession(pk);
+                return new SyncDevice
+                {
+                    PublicKey = pk, 
+                    Metadata = session?.Connected == true ? "Connected" : "Disconnected",
+                    LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
+                };
+            }).ToList());
+        }
+        [HttpGet]
+        public ActionResult<List<SyncDevice>> GetOnlineDevices()
+        {
+            return Ok(StateSync.Instance.GetAllDevices().Select(pk =>
+            {
+                var session = StateSync.Instance.GetSession(pk);
+                if (session?.Connected != true)
+                    return null;
+                return new SyncDevice
+                {
+                    PublicKey = pk,
+                    Metadata = session?.Connected == true ? "Connected" : "Disconnected",
+                    LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
+                };
+            }).Where(x=>x != null).ToList());
+        }
+
+        [HttpGet]
+        public ActionResult<bool> HasAtLeastOneDevice()
+        {
+            return Ok(StateSync.Instance.HasAtLeastOneDevice());
+        }
+
+        [HttpGet]
+        public ActionResult ValidateSyncDeviceInfoFormat([FromBody] SyncDeviceInfo syncDeviceInfo)
+        {
+            return Ok();
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> AddDevice([FromBody] SyncDeviceInfo syncDeviceInfo)
+        {
+            var dialog = new SyncStatusDialog();
+            await dialog.Show();
+
+            try
+            {
+                StateSync.Instance.Connect(syncDeviceInfo, (s, complete, message) => 
+                {
+                    if (complete)
+                    {
+                        if (s != null)
+                            dialog.SetSuccess();
+                        else
+                            dialog.SetMessage(message);
+                    }
+                });
+            }
+            catch (Exception e)
+            {
+                dialog.SetError(e.Message);
+            }
+            
+            return Ok();
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> RemoveDevice(string publicKey)
+        {
+            await StateSync.Instance.DeleteDeviceAsync(publicKey);
+            return Ok();
+        }
+
+
+
+        //Functions
+        [HttpGet]
+        public IActionResult SendToDevice(string device, string url, int position = 0)
+        {
+            var session = StateSync.Instance.GetSession(device);
+
+            if (session == null)
+            {
+                return Ok(new
+                {
+                    Success = false,
+                    Message = "Device not found"
+                });
+            }
+            if (!session.Connected || !session.IsAuthorized)
+            {
+                return Ok(new
+                {
+                    Success = false,
+                    Message = "Device not connected or authorized"
+                });
+            }
+            session.SendJsonData(GJSyncOpcodes.SendToDevice, new SendToDevicePackage()
+            {
+                Url = url,
+                Position = position
+            });
+            return Ok();
+        }
+    }
+}

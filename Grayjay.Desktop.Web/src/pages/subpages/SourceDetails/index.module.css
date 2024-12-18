@@ -1,0 +1,76 @@
+
+
+.header {
+    position: relative;
+    flex-shrink: 0;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: row;
+}
+.header .icon{
+    height: 80px;
+    width: 80px;
+    background-color: #1d1d1d;
+    border-radius: 14px;
+    position: relative;
+    flex-shrink: 0;
+}
+.header .icon img {
+    position: absolute;
+    max-height: 48px;
+    max-width: 48px;
+    left: 50%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-50%);
+}
+.header .descriptor {
+    flex-grow: 1;
+    margin-left: 24px;
+}
+
+.header .descriptor .title{
+    color: #FFF;
+    font-family: "Inter";
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    margin-bottom: 2px;
+}
+.header .descriptor .description {
+    color: #8C8C8C;
+    font-family: "Inter";
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    margin-bottom: 10px;
+}
+.header .descriptor .meta {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+.header .descriptor .meta > a {
+    color: #019BE7;
+    text-decoration: none;
+}
+
+.settings {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+}

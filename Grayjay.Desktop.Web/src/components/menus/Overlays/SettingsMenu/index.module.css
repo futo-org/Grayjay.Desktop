@@ -1,0 +1,247 @@
+.container {
+}
+
+.menu{
+    position: absolute;
+    height:auto;
+    z-index:9;
+    max-height: 100%;
+    background-color: #141414;
+    width: 320px;
+    padding: 12px;
+    border-radius: 10px;
+    overflow: auto;
+    scrollbar-width: thin;
+
+    border-radius: 10px;
+    border: 1px solid #2E2E2E;
+    box-shadow: 0px 1.852px 3.148px 0px rgba(0, 0, 0, 0.06), 0px 8.148px 6.519px 0px rgba(0, 0, 0, 0.10), 0px 20px 13px 0px rgba(0, 0, 0, 0.13), 0px 38.519px 25.481px 0px rgba(0, 0, 0, 0.15), 0px 64.815px 46.852px 0px rgba(0, 0, 0, 0.19), 0px 100px 80px 0px rgba(0, 0, 0, 0.25);
+}
+
+.title {
+    color: #FFF;
+    font-family: "Inter";
+    leading-trim: both;
+
+    text-edge: cap;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 24px; /* 150% */
+    margin-left: 10px;
+    margin-bottom: 10px;
+    margin: 10px;
+}
+
+.menuItem {
+    position: relative;
+    height: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.menuItem .key {
+    color: #D7D7D7;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px; /* 160% */
+    width: 150px;
+    line-height: 24px;
+    font-family: "Inter";
+}
+.menuItem .value {
+    color: #FFF;
+    font-size: 15px;
+    width: calc(100% - 180px);
+    text-align: right;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px; /* 133.333% */
+    letter-spacing: 0.25px;
+    position: absolute;
+    left: 140px;
+    top: 10px;
+    line-height: 24px;
+    height: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Inter";
+}
+.menuItem.isGroup {
+
+}
+.menuItem.isGroup:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+.menuItem.option:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+.menuItem .expander {
+    position: absolute;
+    height: 15px;
+    width: 15px;
+    right: 10px;
+    top: 13px;
+    text-align: center;
+}
+.menuItem:hover {
+    cursor: pointer;
+}
+.menuItem .expander img {
+    height: 100%;
+    color: #969696;
+}
+.menuItem.isGroup .expander {
+    display: block;
+}
+
+.menuItem .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.menuButton {
+    position: relative;
+    height: 20px;
+    padding: 15px;
+    border-radius: 5px;
+}
+.menuButton:hover {
+    cursor: pointer;
+    background-color: rgba(255,255,255,0.1)
+}
+.menuButton .icon {
+    height: 25px;
+    width: 25px;
+    display: inline-block;
+    margin-right: 15px;
+}
+.menuButton .text {
+    display: inline-block;
+    vertical-align: top;
+}
+.menuButton .name {
+    font-family: "Inter";
+    line-height: 23px;
+    font-size: 16px;
+}
+.menuButton .nameWithDescription {
+    font-family: "Inter";
+    line-height: 13px;
+    font-size: 16px;
+    margin-top: -4px;
+}
+.menuButton .description {
+    font-family: "Inter";
+    vertical-align: top;
+    line-height: 15px;
+    font-size: 14px;
+    margin-top: 5px;
+    color: #555555;
+}
+
+.menuToggle {
+    position: relative;
+    height: 64px;
+    margin-left: 10px;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    cursor: pointer;
+}
+
+.menuToggle .icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.menuToggle .toggle {
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+
+.menuToggle .nameContainer {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-width: calc(100% - 124px);
+}
+
+.menuToggle .nameContainer .name {
+    color: #F0F0F0;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 24px;
+
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.menuToggle .nameContainer .description {
+    color: #595959;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 16px;
+
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.menuHeader {
+    position: relative;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    margin-left: 10px;
+    margin-right: 10px;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.menuHeader .nameContainer {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
+}
+
+.menuHeader .nameContainer .name {
+    color: #F0F0F0;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 24px;
+
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.menuHeader .nameContainer .description {
+    color: #595959;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 16px;
+
+    text-wrap: wrap;
+}
+
+.menuButton .text {
+    width: calc(100% - 50px);
+}

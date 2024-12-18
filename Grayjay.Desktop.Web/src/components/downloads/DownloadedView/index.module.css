@@ -1,0 +1,107 @@
+
+.downloadingCard {
+    width: calc(100% - 20px);
+    height: 230px;
+    display: inline-block;
+    margin: 10px;
+}
+.downloadingCard .title {
+    overflow: hidden;
+    color: #F0F0F0;
+
+    leading-trim: both;
+
+    text-edge: cap;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 20px; /* 125% */
+    max-height: 20px;
+    overflow: hidden;
+    margin-top: 10px;
+    text-wrap: nowrap;
+}
+.downloadingCard .author {
+    color: #F0F0F0;
+
+    leading-trim: both;
+
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    margin-top: 5px;
+    overflow: hidden;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
+.downloadingCard .meta {
+    color: #8C8C8C;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    margin-top: 2px;
+}
+
+.downloadingCard .downloadThumbnail {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    position: relative;
+    background-color: white;
+    background-size: cover;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.downloadingCard .badgeStatus {
+    border-radius: 3px;
+    background: #000000EE;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    color: #D9D9D9;
+
+    
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    padding: 6px 9px;
+}
+.downloadingCard .badgeSize {
+    color: #FFF;
+    background: #000000EE;
+    border-radius: 3px;
+
+    leading-trim: both;
+    
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    padding: 6px 9px;
+
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+}
+
+.downloadingCard .progress {
+    border-radius: 32px;
+    background: #FF9737;
+    height: 3px;
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    
+}

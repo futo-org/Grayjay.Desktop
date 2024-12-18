@@ -1,0 +1,28 @@
+
+.buyContainer {
+
+    text-align: center;   
+}
+
+
+.grayjay {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+    width: 100%;
+    margin-left: 4px;
+    margin-bottom: 8px;
+    color: #FFF;
+    font-family: Sen;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    position: relative;
+}
+
+.descriptionShared {
+    color: orange;
+}

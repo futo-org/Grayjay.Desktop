@@ -1,0 +1,7 @@
+.loaderGrid {
+    overflow-y: auto;
+    height: 100%;
+    position: relative;
+    scrollbar-width: 8px;
+    scrollbar-color: #555 #333;
+}

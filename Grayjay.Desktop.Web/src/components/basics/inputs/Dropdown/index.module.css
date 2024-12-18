@@ -1,0 +1,115 @@
+
+.selectContainer {
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.select {
+  border-radius: 8px;
+  border: 1px solid #2E2E2E;
+  background: #141414;
+  padding: 14px;
+  color: white;
+  cursor: pointer;
+  min-width: 128px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.selectText {
+  display: inline-block;
+  text-align: left;
+  margin-right: 0px;
+}
+.selectArrow {
+  display: inline-block;
+  margin-left: 15px;
+  vertical-align: middle;
+}
+.selectArrow img {
+  height: 14px;
+  width: 14px;
+  transition: transform 0.1s;
+}
+
+
+.optionsContainer {
+  position: absolute;
+  right: 0px;
+  border-radius: 10px;
+  border: 1px solid #2E2E2E;
+  background: #141414;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #555 #333;
+  z-index: 999;
+}
+
+.optionsContainer::-webkit-scrollbar {
+  width: 10px;
+}
+.optionsContainer::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 5px;
+}
+.optionsContainer::-webkit-scrollbar-thumb:hover {
+  background-color: #888;
+}
+.optionsContainer::-webkit-scrollbar-track {
+  background-color: #333;
+}
+.optionsContainer::-webkit-scrollbar-corner {
+  background-color: transparent;
+}
+
+.option {
+  width: calc(100% - 56px);
+  font-size: 20px;
+  padding-left: 40px;
+  padding-right: 16px;
+  padding-bottom: 16px;
+  padding-top: 16px;
+  color: #FFF;
+  font-family: Inter;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  display: inline-block;
+  position: relative
+}
+
+.option.hover {
+  color: #FFF;
+  
+}
+.option.selected {
+  background: #1B1B1B;
+  border-radius: 5px;
+}
+
+.option .selectIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 19px;
+  width: 19px; 
+}
+
+.labelText {
+  overflow: hidden;
+  color: #595959;
+  text-overflow: ellipsis;
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 22px; /* 183.333% */
+}

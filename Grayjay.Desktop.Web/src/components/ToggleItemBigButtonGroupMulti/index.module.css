@@ -1,0 +1,40 @@
+.containerGroup {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    overflow: hidden;
+    gap: 8px;
+    width: 100%;
+}
+
+.containerButton {
+    text-align: center;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 140%; /* 16.8px */    
+    flex-shrink: 0;
+    height: 100px;
+    width: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #FFF;
+    gap: 4px;
+    padding: 10px;
+    flex-direction: column;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+
+    border-radius: 6px;
+    box-sizing: border-box;
+    background: #1B1B1B;
+}
+
+.containerButton.active {
+    background: #2E2E2E;
+}

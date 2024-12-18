@@ -1,0 +1,122 @@
+
+.containerInputText {
+    border-radius: 6px;
+    border: 1px solid #2E2E2E;
+    background: #1B1B1B;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    padding-left: 12px;
+    padding-right: 12px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    height: 52px;
+    cursor: text;
+    transition: opacity 0.3s ease;
+    position: relative;
+}
+
+.containerInputText.hasLabel .searchInput {
+    margin-top: 21px;
+}
+
+.containerInputText.focus {
+    border: 1px solid #2DBDFF;
+    caret-color: #2DBDFF;
+}
+
+.containerInputText.focus:hover {
+    border: 1px solid #2DBDFF;
+}
+
+.containerInputText.error {
+    border: 1px solid #F97066;
+    caret-color: #F97066;
+}
+
+.containerInputText.error:hover {
+    border: 1px solid #F97066;
+}
+
+.containerInputText:hover {
+    border: 1px solid #595959;
+}
+
+.containerInputText.disabled {
+    border: 1px solid #2E2E2E;
+    background: #141414;
+}
+
+.containerInputText.disabled::placeholder {
+    color: #262626;
+}
+
+.icon {
+    height: 16px;
+    width: 16px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.iconClear {
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.iconClear:hover {
+    cursor: pointer;
+    fill: black;
+}
+
+.searchInput {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    color: white;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    outline: none;
+    height: 100%;
+    margin-right: 12px;
+    font-family: "Inter";
+}
+
+.searchInput::placeholder {
+    color: #494949;
+}
+
+.labelText {
+    overflow: hidden;
+    color: #595959;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: Inter;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 22px; /* 122.222% */
+    position: absolute;
+    top: 24px;
+    margin-top: -8px;
+
+    transition: font-size 0.3s ease, font-weight 0.3s ease, top 0.3s ease;
+}
+
+.labelText.hasContentOrFocus {
+    font-size: 12px;
+    font-weight: 500;
+    top: 12px;
+}
+
+.containerInputTextError {
+    color: #F97066;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 22px; /* 183.333% */
+}

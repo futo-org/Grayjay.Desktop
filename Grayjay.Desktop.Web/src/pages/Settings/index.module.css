@@ -1,0 +1,80 @@
+
+.container {
+    padding: 12px;
+    position: relative;
+}
+
+.settingsMenu {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 200px;
+
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.settingsMenuItem {
+    color: rgba(255, 255, 255, 0.60);
+    height: 46px;
+    border-radius: 6px;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    display: grid;
+    place-items: start;
+    cursor: pointer;
+    align-items: center;
+    justify-content: start;
+    padding-left: 18px;
+    min-height: 30px;
+}
+
+
+.settingsMenuItem:hover {
+    color: rgba(255, 255, 255, 0.60);
+    height: 46px;
+    border-radius: 6px;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    display: grid;
+    place-items: start;
+    cursor: pointer;
+    align-items: center;
+    justify-content: start;
+    padding-left: 18px;
+}
+
+
+.settingsMenuItem.active {
+    color: #FFF;
+    background: rgba(255, 255, 255, 0.105);
+    padding-left: 16px;
+    height: 46px;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    display: grid;
+    place-items: start;
+    font-weight: 400;
+    align-items: center;
+    justify-content: start;
+    padding-left: 18px;
+
+}
+.settingsContainer {
+    position: absolute;
+    left: 200px;
+    top: 0px;
+    width: calc(100% - 200px);
+    height: 100%;
+}
+
+.bottomMenu {
+    width: calc(100% - 20px);
+    padding: 10px;
+    flex-shrink: 0;
+}

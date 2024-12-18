@@ -1,0 +1,30 @@
+.containerScroll {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    position: relative;
+    scrollbar-width: 8px;
+    scrollbar-color: #555 #333;
+    scrollbar-width: thin;
+}
+
+.containerScroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+.containerScroll::-webkit-scrollbar-track {
+    background-color: #333;
+}
+
+.containerScroll::-webkit-scrollbar-corner {
+    background-color: transparent;
+}

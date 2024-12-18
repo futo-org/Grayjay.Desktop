@@ -1,0 +1,345 @@
+.container {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background-color: #171719;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.container.minimized {
+    border-radius: 8px;
+    z-index: 2;
+}
+
+.minimize {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    transition: transform 0.1s;
+    cursor: pointer;
+}
+
+.draggable {
+    position: absolute;
+    cursor: pointer;
+    left: 60px;
+    right: 60px;
+    top: 0px;
+    height: 50px;
+}
+
+.resizable {
+    position: absolute;
+    cursor: pointer;
+    bottom: 0px;
+    right: 0px;
+    height: 30px;
+    width: 30px;
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+}
+
+.headerContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    flex-wrap: wrap;
+    overflow: hidden;
+}
+
+.authorContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.authorRightButtonsContainer {
+    display: flex; 
+    flex-direction: row; 
+    justify-self: end; 
+    gap: 16px; 
+    margin-right: 40px;
+    margin-left: 40px;
+    margin-top: 29px;
+}
+
+.authorDescription {
+    display: flex;
+    flex-direction: column;
+    margin-left: 16px;
+    margin-right: 39px;
+    margin-top: 29px;
+}
+
+.authorName {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.authorMetadata {
+    color: #808080;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.containerTitle {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: 28px;
+    width: calc(100% - 80px);
+}
+
+.title {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+
+    user-select: text;
+}
+
+.metadata {
+    color: #8C8C8C;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: "Inter";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    margin-top: 6px;
+    line-height: normal;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+}
+
+.author {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin-left: 40px;
+    cursor: pointer;
+    margin-top: 29px;
+}
+
+.buttonList {
+    display: flex;
+    flex-direction: row-reverse;
+    text-align: right;
+
+    margin-top: 28px;
+    margin-right: 40px;
+    flex-shrink: 0;
+    gap: 12px;
+
+    overflow: hidden;
+    margin-left: 40px;
+}
+
+.buttonList > * {
+    flex-shrink: 0;
+}
+
+.description {
+    width: 100%;
+    gap: 8px;
+    box-sizing: border-box;
+
+    color: #FFF;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 22px; /* 137.5% */
+
+    white-space: pre-wrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+
+    user-select: text;
+}
+
+.description > a {
+    color: #019BE7;
+    text-decoration: none;
+}
+
+.descriptionContainer {
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: 24px;
+    position: relative;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-bottom: 32px;
+    padding-top: 24px;
+
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.showMoreShowLessFade {
+    position: absolute;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: end;
+
+    bottom: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100px;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #212122);
+
+    pointer-events: none;
+}
+
+.showMoreShowLess {
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: end;
+    bottom: 10px;
+    left: 0px;
+    position: absolute;
+    width: 100%;
+    color: #019BE7;
+    cursor: pointer;
+}
+
+.commentHeader {
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: 24px;
+
+    display: flex;
+    flex-direction: row;
+
+    display: flex;
+    align-items: center;
+}
+
+.commentHeaderTitle {
+    color: #F0F0F0;
+
+    font-family: Inter;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.containerContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.containerLeft {
+    width: 70%;
+}
+
+.containerRight {
+    width: 30%;
+    transition: margin-top 0.15s ease;
+    flex-direction: column;
+    gap: 30px;
+    display: flex;
+}
+
+.addComment {
+    display: flex; 
+    height: 44px; 
+    padding: 0px 16px; 
+    align-items: center; 
+    gap: 12px; 
+    align-self: stretch; 
+    border-radius: 8px;
+    border: 1px solid #2E2E2E; 
+    background: #212121; 
+    margin-left: 40px; 
+    margin-right: 40px; 
+    margin-top: 16px;
+}
+
+.pinned {
+    width: 24px;
+    height: 24px;
+}
+
+.loop {
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+}
+
+.recommendationItemTitle {
+    overflow: hidden;
+    color: #D9D9D9;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 18px; /* 128.571% */
+    cursor: pointer;
+    height: 2.4em;
+}
+
+.recommendationItemAuthor {
+    color: #8C8C8C;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.recommendationMetadata {
+
+}

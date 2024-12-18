@@ -1,0 +1,82 @@
+.container {
+    background-color: #ffffff0a;
+    border-radius: 6px;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    font-family: "Inter";
+    align-items: center;
+    width: fit-content;
+    text-align: center;
+    box-sizing: border-box;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    padding-left: 24px;
+    padding-right: 24px;
+    display: inline-block;
+}
+
+.container.small {
+    height: 42px;
+    font-size: 14px;
+    padding-left: 22px;
+    padding-right: 22px;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    height: 24px;
+    width: 24px;
+    margin-right: 8px;
+    vertical-align: bottom;
+}
+
+.text {
+    display: inline-block;
+}
+/*
+.container {
+    background-color: #ffffff0a;
+    border-radius: 6px;
+    padding-left: 40px;
+    padding-right: 40px;
+    font-weight: 600;
+    font-size: 20px;
+    align-items: center;
+    width: fit-content;
+    text-align: center;
+    box-sizing: border-box;
+    height: 48px;
+    display: flex;
+
+    color: #EFF9FF;
+    text-align: center;
+    leading-trim: both;
+    text-edge: cap;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 140%; /* 22.4px */
+/*}
+
+.container.small {
+    height: 42px;
+    font-size: 14px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    height: 22px;
+    width: 22px;
+    margin-right: 15px;
+}*/

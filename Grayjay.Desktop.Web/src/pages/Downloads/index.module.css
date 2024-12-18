@@ -1,0 +1,268 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 24px;
+    height: calc(100% - 24px);
+}
+
+.topBar {
+    display: flex;
+    flex-direction: row;
+    margin-left: 30px;
+}
+
+.searchBar {
+    width: 40%;
+}
+
+.grid {
+    margin-top: 24px;
+    margin-left: 30px;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+
+.storageContainer {
+    border-radius: var(--Corner-radius-80, 8px);
+    border: 1px solid #262626;
+    background: #1B1B1B;
+    margin: 24px;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-bottom: 24px;
+    padding-top: 24px;
+    flex-shrink: 0;
+}
+
+.storageContainer .sizeLine {
+    position: relative;
+    width: calc(100% - 300px);
+    text-wrap: nowrap;
+
+}
+.storageContainer .sizeCurrent {
+    display: inline-block;
+    color: #FFF;
+
+    leading-trim: both;
+    
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    margin-right: 10px;
+}
+.storageContainer .sizeTotal {
+    display: inline-block;
+    color: #FFF;
+
+    font-family: Inter;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+.storageContainer .sizeInter {
+    display: inline-block;
+    color: #A6A6A6;
+    font-family: Inter;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 200;
+    line-height: normal;
+    margin-right: 10px;
+}
+
+.storageContainer .sizeImage {
+    width: 34px;
+    height: 34px;
+    margin-right: 16px;
+}
+
+.storageContainer .storageIndicator {
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.06);
+    height: 4px;
+    width: 100%;
+    margin-top: 16px;
+}
+.storageContainer .storageIndicator .bar {
+    border-radius: 99px;
+    background: linear-gradient(90deg, #01D6E6 0%, #0182E7 98.73%);
+    height: 100%;    
+}
+
+.storageContainer .storagePath {
+    display:inline-block;
+    margin-left: 24px;
+    overflow:hidden;
+    max-width: calc(100% - 500px);
+    text-overflow: ellipsis;
+    margin-top: 19px;
+    vertical-align: top;
+    color: #9c9c9c;
+
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
+}
+.storageContainer .storagePath img {
+    margin-right: 5px;
+}
+.storageContainer .storagePath .tooltip {
+    display: none;
+    position: absolute;
+    background-color: #333;
+    padding: 5px;
+    margin-top: 5px;
+    margin-left: -100px;
+}
+.storageContainer .storagePath:hover .tooltip {
+    display: block;
+}
+
+.storageContainer .sizeLine .right {
+    
+}
+
+.storageContainer .sizeLine .right {
+    right: -300px;
+    top: 20px;
+    position: absolute;
+}
+.storageContainer .sizeLine .right .rightItem {
+    display: inline-block;
+}
+.storageContainer .sizeLine .right .rightItem .itemImage {
+    display: inline-block;
+    margin-left: 30px;
+    height: 16px;
+    width: 16px;
+    margin-top: 0px;
+}
+.storageContainer .sizeLine .right .rightItem .itemText {
+    display: inline-block;
+    margin-left: 5px;
+    vertical-align: top;
+
+    color: rgba(255, 255, 255, 0.60);
+
+    leading-trim: both;
+
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
+}
+
+@media (max-width: 1299px) {
+    .storageContainer .sizeLine {
+        width: 100%;
+    }
+    .storageContainer .sizeLine .right {
+        position: static;
+        display: block;
+        width: 100%;
+        margin-top: 16px;
+        margin-left: -24px;
+    }
+    .storageContainer .sizeLine .storagePath {
+        display: block;
+        width: 100%;
+        margin-left: 4px;
+        max-width: unset;
+    }
+}
+
+.downloadFilterBar {
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+}
+
+.downloadFilterBar .filters {
+    width: 100%;
+    display: flex;
+    flex-grow: 1;
+    align-content: center;;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.downloadFilterBar .searchBar {
+    width: 100%;
+    display: flex;
+    flex-grow: 1;
+    position: relative;
+}
+.downloadFilterBar .viewTypes {
+    width: 100%;
+    display: flex;
+    flex-grow: 1;
+}
+
+.downloadFilterBar .searchBar img {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 14px;
+    left: 14px;
+}
+.downloadFilterBar .searchBar input {
+    width: 200px;
+    height: 32px;
+    margin-top: 4px;
+    padding-left: 40px;
+    padding-right: 8px;
+    align-items: center;
+    border-radius: 6px;
+    border: 1px solid #454545;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 22px; /* 157.143% */
+    background: #212121;
+    color: white;
+}
+
+
+.selectedButton {
+    height: 38px;
+    margin: 4px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    background: #141414;
+    border: 1px solid #2E2E2E;
+    color: white;
+
+    text-align: center;
+    leading-trim: both;
+
+    text-edge: cap;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.deleteButton {    
+    color: #F97066;
+    cursor: pointer;
+}
+
+.exportButton {
+    border: 1px solid #2E2E2E;
+
+    color: #D9D9D9;
+    cursor: pointer;
+}

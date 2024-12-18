@@ -1,0 +1,8 @@
+.containerTopBar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    flex-shrink: 0;
+    margin: 24px;
+}

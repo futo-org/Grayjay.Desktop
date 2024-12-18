@@ -1,0 +1,93 @@
+.containerPlaybackQueue {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+
+    padding-top: 32px;
+    padding-left: 12px;
+    box-sizing: border-box;
+}
+
+.title {
+    overflow: hidden;
+    color: #F0F0F0;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 20px; /* 83.333% */
+}
+
+.metadata {
+    overflow: hidden;
+    color: #8C8C8C;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+
+.itemNumber {
+    color: #8C8C8C;
+    text-align: center;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 18px; /* 150% */
+    flex-shrink: 0;
+    width: 27px;
+    cursor: pointer;
+}
+
+.itemNumber:hover {
+    color: #fff;
+}
+
+
+.itemTitle {
+    overflow: hidden;
+    color: #D9D9D9;
+    text-overflow: ellipsis;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 18px; /* 128.571% */
+    cursor: pointer;
+    height: 2.4em;
+}
+
+.itemAuthor {
+    color: #8C8C8C;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+}
+
+.itemDrag {
+    position: relative;
+}
+
+.itemDrag div {
+    transition: opacity 0.15s ease;
+    opacity: 1;
+}
+
+.itemDrag:hover div {
+    opacity: 0;
+}
+
+.itemDrag .iconDrag {
+    transition: opacity 0.15s ease;
+    opacity: 0;
+}
+
+.itemDrag:hover .iconDrag {
+    opacity: 1;
+}

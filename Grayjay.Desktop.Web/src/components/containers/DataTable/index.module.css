@@ -1,0 +1,92 @@
+.containerScroll {
+    overflow-y: auto;
+    height: 100%;
+    position: relative;
+    scrollbar-width: 8px;
+    scrollbar-color: #555 #333;
+    scrollbar-width: thin;
+}
+
+.containerScroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.containerScroll::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+.containerScroll::-webkit-scrollbar-track {
+    background-color: #333;
+}
+
+.containerScroll::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+table .header tr {
+    border-bottom: 0px !important;
+}
+table .header th {
+    background: #1B1B1B;
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+table .headers th:first-child{
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    overflow: hidden
+}
+table .headers th:last-child{
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    overflow: hidden
+}
+
+
+table tr {
+    max-height: 60px;
+    border-bottom: 1px solid #3b3939;
+    background: #141414;
+}
+table th {
+    overflow: hidden;
+    color: #D9D9D9;
+    text-overflow: ellipsis;
+    font-family: sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    text-align: left;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+table td {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+table td .tableImage {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+table td .tableImage img {
+    max-height: 50px;
+}
+
+.isClickable {
+    cursor: pointer;
+}

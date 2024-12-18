@@ -1,0 +1,134 @@
+
+.dialog {
+    position: relative;
+    min-width: 478px;
+    max-width: calc(100% - 300px);
+    padding: 32px 32px 32px 32px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    
+    border-radius: 12px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    box-shadow: 0px 1.167px 3.148px 0px rgba(0, 0, 0, 0.07), 0px 5.133px 6.519px 0px rgba(0, 0, 0, 0.12), 0px 12.6px 13px 0px rgba(0, 0, 0, 0.16), 0px 24.267px 25.481px 0px rgba(0, 0, 0, 0.19), 0px 40.833px 46.852px 0px rgba(0, 0, 0, 0.24), 0px 63px 80px 0px rgba(0, 0, 0, 0.31);
+}
+
+.icon {
+    width: 86px;
+    height: 86px;
+    margin-bottom: 16px;
+}
+
+.iconClose {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    right: 32px;
+    top: 32px;
+    cursor: pointer;
+}
+
+.title {
+    color: #FFF;
+    font-family: Inter;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    text-align: center;
+}
+.description {
+    color: #8C8C8C;
+
+    text-align: center;
+    leading-trim: both;
+
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    text-align: center;
+    margin-top: 20px;
+    white-space: pre-wrap;
+}
+
+
+.buttons {
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 8px;
+    width: 128px;
+    height: 48px;
+    flex: 1 0 0;
+    border-radius: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid #2E2E2E;
+    font-size: 16px;
+
+}
+.button.none {
+    color: #ffffff;
+}
+.button.primary {
+    background: #019BE7;
+}
+.button.accent {
+    background: #F97066;
+}
+
+.input {
+    margin: 8px;
+    margin-top: 44px;
+}
+
+.code {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    padding: 10px;
+    background-color: #1A1A1A;
+    border-radius: 6px;
+    border: 1px solid #444;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow: auto;
+    max-height: 300px;
+    text-align: left;
+}
+
+.addLabel {
+    margin-left: 10px;
+    
+    color: #FFF;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 140%; /* 22.4px */
+}
+
+.addButton {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -1,0 +1,42 @@
+
+
+.container {
+    width: 100%;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+.descriptor {
+    
+}
+.descriptor .title {
+    color: #FFF;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 24px; /* 133.333% */
+}
+.descriptor .description {
+    color: #8C8C8C;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 16px; /* 114.286% */
+}
+.value {
+    flex-grow: 1;
+    vertical-align: middle;
+    text-align: left;
+    align-self: center;
+    text-align: right;
+    margin-right: 10px;
+}

@@ -1,0 +1,384 @@
+.container {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+    background-size: 100% 300px;
+    background-repeat: no-repeat;
+    background-position: bottom;
+}
+
+.skipButton {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0,0,0,.7);
+    padding: 14px 25px;
+    border-radius: 30px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.progressBarInteractiveArea {
+    position: absolute;
+    bottom: 60px;
+    left: 24px;
+    right: 24px;
+    height: 4px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    z-index: 999;
+}
+.progressBarContainer {
+    position: absolute;
+    bottom: 73px;
+    left: 24px;
+    right: 24px;
+    height: 4px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.progressBarChapters {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+.progressBarChapter:last-child {
+    right: 0px !important;
+    width: auto !important;
+}
+.progressBarChapter {
+    position: absolute;
+    border-left: 2px solid rgba(0,0,0,.3);
+    border-right: 2px solid rgba(0,0,0,.3);
+    border-radius: 4px;
+    height: 8px;
+    margin-top: 1px
+}
+.progressBarChapter:hover {
+    border-left: 0px solid rgba(20,20,20,.8);
+    border-right: 0px solid rgba(20,20,20,.8);
+    margin-left: 2px;
+    border-radius: 2px;
+    height: 15px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: -2px;
+    background-color: #999999;
+}
+/*
+.progressBarChapter.hover {
+    border-left: 0px solid rgba(20,20,20,.8);
+    border-right: 0px solid rgba(20,20,20,.8);
+    margin-left: 2px;
+    border-radius: 2px;
+    height: 11px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: 0px;
+    background-color: #999999;
+}*/
+.progressBarChapter .hoverBar {
+    border-left: 0px solid rgba(20,20,20,.8);
+    border-right: 0px solid rgba(20,20,20,.8);
+    margin-left: 0px;
+    border-radius: 2px;
+    height: 10px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: -0.5px;
+    background-color: #999999;
+}
+.progressBarChapter .hoverBar.partial {
+    border-left: 0px solid rgba(20,20,20,.8);
+    border-right: 0px solid rgba(20,20,20,.8);
+    margin-left: 0px;
+    border-radius: 2px;
+    height: 8px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: 0px;
+    background-color: #999999;
+}
+.progressBarChapter .hoverBarPartial {
+    position: absolute;
+    top: 0px;
+    border-left: 0px solid rgba(20,20,20,.8);
+    border-right: 0px solid rgba(20,20,20,.8);
+    margin-left: 0px;
+    border-radius: 2px;
+    height: 10px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: -0.5px;
+    background-color: #999999;
+}
+.progressBarChapter .hoverBar.pastProgress {
+    background-color: #019BE7;
+}
+.progressBarChapter.hover.pastProgress {
+    background-color: #019BE7;
+}
+.progressBarChapter .label {
+    font-size: 11px;
+    text-wrap: nowrap;
+    white-space: nowrap;
+    position: absolute;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    top: -15px;
+    left: 0%;
+    width: 100%;
+    text-align: center;
+    display: none;
+}
+.progressBarChapter:hover .label {
+    display: block;
+    font-size: 11px;
+    text-wrap: nowrap;
+    white-space: nowrap;
+    position: absolute;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(0,0,0,.8);
+    border-radius: 5px;
+    padding: 10px;
+    top: -50px;
+    left: 50%;
+    width: auto;
+    text-align: center;
+    transform: translateX(-50%);
+}
+.progressBarChapter.hover .label {
+    display: block;
+    font-size: 11px;
+    text-wrap: nowrap;
+    white-space: nowrap;
+    position: absolute;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(0,0,0,.8);
+    border-radius: 5px;
+    padding: 10px;
+    top: -50px;
+    left: 50%;
+    width: auto;
+    text-align: center;
+    transform: translateX(-50%);
+}
+
+.volumeBar {
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    height: 4px;
+    width: 72px;
+    background-color: #999999;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.volumeBarInteractiveArea {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    height: 24px;
+    width: 92px;
+    cursor: pointer;
+}
+
+.volumeBarHandle {
+    position: absolute;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+    background-color: #ffffff;
+    box-shadow: 0px 32px 64px 0px rgba(0, 0, 0, 0.56), 0px 2px 21px 0px rgba(0, 0, 0, 0.55); 
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.volumeBarProgress {
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    height: 4px;
+    background-color: #ffffff;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.progressBar {
+    position: absolute;
+    bottom: 70px;
+    left: 24px;
+    right: 24px;
+    height: 4px;
+    background-color: #99999945;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.progressBarBuffer {
+    position: absolute;
+    bottom: 70px;
+    left: 24px;
+    height: 4px;
+    background-color: #D9D9D945;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.progressBarProgress {
+    position: absolute;
+    bottom: 70px;
+    left: 24px;
+    height: 4px;
+    background-color: #019BE7;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.progressBarHandle {
+    position: absolute;
+    bottom: 70px;
+    width: 20px;
+    height: 20px;
+    margin-left: -8px;
+    margin-bottom: -8px;
+    background-color: #019BE7;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.positionContainer {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+}
+
+
+.position {
+    margin-right: 10px;
+    vertical-align: bottom;
+}
+
+.duration {
+    opacity: 0.6;
+}
+.currentChapter {
+    margin-left: 8px;
+    opacity: 0.5;
+    width: auto;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.liveBadge {
+    background-color: red;
+    margin-top: -2px;
+    padding: 5px 5px;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+.plannedBadge {
+    background-color: #222;
+    padding: 5px 5px;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+
+.play {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.pause {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.volume {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.fullscreen {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.theatre {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.popout {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.cast {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.settings {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.leftButtonContainer {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    height: 24px;
+    width: calc(50% - 24px);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    overflow: hidden;
+}
+
+.buttonContainer {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    height: 24px;
+    width: calc(50% - 24px);
+    align-items: center;
+    overflow: hidden;
+    
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 24px;
+}
+
+.pauseArea {
+    position: absolute;
+    top:70px;
+    left: 0px;
+    width: 100%;
+    height: calc(100% - 200px);
+    #background-color: rgba(255,0,0,.5);
+}

@@ -1,0 +1,19 @@
+.containerTransparentButton {
+    width: 24px;
+    height: 24px;
+    background-color: #24242400;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.065);
+    display: flex;
+    flex-shrink: 0;
+}
+
+.containerTransparentButton:hover {
+    cursor: pointer;
+}
+
+.icon {
+    width: calc(100% - 24px);
+    height: calc(100% - 24px);
+    margin: 12px;
+}

@@ -1,0 +1,44 @@
+.container {
+    background-color: #ffffff0a;
+    border-radius: 6px;
+    padding-left: 40px;
+    padding-right: 40px;
+    font-weight: 600;
+    font-size: 20px;
+    align-items: center;
+    width: fit-content;
+    text-align: center;
+    box-sizing: border-box;
+    height: 48px;
+    display: flex;
+    text-align: center;
+    flex-direction: row;
+    justify-content: center;
+    box-sizing: border-box;
+
+    color: #EFF9FF;
+    text-align: center;
+    font-feature-settings: 'clig' off, 'liga' off;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 140%; /* 22.4px */
+}
+
+.container.small {
+    height: 42px;
+    font-size: 14px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.container:hover {
+    cursor: pointer;
+}
+
+.icon {
+    height: 22px;
+    width: 22px;
+    margin-right: 15px;
+}
