@@ -298,13 +298,13 @@ namespace Grayjay.ClientServer.Settings
         public class InfoData
         {
             [SettingsField("Version Code", SettingsField.READONLY, "", 1, "code")]
-            public string versionCode { get; } = "1";
+            public string versionCode { get; } = "2";
 
             [SettingsField("Verson Name", SettingsField.READONLY, "", 2)]
             public string versionName { get; } = "Desktop";
 
             [SettingsField("Version Type", SettingsField.READONLY, "", 3)]
-            public string versionType { get; } = "unstable";
+            public string versionType { get; } = "stable";
         }
 
 
