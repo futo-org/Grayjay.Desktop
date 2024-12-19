@@ -4,8 +4,9 @@ APP_NAME_BASE="Grayjay"
 BUNDLE_ID="com.futo.grayjay.desktop"
 APPLE_ID="koen@futo.org"
 TEAM_ID="2W7AC6T8T5"
-APP_CERT="Developer ID Application: FUTO Holdings, Inc. (2W7AC6T8T5)"
+#APP_CERT="Developer ID Application: FUTO Holdings, Inc. (2W7AC6T8T5)"
 #APP_CERT="Apple Development: junk@koenj.com (UPVRSKNGC9)"
+APP_CERT="Apple Development: Koen Jeukendrup (J5K3GQAZ67)"
 KEYCHAIN_PROFILE="GRAYJAY_PROFILE"
 
 build_sign_notarize() {
@@ -34,6 +35,7 @@ build_sign_notarize() {
     cp -a "$PUBLISH_PATH/libe_sqlite3.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/libsodium.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/ClearScriptV8.osx-x64.dylib" "$APP_NAME/Contents/MacOS"
+    cp -a "$PUBLISH_PATH/ClearScriptV8.osx-arm64.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/dotcefnative.app/Contents/MacOS/dotcefnative" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/wwwroot" "$APP_NAME/Contents/Resources/wwwroot"
 
@@ -75,23 +77,23 @@ build_sign_notarize() {
         exit 1
     fi
 
-    zip -r $ZIP_NAME $APP_NAME
+    #zip -r $ZIP_NAME $APP_NAME
 
-    echo "Submitting $ZIP_NAME for notarization using notarytool..."
-    xcrun notarytool submit "$ZIP_NAME" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --keychain-profile "$KEYCHAIN_PROFILE"
-    if [ $? -ne 0 ]; then
-        echo "Error: Notarization failed for $ZIP_NAME."
-        exit 1
-    fi
+    #echo "Submitting $ZIP_NAME for notarization using notarytool..."
+    #xcrun notarytool submit "$ZIP_NAME" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --keychain-profile "$KEYCHAIN_PROFILE"
+    #if [ $? -ne 0 ]; then
+    #    echo "Error: Notarization failed for $ZIP_NAME."
+    #    exit 1
+    #fi
 
-    echo "Stapling notarization ticket to the package..."
-    xcrun stapler staple "$APP_NAME"
-    if [ $? -ne 0 ]; then
-        echo "Error: Stapling failed for $APP_NAME."
-        exit 1
-    fi
+    #echo "Stapling notarization ticket to the package..."
+    #xcrun stapler staple "$APP_NAME"
+    #if [ $? -ne 0 ]; then
+    #    echo "Error: Stapling failed for $APP_NAME."
+    #    exit 1
+    #fi
 
-    echo "$APP_NAME is submitted for notarization."
+    #echo "$APP_NAME is submitted for notarization."
 }
 
 # Build front-end
@@ -101,7 +103,7 @@ rm -rf dist
 npm run build
 cd ../Grayjay.Desktop.CEF
 
-build_sign_notarize "osx-x64"
+#build_sign_notarize "osx-x64"
 build_sign_notarize "osx-arm64"
 
 echo "All builds complete."
