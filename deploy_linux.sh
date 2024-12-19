@@ -83,7 +83,7 @@ do
 	cd ../
 	rm -f Grayjay.Desktop-$runtime-v$version.zip
 	zip -r "Grayjay.Desktop-$runtime-v$version.zip" "Grayjay.Desktop-$runtime-v$version"
-	cp "Grayjay.Desktop-$runtime-v$version" "Grayjay.Desktop-$runtime.zip"
+	cp "Grayjay.Desktop-$runtime-v$version.zip" "Grayjay.Desktop-$runtime.zip"
 	cd publish
 	
 	outDir=$targetDir/$appName/$version/$runtime
