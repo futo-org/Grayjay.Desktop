@@ -20,9 +20,9 @@ namespace Grayjay.ClientServer
         public static string GetSelfExecutablePath()
         {
             if (OperatingSystem.IsWindows())
-                return Path.GetFileName("Grayjay.Desktop.CEF.exe");
+                return Path.GetFileName("Grayjay.exe");
             else if (OperatingSystem.IsLinux())
-                return Path.GetFileName("Grayjay.Desktop.CEF");
+                return Path.GetFileName("Grayjay");
             else if (OperatingSystem.IsMacOS())
                 return Path.GetFileName("../Grayjay.Desktop.app");
             else throw new NotImplementedException();
