@@ -545,7 +545,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                     var head = client.TryHead(url);
                     if (allowByteRangeDownload && GrayjaySettings.Instance.Downloads.ByteRangeDownload && head?.Headers?.ContainsKey("accept-ranges") == true && head?.Headers?.ContainsKey("content-length") == true)
                     {
-                        var concurrency = 1;// GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount();
+                        var concurrency = Math.Min(2, GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount()); //TODO: Temporary limit to 2 to prevent ratelimits
                         Logger.i(nameof(VideoDownload), $"Download {Video.Name} ByteRange Parallel ({concurrency})");
                         sourceLength = long.Parse(head.Headers["content-length"]);
                         onProgress?.Invoke(sourceLength, 0, 0);
