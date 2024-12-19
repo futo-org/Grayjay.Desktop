@@ -467,15 +467,20 @@ namespace Grayjay.ClientServer.Models.Downloads
             {
                 downloadTasks.Add(Task.Run(() =>
                 {
-                    var uri = SubtitleSourcetoUse.GetSubtitlesUri()!;
-                    if (uri.Scheme == "file")
-                        File.WriteAllText(SubtitleFilePath, File.ReadAllText(uri.AbsolutePath));
+                    if (SubtitleSourcetoUse is SubtitleRawSource sbrs)
+                        File.WriteAllText(SubtitleFilePath, sbrs.GetSubtitles());
                     else
                     {
-                        var resp = client.GET(SubtitleSource.Url, new Dictionary<string, string>());
-                        if (!resp.IsOk)
-                            throw new Exception("Failed to download subtitles.");
-                        File.WriteAllText(SubtitleFilePath, resp.Body.AsString());
+                        var uri = SubtitleSourcetoUse.GetSubtitlesUri()!;
+                        if (uri.Scheme == "file")
+                            File.WriteAllText(SubtitleFilePath, File.ReadAllText(uri.AbsolutePath));
+                        else
+                        {
+                            var resp = client.GET(SubtitleSource.Url, new Dictionary<string, string>());
+                            if (!resp.IsOk)
+                                throw new Exception("Failed to download subtitles.");
+                            File.WriteAllText(SubtitleFilePath, resp.Body.AsString());
+                        }
                     }
                 }));
             }
@@ -540,7 +545,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                     var head = client.TryHead(url);
                     if (allowByteRangeDownload && GrayjaySettings.Instance.Downloads.ByteRangeDownload && head?.Headers?.ContainsKey("accept-ranges") == true && head?.Headers?.ContainsKey("content-length") == true)
                     {
-                        var concurrency = GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount();
+                        var concurrency = 1;// GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount();
                         Logger.i(nameof(VideoDownload), $"Download {Video.Name} ByteRange Parallel ({concurrency})");
                         sourceLength = long.Parse(head.Headers["content-length"]);
                         onProgress?.Invoke(sourceLength, 0, 0);
@@ -700,9 +705,21 @@ namespace Grayjay.ClientServer.Models.Downloads
         private (byte[] data, long start, long end) RequestByteRange(ManagedHttpClient client, string url, long rangeStart, long rangeEnd)
         {
             var toRead = rangeEnd - rangeStart;
-            var req = client.GET(url, new Dictionary<string, string>() { { "range", $"bytes={rangeStart}-{rangeEnd}" } });
-            if (!req.IsOk)
-                throw new InvalidDataException($"Range request failed Code [{req.Code}] due to: {req.Body.ToString()}");
+            ManagedHttpClient.Response req = null;
+            for (int i = 0; i < 3; i++)
+            {
+                req = client.GET(url, new Dictionary<string, string>() { { "range", $"bytes={rangeStart}-{rangeEnd}" } });
+                if (!req.IsOk)
+                {
+                    if (i < 2)
+                    {
+                        Logger.w(nameof(VideoDownload), $"Range request failed code [{req.Code}] retrying");
+                        continue;
+                    }
+                    else
+                        throw new InvalidDataException($"Range request failed Code [{req.Code}] due to: {req.Body.AsString()}");
+                }
+            }
             if (req.Body == null)
                 throw new InvalidDataException($"Range request failed, no body");
             var read = req.ContentLength;

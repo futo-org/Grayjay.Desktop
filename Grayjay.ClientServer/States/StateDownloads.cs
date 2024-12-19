@@ -253,7 +253,12 @@ namespace Grayjay.ClientServer.States
                 else
                     Logger.e(nameof(StateDownloads), $"Failed download [{currentVideo.Video.Name}]: {ex.Message}", ex);
 
-                currentVideo.Error = ex.Message;
+                if(ex is AggregateException ex2)
+                {
+                    currentVideo.Error = ex.Message + "\n\n" + string.Join("\n\n", ex2.InnerExceptions.Select(x => x.Message));
+                }
+                else
+                    currentVideo.Error = ex.Message;
                 currentVideo.ChangeState(DownloadState.ERROR);
                 ignore.Add(currentVideo);
 

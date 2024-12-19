@@ -104,6 +104,20 @@ namespace Grayjay.ClientServer.Controllers
             if (existing != null)
                 return BadRequest("Already downloaded");
 
+            if(sourceSubtitle?.HasFetch ?? false)
+            {
+                try
+                {
+                    Logger.i(nameof(DownloadController), "Pre-fetching subtitles");
+                    SubtitleRawSource subtitle = sourceSubtitle.ToRaw();
+                    sourceSubtitle = subtitle;
+                }
+                catch(Exception ex)
+                {
+                    Logger.w(nameof(DownloadController), "Failed to pre-convert subtitles, they may still be fetched", ex);
+                }
+            }
+
             var download = StateDownloads.StartDownload(details, sourceVideo, sourceAudio, sourceSubtitle);
 
             StateDownloads.StartDownloadCycle();

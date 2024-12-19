@@ -79,6 +79,10 @@ namespace Grayjay.ClientServer.States
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
 
+            //On boot set all downloading to queued
+            foreach (var downloading in StateDownloads.GetDownloading())
+                downloading.ChangeState(Models.Downloads.DownloadState.QUEUE);
+
             Logger.i(nameof(StateApp), "Startup: Initializing PluginEncryptionProvider");
             PluginDescriptor.Encryption = new PluginEncryptionProvider();
 
