@@ -7,6 +7,17 @@ FUTO is an organization dedicated to developing, both through in-house engineeri
 For more elaborate showcase of features and downloads, check out the website.
 Website: https://grayjay.app/desktop/
 
+**NOTE for MacOS Users:** Our Apple signing/notarization is not entirely done yet, thus you have to run the following command once to run the application.
+```
+xattr -c ./Grayjay_osx-arm64.app
+
+```
+or
+```
+xattr -c ./Grayjay_osx-x64.app
+```
+
+
 ### Home
 Here you find the recommendations found on respective applications.
 
