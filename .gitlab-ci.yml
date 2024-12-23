@@ -3,6 +3,8 @@ variables:
   GIT_STRATEGY: clone
 
 stages:
+  - buildAndDeployUnstableWindows
+  - buildAndDeployUnstableLinux
   - buildAndDeployStableWindows
   - buildAndDeployStableLinux
 
