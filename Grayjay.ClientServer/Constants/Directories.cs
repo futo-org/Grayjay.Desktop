@@ -4,22 +4,6 @@ namespace Grayjay.ClientServer.Constants;
 
 public static class Directories
 {
-    private static readonly Lazy<string> _userDirectory = new Lazy<string>(() =>
-    {
-        string userDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string dir;
-
-        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
-            dir = Path.Combine(userDir, "Grayjay");
-        else if (OperatingSystem.IsMacOS())
-            dir = Path.Combine(userDir, "Library/Application Support", "Grayjay");
-        else
-            throw new NotImplementedException("Unknown operating system");
-
-        EnsureDirectoryExists(dir);
-        return dir;
-    });
-
     private static readonly Lazy<string> _baseDirectory = new Lazy<string>(() =>
     {
         string? assemblyFile = Assembly.GetEntryAssembly()?.Location;
@@ -31,7 +15,53 @@ public static class Directories
             dir = AppContext.BaseDirectory;
 
         if (!File.Exists(Path.Combine(dir, "Portable")) || OperatingSystem.IsMacOS())
-            dir = User;
+        {
+            string userDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (OperatingSystem.IsWindows())
+            {
+                string oldStyleDir = Path.Combine(userDir, "Grayjay");
+                if (Directory.Exists(oldStyleDir))
+                    dir = oldStyleDir;
+                else
+                {
+                    string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    dir = Path.Combine(appDataDir, "Grayjay");
+                }
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                string oldStyleDir = Path.Combine(userDir, "Grayjay");
+                if (Directory.Exists(oldStyleDir))
+                    dir = oldStyleDir;
+                else
+                {
+                    string localShareDir = Path.Combine(userDir, ".local", "share", "Grayjay");
+                    if (Directory.Exists(localShareDir))
+                        dir = localShareDir;
+                    else
+                    {
+                        string configDir = Path.Combine(userDir, ".config", "Grayjay");
+                        if (Directory.Exists(configDir))
+                            dir = configDir;
+                        else
+                            dir = oldStyleDir; // Fallback to old-style
+                    }
+                }
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                string oldStyleDir = Path.Combine(userDir, "Library/Application Support", "Grayjay");
+                dir = oldStyleDir;
+            }
+            else
+            {
+                throw new NotImplementedException("Unknown operating system");
+            }
+
+            EnsureDirectoryExists(dir);
+            // TODO: Allow users to choose their own directory?
+            return dir;
+        }
 
         EnsureDirectoryExists(dir);
         return dir;
@@ -43,8 +73,6 @@ public static class Directories
         EnsureDirectoryExists(dir);
         return dir;
     });
-
-    public static string User => _userDirectory.Value;
 
     public static string Base => _baseDirectory.Value;
 
