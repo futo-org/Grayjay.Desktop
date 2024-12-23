@@ -90,8 +90,8 @@ body:
       label: Are you using a VPN?
       multiple: false
       options:
-        - Yes
-        - No
+        - "Yes"
+        - "No"
     validations:
       required: true
 
