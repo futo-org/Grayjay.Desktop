@@ -71,6 +71,7 @@ import VideoThumbnailView from "../../content/VideoThumbnailView";
 import { IPlatformVideo } from "../../../backend/models/content/IPlatformVideo";
 import HorizontalScrollContainer from "../../containers/HorizontalScrollContainer";
 import HorizontalFlexibleArrayList from "../../containers/HorizontalFlexibleArrayList";
+import SideBar from "../../menus/SideBar";
 
 export interface SourceSelected {
     url: string;
@@ -1130,6 +1131,59 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             SyncBackend.sendToDevice(dev.publicKey, url, lastProgressPosition / 1000);
     }
 
+    const [sideBarHidden$, setSideBarHidden] = createSignal(true);
+    const [sideBarAutoHidden$, setSideBarAutoHidden] = createSignal(false);
+    let showSideBarTimeout: NodeJS.Timeout | undefined = undefined;
+    let hideSideBarTimeout: NodeJS.Timeout | undefined = undefined;
+    const clearShowSideBarTimeout = () => {
+        clearTimeout(showSideBarTimeout);
+        showSideBarTimeout = undefined;
+    };
+    const clearHideSideBarTimeout = () => {
+        clearTimeout(hideSideBarTimeout);
+        hideSideBarTimeout = undefined;
+    };
+    const resetHideSideBarTimeout = () => {
+        clearHideSideBarTimeout();
+        hideSideBarTimeout = setTimeout(() => {
+            setSideBarHidden(true);
+            clearShowSideBarTimeout();
+            setSideBarAutoHidden(true);
+        }, 3000);
+    };
+    const handleSideBarMove = () => {
+        if (!sideBarHidden$()) {
+            resetHideSideBarTimeout();
+        }
+
+        if (showSideBarTimeout) {
+            return;
+        }
+
+        showSideBarTimeout = setTimeout(() => {
+            batch(() => {
+                setSideBarHidden(false);
+                clearShowSideBarTimeout();
+                resetHideSideBarTimeout();
+            });
+        }, 350);
+    };
+    const handleSideBarMouseLeave = () => {
+        batch(() => {
+            setSideBarHidden(true);
+            clearShowSideBarTimeout();
+            clearHideSideBarTimeout();
+            setSideBarAutoHidden(false);
+        });
+    };
+
+    const videoState = video?.state;
+    if (videoState) {
+        createEffect(on(videoState, () => {
+            setSideBarHidden(true);
+        }));
+    }
+
     const renderRecommendation = (item: Accessor<IPlatformVideo>) => {
         const bestThumbnail = createMemo(() => {
             const v = item();
@@ -1165,8 +1219,12 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             "height": isMinimized() ? `${minimizedHeight()}px` : undefined,
             "width": isMinimized() ? `${minimizedWidth()}px` : undefined,
             //"transition": transition(),
-            "display": video?.state() === VideoState.Maximized || video?.state() === VideoState.Minimized ? "flex" : "none"
+            "display": video?.state() === VideoState.Maximized || video?.state() === VideoState.Minimized ? "flex" : "none",
+            "flex-direction": "row"
         }} classList={{ [styles.minimized]: isMinimized() }}>
+            <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Standard}>
+                <SideBar alwaysMinimized={true} onNavigate={() => minimize()}></SideBar>
+            </Show>
             <ScrollContainer ref={scrollContainerRef} scrollToTopButton={true} style={{ 
                 "overflow-y": isMinimized() ? "hidden" : "scroll", 
                 width: video?.state() === VideoState.Maximized ? "100vw" : undefined
@@ -1246,6 +1304,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 if (video?.state() === VideoState.Maximized) {
                                     minimize();
                                 }
+                            }}
+                            handleMinimize={() => {
+                                minimize();
                             }}
                             leftButtonContainerStyle={isMinimized() ? {
                                 "width": "calc(100% - 48px)"
@@ -1667,6 +1728,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             </ScrollContainer>
                         </div>
                     </Show>
+                </div>
+            </Show>
+            <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Theatre}>
+                <div style={{ "position": "absolute", "left": "0px", "top": "0px", "z-index": 2, "width": sideBarHidden$() ? "10px" : undefined, "cursor": sideBarAutoHidden$() && sideBarHidden$() ? "none" : undefined }} onMouseMove={handleSideBarMove} onMouseLeave={handleSideBarMouseLeave}>
+                    <SideBar alwaysMinimized={true} onNavigate={() => minimize()} style={{ "transition": "transform 0.3s ease-in-out" }} classList={{ [styles.sideBarHidden]: sideBarHidden$() }}></SideBar>
                 </div>
             </Show>
         </div>

@@ -50,6 +50,7 @@ export interface VideoContextValue {
         setDesiredMode: (mode: VideoMode) => void;
         setTheatrePinned: (pinned: boolean) => void;
         setVolume: (volume: number) => void;
+        setStartTime: (startTime: Duration | undefined) => void;
     }
 };
 
@@ -187,7 +188,8 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setDesiredMode,
             setTheatrePinned,
             setVolume,
-            refetchWatchLater
+            refetchWatchLater,
+            setStartTime
         }
     };
 

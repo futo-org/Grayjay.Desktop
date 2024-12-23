@@ -178,7 +178,6 @@ namespace Grayjay.Desktop
             Console.SetError(new SuppressingTextWriter(Console.Error));
 
             Logger.i(nameof(Directories), $"Base Directory: {Directories.Base}");
-            Logger.i(nameof(Directories), $"User Directory: {Directories.User}");
             Logger.i(nameof(Directories), $"Temporary Directory: {Directories.Temporary}");
             Logger.i(nameof(Directories), $"Log file path: {Directories.Base}/log.txt");
 

@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -35,8 +35,14 @@ import Globals from '../../../globals';
 import StateGlobal from '../../../state/StateGlobal';
 import { createResourceDefault } from '../../../utility';
 
+export interface SideBarProps {
+  alwaysMinimized?: boolean;
+  classList?: { [k: string]: boolean | undefined; };
+  style?: JSX.CSSProperties;
+  onNavigate?: (path: string) => void;
+};
 
-const SideBar: Component = () => {
+const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const video = useVideo();
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,8 +50,8 @@ const SideBar: Component = () => {
     replace: true
   };
 
-  const [canToggleCollapse, setCanToggleCollapse] = createSignal(true);
-  const [collapsed, setCollapsed] = createSignal(false);
+  const [canToggleCollapse, setCanToggleCollapse] = createSignal(props.alwaysMinimized === true ? false : true);
+  const [collapsed, setCollapsed] = createSignal(props.alwaysMinimized === true);
   let wasAutoCollapsed = false;
   const handleCollapse = () => {
     setCollapsed(!collapsed());
@@ -65,6 +71,10 @@ const SideBar: Component = () => {
   });
 
   const handleResize = () => {
+    if (props.alwaysMinimized === true) {
+      return;
+    }
+
     batch(() => {
       if (window.innerWidth < 1200) {
         if (!collapsed()) {
@@ -92,8 +102,13 @@ const SideBar: Component = () => {
     window.removeEventListener('resize', handleResize);
   });
 
+  const navigateTo = (to: string, options: Partial<NavigateOptions>) => {
+    props.onNavigate?.(to); 
+    navigate(to, options);
+  }
+
   return (
-    <div class={styles.sidebar} classList={{ [styles.collapsed]: collapsed() }}>
+    <div class={styles.sidebar} style={props.style} classList={{ [styles.collapsed]: collapsed(), ... props.classList }}>
       <div class={styles.buttonList}>
         <div class={styles.containerCollapse}>
           <Show when={canToggleCollapse()}>
@@ -118,17 +133,17 @@ const SideBar: Component = () => {
             </div>
           </Show>
         </div>
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/home", options)} icon={home} name="Home" selected={location.pathname === "/web/home" || location.pathname === "/web/index.html"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/subscriptions", options)} icon={subscriptions} name="Subscriptions" selected={location.pathname === "/web/subscriptions"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/creators", options)} icon={creators} name="Creators" selected={location.pathname === "/web/creators"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/playlists", options)} icon={playlists} name="Playlists" selected={location.pathname === "/web/playlists"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/home", options)} icon={home} name="Home" selected={location.pathname === "/web/home" || location.pathname === "/web/index.html"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/subscriptions", options)} icon={subscriptions} name="Subscriptions" selected={location.pathname === "/web/subscriptions"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/creators", options)} icon={creators} name="Creators" selected={location.pathname === "/web/creators"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/playlists", options)} icon={playlists} name="Playlists" selected={location.pathname === "/web/playlists"} />
         <Show when={video?.watchLater()?.length}>
-          <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/watchLater", options)} icon={iconWatchLater} name="Watch Later" selected={location.pathname === "/web/watchLater"} />
+          <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/watchLater", options)} icon={iconWatchLater} name="Watch Later" selected={location.pathname === "/web/watchLater"} />
         </Show>
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/sources", options)} icon={iconSources} name="Sources" selected={location.pathname === "/web/sources"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/downloads", options)} icon={download} name="Downloads" selected={location.pathname === "/web/downloads"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/history", options)} icon={history} name="History" selected={location.pathname === "/web/history"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/sync", options)} icon={iconSync} name="Sync" selected={location.pathname === "/web/sync"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sources", options)} icon={iconSources} name="Sources" selected={location.pathname === "/web/sources"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/downloads", options)} icon={download} name="Downloads" selected={location.pathname === "/web/downloads"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/history", options)} icon={history} name="History" selected={location.pathname === "/web/history"} />
+        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sync", options)} icon={iconSync} name="Sync" selected={location.pathname === "/web/sync"} />
         <SideBarButton collapsed={collapsed()} onClick={() => WindowBackend.startWindow()} icon={iconPlus} name="New Window" selected={false} />
         
       </div>

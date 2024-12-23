@@ -30,6 +30,7 @@ export interface PlayerControlsProps {
     onSetVolume?: (volume: number) => void;
     handleFullscreen?: () => void;
     handleEscape?: () => void;
+    handleMinimize?: () => void;
     handlePause?: ()=>void;
     handlePlay?: ()=>void;
     handleTheatre?: () => void;
@@ -349,6 +350,11 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             case "ArrowRight":
             case "ArrowLeft":
                 stopSkipping();
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "i":
+                props.handleMinimize?.();
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;

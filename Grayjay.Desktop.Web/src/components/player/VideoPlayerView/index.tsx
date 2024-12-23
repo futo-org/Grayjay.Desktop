@@ -33,6 +33,7 @@ interface VideoProps {
     onIsPlayingChanged?: (isPlaying: boolean) => void;
     handleTheatre?: () => void;
     handleEscape?: () => void;
+    handleMinimize?: () => void;
     onSetScrubbing?: (scrubbing: boolean) => void;
     lockOverlay: boolean;
     ref?: (el: HTMLDivElement) => void;
@@ -946,6 +947,17 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }
     };
 
+    const handleMinimize = () => {
+        const isFs = untrack(isFullscreen);
+        if (isFs) {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+            props.handleMinimize?.();
+        } else {
+            props.handleMinimize?.();
+        }
+    };
+
     //TODO: on mouse holding mouse down, fast forward the video until mouse goes up (starting after 1 second)
     //TODO: Skip a single frame using the , and . buttons
 
@@ -1026,6 +1038,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     handleSettingsMenu={props.onSettingsDialog}
                     handleTheatre={props.handleTheatre}
                     handleEscape={handleEscape}
+                    handleMinimize={handleMinimize}
                     eventMoved={props.eventMoved}
                     buttons={props.buttons}
                     leftButtonContainerStyle={props.leftButtonContainerStyle}
