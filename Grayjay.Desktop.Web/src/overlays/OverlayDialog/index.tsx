@@ -136,7 +136,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
           <img src={props.dialog?.icon} class={styles.icon} />
         </Show>
         <img src={icon_close} class={styles.iconClose} onClick={() => UIOverlay.dismiss()} />
-        <div class={styles.title}>
+        <div class={styles.title} style="padding-right: 25px;">
           {props.dialog!.title}
         </div>
         <div class={styles.description}>

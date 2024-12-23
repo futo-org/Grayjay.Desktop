@@ -185,7 +185,12 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
             </Show>
             <Show when={!!sourceResource$()?.config?.authentication}>
               <Show when={!sourceResource$()?.hasLoggedIn}>
-                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login' onClick={()=>login(sourceResource$()!.config.id)}></Button>
+                <Show when={StateGlobal.settings$()?.object?.info?.mode == "Server"}>
+                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px", "opacity": 0.5}} text='Login (Unavailable in Server Mode)'></Button>
+                </Show>
+                <Show when={StateGlobal.settings$()?.object?.info?.mode != "Server"}>
+                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login' onClick={()=>login(sourceResource$()!.config.id)}></Button>
+                </Show>
               </Show>
               <Show when={!!sourceResource$()?.hasLoggedIn}>
                 <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Logout' onClick={()=>logout(sourceResource$()!.config.id)}></Button>

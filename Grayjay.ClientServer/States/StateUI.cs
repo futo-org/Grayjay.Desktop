@@ -286,7 +286,7 @@ namespace Grayjay.ClientServer.Controllers
         public static async Task<bool> ShowCaptchaWindow(PluginConfig config, ScriptCaptchaRequiredException ex, Action<bool> onCompleted = null)
         {
             if (GrayjayServer.Instance?.WindowProvider == null)
-                throw new NotImplementedException("No WindowProvider set");
+                throw new NotImplementedException("Running headless, captcha only supported in UI application mode");
 
             var descriptor = StatePlugins.GetPlugin(config.ID);
             var pluginConfig = descriptor.Config;

@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Grayjay.Desktop.POC;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
-using System.Text.Json;
 
 namespace Grayjay.ClientServer
 {
@@ -47,6 +47,38 @@ namespace Grayjay.ClientServer
                 return null;
             }
         }
+        public static string GetUpdaterConfigPath()
+        {
+            string fileName = "UpdaterConfig.json";
+
+            if (File.Exists(fileName))
+            {
+                return Path.GetFullPath(fileName);
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public class UpdaterConfig
+        {
+            public string Server { get; set; }
+            public int Version { get; set; }
+
+            public bool HasValidServer => !string.IsNullOrEmpty(Server);
+        }
+        public static UpdaterConfig GetUpdaterConfig()
+        {
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<UpdaterConfig>(File.ReadAllText(GetUpdaterConfigPath()));
+            }
+            catch(Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get updater config", ex);
+                return null;
+            }
+        }
 
         public static void Update(int[] processIds, int version = -1)
         {
@@ -79,6 +111,57 @@ namespace Grayjay.ClientServer
                     return false;
                 default:
                     return false;
+            }
+        }
+
+        public static int GetTargetVersion()
+        {
+            try
+            {
+                var config = GetUpdaterConfig();
+                if (config == null || string.IsNullOrEmpty(config.Server))
+                    return -1;
+                if (config.Version > 0)
+                    return config.Version;
+                using(WebClient client = new WebClient())
+                    return int.Parse(client.DownloadString(config.Server + "/VersionLast.json"));
+            }
+            catch(Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get last version", ex);
+                return -1;
+            }
+        }
+        public class Changelog
+        {
+            public string Version { get; set; }
+            public string Text { get; set; }
+
+            public Changelog(string version, string text)
+            {
+                Version = version;
+                Text = text;
+            }
+        }
+        public static Changelog GetTargetChangelog()
+        {
+            try
+            {
+                var config = GetUpdaterConfig();
+                if (config == null || !config.HasValidServer)
+                    return null;
+                var targetVersion = GetTargetVersion();
+                if (targetVersion <= 0)
+                    return null;
+                using(WebClient client = new WebClient())
+                {
+                    return new Changelog(targetVersion.ToString(), client.DownloadString(config.Server + $"/{targetVersion}/linux-x64/Changelogs/{targetVersion}.txt"));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get changelog", ex);
+                return null;
             }
         }
 

@@ -30,7 +30,11 @@ export interface StateGlobal {
 function createState() {
     console.log("Initializing Global");
 
-    const [settings$, settingsResource] = createResourceDefault(async () => await SettingsBackend.settings());
+    const [settings$, settingsResource] = createResourceDefault(async () => {
+        const settings = await SettingsBackend.settings();
+        console.log("New Settings:", settings);
+        return settings;
+    });
     const [sources$, sourcesResource] = createResourceDefault(async () => await SourcesBackend.sources());
     const [sourceStates$, sourceStatesResource] = createResourceDefault(async () => await SourcesBackend.sourceStates());
     const [lastHomeTime$, setLastHomeTime] = createSignal<DateTime>();

@@ -1,4 +1,5 @@
 ﻿using Grayjay.ClientServer.Dialogs;
+using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
@@ -33,6 +34,9 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<bool> ImportZip()
         {
+            if (GrayjayServer.Instance.ServerMode)
+                throw DialogException.FromException("Import not supported in server-mode", new Exception("For import support, run the application in ui mode, server support might be added at a later time"));
+
             var file = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowFileDialogAsync([ 
                 ("Zip (*.zip)", "*.zip") 
             ]);

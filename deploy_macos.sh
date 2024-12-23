@@ -3,7 +3,12 @@
 #THIS IS FULLY NOT CORRECT YET
 
 targetDir="/var/www/html/Apps"
-appName="Grayjay.Desktop"
+if [[ "$3" != "" ]]; then
+   appName="$3"
+else
+   echo -n "AppName:"
+   read appName
+fi
 
 SSH_KEY_PRIV_FILE="/tmp/deploy_key"
 echo "$SSH_KEY_PRIV" | base64 -d > $SSH_KEY_PRIV_FILE

@@ -73,7 +73,9 @@ namespace Grayjay.ClientServer.Controllers
         public async Task<bool> SourceLogin(string id)
         {
             if (GrayjayServer.Instance?.WindowProvider == null)
-                throw new NotImplementedException("No WindowProvider set");
+            {
+                throw new NotImplementedException("Running headless, login only supported in UI application mode");
+            }
 
             var descriptor = StatePlugins.GetPlugin(id);
             var pluginConfig = descriptor.Config;

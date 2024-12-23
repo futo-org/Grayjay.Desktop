@@ -24,15 +24,19 @@ namespace Grayjay.ClientServer
 
         public IWindowProvider WindowProvider { get; private set; }
         public IWindowProvider GetWindowProviderOrThrow() => WindowProvider ?? throw new InvalidOperationException("No WindowProvider set");
+        public bool ServerMode = true;
+        public bool HeadlessMode = true;
 
         public WebSocketEndpoint WebSocket { get; private set; } = new WebSocketEndpoint("/ws");
         public ManualResetEventSlim StartedResetEvent = new ManualResetEventSlim(false);
         public Uri? BaseUri { get; private set; } = null;
         public string? BaseUrl { get; private set; } = null;
 
-        public GrayjayServer(IWindowProvider windowProvider = null)
+        public GrayjayServer(IWindowProvider windowProvider = null, bool isHeadlessMode = false, bool isServerMode = false)
         {
             WindowProvider = windowProvider;
+            HeadlessMode = isHeadlessMode;
+            ServerMode = isServerMode;
             Instance = this;
         }
 
@@ -43,7 +47,10 @@ namespace Grayjay.ClientServer
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
-                serverOptions.Listen(IPAddress.Loopback, 0);
+                if (ServerMode)
+                    serverOptions.Listen(IPAddress.Any, 11338);
+                else
+                    serverOptions.Listen(IPAddress.Loopback, 0);
             });
 
             builder.Services

@@ -195,6 +195,9 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<bool> ChangeDownloadDirectory(string directory)
         {
+            if (GrayjayServer.Instance.ServerMode)
+                throw DialogException.FromException("Download directory change not supported in server-mode", new Exception("For changing download directory, run the application in ui mode, server support might be added at a later time"));
+
             string dir = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowDirectoryDialogAsync();
             if (!string.IsNullOrEmpty(dir))
             {
@@ -207,6 +210,9 @@ namespace Grayjay.ClientServer.Controllers
         [HttpPost]
         public async Task<IActionResult> ExportDownloads([FromBody] PlatformID[] ids)
         {
+            if (GrayjayServer.Instance.ServerMode)
+                throw DialogException.FromException("Export not supported in server-mode", new Exception("For export support, run the application in ui mode, server support might be added at a later time"));
+
             var downloads = ids.Select(x => StateDownloads.GetDownloadedVideo(x))
                 .Where(x=>x.Video != null)
                 .ToArray();
@@ -268,6 +274,9 @@ namespace Grayjay.ClientServer.Controllers
         [HttpPost]
         public async Task<IActionResult> ExportDownload([FromBody] PlatformID id)
         {
+            if (GrayjayServer.Instance.ServerMode)
+                throw DialogException.FromException("Export not supported in server-mode", new Exception("For export support, run the application in ui mode, server support might be added at a later time"));
+
             var download = StateDownloads.GetDownloadedVideo(id);
             if (download != null && download.Video != null)
             {

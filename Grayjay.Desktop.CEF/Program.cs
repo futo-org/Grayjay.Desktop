@@ -167,6 +167,8 @@ namespace Grayjay.Desktop
 
         static async Task Main(string[] args)
         {
+            bool isHeadless = args?.Contains("--headless") ?? false;
+            bool isServer = args?.Contains("--server") ?? false;
 #if DEBUG
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsAPI.AllocConsole();
@@ -272,25 +274,32 @@ namespace Grayjay.Desktop
             Logger.i(nameof(Program), "Extra args: " + extraArgs);
 
             Logger.i(nameof(Program), "Main: Starting DotCefProcess");
-            using var cef = new DotCefProcess();
-            cef.OutputDataReceived += (msg) =>
+            using var cef = !isServer ? new DotCefProcess() : null;
+            if (cef != null)
             {
-                if (msg != null && ShowCefLogs)
-                    Logger.i("CEF", msg);
-            };
-            cef.ErrorDataReceived += (msg) =>
-            {
-                if (msg != null && ShowCefLogs)
-                    Logger.e("CEF", msg);
-            };
-            if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
-                cef.Start("--disable-web-security " + extraArgs);
-            else
-                cef.Start("--disable-web-security --use-views " + extraArgs);
+                cef.OutputDataReceived += (msg) =>
+                {
+                    if (msg != null && ShowCefLogs)
+                        Logger.i("CEF", msg);
+                };
+                cef.ErrorDataReceived += (msg) =>
+                {
+                    if (msg != null && ShowCefLogs)
+                        Logger.e("CEF", msg);
+                };
+
+                if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+                    cef.Start("--disable-web-security " + extraArgs);
+                else
+                    cef.Start("--disable-web-security --use-views " + extraArgs);
+            }
             Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({watch.ElapsedMilliseconds}ms)");
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            GrayjayServer server = new GrayjayServer(new CEFWindowProvider(cef));
+            GrayjayServer server = new GrayjayServer((!isServer && cef != null ? 
+                    new CEFWindowProvider(cef) : null), 
+                isHeadless, 
+                isServer);
             _ = Task.Run(async () => 
             {
                 try
@@ -308,10 +317,13 @@ namespace Grayjay.Desktop
             Logger.i(nameof(Program), "Main: Starting window.");
             //TODO: Device scale
             //double scale = 1.5;
-            var window = cef.CreateWindowAsync("about:blank", ((int)(900)), ((int)(500)), ((int)(1300)), ((int)(900)), title: "Grayjay", iconPath: Path.GetFullPath("grayjay.png")).Result;
-            await window.SetDevelopmentToolsEnabledAsync(true);
-            Logger.i(nameof(Program), $"Main: Starting window finished ({watch.ElapsedMilliseconds}ms)");
-
+            DotCefWindow window = null;
+            if (cef != null && !isHeadless && !isServer)
+            {
+                window = cef.CreateWindowAsync("about:blank", ((int)(900)), ((int)(500)), ((int)(1300)), ((int)(900)), title: "Grayjay", iconPath: Path.GetFullPath("grayjay.png")).Result;
+                await window.SetDevelopmentToolsEnabledAsync(true);
+                Logger.i(nameof(Program), $"Main: Starting window finished ({watch.ElapsedMilliseconds}ms)");
+            }
             watch.Restart();
             Logger.i(nameof(Program), "Main: Waiting for ASP to start.");
             server.StartedResetEvent.Wait();
@@ -325,7 +337,10 @@ namespace Grayjay.Desktop
             Logger.i<Program>("Created PortFile, removed StartingUpFile");
 
             Logger.i(nameof(Program), "Main: Navigate.");
-            await window.LoadUrlAsync($"{server.BaseUrl}/web/index.html");
+            if (window != null)
+                await window.LoadUrlAsync($"{server.BaseUrl}/web/index.html");
+            else if (!isServer)
+                OSHelper.OpenUrl($"{server.BaseUrl}/web/index.html");
 
             watch.Stop();
 
@@ -346,17 +361,20 @@ namespace Grayjay.Desktop
                 {
                     var hasUpdates = Updater.HasUpdate();
                     Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
-                    if (hasUpdates)
+                    if (hasUpdates || true)
                     {
                         var processIds = new int[]
                         {
                             Process.GetCurrentProcess().Id
                         };
+                        var changelog = Updater.GetTargetChangelog();
+
                         Thread.Sleep(1500);
                         StateUI.Dialog(new StateUI.DialogDescriptor()
                         {
-                            Text = "A new update is available for Grayjay Desktop",
+                            Text = $"A new update is available for Grayjay Desktop {(changelog != null ? $"(v{changelog.Version})" : "")}",
                             TextDetails = "Would you like to install the new update?\nGrayjay.Desktop will close during updating.",
+                            Code = changelog?.Text,
                             Actions = new List<StateUI.DialogAction>()
                             {
                                 new StateUI.DialogAction("Ignore", () =>
@@ -382,9 +400,13 @@ namespace Grayjay.Desktop
             }).Start();
 
             Logger.i(nameof(Program), "Main: Waiting for window exit.");
-            await window.WaitForExitAsync(cancellationTokenSource.Token);
+            if (window != null)
+                await window.WaitForExitAsync(cancellationTokenSource.Token);
+            else
+                cancellationTokenSource.Token.WaitHandle.WaitOne();
             File.Delete(PortFile);
             cancellationTokenSource.Cancel();
+            if(cef != null)
             cef.Dispose();
             await server.StopServer();
 

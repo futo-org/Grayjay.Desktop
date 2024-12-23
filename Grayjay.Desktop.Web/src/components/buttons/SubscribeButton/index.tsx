@@ -43,7 +43,7 @@ const SubscribeButton: Component<SubscribeButtonProps> = (props) => {
     return (
         <Switch>
             <Match when={!isSubscribing$() && (isSubscribed$() === true || (isSubscribed$() === undefined && props.isSubscribedInitialState === true))}>
-                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Unubscribe" color="#2E2E2E" onClick={ () => {
+                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Unsubscribe" color="#2E2E2E" onClick={ () => {
                     const url = props.author;
                     if (url)
                         unsubscribe(url);
