@@ -343,3 +343,7 @@
 .recommendationMetadata {
 
 }
+
+.sideBarHidden {
+    transform: translateX(-100%);
+}
