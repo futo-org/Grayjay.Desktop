@@ -1,6 +1,8 @@
 Features:
  - Headless mode (--headless): Allow you to use Grayjay from your browser instead, while still allowing system, login, and captcha dialogs. (Assumes local)
  - Changelog support
+ - Hotkey (i) now minimizes the player alongside esc
+ - Sidebar on left side of video (hover left if in theater mode)
 
  - Server mode (--server): Allows you to use Grayjay from a server in your browser, binds to all ips, DISABLES system, login, and captcha dialogs. (Assumes remote)
    WARNING: Server mode is still intended single-user, and has no security features built in yet, so not really intended to use yet unless you know what you're doing!
