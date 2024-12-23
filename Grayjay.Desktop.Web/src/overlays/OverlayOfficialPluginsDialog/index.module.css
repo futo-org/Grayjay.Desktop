@@ -3,11 +3,15 @@
 .container {
     width: 500px;
     position: relative;
+    max-height: calc(100vh - 40px);
     padding-top: 20px;
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 20px;
     border-radius: 12px;
+    scrollbar-color: #555 #333;
+    scrollbar-width: thin;
+    overflow-y: auto;
     border: 1px solid #2E2E2E;
     background: #141414;
     box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
