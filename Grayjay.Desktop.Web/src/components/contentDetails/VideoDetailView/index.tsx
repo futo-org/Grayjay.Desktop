@@ -1305,6 +1305,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     minimize();
                                 }
                             }}
+                            handleMinimize={() => {
+                                minimize();
+                            }}
                             leftButtonContainerStyle={isMinimized() ? {
                                 "width": "calc(100% - 48px)"
                             } : {}}
