@@ -17,6 +17,7 @@ import { ChapterType, IChapter } from "../../../backend/models/contentDetails/IC
 import { IPlatformVideoDetails } from "../../../backend/models/contentDetails/IPlatformVideoDetails";
 
 export interface PlayerControlsProps {
+    controlEventContainer: HTMLElement | undefined
     duration: Duration;
     position: Duration;
     positionBuffered: Duration;
@@ -217,8 +218,10 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     });
 
     onMount(() => {
-        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keydown", handleGlobalKeyDown);
         document.addEventListener("keyup", handleKeyUp);
+
+        props.controlEventContainer?.addEventListener("keydown", handleVideoKeyDown)
 
         resizeObserver.observe(containerRef!);
         props.eventMoved?.register(() => {
@@ -227,8 +230,11 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     });
 
     onCleanup(() => {
-        document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keydown", handleGlobalKeyDown);
         document.removeEventListener("keyup", handleKeyUp);
+
+        props.controlEventContainer?.removeEventListener("keydown", handleVideoKeyDown)
+
         resizeObserver.unobserve(containerRef!);
         props.eventMoved?.unregister(this);
         resizeObserver.disconnect();
@@ -277,14 +283,8 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         props.onSetPosition?.(Duration.fromMillis(position));
     };
 
-    const handleKeyDown = (ev: KeyboardEvent) => {
-        const target = ev.target as any;
-        if (target) {
-            const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
-            if (isInputField) {
-                return;
-            }
-        }
+    const handleGlobalKeyDown = (ev: KeyboardEvent) => {
+        if (targetIsInput(ev)) return
 
         switch (ev.key) {
             case " ":
@@ -304,16 +304,6 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 break;
             case "ArrowLeft":
                 startSkipping(-1);
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
-            case "ArrowUp":
-                props.onSetVolume?.(Math.min((props.volume ?? 0) + 0.1, 1));
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
-            case "ArrowDown":
-                props.onSetVolume?.(Math.max((props.volume ?? 0) - 0.1, 0));
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
@@ -345,6 +335,23 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         }
     };
 
+    const handleVideoKeyDown = (ev: KeyboardEvent) => {
+        if (targetIsInput(ev)) return
+
+        switch (ev.key) {
+            case "ArrowUp":
+                props.onSetVolume?.(Math.min((props.volume ?? 0) + 0.1, 1));
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "ArrowDown":
+                props.onSetVolume?.(Math.max((props.volume ?? 0) - 0.1, 0));
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+        }
+    };
+
     const handleKeyUp = (ev: KeyboardEvent) => {
         switch (ev.key) {
             case "ArrowRight":
@@ -365,6 +372,12 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 break;
         }
     };
+
+    const targetIsInput = (event: Event) => {
+        const target = event.target as any;
+    
+        return !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
+    }
 
     let startSkippingTimeout: NodeJS.Timeout | undefined;
     let skipInterval: NodeJS.Timeout | undefined;
