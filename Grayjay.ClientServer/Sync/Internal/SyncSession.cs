@@ -66,7 +66,7 @@ public class SyncSession : IAuthorizable, IDisposable
         socketSession.Authorizable = this;
     }
 
-    public void Authorize(SyncSocketSession? socketSession = null)
+    public async Task AuthorizeAsync(SyncSocketSession? socketSession = null, CancellationToken cancellationToken = default)
     {
         if (socketSession == null)
         {
@@ -78,12 +78,12 @@ public class SyncSession : IAuthorizable, IDisposable
 
         Logger.i<SyncSession>($"Sent AUTHORIZED with session id {_id}");
         var str = _id.ToString();
-        socketSession.Send(Opcode.NOTIFY_AUTHORIZED, 0, Encoding.UTF8.GetBytes(str));
+        await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, Encoding.UTF8.GetBytes(str), cancellationToken: cancellationToken);
         _authorized = true;
         CheckAuthorized();
     }
 
-    public void Unauthorize(SyncSocketSession? socketSession = null)
+    public async Task UnauthorizeAsync(SyncSocketSession? socketSession = null, CancellationToken cancellationToken = default)
     {
         if (socketSession == null)
         {
@@ -93,7 +93,7 @@ public class SyncSession : IAuthorizable, IDisposable
             }
         }
 
-        socketSession.Send(Opcode.NOTIFY_UNAUTHORIZED);
+        await socketSession.SendAsync(Opcode.NOTIFY_UNAUTHORIZED, cancellationToken: cancellationToken);
     }
 
     private void CheckAuthorized()
@@ -166,17 +166,41 @@ public class SyncSession : IAuthorizable, IDisposable
     }
 
 
-    public void Send(byte opcode, byte subOpcode, byte[] data)
+    public async Task SendAsync(byte opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
     {
-        var connection = _socketSessions.FirstOrDefault();
-        if (connection != null)
-            connection.Send(opcode, subOpcode, data);
-        else
-            throw new InvalidOperationException("No connection");
+        List<SyncSocketSession> socketSessions;
+        lock (_socketSessions)
+        {
+            socketSessions = _socketSessions.ToList();
+        }
+
+        if (socketSessions.Count == 0)
+        {
+            Logger.v<SyncSession>($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to no connected sockets");
+            return;
+        }
+
+        var sent = false;
+        foreach (var socketSession in socketSessions) 
+        {
+            try
+            {
+                await socketSession.SendAsync(opcode, subOpcode, data, cancellationToken: cancellationToken);
+                sent = true;
+                break;
+            }
+            catch (Exception e)
+            {
+                Logger.w<SyncSession>($"Packet failed to send (opcode = {opcode}, subOpcode = {subOpcode}) due to no connected sockets", e);
+            }            
+        }
+
+        if (!sent)
+            throw new Exception($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to send errors and no remaining candidates");
     }
 
-    public void Send(byte opcode, byte subOpcode, string data) => Send(opcode, subOpcode, Encoding.UTF8.GetBytes(data));
-    public void SendJsonData(byte subOpcode, object data) => Send((byte)Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)));
+    public Task SendAsync(byte opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
+    public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync((byte)Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), cancellationToken);
 
     public void Dispose()
     {

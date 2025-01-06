@@ -28,7 +28,7 @@ public class SyncSocketSession : IDisposable
 
     private readonly Stream _inputStream;
     private readonly Stream _outputStream;
-    private readonly object _sendLockObject = new object();
+    private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1);
     private readonly byte[] _buffer = new byte[MAXIMUM_PACKET_SIZE_ENCRYPTED];
     private readonly byte[] _bufferDecrypted = new byte[MAXIMUM_PACKET_SIZE];
     private readonly byte[] _sendBuffer = new byte[MAXIMUM_PACKET_SIZE];
@@ -244,20 +244,22 @@ public class SyncSocketSession : IDisposable
             throw new Exception("Invalid version");
     }
 
-    public void Send(Opcode opcode, byte subOpcode, ReadOnlySpan<byte> data) =>
-        Send((byte)opcode, subOpcode, data);
-    public void Send(byte opcode, byte subOpcode, ReadOnlySpan<byte> data)
+    public async Task SendAsync(Opcode opcode, byte subOpcode, byte[] data, int offset = 0, int size = -1, CancellationToken cancellationToken = default) =>
+        await SendAsync((byte)opcode, subOpcode, data, offset, size, cancellationToken);
+    public async Task SendAsync(byte opcode, byte subOpcode, byte[] data, int offset = 0, int size = -1, CancellationToken cancellationToken = default)
     {
-        if (data.Length + HEADER_SIZE > MAXIMUM_PACKET_SIZE)
+        if (size == -1)
+            size = data.Length;
+
+        if (size + HEADER_SIZE > MAXIMUM_PACKET_SIZE)
         {
             var segmentSize = MAXIMUM_PACKET_SIZE - HEADER_SIZE;
             var segmentData = new byte[segmentSize];
-            var segmentDataSpan = segmentData.AsSpan();
             var id = Interlocked.Increment(ref _streamIdGenerator);
 
-            for (var sendOffset = 0; sendOffset < data.Length;)
+            for (var sendOffset = 0; sendOffset < size;)
             {
-                var bytesRemaining = data.Length - sendOffset;
+                var bytesRemaining = size - sendOffset;
                 int bytesToSend;
                 int segmentPacketSize;
 
@@ -281,27 +283,31 @@ public class SyncSocketSession : IDisposable
 
                 if (op == Opcode.STREAM_START)
                 {
-                    BinaryPrimitives.WriteInt32LittleEndian(segmentDataSpan.Slice(0, 4), id);
-                    BinaryPrimitives.WriteInt32LittleEndian(segmentDataSpan.Slice(4, 4), data.Length);
+                    //TODO: replace segmentData.AsSpan() into a local variable once C# 13
+                    BinaryPrimitives.WriteInt32LittleEndian(segmentData.AsSpan().Slice(0, 4), id);
+                    BinaryPrimitives.WriteInt32LittleEndian(segmentData.AsSpan().Slice(4, 4), size);
                     segmentData[8] = (byte)opcode;
                     segmentData[9] = (byte)subOpcode;
-                    data.Slice(sendOffset, bytesToSend).CopyTo(segmentDataSpan.Slice(10));
+                    data.AsSpan(offset, size).Slice(sendOffset, bytesToSend).CopyTo(segmentData.AsSpan().Slice(10));
                 }
                 else
                 {
-                    BinaryPrimitives.WriteInt32LittleEndian(segmentDataSpan.Slice(0, 4), id);
-                    BinaryPrimitives.WriteInt32LittleEndian(segmentDataSpan.Slice(4, 4), sendOffset);
-                    data.Slice(sendOffset, bytesToSend).CopyTo(segmentDataSpan.Slice(8));
+                    //TODO: replace segmentData.AsSpan() into a local variable once C# 13
+                    BinaryPrimitives.WriteInt32LittleEndian(segmentData.AsSpan().Slice(0, 4), id);
+                    BinaryPrimitives.WriteInt32LittleEndian(segmentData.AsSpan().Slice(4, 4), sendOffset);
+                    data.AsSpan(offset, size).Slice(sendOffset, bytesToSend).CopyTo(segmentData.AsSpan().Slice(8));
                 }
 
                 sendOffset += bytesToSend;
-                Send((byte)op, 0, segmentDataSpan.Slice(0, segmentPacketSize));
+                await SendAsync((byte)op, 0, segmentData.AsSpan().Slice(0, segmentPacketSize).ToArray(), cancellationToken: cancellationToken);
             }
         }
         else
         {
-            lock (_sendLockObject)
+            try
             {
+                await _sendSemaphore.WaitAsync();
+
                 Array.Copy(BitConverter.GetBytes(data.Length + 2), 0, _sendBuffer, 0, 4);
                 _sendBuffer[4] = (byte)opcode;
                 _sendBuffer[5] = (byte)subOpcode;
@@ -316,13 +322,19 @@ public class SyncSocketSession : IDisposable
                 _outputStream.Write(_sendBufferEncrypted, 0, len);
                 //Console.WriteLine($"Wrote message bytes {len}");
             }
+            finally
+            {
+                _sendSemaphore.Release();
+            }
         }
     }
 
-    public void Send(Opcode opcode, byte subOpcode = 0)
+    public async Task SendAsync(Opcode opcode, byte subOpcode = 0, CancellationToken cancellationToken = default)
     {
-        lock (_sendLockObject)
+        try
         {
+            await _sendSemaphore.WaitAsync(cancellationToken);
+
             Array.Copy(BitConverter.GetBytes(2), 0, _sendBuffer, 0, 4);
             _sendBuffer[4] = (byte)opcode;
             _sendBuffer[5] = (byte)subOpcode;
@@ -330,10 +342,14 @@ public class SyncSocketSession : IDisposable
             //Console.WriteLine($"Encrypted message bytes {HEADER_SIZE}");
 
             var len = _transport!.WriteMessage(_sendBuffer.AsSpan().Slice(0, HEADER_SIZE), _sendBufferEncrypted);
-            _outputStream.Write(BitConverter.GetBytes(len), 0, 4);
+            await _outputStream.WriteAsync(BitConverter.GetBytes(len), 0, 4, cancellationToken);
             //Console.WriteLine($"Wrote message size {len}");
-            _outputStream.Write(_sendBufferEncrypted, 0, len);
+            await _outputStream.WriteAsync(_sendBufferEncrypted, 0, len, cancellationToken);
             //Console.WriteLine($"Wrote message bytes {len}");
+        }
+        finally
+        {
+            _sendSemaphore.Release();
         }
     }
 
@@ -359,7 +375,17 @@ public class SyncSocketSession : IDisposable
         switch (opcode)
         {
             case Opcode.PING:
-                Send(Opcode.PONG);
+                Task.Run(async () => 
+                {
+                    try
+                    {
+                        await SendAsync(Opcode.PONG);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Failed to send pong: " + e.ToString());
+                    }
+                });
                 //Console.WriteLine("Received PING, sent PONG");
                 return;
             case Opcode.PONG:

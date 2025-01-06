@@ -37,29 +37,29 @@ namespace Grayjay.ClientServer.Sync
         }
         
         [SyncHandler(GJSyncOpcodes.SyncStateExchange)]
-        public void HandleSyncExchange(SyncSession session, SyncSessionData data)
+        public async void HandleSyncExchange(SyncSession session, SyncSessionData data)
         {
-            session?.SendJsonData(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
             {
                 Subscriptions = StateSubscriptions.GetSubscriptions(),
                 SubscriptionRemovals = StateSubscriptions.GetSubscriptionRemovals()
             });
-            session?.SendJsonData(GJSyncOpcodes.SyncSubscriptionGroups, new SyncSubscriptionGroupsPackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncSubscriptionGroups, new SyncSubscriptionGroupsPackage()
             {
                 Groups = StateSubscriptions.GetGroups(),
                 GroupRemovals = StateSubscriptions.GetSubscriptionGroupRemovals()
             });
-            session?.SendJsonData(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
             {
                 Playlists = StatePlaylists.All,
                 PlaylistRemovals = StatePlaylists.GetPlaylistRemovals()
             });
-            session?.SendJsonData(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
             {
                 Playlists = StatePlaylists.All,
                 PlaylistRemovals = StatePlaylists.GetPlaylistRemovals()
             });
-            session?.SendJsonData(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
             {
                 Videos = StateWatchLater.Instance.GetWatchLater(),
                 VideoAdds = StateWatchLater.Instance.GetWatchLaterAddTimes(),
@@ -71,7 +71,7 @@ namespace Grayjay.ClientServer.Sync
 
             var newHistory = StateHistory.GetRecentHistory(data.LastHistory);
             if (newHistory.Count > 0)
-                session?.SendJsonData(GJSyncOpcodes.SyncHistory, newHistory);
+                await session.SendJsonDataAsync(GJSyncOpcodes.SyncHistory, newHistory);
         }
 
         [SyncHandler(GJSyncOpcodes.SyncExport)]

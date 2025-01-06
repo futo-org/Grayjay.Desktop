@@ -192,7 +192,7 @@ public class StateSync : IDisposable
 
     public SyncSessionData GetSyncSessionData(string key)
     {
-        return _syncSessionData.GetValue(key, new SyncSessionData(key));
+        return _syncSessionData.GetValue(key, new SyncSessionData(key)) ?? new SyncSessionData(key);
     }
     public void UpdateSyncSessionData(string key, Action<SyncSessionData> updater)
     {
@@ -323,7 +323,7 @@ public class StateSync : IDisposable
             socket.GetStream(),
             socket.GetStream(),
             onClose: s => session?.RemoveSocketSession(s),
-            onHandshakeComplete: s =>
+            onHandshakeComplete: async s =>
             {
                 var remotePublicKey = s.RemotePublicKey;
                 if (remotePublicKey == null)
@@ -338,7 +338,7 @@ public class StateSync : IDisposable
                 {
                     if (!_sessions.TryGetValue(remotePublicKey, out session))
                     {
-                        session = new SyncSession(remotePublicKey, onAuthorized: (sess, isNewlyAuthorized, isNewSession) =>
+                        session = new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
                         {
                             if (!isNewSession) {
                                 return;
@@ -366,8 +366,7 @@ public class StateSync : IDisposable
                             StateWebsocket.SyncDevicesChanged();
                             DeviceUpdatedOrAdded?.Invoke(remotePublicKey, sess);
 
-                            CheckForSync(sess);
-
+                            await CheckForSyncAsync(sess);
                         }, onUnauthorized: sess => {
                             StateUI.Dialog(new StateUI.DialogDescriptor()
                             {
@@ -427,32 +426,30 @@ public class StateSync : IDisposable
                     }
                     else
                     {
-                        session.Authorize(s);
+                        await session.AuthorizeAsync(s);
                         Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because already authorized");
                     }
                 }
                 else
                 {
-                    session.Authorize(s);
+                    await session.AuthorizeAsync(s);
                     Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because initiator");
                 }
             },
             onData: (s, opcode, subOpcode, data) => session?.HandlePacket(s, opcode, subOpcode, data));
     }
 
-    public void BroadcastJson(byte subOpcode, object data) => Broadcast((byte)Opcode.DATA, subOpcode, GJsonSerializer.AndroidCompatible.SerializeObj(data));
-    public void Broadcast(byte opcode, byte subOpcode, string data) => Broadcast(opcode, subOpcode, Encoding.UTF8.GetBytes(data));
-    public void Broadcast(byte opcode, byte subOpcode, byte[] data)
+    public Task BroadcastJsonAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => BroadcastAsync((byte)Opcode.DATA, subOpcode, GJsonSerializer.AndroidCompatible.SerializeObj(data), cancellationToken);
+    public Task BroadcastAsync(byte opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => BroadcastAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
+    public async Task BroadcastAsync(byte opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
     {
         //TODO: Should be done in parallel
         foreach(var session in GetSessions())
         {
             try
             {
-                if(session.IsAuthorized && session.Connected)
-                {
-                    session.Send(opcode, subOpcode, data);
-                }
+                if (session.IsAuthorized && session.Connected)
+                    await session.SendAsync(opcode, subOpcode, data, cancellationToken);
             }
             catch(Exception ex)
             {
@@ -461,7 +458,7 @@ public class StateSync : IDisposable
         }
     }
 
-    public void CheckForSync(SyncSession session)
+    public async Task CheckForSyncAsync(SyncSession session, CancellationToken cancellationToken = default)
     {
         Stopwatch watch = Stopwatch.StartNew();
 
@@ -471,7 +468,7 @@ public class StateSync : IDisposable
         //session.Send(GJSyncOpcodes.SyncExport, export.AsZip());
 
         Logger.i(nameof(StateSync), "New session [" + session.RemotePublicKey.ToString() + "]");
-        session.SendJsonData(GJSyncOpcodes.SyncStateExchange, StateSync.Instance.GetSyncSessionData(session.RemotePublicKey));
+        await session.SendJsonDataAsync(GJSyncOpcodes.SyncStateExchange, StateSync.Instance.GetSyncSessionData(session.RemotePublicKey), cancellationToken);
 
 
         watch.Stop();
@@ -532,14 +529,15 @@ public class StateSync : IDisposable
 
     public async Task DeleteDeviceAsync(string publicKey)
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             try
             {
                 var session = GetSession(publicKey);
                 try
                 {
-                    session?.Unauthorize();
+                    if (session != null)
+                        await session.UnauthorizeAsync();
                 }
                 catch (Exception ex)
                 {

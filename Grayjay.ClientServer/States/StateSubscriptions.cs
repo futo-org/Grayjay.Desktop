@@ -286,11 +286,11 @@ namespace Grayjay.Desktop.POC.Port.States
 
             if (isUserInteraction)
             {
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
                     try
                     {
-                        StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
+                        await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
                         {
                             Subscriptions = new List<Subscription>()
                             {
@@ -346,11 +346,11 @@ namespace Grayjay.Desktop.POC.Port.States
                     long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                     _subscriptionsRemoved.SetAndSave(sub.Channel.Url, now);
 
-                    Task.Run(() =>
+                    Task.Run(async () =>
                     {
                         try
                         {
-                            StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
+                            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
                             {
                                 Subscriptions = new List<Subscription>(){},
                                 SubscriptionRemovals = new Dictionary<string, long>()
@@ -410,11 +410,11 @@ namespace Grayjay.Desktop.POC.Port.States
             _subscriptionGroups.Save(group);
 
             if(isUserInteraction)
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
                     try
                     {
-                        StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncSubscriptionGroups, new SyncSubscriptionGroupsPackage()
+                        await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncSubscriptionGroups, new SyncSubscriptionGroupsPackage()
                         {
                             Groups = new List<SubscriptionGroup>()
                             {

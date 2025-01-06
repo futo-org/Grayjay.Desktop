@@ -131,10 +131,10 @@ public class StateWatchLater
 
     private void BroadcastChanges(bool orderOnly = false)
     {
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             var videos = GetWatchLater();
-            StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
+            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
             {
                 Videos = (orderOnly) ? new List<PlatformVideo>() : videos.Select(x=>(PlatformVideo)x).ToList(),
                 VideoAdds = (orderOnly) ? new Dictionary<string, long>() : _watchLaterAdds.All(),
@@ -146,9 +146,9 @@ public class StateWatchLater
     }
     private void BroadcastRemoval(string url, long time)
     {
-        Task.Run(() =>
+        Task.Run(async () =>
         {
-            StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
+            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
             {
                 VideoRemovals = new Dictionary<string, long>()
                 {
@@ -159,9 +159,9 @@ public class StateWatchLater
     }
     private void BroadcastAddition(PlatformVideo video, long time)
     {
-        Task.Run(() =>
+        Task.Run(async () =>
         {
-            StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
+            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
             {
                 Videos = new List<PlatformVideo>() { video },
                 VideoAdds = new Dictionary<string, long>()
