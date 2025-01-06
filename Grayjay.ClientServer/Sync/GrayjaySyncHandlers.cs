@@ -36,8 +36,8 @@ namespace Grayjay.ClientServer.Sync
             StateWebsocket.OpenUrl(package.Url, package.Position);
         }
         
-        [SyncHandler(GJSyncOpcodes.SyncStateExchange)]
-        public async void HandleSyncExchange(SyncSession session, SyncSessionData data)
+        [SyncAsyncHandler(GJSyncOpcodes.SyncStateExchange)]
+        public async Task HandleSyncExchange(SyncSession session, SyncSessionData data)
         {
             await session.SendJsonDataAsync(GJSyncOpcodes.SyncSubscriptions, new SyncSubscriptionsPackage()
             {
@@ -79,7 +79,6 @@ namespace Grayjay.ClientServer.Sync
         {
             var export = ExportStructure.FromZipBytes(data);
 
-
             //Subscriptions
             var subsRecons = export.Stores.FirstOrDefault(x => x.Key.Equals("subscriptions", StringComparison.OrdinalIgnoreCase));
             if(!string.IsNullOrEmpty(subsRecons.Key))
@@ -93,8 +92,6 @@ namespace Grayjay.ClientServer.Sync
                 }
                 HandleSyncSubscriptions(session, package);
             }
-
-
         }
 
         [SyncHandler(GJSyncOpcodes.SyncSubscriptions)]

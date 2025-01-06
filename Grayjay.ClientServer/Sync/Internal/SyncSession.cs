@@ -162,7 +162,19 @@ public class SyncSession : IAuthorizable, IDisposable
         }
 
         Console.WriteLine($"Received (opcode = {opcode}, subOpcode = {subOpcode}) ({data.Length} bytes)");
-        Handlers?.Handle(this, socketSession, (byte)opcode, subOpcode, data);
+
+        Task.Run(() =>
+        {
+            try
+            {
+                Handlers?.HandleAsync(this, socketSession, (byte)opcode, subOpcode, data);
+            }
+            catch (Exception e)
+            {
+                //TODO: Should be disconnected? socketSession.Dispose();
+                Logger.w<SyncSession>("Failed to handle packet", e);
+            }
+        });
     }
 
 
