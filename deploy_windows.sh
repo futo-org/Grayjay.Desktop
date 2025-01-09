@@ -50,7 +50,7 @@ do
 
     # Publish CEF
     cd Grayjay.Desktop.CEF
-    dotnet publish -r $runtime -c Release
+    dotnet publish -r $runtime -c Release /p:AssemblyVersion=1.$version.0.0
     cd ..
 
     # Copy wwwroot
