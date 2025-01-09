@@ -21,6 +21,9 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <None Remove="Changelogs\3.txt" />
+    <None Remove="Changelogs\4.txt" />
+    <None Remove="Changelogs\5.txt" />
     <None Remove="Developer\Embed\dev_bridge.js" />
     <None Remove="Developer\Embed\index.html" />
     <None Remove="FUTO.Updater.Client.exe" />
@@ -50,6 +53,15 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>ffmpeg</TargetPath>
     </ContentWithTargetPath>
+    <Content Include="Changelogs\3.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Changelogs\4.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Changelogs\5.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
 
     <Content Include="logo.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
