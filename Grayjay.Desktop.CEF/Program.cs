@@ -369,7 +369,7 @@ namespace Grayjay.Desktop
                 {
                     var hasUpdates = Updater.HasUpdate();
                     Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
-                    if (hasUpdates || true)
+                    if (hasUpdates)
                     {
                         var processIds = new int[]
                         {
