@@ -7,6 +7,7 @@ using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
 using Grayjay.Desktop.POC;
 using System.Diagnostics;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -385,7 +386,67 @@ namespace Grayjay.Desktop
                                 string url = Updater.GetUpdaterUrl(changelog.Server, changelog.Version, changelog.Platform);
                                 Logger.w(nameof(Program), $"UPDATER REQUIRES UPDATING FROM: {url}\nAttempting self-updating");
                                 Logger.w(nameof(Program), "Starting self-update..");
-                                Updater.UpdateSelf();
+                                try
+                                {
+                                    using (WebClient client = new WebClient())
+                                    {
+                                        string updatedPath = Updater.GetUpdaterExecutablePath() + ".updated";
+                                        client.DownloadFile(url, updatedPath);
+                                        File.Copy(updatedPath, Updater.GetUpdaterExecutablePath(), true);
+                                        if (OperatingSystem.IsLinux())
+                                        {
+                                            //Just in case
+                                            try
+                                            {
+                                                Process chmod = new Process()
+                                                {
+                                                    StartInfo = new ProcessStartInfo()
+                                                    {
+                                                        FileName = "chmod",
+                                                        Arguments = "-R u=rwx \"" + Updater.GetUpdaterExecutablePath() + "\"",
+                                                        UseShellExecute = false,
+                                                        RedirectStandardOutput = true,
+                                                        CreateNoWindow = true
+                                                    }
+                                                };
+                                                chmod.Start();
+                                                while (!chmod.StandardOutput.EndOfStream)
+                                                {
+                                                    var line = chmod.StandardOutput.ReadLine();
+                                                    Console.WriteLine(line);
+                                                }
+                                                chmod.WaitForExit();
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Logger.e(nameof(Program), "Failed to fix permissions for Linux on updater");
+                                                throw;
+                                            }
+                                        }
+                                    }
+                                    Logger.i(nameof(Program), "Self-updating appeared succesful");
+                                }
+                                catch(Exception ex)
+                                {
+                                    Logger.e(nameof(Program), "Failed to download new Updater:\n" + url);
+                                    StateUI.Dialog(new StateUI.DialogDescriptor()
+                                    {
+                                        Text = $"Failed to self-update updater to version {targetUpdaterVersion}",
+                                        TextDetails = "Please download it yourself and override it in the Grayjay directory.\nOn linux, ensure it has execution permissions.",
+                                        Code = "url",
+                                        Actions = new List<StateUI.DialogAction>()
+                                        {
+                                            new StateUI.DialogAction("Ignore", () =>
+                                            {
+
+                                            }, StateUI.ActionStyle.Accent),
+                                            new StateUI.DialogAction("Download", () =>
+                                            {
+                                                OSHelper.OpenUrl(url);
+                                            }, StateUI.ActionStyle.Primary)
+                                        }
+                                    });
+                                }
                             }
                         }
 
