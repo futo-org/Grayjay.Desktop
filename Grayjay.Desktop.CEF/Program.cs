@@ -2,6 +2,7 @@
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Constants;
 using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
 using Grayjay.Desktop.POC;
@@ -180,6 +181,8 @@ namespace Grayjay.Desktop
             Logger.i(nameof(Directories), $"Base Directory: {Directories.Base}");
             Logger.i(nameof(Directories), $"Temporary Directory: {Directories.Temporary}");
             Logger.i(nameof(Directories), $"Log file path: {Directories.Base}/log.txt");
+
+            GrayjayDevSettings.Instance.DeveloperMode = File.Exists("DEV");
 
             foreach(var arg in args)
             {
@@ -360,13 +363,25 @@ namespace Grayjay.Desktop
                 {
                     var hasUpdates = Updater.HasUpdate();
                     Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
-                    if (hasUpdates || true)
+                    if (hasUpdates)
                     {
                         var processIds = new int[]
                         {
                             Process.GetCurrentProcess().Id
                         };
                         var changelog = Updater.GetTargetChangelog();
+                        if (changelog != null)
+                        {
+                            int currentVersion = Updater.GetUpdaterVersion();
+                            int targetUpdaterVersion = Updater.GetTargetUpdaterVersion(changelog.Server, changelog.Version, changelog.Platform);
+                            if (targetUpdaterVersion > currentVersion)
+                            {
+                                string url = Updater.GetUpdaterUrl(changelog.Server, changelog.Version, changelog.Platform);
+                                Logger.w(nameof(Program), $"UPDATER REQUIRES UPDATING FROM: {url}\nAttempting self-updating");
+                                Logger.w(nameof(Program), "Starting self-update..");
+                                Updater.UpdateSelf();
+                            }
+                        }
 
                         Thread.Sleep(1500);
                         StateUI.Dialog(new StateUI.DialogDescriptor()

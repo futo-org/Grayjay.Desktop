@@ -1,7 +1,10 @@
-﻿using Grayjay.Desktop.POC;
+﻿using Grayjay.ClientServer.States;
+using Grayjay.Desktop.POC;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace Grayjay.ClientServer
 {
@@ -28,6 +31,15 @@ namespace Grayjay.ClientServer
             else throw new NotImplementedException();
         }
 
+        public static string GetUpdaterExecutableName()
+        {
+            if (OperatingSystem.IsWindows())
+                return "FUTO.Updater.Client.exe";
+            else if (OperatingSystem.IsLinux())
+                return "FUTO.Updater.Client";
+            else
+                return null;
+        }
         public static string GetUpdaterExecutablePath()
         {
             string fileName = null;
@@ -46,6 +58,11 @@ namespace Grayjay.ClientServer
             {
                 return null;
             }
+        }
+        public static string GetUpdaterVersionPath()
+        {
+            string fileName = "UpdaterVersion.json";
+            return Path.GetFullPath(fileName);
         }
         public static string GetUpdaterConfigPath()
         {
@@ -79,6 +96,23 @@ namespace Grayjay.ClientServer
                 return null;
             }
         }
+        public static int GetUpdaterVersion()
+        {
+            var path = GetUpdaterVersionPath();
+            if (File.Exists(path))
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<int>(File.ReadAllText(path));
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Failed to read updater version, assuming 1");
+                    return 1;
+                }
+            }
+            return 1;
+        }
 
         public static void Update(int[] processIds, int version = -1)
         {
@@ -94,6 +128,21 @@ namespace Grayjay.ClientServer
                 UseShellExecute = true
             });
         }
+        public static void UpdateSelf()
+        {
+            string executable = GetUpdaterExecutablePath();
+            if (string.IsNullOrEmpty(executable))
+                throw new InvalidOperationException("No updater found");
+
+            var process = Process.Start(new ProcessStartInfo()
+            {
+                FileName = executable,
+                Arguments = $"updateself",
+                UseShellExecute = false
+            });
+            process.WaitForExit();
+            Thread.Sleep(5000);
+        }
 
         public static bool HasUpdate()
         {
@@ -101,7 +150,17 @@ namespace Grayjay.ClientServer
             if (string.IsNullOrEmpty(executable))
                 throw new InvalidOperationException("No updater found");
 
-            var proc = Process.Start(executable, "check");
+            var proc = Process.Start(new ProcessStartInfo()
+            {
+                FileName = executable,
+                Arguments = "check",
+                RedirectStandardOutput = true
+            });
+            while (!proc.StandardOutput.EndOfStream)
+            {
+                var line = proc.StandardOutput.ReadLine();
+                Console.WriteLine(line);
+            }
             proc.WaitForExit();
             switch (proc.ExitCode)
             {
@@ -134,10 +193,12 @@ namespace Grayjay.ClientServer
         }
         public class Changelog
         {
-            public string Version { get; set; }
+            public int Version { get; set; }
+            public string Server { get; set; }
+            public string Platform { get; set; }
             public string Text { get; set; }
 
-            public Changelog(string version, string text)
+            public Changelog(int version, string text)
             {
                 Version = version;
                 Text = text;
@@ -153,9 +214,16 @@ namespace Grayjay.ClientServer
                 var targetVersion = GetTargetVersion();
                 if (targetVersion <= 0)
                     return null;
+
+                string targetPlatform = StateApp.GetPlatformName();
+
                 using(WebClient client = new WebClient())
                 {
-                    return new Changelog(targetVersion.ToString(), client.DownloadString(config.Server + $"/{targetVersion}/linux-x64/Changelogs/{targetVersion}.txt"));
+                    return new Changelog(targetVersion, client.DownloadString(config.Server + $"/{targetVersion}/{targetPlatform}/Changelogs/{targetVersion}.txt"))
+                    {
+                        Server = config.Server,
+                        Platform = targetPlatform
+                    };
                 }
             }
             catch (Exception ex)
@@ -163,6 +231,27 @@ namespace Grayjay.ClientServer
                 Logger.e(nameof(Updater), "Failed to get changelog", ex);
                 return null;
             }
+        }
+        public static int GetTargetUpdaterVersion(string server, int version, string dist)
+        {
+            using (WebClient client = new WebClient())
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<int>(client.DownloadString(server + $"/{version}/{dist}/UpdaterVersion.json"));
+                }
+                catch(Exception ex)
+                {
+                    return 1;
+                }
+            }
+        }
+        public static string GetUpdaterUrl(string server, int version, string dist)
+        {
+            var updaterName = GetUpdaterExecutableName();
+            if (string.IsNullOrEmpty(updaterName))
+                return null;
+            return server + $"/{version}/{dist}/" + updaterName;
         }
 
 

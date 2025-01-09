@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer;
+﻿using Futo.PlatformPlayer.States;
+using Grayjay.ClientServer;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models;
@@ -570,6 +571,11 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             lock (_clientsLock)
                 return _enabledClients.FirstOrDefault(x => x.Config.ID == id);
+        }
+
+        public static GrayjayPlugin GetDevClient()
+        {
+            return GetClient(StateDeveloper.DEV_ID);
         }
 
         public static bool IsEnabled(string id)

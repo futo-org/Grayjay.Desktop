@@ -242,6 +242,7 @@ namespace Grayjay.ClientServer.Controllers
                 descriptor.SetAuth(null);
                 StatePlugins.UpdatePlugin(id, true);
             }
+            _ = StateUI.Dialog("", "Please restart Grayjay before logging in again", "Grayjay does not clear past cookies yet after logout, please restart before trying to login again, or it will reuse your current login.", null, 0, new StateUI.DialogAction("Ok", () => { }));
             return true;
         }
 

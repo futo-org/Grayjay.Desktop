@@ -20,8 +20,8 @@ namespace Grayjay.ClientServer.Controllers
         private const string URL_PRICES = "https://spayment.grayjay.app/api/v1/payment/prices";
         private const string URL_ACTIVATE = "https://spayment.grayjay.app/api/v1/activate/";
         private static string _price = null;
-        
-        private static StringStore licenseStore = new StringStore("license", null);
+
+        private static StringStore licenseStore = new StringStore("license", null).Load();
         private static LicenseValidator validator = new LicenseValidator("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzJqqETLa42xw4AfbNOLQolMdMiGgg8DAC4RXEcH4/gytLhaqp1XsjiiMkADi1C7sDtGj6kOuAuQkqXQKpZ2dJSZsO+GPyop6DmgfAM6MQgOgFUpwsb3Lt3SvskJcls8MeOC+jg+GjjcuJI8qOfYevj4/7wAOpqzAwocTYnJivlK5nrC+qNtUC2HZX93OVu69aU5yvA1SQe9GiiU7vBld+CbzHxTcABCK/THu/BpLtGx0M7W3HNMKK1Z79dopCL9ZZWbWdkGDY8Zf39Gn/WVrs5elBvPzU+AfNYty77vx2r+sKgyohlbz4KVYpnw8HfawKcwuRE/GUyD3F2hUcXy8dQIDAQAB");
 
         private static string[] _currencyDecimal2 = new string[] { " ISK", "HUF", "TWD", "UGX" };

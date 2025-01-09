@@ -20,6 +20,8 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <None Remove="Developer\Embed\dev_bridge.js" />
+    <None Remove="Developer\Embed\index.html" />
     <None Remove="FUTO.Updater.Client.exe" />
     <None Remove="logo.ico" />
     <None Remove="logo.svg" />
@@ -72,6 +74,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Grayjay.Engine\Grayjay.Engine\Grayjay.Engine.csproj" />
     <ProjectReference Include="..\FUTO.MDNS\FUTO.MDNS\FUTO.MDNS.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Developer\Embed\dev_bridge.js" />
+    <EmbeddedResource Include="Developer\Embed\index.html" />
   </ItemGroup>
 
   <ItemGroup>

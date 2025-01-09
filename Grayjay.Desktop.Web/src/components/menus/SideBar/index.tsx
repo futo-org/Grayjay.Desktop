@@ -34,6 +34,7 @@ import FlexibleArrayList from '../../containers/FlexibleArrayList';
 import Globals from '../../../globals';
 import StateGlobal from '../../../state/StateGlobal';
 import { createResourceDefault } from '../../../utility';
+import { LocalBackend } from '../../../backend/LocalBackend';
 
 export interface SideBarProps {
   alwaysMinimized?: boolean;
@@ -145,7 +146,12 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/history", options)} icon={history} name="History" selected={location.pathname === "/web/history"} />
         <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sync", options)} icon={iconSync} name="Sync" selected={location.pathname === "/web/sync"} />
         <SideBarButton collapsed={collapsed()} onClick={() => WindowBackend.startWindow()} icon={iconPlus} name="New Window" selected={false} />
-        
+        <Show when={StateGlobal.isDeveloper$()}>
+        <SideBarButton collapsed={collapsed()} onClick={() => {
+              const host = window.location.host;
+              window.location.href = ("http://" + host + "/Developer/Index");
+        }} icon={iconLink} name="Developer" selected={location.pathname === "/Developer/Index"} />
+        </Show>
       </div>
       <Show when={!collapsed() && subscriptions$()?.length} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>

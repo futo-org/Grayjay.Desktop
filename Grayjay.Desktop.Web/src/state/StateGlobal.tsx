@@ -11,6 +11,11 @@ import { IPlatformVideo } from "../backend/models/content/IPlatformVideo";
 import { DateTime } from "luxon";
 import { BuyBackend } from "../backend/BuyBackend";
 import { createResourceDefault } from "../utility";
+import { DeveloperBackend } from "../backend/DeveloperBackend";
+import { isDev } from "solid-js/web";
+import Globals from "../globals";
+import { WindowBackend } from "../backend/WindowBackend";
+import { LocalBackend } from "../backend/LocalBackend";
 
 export interface StateGlobal {
     settings$: Resource<any>,
@@ -19,6 +24,7 @@ export interface StateGlobal {
     lastHomeTime$: Accessor<DateTime|undefined>,
     home$: Resource<RefreshPager<IPlatformVideo>>,
     didPurchase$: Resource<boolean>,
+    isDeveloper$: Resource<boolean>,
     onGlobalClick: Event1<MouseEvent>,
     reloadHome(): void,
     getSourceConfig: (id: string | undefined) => ISourceConfig | undefined,
@@ -45,7 +51,9 @@ function createState() {
     const [didPurchase$, didPurchaseResource] = createResourceDefault(async () => {
         return await BuyBackend.didPurchase();
     });
-
+    const [isDeveloper$, isDeveloperResource] = createResourceDefault(async () => {
+        return await DeveloperBackend.isDeveloper();
+    });
     /*
     StateWebsocket.registerHandlerNew("PluginEnabled", (packet)=>{
         sourcesResource.refetch();
@@ -114,6 +122,7 @@ function createState() {
         settings$: settings$,
         sources$: sources$,
         sourceStates$: sourceStates$,
+        isDeveloper$: isDeveloper$,
 
         lastHomeTime$: lastHomeTime$,
         home$: home$,

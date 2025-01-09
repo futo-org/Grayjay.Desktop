@@ -94,6 +94,11 @@ namespace Grayjay.ClientServer
             });
 
             _app.MapGet("/", () => Results.Redirect("/web/index.html"));
+            _app.MapGet("/dev", () => Results.Redirect("/Developer/Index"));
+            _app.MapGet("/Developer/source.js", () => Results.Redirect("/Developer/Source"));
+            _app.MapGet("/Developer/dev_bridge.js", () => Results.Redirect("/Developer/DevBridge"));
+            _app.MapGet("/Developer/source_docs.js", () => Results.Redirect("/Developer/SourceDocs"));
+            _app.MapGet("/Developer/source_doc_urls.js", () => Results.Redirect("/Developer/SourceDocUrls"));
 
             if (proxyUrl != null)
             {

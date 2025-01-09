@@ -1,5 +1,6 @@
 ﻿
 using Grayjay.ClientServer;
+using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Store;
 using Grayjay.Engine;
 using System.Linq;
@@ -281,6 +282,165 @@ namespace Grayjay.Desktop.POC.Port.States
             //throw new NotImplementedException();
         }
 
+
+        public static async Task<SourceAuth> AuthenticatePlugin(PluginConfig pluginConfig)
+        {
+
+            if (GrayjayServer.Instance?.WindowProvider == null)
+            {
+                throw new NotImplementedException("Running headless, login only supported in UI application mode");
+            }
+            var authConfig = pluginConfig.Authentication;
+
+            bool urlFound = string.IsNullOrEmpty(authConfig.CompletionUrl);
+            Dictionary<string, Dictionary<string, string>> headersFoundMap = new Dictionary<string, Dictionary<string, string>>();
+            Dictionary<string, Dictionary<string, string>> cookiesFoundMap = new Dictionary<string, Dictionary<string, string>>();
+
+            bool completionUrlExcludeQuery = false;
+            string completionUrlToCheck = (string.IsNullOrEmpty(authConfig.CompletionUrl)) ? null : authConfig.CompletionUrl;
+            if (completionUrlToCheck != null)
+            {
+                if (authConfig.CompletionUrl.EndsWith("?*"))
+                {
+                    completionUrlToCheck = completionUrlToCheck.Substring(0, completionUrlToCheck.Length - 2);
+                    completionUrlExcludeQuery = true;
+                }
+            }
+
+            IWindow window = null;
+            TaskCompletionSource<SourceAuth> tcs = new TaskCompletionSource<SourceAuth>();
+
+            bool _didLogIn()
+            {
+                var headersFound = authConfig.HeadersToFind?.Select(x => x.ToLower())?.All(reqHeader => headersFoundMap.Any(x => x.Value.ContainsKey(reqHeader))) ?? true;
+                var domainHeadersFound = authConfig.DomainHeadersToFind?.All(x =>
+                {
+                    if (x.Value.Count == 0)
+                        return true;
+                    if (!headersFoundMap.ContainsKey(x.Key.ToLower()))
+                        return false;
+                    var foundDomainHeaders = headersFoundMap[x.Key.ToLower()] ?? new Dictionary<string, string>();
+                    return x.Value.All(reqHeader => foundDomainHeaders.ContainsKey(reqHeader.ToLower()));
+                }) ?? true;
+                var cookiesFound = authConfig.CookiesToFind?.All(toFind => cookiesFoundMap.Any(x => x.Value.ContainsKey(toFind))) ?? true;
+
+                return (urlFound && headersFound && domainHeadersFound && cookiesFound);
+            }
+
+            void _loggedIn()
+            {
+                if (_didLogIn())
+                {
+                    Logger.i(nameof(SourcesController), "Logged in!");
+                    window.Close();
+                }
+            }
+            void _closed()
+            {
+                //Finished
+                if (_didLogIn())
+                {
+                    tcs.SetResult(new SourceAuth()
+                    {
+                        Headers = headersFoundMap,
+                        CookieMap = cookiesFoundMap
+                    });
+                }
+                else
+                    tcs.SetResult(null);
+            }
+
+            window = await GrayjayServer.Instance.WindowProvider.CreateInterceptorWindowAsync("Grayjay (Login)", authConfig.LoginUrl, authConfig.UserAgent, (InterceptorRequest request) =>
+            {
+                try
+                {
+                    var uri = new Uri(request.Url);
+                    string domain = uri.Host;
+                    string domainLower = uri.Host.ToLower();
+
+                    if (!urlFound)
+                    {
+                        if (completionUrlExcludeQuery)
+                        {
+                            if (request.Url.Contains("?"))
+                                urlFound = request.Url.Substring(0, request.Url.IndexOf("?")) == completionUrlToCheck;
+                            else
+                                urlFound = request.Url == completionUrlToCheck;
+                        }
+                        else
+                            urlFound = request.Url == completionUrlToCheck;
+                    }
+
+                    if (authConfig.AllowedDomains != null && !authConfig.AllowedDomains.Contains(uri.Host))
+                        return;
+
+                    //HEADERS
+                    if (domainLower != null)
+                    {
+                        var headersToFind = (authConfig.HeadersToFind?.Select(x => (x.ToLower(), domainLower)).ToList() ?? new List<(string, string)>())
+                            .Concat(authConfig.DomainHeadersToFind?
+                                .Where(x => domainLower.MatchesDomain(x.Key.ToLower()))
+                                .SelectMany(y => y.Value.Select(header => (header.ToLower(), y.Key.ToLower())))
+                                .ToList() ?? new List<(string, string)>())
+                            .ToList();
+
+                        var foundHeaders = request.Headers.Where(requestHeader => headersToFind.Any(x => x.Item1.Equals(requestHeader.Key, StringComparison.OrdinalIgnoreCase))
+                            && (!requestHeader.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) || requestHeader.Value != "undefined"))
+                            .ToList();
+
+                        foreach (var header in foundHeaders)
+                        {
+                            foreach (var headerDomain in headersToFind.Where(x => x.Item1.Equals(header.Key, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                if (!headersFoundMap.ContainsKey(headerDomain.Item2))
+                                    headersFoundMap[headerDomain.Item2] = new Dictionary<string, string>();
+                                headersFoundMap[headerDomain.Item2][header.Key.ToLower()] = header.Value;
+                            }
+                        }
+                    }
+
+                    //COOKIES
+                    var cookieString = request.Headers.FirstOrDefault(x => x.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)).Value;
+                    if (cookieString != null)
+                    {
+                        var domainParts = domain.Split(".");
+                        var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
+                        if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
+                        {
+                            authConfig.CookiesToFind?.ForEach(cookiesToFind =>
+                            {
+                                var cookies = cookieString.Split(";");
+                                foreach (var cookieStr in cookies)
+                                {
+                                    var cookieSplitIndex = cookieStr.IndexOf("=");
+                                    if (cookieSplitIndex <= 0) continue;
+                                    var cookieKey = cookieStr.Substring(0, cookieSplitIndex).Trim();
+                                    var cookieVal = cookieStr.Substring(cookieSplitIndex + 1).Trim();
+
+                                    if (authConfig.CookiesExclOthers && !cookiesToFind.Contains(cookieKey))
+                                        continue;
+
+                                    if (cookiesFoundMap.ContainsKey(cookieDomain))
+                                        cookiesFoundMap[cookieDomain][cookieKey] = cookieVal;
+                                    else
+                                        cookiesFoundMap[cookieDomain] = new Dictionary<string, string>() { { cookieKey, cookieVal } };
+                                }
+                            });
+                        }
+                    }
+
+                    if (_didLogIn())
+                        _loggedIn();
+                }
+                catch (Exception ex)
+                {
+                    Logger.e(nameof(SourcesController), "Login Interceptor failed: " + ex.Message, ex);
+                    throw ex;
+                }
+            });
+            window.OnClosed += _closed;
+            return await tcs.Task;
+        }
 
         public class Prompt
         {

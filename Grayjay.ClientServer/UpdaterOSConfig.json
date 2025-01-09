@@ -5,6 +5,21 @@
       "Grayjay",
       "cef/dotcefnative",
       "ffmpeg"
+    ],
+    "Ignore": [
+      "Portable"
+    ]
+  },
+  "Windows": {
+    "Executables": [],
+    "Ignore": [
+      "Portable"
+    ]
+  },
+  "MacOS": {
+    "Executables": [],
+    "Ignore": [
+      "Portable"
     ]
   }
 }

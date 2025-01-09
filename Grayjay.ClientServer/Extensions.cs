@@ -195,13 +195,14 @@ namespace Grayjay.ClientServer
         }
 
 
+        /*
         public static bool MatchesDomain(this string domain, string queryDomain)
         {
             if (queryDomain.StartsWith("."))
                 return domain.EndsWith(queryDomain) || domain == queryDomain.TrimStart('.');
             else
                 return domain == queryDomain;
-        }
+        }*/
 
 
 
