@@ -168,6 +168,12 @@ namespace Grayjay.Desktop
 
         static async Task Main(string[] args)
         {
+            if(args.Length > 0 && args[0] == "version")
+            {
+                Console.WriteLine(App.Version.ToString());
+                return;
+            }
+
             bool isHeadless = args?.Contains("--headless") ?? false;
             bool isServer = args?.Contains("--server") ?? false;
 #if DEBUG
@@ -363,16 +369,16 @@ namespace Grayjay.Desktop
                 {
                     var hasUpdates = Updater.HasUpdate();
                     Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
-                    if (hasUpdates)
+                    if (hasUpdates || true)
                     {
                         var processIds = new int[]
                         {
                             Process.GetCurrentProcess().Id
                         };
                         var changelog = Updater.GetTargetChangelog();
+                        int currentVersion = Updater.GetUpdaterVersion();
                         if (changelog != null)
                         {
-                            int currentVersion = Updater.GetUpdaterVersion();
                             int targetUpdaterVersion = Updater.GetTargetUpdaterVersion(changelog.Server, changelog.Version, changelog.Platform);
                             if (targetUpdaterVersion > currentVersion)
                             {

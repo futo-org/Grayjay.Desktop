@@ -298,7 +298,7 @@ namespace Grayjay.ClientServer.Settings
         public class InfoData
         {
             [SettingsField("Version Code", SettingsField.READONLY, "", 1, "code")]
-            public string versionCode { get; } = "2";
+            public string versionCode { get; } = Constants.App.Version.ToString();
 
             [SettingsField("Verson Name", SettingsField.READONLY, "", 2)]
             public string versionName { get; } = "Desktop";

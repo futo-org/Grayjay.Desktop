@@ -59,11 +59,7 @@ namespace Grayjay.ClientServer
                 return null;
             }
         }
-        public static string GetUpdaterVersionPath()
-        {
-            string fileName = "UpdaterVersion.json";
-            return Path.GetFullPath(fileName);
-        }
+
         public static string GetUpdaterConfigPath()
         {
             string fileName = "UpdaterConfig.json";
@@ -98,12 +94,30 @@ namespace Grayjay.ClientServer
         }
         public static int GetUpdaterVersion()
         {
-            var path = GetUpdaterVersionPath();
-            if (File.Exists(path))
+            string executable = GetUpdaterExecutablePath();
+            if (string.IsNullOrEmpty(executable))
+                return 1;
+            if (File.Exists(executable))
             {
                 try
                 {
-                    return JsonSerializer.Deserialize<int>(File.ReadAllText(path));
+                    //Old updater doesn't support version yet..
+                    if (Constants.App.Version <= 4)
+                        return 1;
+                    
+                    var proc = Process.Start(new ProcessStartInfo()
+                    {
+                        FileName = executable,
+                        Arguments = "version",
+                        RedirectStandardOutput = true
+                    });
+                    while (!proc.StandardOutput.EndOfStream)
+                    {
+                        var line = proc.StandardOutput.ReadLine();
+                        Console.WriteLine(line);
+                    }
+                    proc.WaitForExit();
+                    return Math.Max(1, proc.ExitCode);
                 }
                 catch(Exception ex)
                 {
