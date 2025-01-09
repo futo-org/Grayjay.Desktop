@@ -142,6 +142,33 @@ namespace Grayjay.ClientServer
             });
             process.WaitForExit();
             Thread.Sleep(5000);
+
+            if (OperatingSystem.IsLinux())
+            {
+                //Just in case
+                try
+                {
+                    Process chmod = new Process()
+                    {
+                        StartInfo = new ProcessStartInfo()
+                        {
+                            FileName = "chmod",
+                            Arguments = "-R u=rwx " + executable,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            CreateNoWindow = true
+                        }
+                    };
+                    chmod.Start();
+                    while (!chmod.StandardOutput.EndOfStream)
+                    {
+                        var line = chmod.StandardOutput.ReadLine();
+                        Console.WriteLine(line);
+                    }
+                    chmod.WaitForExit();
+                }
+                catch (Exception ex) { }
+            }
         }
 
         public static bool HasUpdate()
