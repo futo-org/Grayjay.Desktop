@@ -99,7 +99,7 @@ namespace Grayjay.ClientServer.Controllers
 
         //Functions
         [HttpGet]
-        public IActionResult SendToDevice(string device, string url, int position = 0)
+        public async Task<IActionResult> SendToDevice(string device, string url, int position = 0)
         {
             var session = StateSync.Instance.GetSession(device);
 
@@ -119,7 +119,7 @@ namespace Grayjay.ClientServer.Controllers
                     Message = "Device not connected or authorized"
                 });
             }
-            session.SendJsonData(GJSyncOpcodes.SendToDevice, new SendToDevicePackage()
+            await session.SendJsonDataAsync(GJSyncOpcodes.SendToDevice, new SendToDevicePackage()
             {
                 Url = url,
                 Position = position

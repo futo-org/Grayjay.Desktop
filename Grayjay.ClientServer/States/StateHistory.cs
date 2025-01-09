@@ -83,11 +83,11 @@ namespace Grayjay.ClientServer.States
         }
         private static DateTime _lastHistoryBroadcast = DateTime.MinValue;
         private static string _lastHistoryBroadcastUrl = string.Empty;
-        public static void UpdateHistory(PlatformVideo video, DBHistoryIndex index, long position, long delta)
+        public static async void UpdateHistory(PlatformVideo video, DBHistoryIndex index, long position, long delta)
         {
             UpdateHistoryPosition(video, index, true, position);
 
-            StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncHistory, new List<HistoryVideo>()
+            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncHistory, new List<HistoryVideo>()
             {
                 index.Object
             });

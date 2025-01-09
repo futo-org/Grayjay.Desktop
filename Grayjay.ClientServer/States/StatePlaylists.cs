@@ -138,11 +138,11 @@ public class StatePlaylists
 
     private static void BroadcastSyncPlaylists(List<Playlist> playlists, Dictionary<string, long> removals = null)
     {
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             try
             {
-                StateSync.Instance.BroadcastJson(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
+                await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncPlaylists, new SyncPlaylistsPackage()
                 {
                     Playlists = playlists,
                     PlaylistRemovals = removals ?? new Dictionary<string, long>()

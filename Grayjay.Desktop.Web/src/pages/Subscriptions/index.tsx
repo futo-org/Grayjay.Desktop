@@ -355,7 +355,7 @@ const SubscriptionsPage: Component = () => {
             </div>
           </Show>
           <Show when={subProgress$() > 0 && subProgress$() < 1}>
-              <div style={{height: "2px", width: (subProgress$() * 100) + "%", position: "absolute", bottom: "15px", background: "linear-gradient(267deg, rgb(1, 214, 230) -100.57%, rgb(1, 130, 231) 90.96%)"}}>
+              <div style={{height: "2px", width: (subProgress$() * 100) + "%", position: "absolute", bottom: "1px", background: "linear-gradient(267deg, rgb(1, 214, 230) -100.57%, rgb(1, 130, 231) 90.96%)"}}>
               </div>
             </Show>
         </div>

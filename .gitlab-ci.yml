@@ -3,12 +3,14 @@ variables:
   GIT_STRATEGY: clone
 
 stages:
+  - buildAndDeployUnstableWindows
+  - buildAndDeployUnstableLinux
   - buildAndDeployStableWindows
   - buildAndDeployStableLinux
 
 
 buildAndDeployUnstableWindows:
-  stage: buildAndDeployStableWindows
+  stage: buildAndDeployUnstableWindows
   tags:
     - WindowsBuilder
   only:
@@ -26,7 +28,7 @@ buildAndDeployUnstableWindows:
   when: manual
   
 buildAndDeployUnstableLinux:
-  stage: buildAndDeployStableLinux
+  stage: buildAndDeployUnstableLinux
   tags:
     - LinuxBuilder
   only:
