@@ -148,6 +148,12 @@ namespace Grayjay.ClientServer
                         act.Context.Response.Headers.Append("Referrer-Policy", "no-referrer");
                     }
                 });
+
+                _app.MapFallback(context =>
+                {
+                    context.Response.ContentType = "text/html";
+                    return context.Response.SendFileAsync(Path.Combine(staticFilesPath, "web", "index.html"));
+                });
             }
 
             Logger.i(nameof(GrayjayServer), $"RunServerAsync: MapWhen Websocket.");
