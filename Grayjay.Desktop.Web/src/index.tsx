@@ -27,6 +27,8 @@ import PostDetailView from './components/contentDetails/PostDetailsView';
 import StateWebsocket from './state/StateWebsocket';
 import GlobalContextMenu from './components/GlobalContextMenu';
 import BuyPage from './pages/BuyPage';
+import UIOverlay from './state/UIOverlay';
+import ExceptionModel from './backend/exceptions/ExceptionModel';
 
 const HomePage = lazy(() => import('./pages/Home'));
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'));

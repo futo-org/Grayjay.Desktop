@@ -8,6 +8,8 @@ import Dropdown from '../../components/basics/inputs/Dropdown';
 import Checkbox from '../../components/basics/inputs/Checkbox';
 import icon_add from '../../assets/icons/icon24_add.svg';
 import icon_close from '../../assets/icons/icon24_close.svg';
+import icon_copy from '../../assets/icons/copy.svg';
+import Tooltip from '../../components/tooltip';
 
 export interface DialogDescriptor {
   icon?: string,
@@ -144,6 +146,12 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         </div>
         <Show when={props.dialog?.code}>
           <div class={styles.code}>
+            <Tooltip text="Copy all">
+              <img src={icon_copy} style="width: 16px; height: 16px; margin-right: 6px; user-select: none;" onClick={async () => {
+                await navigator.clipboard.writeText(props.dialog!.code!);
+                UIOverlay.toast("Text has been copied");
+              }} />
+            </Tooltip>
             {props.dialog!.code}
           </div>
         </Show>
