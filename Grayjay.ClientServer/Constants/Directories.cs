@@ -35,16 +35,22 @@ public static class Directories
                     dir = oldStyleDir;
                 else
                 {
-                    string localShareDir = Path.Combine(userDir, ".local", "share", "Grayjay");
-                    if (Directory.Exists(localShareDir))
-                        dir = localShareDir;
+                    string? xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+                    if (!string.IsNullOrEmpty(xdgDataHome) && Directory.Exists(xdgDataHome))
+                        dir = Path.Combine(xdgDataHome, "Grayjay");
                     else
                     {
-                        string configDir = Path.Combine(userDir, ".config", "Grayjay");
-                        if (Directory.Exists(configDir))
-                            dir = configDir;
+                        string localShareDir = Path.Combine(userDir, ".local", "share");
+                        if (Directory.Exists(localShareDir))
+                            dir = Path.Combine(localShareDir, "Grayjay");
                         else
-                            dir = oldStyleDir; // Fallback to old-style
+                        {
+                            string configDir = Path.Combine(userDir, ".config");
+                            if (Directory.Exists(configDir))
+                                dir = Path.Combine(configDir, "Grayjay");
+                            else
+                                dir = oldStyleDir; // Fallback to old-style
+                        }
                     }
                 }
             }
