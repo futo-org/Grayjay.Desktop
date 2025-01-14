@@ -43,7 +43,7 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Search history", SettingsField.TOGGLE, "May require restart", 3)]
             public bool SearchHistory { get; set; } = true;
 
-            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the previouw feedstyle is used, if items should automatically preview.", 5)]
+            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview.", 5)]
             public bool PreviewFeedItems { get; set; } = true;
 
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 6)]
