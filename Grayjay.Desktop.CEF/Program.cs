@@ -246,7 +246,7 @@ namespace Grayjay.Desktop
             File.Delete(PortFile);
             File.WriteAllText(StartingUpFile, "");
 
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Process p = Process.GetCurrentProcess();
                 File.WriteAllText("launch", Path.GetFileName(p.MainModule!.FileName));
