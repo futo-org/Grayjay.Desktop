@@ -368,7 +368,8 @@ namespace Grayjay.Desktop
             {
                 try
                 {
-                    var hasUpdates = Updater.HasUpdate();
+                    (bool hasUpdates, int updaterVersion) = Updater.HasUpdate();
+
                     Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
                     if (hasUpdates)
                     {
@@ -377,7 +378,7 @@ namespace Grayjay.Desktop
                             Process.GetCurrentProcess().Id
                         };
                         var changelog = Updater.GetTargetChangelog();
-                        int currentVersion = Updater.GetUpdaterVersion();
+                        int currentVersion = (updaterVersion > 0) ? updaterVersion : Updater.GetUpdaterVersion();
                         if (changelog != null)
                         {
                             int targetUpdaterVersion = Updater.GetTargetUpdaterVersion(changelog.Server, changelog.Version, changelog.Platform);

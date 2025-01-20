@@ -36,6 +36,8 @@ namespace Grayjay.ClientServer.Subscriptions
         public DateTime LastLiveStreamUpdate { get; set; } = DateTime.MinValue;
         public DateTime LastPostUpdate { get; set; } = DateTime.MinValue;
 
+        public DateTime LastPeekVideo { get; set; } = DateTime.MinValue;
+
         //Last video interval
         public int UploadInterval { get; set; } = 0;
         public int UploadStreamInterval { get; set; } = 0;

@@ -476,6 +476,11 @@ namespace Grayjay.Desktop.POC.Port.States
             return pagerResult;
         }
 
+        public static List<PlatformContent> PeekChannelContents(GrayjayPlugin baseClient, string channelUrl, string type)
+        {
+            return baseClient.FromPool(_channelClientPool)
+                .PeekChannelContents(channelUrl, type);
+        }
 
         public static List<string> GetUserSubscriptions(string pluginId)
         {

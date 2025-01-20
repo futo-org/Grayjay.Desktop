@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer.Threading;
+﻿using Grayjay.ClientServer.Settings;
+using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -73,6 +74,7 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
                 {
                     var fetchTasks = new List<SubscriptionTask>();
                     var cacheTasks = new List<SubscriptionTask>();
+                    var peekTasks = new List<SubscriptionTask>();
 
                     foreach (var task in clientTasks.Tasks)
                     {
@@ -82,14 +84,25 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
                         }
                         else
                         {
-                            task.FromCache = true;
-                            cacheTasks.Add(task);
+                            if (peekTasks.Count < 100 && GrayjaySettings.Instance.Subscriptions.PeekChannelContents &&
+                                task.Sub.LastPeekVideo.Year < 1971 || task.Sub.LastPeekVideo < task.Sub.LastVideoUpdate &&
+                                task.Client.Capabilities.HasPeekChannelContents && task.Client.GetPeekChannelTypes().Contains(task.Type))
+                            {
+                                task.FromPeek = true;
+                                task.FromCache = true;
+                                peekTasks.Add(task);
+                            }
+                            else
+                            {
+                                task.FromCache = true;
+                                cacheTasks.Add(task);
+                            }
                         }
                     }
 
                     Logger.i(nameof(SmartSubscriptionAlgorithm), $"Subscription Client Budget [{clientTasks.Client.Config.Name}]: {fetchTasks.Count}/{limit}");
 
-                    finalTasks.AddRange(fetchTasks.Concat(cacheTasks));
+                    finalTasks.AddRange(fetchTasks.Concat(peekTasks).Concat(cacheTasks));
                 }
             }
 

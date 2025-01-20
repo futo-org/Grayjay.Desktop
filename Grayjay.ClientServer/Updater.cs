@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Grayjay.ClientServer
 {
@@ -134,13 +135,26 @@ namespace Grayjay.ClientServer
             if (string.IsNullOrEmpty(executable))
                 throw new InvalidOperationException("No updater found");
 
-            Process.Start(new ProcessStartInfo()
+            if (OperatingSystem.IsLinux())
             {
-                FileName = executable,
-                Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
-                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
-                UseShellExecute = true
-            });
+                Process.Start(new ProcessStartInfo()
+                {
+                    FileName = GetLinuxShell(),
+                    Arguments = $"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
+                                                                                                                                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo()
+                {
+                    FileName = executable,
+                    Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
+                                                                                                                                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
+                    UseShellExecute = true
+                });
+            }
         }
         public static void UpdateSelf()
         {
@@ -185,7 +199,8 @@ namespace Grayjay.ClientServer
             }
         }
 
-        public static bool HasUpdate()
+        private static Regex REGEX_UPDATER_VERSION = new Regex("FUTO Updater v([0-9]+)");
+        public static (bool, int) HasUpdate()
         {
             string executable = GetUpdaterExecutablePath();
             if (string.IsNullOrEmpty(executable))
@@ -197,20 +212,25 @@ namespace Grayjay.ClientServer
                 Arguments = "check",
                 RedirectStandardOutput = true
             });
+            int updaterVersion = -1;
             while (!proc.StandardOutput.EndOfStream)
             {
                 var line = proc.StandardOutput.ReadLine();
+                Match m = REGEX_UPDATER_VERSION.Match(line);
+                if (m.Success && m.Groups.Count > 1)
+                    updaterVersion = int.Parse(m.Groups[1].Value);
+
                 Console.WriteLine(line);
             }
             proc.WaitForExit();
             switch (proc.ExitCode)
             {
                 case 1:
-                    return true;
+                    return (true, updaterVersion);
                 case 2:
-                    return false;
+                    return (false, updaterVersion);
                 default:
-                    return false;
+                    return (false, updaterVersion);
             }
         }
 
@@ -309,6 +329,38 @@ namespace Grayjay.ClientServer
                   (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + "BASE64:" + Convert.ToBase64String(Encoding.UTF8.GetBytes(GetStartupArguments()))),
                 UseShellExecute = true
             });
+        }
+
+        public static string GetLinuxShell()
+        {
+            string shell = Environment.GetEnvironmentVariable("SHELL");
+
+            if (!string.IsNullOrEmpty(shell) && File.Exists(shell))
+            {
+                return shell;
+            }
+
+            // Fallback list of commonly available shells
+            List<string> fallbackShells = new List<string>
+            {
+                "/bin/sh",
+                "/bin/bash",
+                "/bin/zsh",
+                "/bin/dash",
+                "/usr/bin/fish",
+                "/bin/ksh",
+                "/bin/tcsh",
+                "/bin/csh"
+            };
+
+            foreach (string fallback in fallbackShells)
+            {
+                if (File.Exists(fallback))
+                {
+                    return fallback;
+                }
+            }
+            throw new InvalidOperationException("No valid shell could be found.");
         }
     }
 }

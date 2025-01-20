@@ -77,6 +77,7 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Fetch on tab open", SettingsField.TOGGLE, "Fetch new results when the tab is opened (if no results are present)", 9)]
             public bool FetchOnTabOpen { get; set; } = true;
 
+
             /*
             [SettingsField("Background Update", SettingsField.DROPDOWN, "Experimental background update for subscriptions cache", 10, "background_update")]
             [SettingsDropdownOptions("")]
@@ -114,6 +115,10 @@ namespace Grayjay.ClientServer.Settings
 
             [SettingsField("Always Reload From Cache", SettingsField.TOGGLE, "This is not recommended, but possible workaround for subscription issues", 14)]
             public bool AlwaysReloadFromCache { get; set; } = false;
+
+
+            [SettingsField("Peek Channel Contents", SettingsField.TOGGLE, "Peek channel contents if supported by plugin of rate-limited calls, may increase subscription reload time", 16)]
+            public bool PeekChannelContents { get; set; } = true;
         }
 
         [SettingsField("Player", "group", "Change behavior of the player", 5)]
