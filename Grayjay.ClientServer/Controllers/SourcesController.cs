@@ -59,7 +59,20 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<bool> SourceEnable(string id)
         {
-            await StatePlatform.EnableClient(id);
+            try
+            {
+                await StatePlatform.EnableClient(id, true);
+            }
+            catch( Exception ex)
+            {
+                PluginDescriptor config = null;
+                try
+                {
+                    config = StatePlugins.GetPlugin(id);
+                }
+                catch (Exception _) { }
+                throw DialogException.FromException($"Failed to enable plugin [{config?.Config.Name}]", ex);
+            }
             return true;
         }
         [HttpGet]
@@ -399,7 +412,13 @@ namespace Grayjay.ClientServer.Controllers
                                 Text = "Enable",
                                 Action = async (resp) =>
                                 {
-                                    _ = StatePlatform.EnableClients(toQueryEnable.Select(x=>x.ID).ToArray());
+                                    try {
+                                        _ = StatePlatform.EnableClients(toQueryEnable.Select(x=>x.ID).ToArray());
+                                    }
+                                    catch(Exception ex)
+                                    {
+                                        StateUI.DialogError("Failed to enable Plugin", ex);
+                                    }
                                 }
                             }
                         }

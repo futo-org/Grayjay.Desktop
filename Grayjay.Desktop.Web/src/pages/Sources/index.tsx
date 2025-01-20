@@ -51,7 +51,14 @@ const SourcesPage: Component = () => {
   });
 
   async function enableSource(source: ISourceConfig) {
-    const enabled = await SourcesBackend.enableSource(source.id);
+    const enabled = await UIOverlay.catchDialogExceptions(async ()=>{
+    
+                    return await SourcesBackend.enableSource(source.id);
+    }, ()=>{
+      eSourcesRes.refetch();
+    }, ()=>{
+      enableSource(source);
+    });
     eSourcesRes.refetch();
     dSourcesRes.refetch();
   }

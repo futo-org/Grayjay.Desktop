@@ -137,13 +137,8 @@ namespace Grayjay.ClientServer
 
             if (OperatingSystem.IsLinux())
             {
-                Process.Start(new ProcessStartInfo()
-                {
-                    FileName = GetLinuxShell(),
-                    Arguments = $"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
-                                                                                                                                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
-                    UseShellExecute = true
-                });
+                var toRun = GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"");
+                Process.Start(toRun);
             }
             else
             {
@@ -331,36 +326,58 @@ namespace Grayjay.ClientServer
             });
         }
 
-        public static string GetLinuxShell()
+        public static ProcessStartInfo GetLinuxShell(string cmd)
         {
-            string shell = Environment.GetEnvironmentVariable("SHELL");
-
-            if (!string.IsNullOrEmpty(shell) && File.Exists(shell))
+            string[] eTerminals = new string[]
             {
-                return shell;
-            }
-
-            // Fallback list of commonly available shells
-            List<string> fallbackShells = new List<string>
-            {
-                "/bin/sh",
-                "/bin/bash",
-                "/bin/zsh",
-                "/bin/dash",
-                "/usr/bin/fish",
-                "/bin/ksh",
-                "/bin/tcsh",
-                "/bin/csh"
+                "x-terminal-emulator",
+                "gnome-terminal",
+                "konsole",
+                "xfce4-terminal",
+                "rxvt",
+                "xterm"
             };
-
-            foreach (string fallback in fallbackShells)
+            string[] cTerminals = new string[]
             {
-                if (File.Exists(fallback))
+                "lxterminal",
+            };
+            string[] supportedTerminals = new string[]
+            {
+            };
+            string[] allTerminals = eTerminals.Concat(cTerminals).Concat(supportedTerminals).ToArray();
+            string selectedTerminal = null;
+            foreach (var terminal in allTerminals)
+                if (LinuxCommandExists(terminal))
                 {
-                    return fallback;
+                    selectedTerminal = terminal;
+                    break;
                 }
-            }
-            throw new InvalidOperationException("No valid shell could be found.");
+            if (selectedTerminal == null)
+                return null;
+
+            if (eTerminals.Contains(selectedTerminal))
+                return new ProcessStartInfo()
+                {
+                    FileName = selectedTerminal,
+                    Arguments = $"-e \"{cmd.Replace("\"", "\\\"")}\"",
+                    UseShellExecute = true,
+                };
+            else if(cTerminals.Contains(selectedTerminal))
+                return new ProcessStartInfo()
+                {
+                    FileName = selectedTerminal,
+                    Arguments = $"-c \"{cmd.Replace("\"", "\\\"")}\"",
+                    UseShellExecute = true,
+                };
+
+
+            return null;
+        }
+        private static bool LinuxCommandExists(string command)
+        {
+            var result = Process.Start($"command -v {command}");
+            result.WaitForExit();
+            return result.ExitCode == 1;
         }
     }
 }

@@ -623,9 +623,16 @@ namespace Grayjay.Desktop.POC.Port.States
                 }
             }
         }
-        public static async Task EnableClient(string id)
+        public static async Task EnableClient(string id, bool allowThrow = false)
         {
-            await SelectClients(GetEnabledClients().Select(x => x.ID).Concat(new[] { id }).Distinct().ToArray());
+            Exception ex = null;
+            await SelectClients((eId, exception) =>
+            {
+                if (id == eId)
+                    ex = exception;
+            }, GetEnabledClients().Select(x => x.ID).Concat(new[] { id }).Distinct().ToArray());
+            if (ex != null)
+                throw ex;
         }
         public static async Task EnableClients(string[] ids)
         {
@@ -635,7 +642,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x=>x != id).Distinct().ToArray());
         }
-        public static async Task SelectClients(params string[] ids)
+        public static async Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {
             List<GrayjayPlugin> removed;
             lock (_clientsLock)
@@ -656,12 +663,13 @@ namespace Grayjay.Desktop.POC.Port.States
                         }
 
                         _enabledClients.Add(client);
-                        if(isNew)
+                        if (isNew)
                             OnSourceEnabled?.Invoke(client);
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                        onEx?.Invoke(id, ex);
                     }
                 }
 
@@ -674,6 +682,10 @@ namespace Grayjay.Desktop.POC.Port.States
                 }
             }
             StateWebsocket.EnabledClientsChanged();
+        }
+        public static async Task SelectClients(params string[] ids)
+        {
+            await SelectClients(null, ids);
         }
 
         public static async Task UpdateAvailableClient(string id)
