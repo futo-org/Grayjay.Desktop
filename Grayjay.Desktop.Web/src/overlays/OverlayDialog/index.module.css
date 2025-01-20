@@ -1,8 +1,10 @@
 
 .dialog {
     position: relative;
-    min-width: 478px;
-    max-width: calc(100% - 300px);
+    min-width: 542px;
+    width: calc(100% - 300px);
+    max-width: 1200px;
+    max-height: 100vh;
     padding: 32px 32px 32px 32px;
     flex-direction: column;
     justify-content: center;
@@ -10,10 +12,12 @@
     text-align: center;
     margin-left: 50%;
     transform: translateX(-50%);
+    display: flex;
     
     border-radius: 12px;
     border: 1px solid #2E2E2E;
     background: #141414;
+    box-sizing: border-box;
     box-shadow: 0px 1.167px 3.148px 0px rgba(0, 0, 0, 0.07), 0px 5.133px 6.519px 0px rgba(0, 0, 0, 0.12), 0px 12.6px 13px 0px rgba(0, 0, 0, 0.16), 0px 24.267px 25.481px 0px rgba(0, 0, 0, 0.19), 0px 40.833px 46.852px 0px rgba(0, 0, 0, 0.24), 0px 63px 80px 0px rgba(0, 0, 0, 0.31);
 }
 
@@ -60,7 +64,7 @@
 
 
 .buttons {
-    margin-top: 32px;
+    margin-top: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -97,16 +101,39 @@
 
 .code {
     margin-top: 20px;
-    margin-bottom: 30px;
     padding: 10px;
     background-color: #1A1A1A;
     border-radius: 6px;
     border: 1px solid #444;
     font-family: monospace;
     white-space: pre-wrap;
-    overflow: auto;
+    overflow-y: auto;
     max-height: 300px;
     text-align: left;
+    position: relative;
+
+    user-select: text;
+}
+
+.code::-webkit-scrollbar {
+    width: 10px;
+}
+
+.code::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.code::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+.code::-webkit-scrollbar-track {
+    background-color: #333;
+}
+
+.code::-webkit-scrollbar-corner {
+    background-color: transparent;
 }
 
 .addLabel {

@@ -29,6 +29,7 @@ Improvements:
 Fixes:
  - Fix issue where setStartTime was not available
  - License not re-loading on boot
+ - Several fixes related to Sync
 
  - Fixes with Updater
     - Updater not properly truncating files that became shorter

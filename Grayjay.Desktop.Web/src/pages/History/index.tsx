@@ -133,7 +133,7 @@ const HistoryPage: Component = () => {
             }),
             new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
               setShow(false);
-              await UIOverlay.overlayAddToPlaylist(content);
+              await UIOverlay.overlayAddToPlaylist(content.video);
             }),
             new MenuItemButton("Download video", iconDownload, undefined, () => {
               setShow(false);
