@@ -1,4 +1,5 @@
 ﻿
+using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Store;
@@ -32,7 +33,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 RegisterDescriptor(plugin);
             }
         }
-        private static void RegisterDescriptor(PluginDescriptor descriptor)
+        public static void RegisterDescriptor(PluginDescriptor descriptor)
         {
             descriptor.OnAuthChanged += () => OnPluginAuthChanged?.Invoke(descriptor);
             descriptor.OnCaptchaChanged += () => OnPluginCaptchaChanged?.Invoke(descriptor);
@@ -88,6 +89,8 @@ namespace Grayjay.Desktop.POC.Port.States
         }
         public static PluginDescriptor GetPlugin(string id)
         {
+            if (id == StateDeveloper.DEV_ID)
+                throw new InvalidOperationException("Attempted to make developer plugin persistent, this is not allowed");
             var plugin = _plugins.FindObject(x => x.Config.ID == id);
             return plugin;
         }
@@ -210,9 +213,14 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static PluginDescriptor CreatePlugin(PluginConfig config, string script, bool reinstall)
         {
+            if (config.ID == StateDeveloper.DEV_ID)
+                throw new InvalidOperationException("Attempted to make developer plugin persistent, this is not allowed");
+
             if(!string.IsNullOrEmpty(config.ScriptSignature))
             {
-                //TODO: validate
+                var isValid = config.VerifySignature(script);
+                if (!isValid)
+                    throw new InvalidOperationException($"Script signature is invalid. Possible tampering");
             }
 
             var existing = GetPlugin(config.ID);
@@ -238,7 +246,9 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static PluginDescriptor UpdatePlugin(string id, bool doReload = false)
         {
-            lock(_pluginScripts)
+            if (id == StateDeveloper.DEV_ID)
+                throw new InvalidOperationException("Attempted to make developer plugin persistent, this is not allowed");
+            lock (_pluginScripts)
             {
                 lock(_plugins)
                 {

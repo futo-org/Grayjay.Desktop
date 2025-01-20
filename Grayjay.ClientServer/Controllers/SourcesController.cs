@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer.Exceptions;
+﻿using Futo.PlatformPlayer.States;
+using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Sources;
 using Grayjay.Desktop.POC;
@@ -90,7 +91,7 @@ namespace Grayjay.ClientServer.Controllers
                 throw new NotImplementedException("Running headless, login only supported in UI application mode");
             }
 
-            var descriptor = StatePlugins.GetPlugin(id);
+            var descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
             var pluginConfig = descriptor.Config;
             var authConfig = pluginConfig.Authentication;
 
@@ -141,13 +142,14 @@ namespace Grayjay.ClientServer.Controllers
                 //Finished
                 if (_didLogIn())
                 {
-                    var plugin = StatePlugins.GetPlugin(id);
+                    var plugin = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
                     plugin.SetAuth(new SourceAuth()
                     {
                         Headers = headersFoundMap,
                         CookieMap = cookiesFoundMap
                     });
-                    StatePlugins.UpdatePlugin(id, true);
+                    if (id != StateDeveloper.DEV_ID)
+                        StatePlugins.UpdatePlugin(id, true);
                 }
             }
 
@@ -247,13 +249,14 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<bool> SourceLogout(string id)
         {
-            var descriptor = StatePlugins.GetPlugin(id);
+            var descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
             var pluginConfig = descriptor.Config;
             var authConfig = pluginConfig.Authentication;
             if(authConfig != null)
             {
                 descriptor.SetAuth(null);
-                StatePlugins.UpdatePlugin(id, true);
+                if(id != StateDeveloper.DEV_ID)
+                    StatePlugins.UpdatePlugin(id, true);
             }
             _ = StateUI.Dialog("", "Please restart Grayjay before logging in again", "Grayjay does not clear past cookies yet after logout, please restart before trying to login again, or it will reuse your current login.", null, 0, new StateUI.DialogAction("Ok", () => { }));
             return true;

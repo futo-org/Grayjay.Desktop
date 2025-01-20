@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Store;
@@ -49,7 +50,7 @@ namespace Grayjay.ClientServer.Controllers
 
         //Source app settings
         public SettingsObject<PluginAppSettings> SourceAppSettings(string id)
-            => StatePlugins.GetPlugin(id)?.AppSettings?.GetSettingsObject(id);
+            => (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor?.AppSettings?.GetSettingsObject() : StatePlugins.GetPlugin(id)?.AppSettings?.GetSettingsObject(id);
 
         [HttpPost]
         public bool SourceAppSettingsSave(string id, [FromBody]PluginAppSettings settings)
@@ -66,16 +67,17 @@ namespace Grayjay.ClientServer.Controllers
 
         //Source-defined settings
         public SettingsObject<Dictionary<string, string>> SourceSettings(string id)
-            => StatePlugins.GetPlugin(id)?.GetSettingsObject();
+            => (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor?.GetSettingsObject() : StatePlugins.GetPlugin(id)?.GetSettingsObject();
 
         [HttpPost]
         public bool SourceSettingsSave(string id, [FromBody] Dictionary<string, object> settings)
         {
             if (settings == null)
                 return false;
-            PluginDescriptor descriptor = StatePlugins.GetPlugin(id);
+            PluginDescriptor descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
             descriptor.Settings = settings.ToDictionary(x=>x.Key, y=>y.Value?.ToString() ?? "");
-            StatePlugins.UpdatePlugin(id);
+            if(id != StateDeveloper.DEV_ID)
+                StatePlugins.UpdatePlugin(id);
             StateUI.Toast($"Saved [{descriptor.Config.Name}] plugin settings");
             return true;
         }

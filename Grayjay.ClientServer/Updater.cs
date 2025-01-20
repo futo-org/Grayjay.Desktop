@@ -146,7 +146,7 @@ namespace Grayjay.ClientServer
                 {
                     FileName = executable,
                     Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
-                                                                                                                                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
+                      //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
                     UseShellExecute = true
                 });
             }
