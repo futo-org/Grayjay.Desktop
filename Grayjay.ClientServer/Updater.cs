@@ -3,9 +3,11 @@ using Grayjay.Desktop.POC;
 using System;
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Grayjay.ClientServer
 {
@@ -135,19 +137,17 @@ namespace Grayjay.ClientServer
             if (string.IsNullOrEmpty(executable))
                 throw new InvalidOperationException("No updater found");
 
-            if (OperatingSystem.IsLinux())
-            {
-                var toRun = GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"");
-                Process.Start(toRun);
-            }
+            var toRunLinux = OperatingSystem.IsLinux() ? GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"") : null;
+            if (toRunLinux != null)
+                Process.Start(toRunLinux);
             else
             {
                 Process.Start(new ProcessStartInfo()
                 {
                     FileName = executable,
-                    Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
-                      //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
-                    UseShellExecute = true
+                    Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",
+                    UseShellExecute = true,
+                    WorkingDirectory = Environment.CurrentDirectory
                 });
             }
         }
@@ -326,58 +326,76 @@ namespace Grayjay.ClientServer
             });
         }
 
-        public static ProcessStartInfo GetLinuxShell(string cmd)
+        [SupportedOSPlatform("linux")]
+        public static ProcessStartInfo? GetLinuxShell(string cmd)
         {
-            string[] eTerminals = new string[]
-            {
+            string[] eTerminals =
+            [
                 "x-terminal-emulator",
                 "gnome-terminal",
                 "konsole",
                 "xfce4-terminal",
                 "rxvt",
                 "xterm"
-            };
-            string[] cTerminals = new string[]
-            {
+            ];
+            string[] cTerminals =
+            [
                 "lxterminal",
-            };
-            string[] supportedTerminals = new string[]
-            {
-            };
+            ];
+            string[] supportedTerminals = [];
             string[] allTerminals = eTerminals.Concat(cTerminals).Concat(supportedTerminals).ToArray();
-            string selectedTerminal = null;
+            string? selectedTerminalPath = null;
+            string? selectedTerminal = null;
             foreach (var terminal in allTerminals)
-                if (LinuxCommandExists(terminal))
+            {
+                var path = GetLinuxPath(terminal);
+                if (path != null)
                 {
                     selectedTerminal = terminal;
+                    selectedTerminalPath = path;
                     break;
                 }
-            if (selectedTerminal == null)
+            }
+            if (selectedTerminalPath == null)
                 return null;
 
             if (eTerminals.Contains(selectedTerminal))
+            {
                 return new ProcessStartInfo()
                 {
-                    FileName = selectedTerminal,
+                    FileName = selectedTerminalPath,
                     Arguments = $"-e \"{cmd.Replace("\"", "\\\"")}\"",
-                    UseShellExecute = true,
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory
                 };
-            else if(cTerminals.Contains(selectedTerminal))
+            }
+            else if (cTerminals.Contains(selectedTerminal))
+            {
                 return new ProcessStartInfo()
                 {
-                    FileName = selectedTerminal,
+                    FileName = selectedTerminalPath,
                     Arguments = $"-c \"{cmd.Replace("\"", "\\\"")}\"",
-                    UseShellExecute = true,
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory
                 };
-
+            }
 
             return null;
         }
-        private static bool LinuxCommandExists(string command)
+
+        [SupportedOSPlatform("linux")]
+        private static string? GetLinuxPath(string command)
         {
-            var result = Process.Start($"command -v {command}");
-            result.WaitForExit();
-            return result.ExitCode == 1;
+            var result = Process.Start(new ProcessStartInfo()
+            {
+                FileName = "which",
+                Arguments = $"\"{command}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            });
+            result!.WaitForExit();
+            var path = result!.StandardOutput.ReadToEnd().Trim();
+            return result.ExitCode == 0 ? path : null;
         }
     }
 }
