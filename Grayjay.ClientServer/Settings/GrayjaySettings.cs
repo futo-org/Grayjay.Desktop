@@ -311,6 +311,9 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Version Type", SettingsField.READONLY, "", 3)]
             public string versionType { get; } = "stable";
 
+            [SettingsField("Updater Version", SettingsField.READONLY, "", 4)]
+            public string updaterVersion { get; set; } = "Unknown";
+
             [SettingsField("Mode", SettingsField.READONLY, "", 9)]
             public string mode => (GrayjayServer.Instance?.ServerMode ?? false) ? "Server" : (GrayjayServer.Instance?.HeadlessMode ?? false) ? "Headless" : "UI";
         }

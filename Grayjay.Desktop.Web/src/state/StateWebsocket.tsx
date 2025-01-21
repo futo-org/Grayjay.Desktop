@@ -73,7 +73,6 @@ function createState() {
             }
         }
     });
-
     return value;
 }
 

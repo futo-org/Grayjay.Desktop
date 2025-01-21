@@ -9,4 +9,8 @@ export abstract class WindowBackend {
     static async startWindow(): Promise<Boolean> {
         return await Backend.GET("/window/startWindow")
     }
+
+    static async ready(): Promise<boolean> {
+        return await Backend.GET("/window/Ready");
+    }
 }
