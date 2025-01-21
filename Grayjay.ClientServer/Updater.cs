@@ -137,11 +137,28 @@ namespace Grayjay.ClientServer
             if (string.IsNullOrEmpty(executable))
                 throw new InvalidOperationException("No updater found");
 
-            var toRunLinux = OperatingSystem.IsLinux() ? GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"") : null;
-            if (toRunLinux != null)
-                Process.Start(toRunLinux);
-            else
+            bool processStarted = false;
+            if (OperatingSystem.IsLinux())
             {
+                var toRunLinux = GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"");
+                if (toRunLinux != null)
+                {
+                    try
+                    {
+                        Logger.i(nameof(Updater), "Starting updater through shell");
+                        processStarted = Process.Start(toRunLinux) != null;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.e(nameof(Updater), "Starting updater through shell failed", e);
+                    }
+                }
+            }
+            
+            if (!processStarted)
+            {
+                Logger.i(nameof(Updater), "Starting updater directly");
+
                 Process.Start(new ProcessStartInfo()
                 {
                     FileName = executable,
@@ -149,6 +166,8 @@ namespace Grayjay.ClientServer
                     UseShellExecute = true,
                     WorkingDirectory = Environment.CurrentDirectory
                 });
+
+                processStarted = true;
             }
         }
         public static void UpdateSelf()
