@@ -124,6 +124,7 @@ namespace Grayjay.Desktop.POC.Port.States
         public static string InjectDevPlugin(PluginConfig config, string source)
         {
             string devId = StateDeveloper.DEV_ID;
+            string originalId = config.ID;
             config.ID = devId;
 
             lock (_clientsLock)
@@ -138,7 +139,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 _availableClients.RemoveAll(x => x is DevGrayjayPlugin);
 
 
-                DevGrayjayPlugin newClient = new DevGrayjayPlugin(new PluginDescriptor(config), source);
+                DevGrayjayPlugin newClient = new DevGrayjayPlugin(new PluginDescriptor(config), originalId, source);
                 StatePlugins.RegisterDescriptor(newClient.Descriptor);
                 devId = newClient.DevID;
                 try
@@ -748,7 +749,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 _availableClients.Remove(availableClient);
 
                 var plugin = (id != StateDeveloper.DEV_ID) ? StatePlugins.GetPlugin(id) : devPlugin.Descriptor;
-                var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, (devPlugin?.DevScript));
+                var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, devPlugin.OriginalID, (devPlugin?.DevScript));
 
                 newClient.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
                 newClient.OnScriptException += (config, ex) =>

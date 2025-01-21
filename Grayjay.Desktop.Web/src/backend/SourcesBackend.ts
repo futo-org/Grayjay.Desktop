@@ -79,6 +79,9 @@ export abstract class SourcesBackend {
     static login(id: string) {
         Backend.GET("/sources/SourceLogin?id=" + id);
     }
+    static loginDevClone() {
+        Backend.GET("/sources/SourceLoginDevClone");
+    }
     
     static async logout(id: string) {
         return await Backend.GET("/sources/SourceLogout?id=" + id);

@@ -118,6 +118,9 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
     function login(id: string){
       SourcesBackend.login(id)
     }
+    function loginDevClone(){
+      SourcesBackend.loginDevClone()
+    }
     async function logout(id: string){
       await SourcesBackend.logout(id);
       sourceResource.refetch();
@@ -190,6 +193,9 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
                 </Show>
                 <Show when={StateGlobal.settings$()?.object?.info?.mode != "Server"}>
                   <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login' onClick={()=>login(sourceResource$()!.config.id)}></Button>
+                </Show>
+                <Show when={StateGlobal.settings$()?.object?.info?.mode != "Server" && sourceResource$()?.config?.id == "DEV"}>
+                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login (Clone From Real)' onClick={()=>loginDevClone()}></Button>
                 </Show>
               </Show>
               <Show when={!!sourceResource$()?.hasLoggedIn}>

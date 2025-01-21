@@ -16,11 +16,13 @@ namespace Grayjay.ClientServer.Developer
     {
         public override string ID => StateDeveloper.DEV_ID;
 
+        public string OriginalID { get; set; }
         public string DevID { get; set; }
         public string DevScript { get; set; }
 
-        public DevGrayjayPlugin(PluginDescriptor descriptor, string script, string? savedState = null, PluginHttpClient client = null, PluginHttpClient clientAuth = null, string devID = null) : base(descriptor, script, savedState, client, clientAuth)
+        public DevGrayjayPlugin(PluginDescriptor descriptor, string originalId, string script, string? savedState = null, PluginHttpClient client = null, PluginHttpClient clientAuth = null, string devID = null) : base(descriptor, script, savedState, client, clientAuth)
         {
+            OriginalID = originalId;
             DevScript = script;
             DevID = devID ?? Guid.NewGuid().ToString().Substring(0, 5);
             OnLog += (sender, msg) =>
@@ -37,8 +39,9 @@ namespace Grayjay.ClientServer.Developer
             };
         }
 
-        public DevGrayjayPlugin(PluginConfig config, string script, Dictionary<string, string?>? settings = null, string savedState = null, string devID = null) : base(config, script, settings, savedState)
+        public DevGrayjayPlugin(PluginConfig config, string originalId, string script, Dictionary<string, string?>? settings = null, string savedState = null, string devID = null) : base(config, script, settings, savedState)
         {
+            OriginalID = originalId;
             DevScript = script;
             DevID = devID ?? Guid.NewGuid().ToString().Substring(0, 5);
 
@@ -55,9 +58,9 @@ namespace Grayjay.ClientServer.Developer
         public override GrayjayPlugin GetCopy(bool privateCopy = false)
         {
             if(!privateCopy)
-                return new DevGrayjayPlugin(Descriptor, DevScript, GetSavedState(), null, null, DevID);
+                return new DevGrayjayPlugin(Descriptor, OriginalID, DevScript, GetSavedState(), null, null, DevID);
             else
-                return new DevGrayjayPlugin(Descriptor.Config, DevScript, Descriptor.Settings, GetSavedState(), DevID);
+                return new DevGrayjayPlugin(Descriptor.Config, OriginalID, DevScript, Descriptor.Settings, GetSavedState(), DevID);
         }
 
         public override void Enable() => StateDeveloper.Instance.HandleDevCall(DevID, "enable", false, () =>

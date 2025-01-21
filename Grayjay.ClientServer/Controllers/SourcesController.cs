@@ -247,6 +247,38 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
+        public async Task<bool> SourceLoginDevClone()
+        {
+            var plugin = StatePlatform.GetDevClient();
+            if (plugin == null)
+                return false;
+
+            if(plugin.OriginalID == null)
+            {
+                StateUI.Toast("DEV Plugin has no original id");
+                return false;
+            }
+            
+            var mainPlugin = StatePlugins.GetPlugin(plugin.OriginalID);
+            if (mainPlugin == null)
+            {
+                StateUI.Toast("No main plugin found for id");
+                return false;
+            }
+
+            var auth = mainPlugin.GetAuth();
+            if(auth == null)
+            {
+                StateUI.Toast("Main plugin is not authenticated");
+                return false;
+            }
+            plugin.Descriptor.SetAuth(auth);
+            StateUI.Toast("Plugin auth copied to dev plugin");
+            return true;
+        }
+
+
+        [HttpGet]
         public async Task<bool> SourceLogout(string id)
         {
             var descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
