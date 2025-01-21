@@ -372,6 +372,8 @@ namespace Grayjay.Desktop
                     try
                     {
                         (bool hasUpdates, int updaterVersion) = Updater.HasUpdate();
+                        if(updaterVersion > 0)
+                            GrayjaySettings.Instance.Info.updaterVersion = "v" + updaterVersion.ToString();
 
                         Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
                         if (hasUpdates)

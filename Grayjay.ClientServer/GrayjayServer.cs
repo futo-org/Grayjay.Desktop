@@ -48,7 +48,10 @@ namespace Grayjay.ClientServer
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
                 if (ServerMode)
+                {
+                    Console.WriteLine("Running in Server mode, listening to all ips on port 11338");
                     serverOptions.Listen(IPAddress.Any, 11338);
+                }
                 else
                     serverOptions.Listen(IPAddress.Loopback, 0);
             });
