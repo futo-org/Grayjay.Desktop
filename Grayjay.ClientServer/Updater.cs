@@ -107,7 +107,7 @@ namespace Grayjay.ClientServer
                     //Old updater doesn't support version yet..
                     if (Constants.App.Version <= 4)
                         return 1;
-                    
+
                     var proc = Process.Start(new ProcessStartInfo()
                     {
                         FileName = executable,

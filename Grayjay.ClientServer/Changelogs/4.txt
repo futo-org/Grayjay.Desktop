@@ -1,16 +1,19 @@
 Features:
  - Headless mode (--headless): Allow you to use Grayjay from your browser instead, while still allowing system, login, and captcha dialogs. (Assumes local)
+ - Server mode (--server): Allows you to use Grayjay from a server in your browser, binds to all ips, DISABLES system, login, and captcha dialogs. (Assumes remote)
+   WARNING: Server mode is still intended single-user, and has no security features built in yet, so not really intended to use yet unless you know what you're doing!
+
  - Changelog support
  - Hotkey (i) now minimizes the player alongside esc
  - Sidebar on left side of video (hover left if in theater mode)
  - Developer Portal support (Add "DEV" file to executable directory)
-
- - Server mode (--server): Allows you to use Grayjay from a server in your browser, binds to all ips, DISABLES system, login, and captcha dialogs. (Assumes remote)
-   WARNING: Server mode is still intended single-user, and has no security features built in yet, so not really intended to use yet unless you know what you're doing!
+    - Testing tab support (limited methods, rest via console)
+    - Integration tab support
+    - Desktop exclusive feature: Clone login to integration dev plugin from primary plugin
 
  - Unstable pipeline, can be used by modifying UpdaterConfig's server property by changing "Grayjay.Desktop" => "Grayjay.Desktop.Unstable"
    WARNING: Not recommended for most people, as there might be broken functionality in that release pipeline.
-
+ - Updater version visible in settings
 
 Improvements:
  - Directory used on Windows changed when Portable file does not exist, in the following priority (higher is higher priority):
@@ -19,16 +22,21 @@ Improvements:
 
  - Directory used on Linux changed when Portable file does not exist, in the following priority (higher is higher priority):
    - ~/Grayjay if exists
+   - {XDG_DATA_HOME}/Grayjay if XDG_DATA_HOME variable exists
    - ~/.local/share/Grayjay if exists
    - ~/.local/config/Grayjay if exists
    - ~/Grayjay if not exists
 
  - Scrollbar for official sources dialog
  - Improved Grayjay's ability to find its CEF dependency
+ - PeekChannelContents support (for users with large amount of subscriptions (>150+))
 
 Fixes:
  - Fix issue where setStartTime was not available
- - License not re-loading on boot
+ - Fix License not re-loading on boot
+ - Several fixes related to Sync
+ - Some dialog scaling fixes
+ - Some fixes related to Linux updater interactions
 
  - Fixes with Updater
     - Updater not properly truncating files that became shorter
