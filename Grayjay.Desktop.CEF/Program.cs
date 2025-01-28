@@ -185,6 +185,7 @@ namespace Grayjay.Desktop
             Console.SetOut(new SuppressingTextWriter(Console.Out));
             Console.SetError(new SuppressingTextWriter(Console.Error));
 
+            Logger.i(nameof(Directories), $"AppContext.BaseDirectory: {AppContext.BaseDirectory}");
             Logger.i(nameof(Directories), $"Base Directory: {Directories.Base}");
             Logger.i(nameof(Directories), $"Temporary Directory: {Directories.Temporary}");
             Logger.i(nameof(Directories), $"Log file path: {Directories.Base}/log.txt");
@@ -245,7 +246,7 @@ namespace Grayjay.Desktop
             File.Delete(PortFile);
             File.WriteAllText(StartingUpFile, "");
 
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Process p = Process.GetCurrentProcess();
                 File.WriteAllText("launch", Path.GetFileName(p.MainModule!.FileName));
@@ -353,7 +354,7 @@ namespace Grayjay.Desktop
 
             watch.Stop();
 
-            
+
             /*
             new Thread(() =>
             {
@@ -364,77 +365,84 @@ namespace Grayjay.Desktop
             }).Start();
             */
 
-            new Thread(() =>
+            StateWindow.WaitForReady(() =>
             {
-                try
+                new Thread(() =>
                 {
-                    var hasUpdates = Updater.HasUpdate();
-                    Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
-                    if (hasUpdates)
+                    Logger.i(nameof(Program), "Checking for updates");
+                    try
                     {
-                        var processIds = new int[]
+                        (bool hasUpdates, int updaterVersion) = Updater.HasUpdate();
+                        if(updaterVersion > 0)
+                            GrayjaySettings.Instance.Info.updaterVersion = "v" + updaterVersion.ToString();
+
+                        Logger.i(nameof(Program), (hasUpdates) ? "New updates found" : "No new updates");
+                        if (hasUpdates)
                         {
-                            Process.GetCurrentProcess().Id
-                        };
-                        var changelog = Updater.GetTargetChangelog();
-                        int currentVersion = Updater.GetUpdaterVersion();
-                        if (changelog != null)
-                        {
-                            int targetUpdaterVersion = Updater.GetTargetUpdaterVersion(changelog.Server, changelog.Version, changelog.Platform);
-                            if (targetUpdaterVersion > currentVersion)
+                            var processIds = new int[]
                             {
-                                string url = Updater.GetUpdaterUrl(changelog.Server, changelog.Version, changelog.Platform);
-                                Logger.w(nameof(Program), $"UPDATER REQUIRES UPDATING FROM: {url}\nAttempting self-updating");
-                                Logger.w(nameof(Program), "Starting self-update..");
-                                try
+                            Process.GetCurrentProcess().Id
+                            };
+                            var changelog = Updater.GetTargetChangelog();
+                            int currentVersion = (updaterVersion > 0) ? updaterVersion : Updater.GetUpdaterVersion();
+                            GrayjaySettings.Instance.Info.updaterVersion = "v" + currentVersion.ToString();
+                            if (changelog != null)
+                            {
+                                int targetUpdaterVersion = Updater.GetTargetUpdaterVersion(changelog.Server, changelog.Version, changelog.Platform);
+                                if (targetUpdaterVersion > currentVersion)
                                 {
-                                    using (WebClient client = new WebClient())
+                                    string url = Updater.GetUpdaterUrl(changelog.Server, changelog.Version, changelog.Platform);
+                                    Logger.w(nameof(Program), $"UPDATER REQUIRES UPDATING FROM: {url}\nAttempting self-updating");
+                                    Logger.w(nameof(Program), "Starting self-update..");
+                                    try
                                     {
-                                        string updatedPath = Updater.GetUpdaterExecutablePath() + ".updated";
-                                        client.DownloadFile(url, updatedPath);
-                                        File.Copy(updatedPath, Updater.GetUpdaterExecutablePath(), true);
-                                        if (OperatingSystem.IsLinux())
+                                        using (WebClient client = new WebClient())
                                         {
-                                            //Just in case
-                                            try
+                                            string updatedPath = Updater.GetUpdaterExecutablePath() + ".updated";
+                                            client.DownloadFile(url, updatedPath);
+                                            File.Copy(updatedPath, Updater.GetUpdaterExecutablePath(), true);
+                                            if (OperatingSystem.IsLinux())
                                             {
-                                                Process chmod = new Process()
+                                                //Just in case
+                                                try
                                                 {
-                                                    StartInfo = new ProcessStartInfo()
+                                                    Process chmod = new Process()
                                                     {
-                                                        FileName = "chmod",
-                                                        Arguments = "-R u=rwx \"" + Updater.GetUpdaterExecutablePath() + "\"",
-                                                        UseShellExecute = false,
-                                                        RedirectStandardOutput = true,
-                                                        CreateNoWindow = true
+                                                        StartInfo = new ProcessStartInfo()
+                                                        {
+                                                            FileName = "chmod",
+                                                            Arguments = "-R u=rwx \"" + Updater.GetUpdaterExecutablePath() + "\"",
+                                                            UseShellExecute = false,
+                                                            RedirectStandardOutput = true,
+                                                            CreateNoWindow = true
+                                                        }
+                                                    };
+                                                    chmod.Start();
+                                                    while (!chmod.StandardOutput.EndOfStream)
+                                                    {
+                                                        var line = chmod.StandardOutput.ReadLine();
+                                                        Console.WriteLine(line);
                                                     }
-                                                };
-                                                chmod.Start();
-                                                while (!chmod.StandardOutput.EndOfStream)
-                                                {
-                                                    var line = chmod.StandardOutput.ReadLine();
-                                                    Console.WriteLine(line);
+                                                    chmod.WaitForExit();
                                                 }
-                                                chmod.WaitForExit();
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                Logger.e(nameof(Program), "Failed to fix permissions for Linux on updater");
-                                                throw;
+                                                catch (Exception ex)
+                                                {
+                                                    Logger.e(nameof(Program), "Failed to fix permissions for Linux on updater");
+                                                    throw;
+                                                }
                                             }
                                         }
+                                        Logger.i(nameof(Program), "Self-updating appeared succesful");
                                     }
-                                    Logger.i(nameof(Program), "Self-updating appeared succesful");
-                                }
-                                catch(Exception ex)
-                                {
-                                    Logger.e(nameof(Program), "Failed to download new Updater:\n" + url);
-                                    StateUI.Dialog(new StateUI.DialogDescriptor()
+                                    catch (Exception ex)
                                     {
-                                        Text = $"Failed to self-update updater to version {targetUpdaterVersion}",
-                                        TextDetails = "Please download it yourself and override it in the Grayjay directory.\nOn linux, ensure it has execution permissions.",
-                                        Code = "url",
-                                        Actions = new List<StateUI.DialogAction>()
+                                        Logger.e(nameof(Program), "Failed to download new Updater:\n" + url);
+                                        StateUI.Dialog(new StateUI.DialogDescriptor()
+                                        {
+                                            Text = $"Failed to self-update updater to version {targetUpdaterVersion}",
+                                            TextDetails = "Please download it yourself and override it in the Grayjay directory.\nOn linux, ensure it has execution permissions.",
+                                            Code = "url",
+                                            Actions = new List<StateUI.DialogAction>()
                                         {
                                             new StateUI.DialogAction("Ignore", () =>
                                             {
@@ -445,18 +453,18 @@ namespace Grayjay.Desktop
                                                 OSHelper.OpenUrl(url);
                                             }, StateUI.ActionStyle.Primary)
                                         }
-                                    });
+                                        });
+                                    }
                                 }
                             }
-                        }
 
-                        Thread.Sleep(1500);
-                        StateUI.Dialog(new StateUI.DialogDescriptor()
-                        {
-                            Text = $"A new update is available for Grayjay Desktop {(changelog != null ? $"(v{changelog.Version})" : "")}",
-                            TextDetails = "Would you like to install the new update?\nGrayjay.Desktop will close during updating.",
-                            Code = changelog?.Text,
-                            Actions = new List<StateUI.DialogAction>()
+                            Thread.Sleep(1500);
+                            StateUI.Dialog(new StateUI.DialogDescriptor()
+                            {
+                                Text = $"A new update is available for Grayjay Desktop {(changelog != null ? $"(v{changelog.Version})" : "")}",
+                                TextDetails = "Would you like to install the new update?\nGrayjay.Desktop will close during updating.",
+                                Code = changelog?.Text,
+                                Actions = new List<StateUI.DialogAction>()
                             {
                                 new StateUI.DialogAction("Ignore", () =>
                                 {
@@ -471,14 +479,16 @@ namespace Grayjay.Desktop
                                     Environment.Exit(0);
                                 }, StateUI.ActionStyle.Primary)
                             }
-                        });
+                            });
+                        }
                     }
-                }
-                catch(Exception ex)
-                {
-                    Logger.e(nameof(Program), "Failed to check updates", ex);
-                }
-            }).Start();
+                    catch (Exception ex)
+                    {
+                        Logger.e(nameof(Program), "Failed to check updates", ex);
+                    }
+                }).Start();
+            });
+            
 
             Logger.i(nameof(Program), "Main: Waiting for window exit.");
             if (window != null)

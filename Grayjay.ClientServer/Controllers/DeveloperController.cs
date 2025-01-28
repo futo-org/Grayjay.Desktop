@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Xml;
+using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer.Developer;
 using Grayjay.ClientServer.Dialogs;
 using Grayjay.ClientServer.Settings;
@@ -77,7 +78,7 @@ namespace Grayjay.ClientServer.Controllers
                 return NotFound();
             var html = Encoding.UTF8.GetString(ReadResource("Grayjay.ClientServer.Developer.Embed.index.html"));
             html = html
-                .Replace("SUPPORT_INTEGRATION: true", "SUPPORT_INTEGRATION: false");
+                .Replace("SUPPORT_INTEGRATION: true", "SUPPORT_INTEGRATION: true");
             if (!string.IsNullOrEmpty(lastDevUrl.Value))
                 html = html.Replace("LAST_DEV_URLS: []", "LAST_DEV_URLS: [" + JsonConvert.SerializeObject(lastDevUrl.Value) + "]");
             return File(Encoding.UTF8.GetBytes(html), "text/html");
@@ -277,7 +278,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (!IsDeveloperMode())
                 return NotFound();
-            return Ok(new string[] { });
+            return Ok(StateDeveloper.Instance.GetLogs(index));
         }
 
         public class ProxyRequest
@@ -333,6 +334,39 @@ namespace Grayjay.ClientServer.Controllers
             return Ok(_testPluginAuth.Item2 != null && _testPluginAuth.Item1 == _testPlugin?.ID);
         }
 
+        [HttpPost]
+        public IActionResult LoadDevPlugin([FromBody]PluginConfig config)
+        {
+            if (!IsDeveloperMode())
+                return NotFound();
+            try
+            {
+                config.IconUrl = GrayjayServer.Instance.BaseUrl + "/web/src/assets/favicon.png";
+                string script = null;
+                if (IsFileUrl(config.AbsoluteScriptUrl))
+                {
+                    string path = config.AbsoluteScriptUrl;
+                    if (config.AbsoluteScriptUrl.StartsWith("file:///"))
+                        path = config.AbsoluteScriptUrl.Substring("file:///".Length);
+                    script = System.IO.File.ReadAllText(path);
+                }
+                else
+                {
+                    var resp = _client.GET(config.AbsoluteScriptUrl, new Dictionary<string, string>());
+                    if (!resp.IsOk)
+                        return BadRequest($"URL {config.ScriptUrl} return code {resp.Code}");
+                    if(resp.Body == null)
+                        return BadRequest($"URL {config.ScriptUrl} return no body");
+                    script = resp.Body.AsString();
+                }
+                string devId = StatePlatform.InjectDevPlugin(config, script);
+                return Ok(devId);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
 
 
 

@@ -150,6 +150,10 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         <SideBarButton collapsed={collapsed()} onClick={() => {
               const host = window.location.host;
               window.location.href = ("http://" + host + "/Developer/Index");
+        }} onRightClick={()=>{
+          const host = window.location.host;
+          const url = ("http://" + host + "/Developer/Index");
+          LocalBackend.open(url);
         }} icon={iconLink} name="Developer" selected={location.pathname === "/Developer/Index"} />
         </Show>
       </div>

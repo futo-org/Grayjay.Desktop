@@ -22,7 +22,7 @@ namespace Grayjay.Desktop.Tests
         }
 
         [TestMethod]
-        public void TestSyncSessionHandshakeAndCommunication()
+        public async Task TestSyncSessionHandshakeAndCommunication()
         {
             var initiatorPipeOut = new AnonymousPipeServerStream(PipeDirection.Out);
             var responderPipeIn = new AnonymousPipeClientStream(PipeDirection.In, initiatorPipeOut.ClientSafePipeHandle);
@@ -115,13 +115,13 @@ namespace Grayjay.Desktop.Tests
             responderSession.Authorizable = new Authorized();
 
             // Simulate initiator sending a PING and responder replying with PONG
-            initiatorSession.Send((byte)SyncSocketSession.Opcode.PING);
-            responderSession.Send((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesExactlyOnePacket);
+            await initiatorSession.SendAsync((byte)SyncSocketSession.Opcode.PING);
+            await responderSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesExactlyOnePacket);
 
-            initiatorSession.Send((byte)SyncSocketSession.Opcode.DATA, 1, randomBytes);
+            await initiatorSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 1, randomBytes);
 
             var sw = Stopwatch.StartNew();
-            responderSession.Send((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesBig);
+            await responderSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesBig);
             Console.WriteLine($"Sent 10MB in {sw.ElapsedMilliseconds}ms");
 
             // Wait for a brief period to simulate some delay and allow communication

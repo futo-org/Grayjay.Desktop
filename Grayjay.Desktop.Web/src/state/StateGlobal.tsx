@@ -153,6 +153,17 @@ function createState() {
         }    
     };
 
+
+    //Lets assume when global is returned, next tick frontend is ready-ish
+    setTimeout(()=>{
+        try {
+            WindowBackend.ready();
+        }
+        catch(ex){
+            console.log("Failed to call ready");
+        }
+    }, 100);
+
     return value;
 }
 

@@ -57,7 +57,11 @@ public static class Directories
             else if (OperatingSystem.IsMacOS())
             {
                 string oldStyleDir = Path.Combine(userDir, "Library/Application Support", "Grayjay");
-                dir = oldStyleDir;
+                string newStyleDir = Path.Combine(userDir, "Containers", "com.futo.grayjay.desktop", "Data", "Library", "Application Support");
+                if (Directory.Exists(oldStyleDir))
+                    dir = oldStyleDir;
+                else
+                    dir = newStyleDir;
             }
             else
             {

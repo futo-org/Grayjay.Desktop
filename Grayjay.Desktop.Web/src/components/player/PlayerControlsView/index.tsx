@@ -342,6 +342,11 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
+            case "i":
+                props.handleMinimize?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
         }
     };
 
@@ -350,11 +355,6 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             case "ArrowRight":
             case "ArrowLeft":
                 stopSkipping();
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
-            case "i":
-                props.handleMinimize?.();
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;

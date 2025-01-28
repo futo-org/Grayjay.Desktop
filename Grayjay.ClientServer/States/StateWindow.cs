@@ -9,6 +9,7 @@ namespace Grayjay.ClientServer.States;
 
 public class WindowState
 {
+    public bool Ready { get; set; }
     public string WindowID { get; set; }
     public DateTime LastAccess { get; set; } = DateTime.Now;
 
@@ -33,6 +34,63 @@ public static class StateWindow
     private static string _defaultID = "UNSPECIFIED";
     private static Dictionary<string, WindowState> _states = new Dictionary<string, WindowState>();
 
+    private static bool _firstWindowReady = false;
+    private static List<Action> _onFirstReadyWaiters = new List<Action>();
+
+    public static void StateReadyChanged(WindowState state, bool ready)
+    {
+        if (ready)
+        {
+            if (_firstWindowReady)
+                return;
+            lock(_onFirstReadyWaiters)
+            {
+                _firstWindowReady = true;
+                foreach(var  action in _onFirstReadyWaiters)
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.e(nameof(StateWindow), "First Window Ready handler failed: " + ex.Message, ex);
+                    }
+                }
+            }
+
+        }
+    }
+
+    public static Task WaitForReadyAsync()
+    {
+        TaskCompletionSource src = new TaskCompletionSource();
+        WaitForReady(() =>
+        {
+            src.SetResult();
+        });
+        return src.Task;
+    }
+    public static void WaitForReady(Action handle)
+    {
+        bool wasReady = false;
+        lock(_onFirstReadyWaiters)
+        {
+            wasReady = _firstWindowReady;
+            if(!wasReady)
+                _onFirstReadyWaiters.Add(handle);
+        }
+        if (wasReady)
+            handle();
+    }
+
+    public static List<WindowState> GetAllStates()
+    {
+        lock (_states)
+        {
+            return _states.Values.ToList();
+        }
+    }
     public static WindowState GetState(this HttpContext context)
     {
         string id = (context.Request.Headers.ContainsKey("WindowID") ? context.Request.Headers["WindowID"].FirstOrDefault() : null);

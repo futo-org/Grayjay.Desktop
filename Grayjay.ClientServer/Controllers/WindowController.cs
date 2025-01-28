@@ -21,5 +21,16 @@ namespace Grayjay.ClientServer.Controllers
                     OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
             }).Start();
         }
+
+        [HttpGet]
+        public void Ready()
+        {
+            var state = this.State();
+            if (state != null)
+            {
+                state.Ready = true;
+                StateWindow.StateReadyChanged(state, true);
+            }
+        }
     }
 }

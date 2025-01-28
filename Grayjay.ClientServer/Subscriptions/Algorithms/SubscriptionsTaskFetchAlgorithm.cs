@@ -37,14 +37,15 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
 
             var tasksGrouped = tasks.GroupBy(task => task.Client);
 
-            Logger.i(TAG, $"Starting Subscriptions Fetch:\n{string.Join("\n", tasksGrouped.Select(group => $"   {group.Key.Config.Name}: {group.Count(task => !task.FromCache)}, Cached({group.Count(task => task.FromCache)})"))}");
+            Logger.i(TAG, $"Starting Subscriptions Fetch:\n{string.Join("\n", tasksGrouped.Select(group => $"   {group.Key.Config.Name}: {group.Count(task => !task.FromCache)}, Cached({group.Count(task => task.FromCache && !task.FromPeek)}), Peek({group.Count(task => task.FromPeek)})"))}");
 
             try
             {
                 foreach (var clientTasks in tasksGrouped)
                 {
                     var clientTaskCount = clientTasks.Count(task => !task.FromCache);
-                    var clientCacheCount = clientTasks.Count() - clientTaskCount;
+                    var clientCacheCount = clientTasks.Count(task => task.FromCache && !task.FromPeek);
+                    var clientPeekCount = clientTasks.Count(task => !task.FromPeek);
                     var limit = clientTasks.Key.GetSubscriptionRateLimit();
 
                     /*
@@ -164,9 +165,31 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
                 {
                     forkTask = new Task<SubscriptionTaskResult>(() =>
                     {
+                        if(task.FromPeek)
+                        {
+                            try
+                            {
+                                var peekResults = StatePlatform.PeekChannelContents(task.Client, task.Url, task.Type);
+                                var mostRecent = peekResults.FirstOrDefault();
+                                task.Sub.LastPeekVideo = mostRecent?.DateTime ?? DateTime.MinValue;
+                                task.Sub.SaveAsync();
+                                var cacheItems = peekResults.Where(x => x.DateTime != default(DateTime) && x.DateTime > task.Sub.LastVideoUpdate);
+                                foreach(var item in cacheItems)
+                                {
+                                    if (item.Author.Thumbnail == null || item.Author.Thumbnail.Length == 0)
+                                        item.Author.Thumbnail = task.Sub.Channel.Thumbnail;
+                                }
+                                StateCache.CacheContents(cacheItems, false);
+                            }
+                            catch(Exception ex)
+                            {
+                                Logger.e(nameof(SubscriptionsTaskFetchAlgorithm), $"Subscription peek [{task.Sub.Channel.Name}] failed", ex);
+                            }
+                        }
+
                         lock (cachedChannels)
                         {
-                            if (task.FromCache)
+                            if (task.FromCache || task.FromPeek)
                             {
                                 finished++;
                                 SetProgress(finished, forkTasks.Count);
@@ -364,6 +387,7 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
             public Subscription Sub { get; }
             public string Url { get; }
             public string Type { get; }
+            public bool FromPeek { get; set; }
             public bool FromCache { get; set; }
             public int Urgency { get; set; }
 

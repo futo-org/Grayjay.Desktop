@@ -1,6 +1,7 @@
 ﻿using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.Developer;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Sources;
@@ -53,6 +54,7 @@ namespace Grayjay.Desktop.POC.Port.States
         private static event Action<bool> OnSourcesAvailableChanged;
         private static event Action<GrayjayPlugin> OnSourceEnabled;
         private static event Action<GrayjayPlugin> OnSourceDisabled;
+        private static event Action OnDevSourceChanged;
 
         private static bool _didStartup = false;
 
@@ -118,6 +120,46 @@ namespace Grayjay.Desktop.POC.Port.States
                 if (!_availableClients.Any(x=>x.Config.ID == plugin.Config.ID))
                     _availableClients.Add(plugin);
             }
+        }
+        public static string InjectDevPlugin(PluginConfig config, string source)
+        {
+            string devId = StateDeveloper.DEV_ID;
+            string originalId = config.ID;
+            config.ID = devId;
+
+            lock (_clientsLock)
+            {
+                var enabledExisting = _enabledClients.Where(x => x is GrayjayPlugin).ToList();
+                var isEnabled = enabledExisting.Any();
+                foreach (var enabled in enabledExisting)
+                    enabled.Disable();
+
+
+                _enabledClients.RemoveAll(x => x is DevGrayjayPlugin);
+                _availableClients.RemoveAll(x => x is DevGrayjayPlugin);
+
+
+                DevGrayjayPlugin newClient = new DevGrayjayPlugin(new PluginDescriptor(config), originalId, source);
+                StatePlugins.RegisterDescriptor(newClient.Descriptor);
+                devId = newClient.DevID;
+                try
+                {
+                    StateDeveloper.Instance.InitializeDev(devId);
+                    if(isEnabled)
+                    {
+                        _enabledClients.Add(newClient);
+                        newClient.Initialize();
+                    }
+                    _availableClients.Add(newClient);
+                }
+                catch(Exception ex)
+                {
+                    Logger.e(nameof(StatePlatform), $"Failed to initialize DevPlugin: {ex.Message}", ex);
+                    StateDeveloper.Instance.LogDevException(devId, $"Failed to initialize due to: {ex.Message}");
+                }
+            }
+            OnDevSourceChanged?.Invoke();
+            return devId;
         }
 
 
@@ -476,6 +518,11 @@ namespace Grayjay.Desktop.POC.Port.States
             return pagerResult;
         }
 
+        public static List<PlatformContent> PeekChannelContents(GrayjayPlugin baseClient, string channelUrl, string type)
+        {
+            return baseClient.FromPool(_channelClientPool)
+                .PeekChannelContents(channelUrl, type);
+        }
 
         public static List<string> GetUserSubscriptions(string pluginId)
         {
@@ -573,9 +620,9 @@ namespace Grayjay.Desktop.POC.Port.States
                 return _enabledClients.FirstOrDefault(x => x.Config.ID == id);
         }
 
-        public static GrayjayPlugin GetDevClient()
+        public static DevGrayjayPlugin GetDevClient()
         {
-            return GetClient(StateDeveloper.DEV_ID);
+            return (DevGrayjayPlugin)GetClient(StateDeveloper.DEV_ID);
         }
 
         public static bool IsEnabled(string id)
@@ -618,9 +665,16 @@ namespace Grayjay.Desktop.POC.Port.States
                 }
             }
         }
-        public static async Task EnableClient(string id)
+        public static async Task EnableClient(string id, bool allowThrow = false)
         {
-            await SelectClients(GetEnabledClients().Select(x => x.ID).Concat(new[] { id }).Distinct().ToArray());
+            Exception ex = null;
+            await SelectClients((eId, exception) =>
+            {
+                if (id == eId)
+                    ex = exception;
+            }, GetEnabledClients().Select(x => x.ID).Concat(new[] { id }).Distinct().ToArray());
+            if (ex != null)
+                throw ex;
         }
         public static async Task EnableClients(string[] ids)
         {
@@ -630,7 +684,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x=>x != id).Distinct().ToArray());
         }
-        public static async Task SelectClients(params string[] ids)
+        public static async Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {
             List<GrayjayPlugin> removed;
             lock (_clientsLock)
@@ -651,12 +705,13 @@ namespace Grayjay.Desktop.POC.Port.States
                         }
 
                         _enabledClients.Add(client);
-                        if(isNew)
+                        if (isNew)
                             OnSourceEnabled?.Invoke(client);
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                        onEx?.Invoke(id, ex);
                     }
                 }
 
@@ -670,11 +725,19 @@ namespace Grayjay.Desktop.POC.Port.States
             }
             StateWebsocket.EnabledClientsChanged();
         }
+        public static async Task SelectClients(params string[] ids)
+        {
+            await SelectClients(null, ids);
+        }
 
         public static async Task UpdateAvailableClient(string id)
         {
             lock (_clientsLock)
             {
+                var devPlugin = id == StateDeveloper.DEV_ID ? GetDevClient() : null;
+
+
+
                 var enabledClient = _enabledClients.FirstOrDefault(X => X.ID == id);
                 if (enabledClient != null)
                 {
@@ -685,8 +748,9 @@ namespace Grayjay.Desktop.POC.Port.States
                 var availableClient = _availableClients.FirstOrDefault(x => x.ID == id);
                 _availableClients.Remove(availableClient);
 
-                var plugin = StatePlugins.GetPlugin(id);
-                var newClient = new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID));
+                var plugin = (id != StateDeveloper.DEV_ID) ? StatePlugins.GetPlugin(id) : devPlugin.Descriptor;
+                var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, devPlugin.OriginalID, (devPlugin?.DevScript));
+
                 newClient.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
                 newClient.OnScriptException += (config, ex) =>
                 {

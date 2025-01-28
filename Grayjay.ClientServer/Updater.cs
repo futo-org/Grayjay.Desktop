@@ -3,8 +3,11 @@ using Grayjay.Desktop.POC;
 using System;
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Grayjay.ClientServer
 {
@@ -104,7 +107,7 @@ namespace Grayjay.ClientServer
                     //Old updater doesn't support version yet..
                     if (Constants.App.Version <= 4)
                         return 1;
-                    
+
                     var proc = Process.Start(new ProcessStartInfo()
                     {
                         FileName = executable,
@@ -134,13 +137,38 @@ namespace Grayjay.ClientServer
             if (string.IsNullOrEmpty(executable))
                 throw new InvalidOperationException("No updater found");
 
-            Process.Start(new ProcessStartInfo()
+            bool processStarted = false;
+            if (OperatingSystem.IsLinux())
             {
-                FileName = executable,
-                Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",// + 
-                //    (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + JsonConvert.SerializeObject(GetStartupArgumentsEscaped())),
-                UseShellExecute = true
-            });
+                var toRunLinux = GetLinuxShell($"{executable} update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"");
+                if (toRunLinux != null)
+                {
+                    try
+                    {
+                        Logger.i(nameof(Updater), "Starting updater through shell");
+                        processStarted = Process.Start(toRunLinux) != null;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.e(nameof(Updater), "Starting updater through shell failed", e);
+                    }
+                }
+            }
+            
+            if (!processStarted)
+            {
+                Logger.i(nameof(Updater), "Starting updater directly");
+
+                Process.Start(new ProcessStartInfo()
+                {
+                    FileName = executable,
+                    Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",
+                    UseShellExecute = true,
+                    WorkingDirectory = Environment.CurrentDirectory
+                });
+
+                processStarted = true;
+            }
         }
         public static void UpdateSelf()
         {
@@ -185,7 +213,8 @@ namespace Grayjay.ClientServer
             }
         }
 
-        public static bool HasUpdate()
+        private static Regex REGEX_UPDATER_VERSION = new Regex("FUTO Updater v([0-9]+)");
+        public static (bool, int) HasUpdate()
         {
             string executable = GetUpdaterExecutablePath();
             if (string.IsNullOrEmpty(executable))
@@ -197,20 +226,25 @@ namespace Grayjay.ClientServer
                 Arguments = "check",
                 RedirectStandardOutput = true
             });
+            int updaterVersion = -1;
             while (!proc.StandardOutput.EndOfStream)
             {
                 var line = proc.StandardOutput.ReadLine();
+                Match m = REGEX_UPDATER_VERSION.Match(line);
+                if (m.Success && m.Groups.Count > 1)
+                    updaterVersion = int.Parse(m.Groups[1].Value);
+
                 Console.WriteLine(line);
             }
             proc.WaitForExit();
             switch (proc.ExitCode)
             {
                 case 1:
-                    return true;
+                    return (true, updaterVersion);
                 case 2:
-                    return false;
+                    return (false, updaterVersion);
                 default:
-                    return false;
+                    return (false, updaterVersion);
             }
         }
 
@@ -309,6 +343,78 @@ namespace Grayjay.ClientServer
                   (string.IsNullOrWhiteSpace(_startupArgs) ? "" : " -executable_args " + "BASE64:" + Convert.ToBase64String(Encoding.UTF8.GetBytes(GetStartupArguments()))),
                 UseShellExecute = true
             });
+        }
+
+        [SupportedOSPlatform("linux")]
+        public static ProcessStartInfo? GetLinuxShell(string cmd)
+        {
+            string[] eTerminals =
+            [
+                "x-terminal-emulator",
+                "gnome-terminal",
+                "konsole",
+                "xfce4-terminal",
+                "rxvt",
+                "xterm"
+            ];
+            string[] cTerminals =
+            [
+                "lxterminal",
+            ];
+            string[] supportedTerminals = [];
+            string[] allTerminals = eTerminals.Concat(cTerminals).Concat(supportedTerminals).ToArray();
+            string? selectedTerminalPath = null;
+            string? selectedTerminal = null;
+            foreach (var terminal in allTerminals)
+            {
+                var path = GetLinuxPath(terminal);
+                if (path != null)
+                {
+                    selectedTerminal = terminal;
+                    selectedTerminalPath = path;
+                    break;
+                }
+            }
+            if (selectedTerminalPath == null)
+                return null;
+
+            if (eTerminals.Contains(selectedTerminal))
+            {
+                return new ProcessStartInfo()
+                {
+                    FileName = selectedTerminalPath,
+                    Arguments = $"-e \"{cmd.Replace("\"", "\\\"")}\"",
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory
+                };
+            }
+            else if (cTerminals.Contains(selectedTerminal))
+            {
+                return new ProcessStartInfo()
+                {
+                    FileName = selectedTerminalPath,
+                    Arguments = $"-c \"{cmd.Replace("\"", "\\\"")}\"",
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory
+                };
+            }
+
+            return null;
+        }
+
+        [SupportedOSPlatform("linux")]
+        private static string? GetLinuxPath(string command)
+        {
+            var result = Process.Start(new ProcessStartInfo()
+            {
+                FileName = "which",
+                Arguments = $"\"{command}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            });
+            result!.WaitForExit();
+            var path = result!.StandardOutput.ReadToEnd().Trim();
+            return result.ExitCode == 0 ? path : null;
         }
     }
 }
