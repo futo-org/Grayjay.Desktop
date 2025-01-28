@@ -17,6 +17,7 @@ import { ChapterType, IChapter } from "../../../backend/models/contentDetails/IC
 import { IPlatformVideoDetails } from "../../../backend/models/contentDetails/IPlatformVideoDetails";
 
 export interface PlayerControlsProps {
+    controlEventContainer: HTMLElement | undefined;
     duration: Duration;
     position: Duration;
     positionBuffered: Duration;
@@ -254,7 +255,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
 
     //TODO: Fix font on duration timestamp
     //TODO: onMouseUp is not properly working
-    //TODO: Ommit hours when hours are 0
+    //TODO: Omit hours when hours are 0
     //TODO: Double click fullscreen
     //TODO: Convert button to button lists left and right (41px from right, 32px space between buttons)
 
@@ -354,6 +355,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 ev.preventDefault();
                 break;
             case "i":
+                if (targetIsInput(ev)) break;
                 props.handleMinimize?.();
                 props.onInteraction?.();
                 ev.preventDefault();
@@ -365,6 +367,12 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 break;
         }
     };
+
+    const targetIsInput = (event: Event) => {
+        const target = event.target as any;
+
+        return !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
+    }
 
     let startSkippingTimeout: NodeJS.Timeout | undefined;
     let skipInterval: NodeJS.Timeout | undefined;
