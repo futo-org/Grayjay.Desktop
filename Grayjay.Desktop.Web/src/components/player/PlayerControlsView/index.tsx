@@ -17,7 +17,6 @@ import { ChapterType, IChapter } from "../../../backend/models/contentDetails/IC
 import { IPlatformVideoDetails } from "../../../backend/models/contentDetails/IPlatformVideoDetails";
 
 export interface PlayerControlsProps {
-    controlEventContainer: HTMLElement | undefined;
     duration: Duration;
     position: Duration;
     positionBuffered: Duration;
