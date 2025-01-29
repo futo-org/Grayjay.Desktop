@@ -302,8 +302,28 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
+            case "l":
+                startSkipping(2);
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "PageDown":
+                startSkipping(60);
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
             case "ArrowLeft":
                 startSkipping(-1);
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "j":
+                startSkipping(-2);
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "PageUp":
+                startSkipping(-60);
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
@@ -349,6 +369,10 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         switch (ev.key) {
             case "ArrowRight":
             case "ArrowLeft":
+            case "j":
+            case "l":
+            case "PageDown":
+            case "PageUp":
                 stopSkipping();
                 props.onInteraction?.();
                 ev.preventDefault();
