@@ -153,7 +153,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         }} icon={iconLink} name="Developer" selected={location.pathname === "/Developer/Index"} />
         </Show>
       </div>
-      <Show when={!collapsed() && subscriptions$()?.length} fallback={<div style="flex-grow:1"></div>}>
+      <Show when={!collapsed() && subscriptions$()?.length && StateGlobal.settings$().object.subscriptions?.showSubsLeftList} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())}>
               Subscriptions

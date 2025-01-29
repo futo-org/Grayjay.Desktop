@@ -77,6 +77,12 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Fetch on tab open", SettingsField.TOGGLE, "Fetch new results when the tab is opened (if no results are present)", 9)]
             public bool FetchOnTabOpen { get; set; } = true;
 
+            [SettingsField("Show top channels bar", SettingsField.TOGGLE, "Show top bar with subscribed channels", 10)]
+            public bool ShowSubsTopBar { get; set; } = true;
+
+            [SettingsField("Show sidebar channels list", SettingsField.TOGGLE, "Show sidebar list with subscribed channels", 11)]
+            public bool ShowSubsLeftList { get; set; } = true;
+
             /*
             [SettingsField("Background Update", SettingsField.DROPDOWN, "Experimental background update for subscriptions cache", 10, "background_update")]
             [SettingsDropdownOptions("")]
@@ -98,7 +104,7 @@ namespace Grayjay.ClientServer.Settings
             }
             */
 
-            [SettingsField("Subscription concurrency", SettingsField.DROPDOWN, "Specify how many threads are used to fetch channels", 11)]
+            [SettingsField("Subscription concurrency", SettingsField.DROPDOWN, "Specify how many threads are used to fetch channels", 12)]
             [SettingsDropdownOptions("2", "4", "8", "12", "16", "20", "30")]
             public int SubscriptionConcurrency { get; set; } = 6;
             public int GetSubscriptionConcurrency()
@@ -106,13 +112,13 @@ namespace Grayjay.ClientServer.Settings
                 return ThreadIndexToCount(SubscriptionConcurrency) * 2;
             }
 
-            [SettingsField("Show Watch Metrics", SettingsField.TOGGLE, "Shows the watch time and views of each creator in the creators tab", 12)]
+            [SettingsField("Show Watch Metrics", SettingsField.TOGGLE, "Shows the watch time and views of each creator in the creators tab", 13)]
             public bool ShowWatchMetrics { get; set; } = false;
 
-            [SettingsField("Track Playtime Locally", SettingsField.TOGGLE, "Locally track playtime of subscriptions, used for subscriptions.", 13)]
+            [SettingsField("Track Playtime Locally", SettingsField.TOGGLE, "Locally track playtime of subscriptions, used for subscriptions.", 14)]
             public bool AllowPlaytimeTracking { get; set; } = true;
 
-            [SettingsField("Always Reload From Cache", SettingsField.TOGGLE, "This is not recommended, but possible workaround for subscription issues", 14)]
+            [SettingsField("Always Reload From Cache", SettingsField.TOGGLE, "This is not recommended, but possible workaround for subscription issues", 15)]
             public bool AlwaysReloadFromCache { get; set; } = false;
         }
 
