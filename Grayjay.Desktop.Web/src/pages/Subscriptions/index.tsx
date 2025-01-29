@@ -275,8 +275,10 @@ const SubscriptionsPage: Component = () => {
             ref={setReloadButtonRef}
             onClick={()=>{ setShowReloadMenu(true) }} />
       } />
-      <Show when={subs$() && subs$()!.length > 0}>
+
+     <Show when={subs$() && subs$()!.length > 0}>
         <div style="flex-shrink: 0; position: relative;">
+          <Show when={StateGlobal.settings$().object.subscriptions?.showSubsTopBar}>
           <div class={styles.subBar}>
             <For each={subs$()}>{(sub, i) =>
               <div class={styles.channel} onClick={()=>toggleCreator(sub.channel.url)} classList={{[styles.active]: selectedCreators$().indexOf(sub.channel.url) >= 0}}>
@@ -292,6 +294,7 @@ const SubscriptionsPage: Component = () => {
               </div>
             }</For>
           </div>
+          </Show>
           <Show when={!hasSubGroups$() && StateGlobal.settings$().object.subscriptions?.showSubscriptionGroups}>
             <div class={styles.subgroupBanner}>
               <div class={styles.bannerText}>
