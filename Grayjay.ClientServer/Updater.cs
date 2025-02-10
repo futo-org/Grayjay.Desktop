@@ -247,6 +247,19 @@ namespace Grayjay.ClientServer
                     return (false, updaterVersion);
             }
         }
+        public static int GetLatestMacOSVersion(string server)
+        {
+            try
+            {
+                using (WebClient client = new WebClient())
+                    return int.Parse(client.DownloadString(server + "/VersionLastMacOS.json"));
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get last version", ex);
+                return -1;
+            }
+        }
 
         public static int GetTargetVersion()
         {
@@ -298,6 +311,25 @@ namespace Grayjay.ClientServer
                     {
                         Server = config.Server,
                         Platform = targetPlatform
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get changelog", ex);
+                return null;
+            }
+        }
+        public static Changelog GetTargetChangelog(string server, int version, string platform)
+        {
+            try
+            {
+                using (WebClient client = new WebClient())
+                {
+                    return new Changelog(version, client.DownloadString(server + $"/{version}/{platform}/Changelogs/{version}.txt"))
+                    {
+                        Server = server,
+                        Platform = platform
                     };
                 }
             }

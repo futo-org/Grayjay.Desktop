@@ -96,21 +96,28 @@ namespace Grayjay.ClientServer.States
 
             _ = Task.Run(async () =>
             {
-                StatePlugins.CheckForUpdates();
-
-                await Task.Delay(2500);
-                foreach(var update in StatePlugins.GetKnownPluginUpdates())
+                try
                 {
-                    //TODO: Proper validation
-                    StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
-                        new StateUI.DialogAction("Ignore", () =>
-                        {
+                    StatePlugins.CheckForUpdates();
 
-                        }, StateUI.ActionStyle.None),
-                        new StateUI.DialogAction("Update", () =>
-                        {
-                            StatePlugins.InstallPlugin(update.SourceUrl);
-                        }, StateUI.ActionStyle.Primary));
+                    await Task.Delay(2500);
+                    foreach (var update in StatePlugins.GetKnownPluginUpdates())
+                    {
+                        //TODO: Proper validation
+                        StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
+                            new StateUI.DialogAction("Ignore", () =>
+                            {
+
+                            }, StateUI.ActionStyle.None),
+                            new StateUI.DialogAction("Update", () =>
+                            {
+                                StatePlugins.InstallPlugin(update.SourceUrl);
+                            }, StateUI.ActionStyle.Primary));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Logger.e(nameof(StateApp), ex.Message, ex);
                 }
             });
 
