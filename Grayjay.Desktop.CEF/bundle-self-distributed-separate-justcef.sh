@@ -30,30 +30,27 @@ build_sign_notarize() {
     rm -rf "$APP_NAME_SIGNED"
     mkdir -p "$APP_NAME/Contents/MacOS"
     mkdir -p "$APP_NAME/Contents/Resources"
-    cp -a Info/Info.plist "$APP_NAME/Contents/Info.plist"
+    mkdir -p "$APP_NAME/Contents/Frameworks"
+    cp -a Resources/MacOS/Info.plist "$APP_NAME/Contents/Info.plist"
     cp -a Resources/MacOS/PkgInfo "$APP_NAME/Contents"
 
     cp -a "$PUBLISH_PATH/Grayjay" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/libe_sqlite3.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/libsodium.dylib" "$APP_NAME/Contents/MacOS"
     cp -a "$PUBLISH_PATH/ClearScriptV8.$ARCH.dylib" "$APP_NAME/Contents/MacOS"
-    cp -a "$PUBLISH_PATH/dotcefnative.app/Contents/MacOS/dotcefnative" "$APP_NAME/Contents/MacOS"
+    cp -a "../JustCef/prebuilt/$ARCH/dotcefnative.app" "$APP_NAME/Contents/Frameworks/dotcefnative.app"
+    cp -a Resources/MacOS/Info-Cef.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Info.plist"
+    cp -a Resources/MacOS/Info-Helper.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Frameworks/dotcefnative Helper.app/Contents/Info.plist"
+    cp -a Resources/MacOS/Info-Helper-Alerts.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Frameworks/dotcefnative Helper (Alerts).app/Contents/Info.plist"
+    cp -a Resources/MacOS/Info-Helper-GPU.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Frameworks/dotcefnative Helper (GPU).app/Contents/Info.plist"
+    cp -a Resources/MacOS/Info-Helper-Plugin.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Frameworks/dotcefnative Helper (Plugin).app/Contents/Info.plist"
+    cp -a Resources/MacOS/Info-Helper-Renderer.plist "$APP_NAME/Contents/Frameworks/dotcefnative.app/Contents/Frameworks/dotcefnative Helper (Renderer).app/Contents/Info.plist"
+
     cp -a "$PUBLISH_PATH/wwwroot" "$APP_NAME/Contents/Resources/wwwroot"
 
-    cp -a "$PUBLISH_PATH/dotcefnative.app/Contents/Frameworks" "$APP_NAME/Contents/Frameworks"
     cp -a Resources/MacOS/Keychain.framework "$APP_NAME/Contents/Frameworks/Keychain.framework"
-    cp -a "$PUBLISH_PATH/dotcefnative.app/Contents/Resources/." "$APP_NAME/Contents/Resources"
-    cp -a Resources/MacOS/MainMenu.xib "$APP_NAME/Contents/Resources/MainMenu.xib"
-    rm -rf "$APP_NAME/Contents/Resources/English.lproj"
-    cp -a Resources/MacOS/English.lproj "$APP_NAME/Contents/Resources/English.lproj"
     cp -a Resources/MacOS/grayjay.icns "$APP_NAME/Contents/Resources/shared.icns"
-
-    cp -a Info/Info-Helper.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper.app/Contents/Info.plist"
-    cp -a Info/Info-Helper-Alerts.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper (Alerts).app/Contents/Info.plist"
-    cp -a Info/Info-Helper-GPU.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper (GPU).app/Contents/Info.plist"
-    cp -a Info/Info-Helper-Plugin.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper (Plugin).app/Contents/Info.plist"
-    cp -a Info/Info-Helper-Renderer.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper (Renderer).app/Contents/Info.plist"
-
+    
     bash ./sign-macos.sh "$APP_NAME"
 }
 
