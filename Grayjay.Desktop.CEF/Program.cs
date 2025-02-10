@@ -169,6 +169,18 @@ namespace Grayjay.Desktop
 
         static async Task Main(string[] args)
         {
+            try
+            {
+                await EntryPoint(args);
+            }
+            catch (Exception e)
+            {
+                Logger.i<Program>($"Unhandled exception occurred: {e}");
+            }
+        }
+
+        static async Task EntryPoint(string[] args)
+        {
             if(args.Length > 0 && args[0] == "version")
             {
                 Console.WriteLine(App.Version.ToString());
