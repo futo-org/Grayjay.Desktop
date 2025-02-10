@@ -752,6 +752,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, devPlugin.OriginalID, (devPlugin?.DevScript));
 
                 newClient.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
+                newClient.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
                 newClient.OnScriptException += (config, ex) =>
                 {
                     if (ex is ScriptCaptchaRequiredException capEx)
@@ -812,6 +813,7 @@ namespace Grayjay.Desktop.POC.Port.States
                     //TODO: script
                     var client = new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID));
                     client.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
+                    client.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
                     client.OnScriptException += (config, ex) =>
                     {
                         if(ex is ScriptCaptchaRequiredException capEx)
