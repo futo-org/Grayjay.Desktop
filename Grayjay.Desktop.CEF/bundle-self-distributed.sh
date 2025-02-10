@@ -64,7 +64,7 @@ rm -rf dist
 npm run build
 cd ../Grayjay.Desktop.CEF
 
-#build_sign_notarize "osx-x64"
+build_sign_notarize "osx-x64"
 build_sign_notarize "osx-arm64"
 
 echo "All builds complete."
