@@ -182,6 +182,11 @@ const SubscriptionsPage: Component = () => {
         return false;
       else if(obj.contentType == ContentType.NESTED_VIDEO && !filters[FilterType.Media].active[0]())
         return false;
+
+      if(!filters[FilterType.Watched].active[0]()) {
+        if(((obj as any)?.metadata)?.watched)
+          return false;
+      }
       return true;
     };
   }

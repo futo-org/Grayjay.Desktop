@@ -224,7 +224,8 @@ namespace Grayjay.ClientServer
             {
                 FileName = executable,
                 Arguments = "check",
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
             });
             int updaterVersion = -1;
             while (!proc.StandardOutput.EndOfStream)

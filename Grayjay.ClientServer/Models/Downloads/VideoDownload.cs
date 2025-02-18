@@ -866,8 +866,11 @@ namespace Grayjay.ClientServer.Models.Downloads
             var fileList = StateApp.GetTemporaryFile(".txt", "filelist-");
             File.WriteAllText(fileList.FullName, string.Join("\n", segmentFiles.Select(x => $"file '{x.FullName}'")));
 
-            var cmd = $"-f concat -safe 0 -i \"{fileList.FullName}\" -c copy \"{targetPath}\"";
-            if (FFMPEG.Execute(cmd, true) == 0)
+            //var cmd = $"-f concat -safe 0 -i \"{fileList.FullName}\" -c copy \"{targetPath}\"";
+            string[] args = new string[]{
+                "-f", "concat", "-safe", "0", "-i", fileList.FullName, "-c", "copy", targetPath
+            };
+            if (FFMPEG.ExecuteSafe(args, true) == 0)
             {
 
             }

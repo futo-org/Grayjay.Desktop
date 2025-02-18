@@ -228,8 +228,8 @@ namespace Grayjay.ClientServer.Controllers
                         var audioSource = (download.Video is UnMuxedVideoDescriptor mvideo && mvideo.AudioSources != null) ? (LocalAudioSource?)mvideo.AudioSources.FirstOrDefault() : null;
 
                         string outputFile = (videoSource != null) ?
-                            download.Name + "." + videoSource.Container.VideoContainerToExtension() :
-                            download.Name + "." + audioSource.Container.VideoContainerToExtension();
+                            download.Name.SanitizeFileName() + "." + videoSource.Container.VideoContainerToExtension() :
+                            download.Name.SanitizeFileName() + "." + audioSource.Container.AudioContainerToExtension();
                         outputFile = Path.Combine(outputFolder, outputFile);
 
                         if ((videoSource != null || audioSource != null) && (videoSource == null || audioSource == null))
@@ -237,9 +237,9 @@ namespace Grayjay.ClientServer.Controllers
                             try
                             {
                                 if (videoSource != null)
-                                    System.IO.File.Copy(videoSource.FilePath, outputFile);
+                                    System.IO.File.Copy(videoSource.FilePath, outputFile.SanitizeFileNameWithPath(), true);
                                 else
-                                    System.IO.File.Copy(audioSource.FilePath, outputFile);
+                                    System.IO.File.Copy(audioSource.FilePath, outputFile.SanitizeFileNameWithPath(), true);
                             }
                             catch (Exception ex)
                             {
@@ -251,6 +251,18 @@ namespace Grayjay.ClientServer.Controllers
                             //throw DialogException.FromException("Merge not implemented yet", new NotImplementedException());
 
                             StringBuilder ffmpegQuery = new StringBuilder();
+                            string[] args = new string[]
+                            {
+                                "-i", videoSource.FilePath,
+                                "-i", audioSource.FilePath,
+                                "-map", "0:v",
+                                "-map", "1:a",
+                                "-c:v", "copy",
+                                "-c:a", "copy",
+                                "-y",
+                                outputFile.SanitizeFileNameWithPath()
+                            };
+                            /*
                             ffmpegQuery.Append($" -i \"{videoSource.FilePath}\"");
                             ffmpegQuery.Append($" -i \"{audioSource.FilePath}\"");
                             ffmpegQuery.Append(" -map 0:v");
@@ -258,11 +270,12 @@ namespace Grayjay.ClientServer.Controllers
                             ffmpegQuery.Append(" -c:v copy");
                             ffmpegQuery.Append(" -c:a copy");
                             ffmpegQuery.Append(" -y");
-                            ffmpegQuery.Append($" \"{outputFile}\"");
+                            ffmpegQuery.Append($" \"{outputFile.SanitizeFileNameWithPath()}\"");
+                            */
 
                             string query = ffmpegQuery.ToString();
                             Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + query);
-                            FFMPEG.Execute(query);
+                            FFMPEG.ExecuteSafe(args);
                         }
                     }
                 }
@@ -288,7 +301,10 @@ namespace Grayjay.ClientServer.Controllers
 
                 string outputFile = (videoSource != null) ?
                     await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(download.Name + "." + videoSource.Container.VideoContainerToExtension(), new (string, string)[0]) :
-                    await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(download.Name + "." + audioSource.Container.VideoContainerToExtension(), new (string, string)[0]);
+                    await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(download.Name + "." + audioSource.Container.AudioContainerToExtension(), new (string, string)[0]);
+
+                if (string.IsNullOrEmpty(outputFile))
+                    throw DialogException.FromException("Export cancelled", new Exception("No valid export path provided"));
 
                 if ((videoSource != null || audioSource != null) && (videoSource == null || audioSource == null))
                 {
@@ -320,8 +336,20 @@ namespace Grayjay.ClientServer.Controllers
                     ffmpegQuery.Append($" \"{outputFile}\"");
 
                     string query = ffmpegQuery.ToString();
+                    string[] args = new string[]
+                    {
+                        "-i", videoSource.FilePath,
+                        "-i", audioSource.FilePath,
+                        "-map", "0:v",
+                        "-map", "1:a",
+                        "-c:v", "copy",
+                        "-c:a", "copy",
+                        "-y",
+                        outputFile
+                    };
+
                     Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + query);
-                    if (FFMPEG.Execute(query) == 0)
+                    if (FFMPEG.ExecuteSafe(args) == 0)
                         return ExportFinished(download, outputFile);
                     else
                         throw DialogException.FromException("Failed to transcode export files", new InvalidDataException());

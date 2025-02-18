@@ -25,13 +25,13 @@ namespace Grayjay.ClientServer.Controllers
         {
             var home = new AnonymousContentRefPager(StatePlatform.GetHome());
             this.State().HomeState.HomePager = home;
-            return home.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return home.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
         }
         [HttpGet]
         public async Task<PagerResult<PlatformContent>> HomeLoadLazy(string url)
         {
             await StatePlatform.WaitForStartup();
-            var home = StatePlatform.GetHomeLazy();
+            var home = StatePlatform.GetHomeLazy((x)=>(x is PlatformVideo vx) ? StateHistory.AddVideoMetadata(vx) : x);
             this.State().HomeState.HomePager = home;
             return home.AsPagerResult();
         }
@@ -45,7 +45,7 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     var home = EnsureHomePager();
                     home.NextPage();
-                    return home.AsPagerResult();
+                    return home.AsPagerResult(y => y is PlatformVideo ? StateHistory.AddVideoMetadata((PlatformVideo)y) : y);
                 }
             }
             catch(Exception ex)

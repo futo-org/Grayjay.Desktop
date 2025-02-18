@@ -320,7 +320,7 @@ namespace Grayjay.Desktop.POC.Port.States
             pager.Initialize();
             return pager;
         }
-        public static IPager<PlatformContent> GetHomeLazy()
+        public static IPager<PlatformContent> GetHomeLazy(Func<PlatformContent, PlatformContent> modifier = null)
         {
             return CreateDistributedLazyPager(
                 (client) => client.Descriptor.AppSettings.TabEnabled.EnableHome,
@@ -332,7 +332,10 @@ namespace Grayjay.Desktop.POC.Port.States
                             try
                             {
                                 var result = client.GetHome();
-                                return result;
+                                if (modifier != null)
+                                    return new ModifyPager<PlatformContent>(result, (x) => modifier != null ? modifier(x) : x);
+                                else
+                                    return result;
                             }
                             catch(Exception ex)
                             {

@@ -109,6 +109,7 @@ namespace Grayjay.ClientServer.Helpers
             else if (container.Contains("video/x-matroska"))
                 return "mkv";
             else
+                //throw new InvalidDataException("Could not determine container type for video (" + container + ")");
                 return "video";
         }
         public static string AudioContainerToExtension(string container)
@@ -124,7 +125,8 @@ namespace Grayjay.ClientServer.Helpers
             else if (container == "application/vnd.apple.mpegurl")
                 return "mp4";
             else
-                return "audio";
+                //throw new InvalidDataException("Could not determine container type for audio (" + container + ")");
+            return "audio";
         }
         public static string SubtitleContainerToExtension(string container)
         {

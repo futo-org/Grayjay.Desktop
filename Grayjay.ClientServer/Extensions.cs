@@ -156,6 +156,16 @@ namespace Grayjay.ClientServer
                 fileName = fileName.Replace(invalidChar, '_');
             return fileName;
         }
+        public static string SanitizeFileNameWithPath(this string path)
+        {
+            string dirName = Path.GetDirectoryName(path);
+            string fileName = Path.GetFileName(path);
+
+            foreach (char invalidChar in fileName.Distinct().Where(x => !_allowedFileNameCharacters.Contains(x)))
+                fileName = fileName.Replace(invalidChar, '_');
+            return Path.Combine(dirName, fileName);
+        }
+
 
         public static string ToUrlAddress(this IPAddress address)
         {
@@ -225,6 +235,8 @@ namespace Grayjay.ClientServer
             else if (container.Contains("video/x-matroska"))
                 return "mkv";
             else
+                //throw new InvalidDataException("Could not determine container type for audio (" + container + ")");
+            //else
                 return "video";
         }
 
@@ -237,10 +249,12 @@ namespace Grayjay.ClientServer
             else if (container.Contains("audio/mp3"))
                 return "mp3";
             else if (container.Contains("audio/webm"))
-                return "webma";
+                return "webm";
             else if (container == "application/vnd.apple.mpegurl")
                 return "mp4";
             else
+                //throw new InvalidDataException("Could not determine container type for audio (" + container + ")");
+            //else
                 return "audio";
         }
     }
