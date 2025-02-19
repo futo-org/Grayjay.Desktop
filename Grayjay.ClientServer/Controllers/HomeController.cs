@@ -15,6 +15,7 @@ namespace Grayjay.ClientServer.Controllers
         public class HomeState
         {
             public IPager<PlatformContent> HomePager { get; set; }
+            public int InitialPageSize { get; set; }
         }
 
         private IPager<PlatformContent> EnsureHomePager() => this.State().HomeState.HomePager ?? throw new BadHttpRequestException("No home loaded");
@@ -28,12 +29,21 @@ namespace Grayjay.ClientServer.Controllers
             return home.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
         }
         [HttpGet]
-        public async Task<PagerResult<PlatformContent>> HomeLoadLazy(string url)
+        public async Task<PagerResult<PlatformContent>> HomeLoadLazy(int initialPageSize)
         {
             await StatePlatform.WaitForStartup();
-            var home = StatePlatform.GetHomeLazy((x)=>(x is PlatformVideo vx) ? StateHistory.AddVideoMetadata(vx) : x);
-            this.State().HomeState.HomePager = home;
+            var state = this.State();
+            state.HomeState.InitialPageSize = initialPageSize;
+            var home = StatePlatform.GetHomeLazy((x)=>(x is PlatformVideo vx) ? StateHistory.AddVideoMetadata(vx) : x, ()=>state.HomeState.InitialPageSize);
+            state.HomeState.HomePager = home;
             return home.AsPagerResult();
+        }
+        [HttpGet]
+        public bool HomeSetInitialPageSize(int initialPageSize)
+        {
+            var state = this.State();
+            state.HomeState.InitialPageSize = initialPageSize;
+            return true;
         }
         [HttpGet]
         public PagerResult<PlatformContent> HomeNextPage()

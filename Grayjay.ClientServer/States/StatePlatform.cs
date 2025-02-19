@@ -320,7 +320,7 @@ namespace Grayjay.Desktop.POC.Port.States
             pager.Initialize();
             return pager;
         }
-        public static IPager<PlatformContent> GetHomeLazy(Func<PlatformContent, PlatformContent> modifier = null)
+        public static IPager<PlatformContent> GetHomeLazy(Func<PlatformContent, PlatformContent> modifier = null, Func<int> requiredSize = null)
         {
             return CreateDistributedLazyPager(
                 (client) => client.Descriptor.AppSettings.TabEnabled.EnableHome,
@@ -332,10 +332,12 @@ namespace Grayjay.Desktop.POC.Port.States
                             try
                             {
                                 var result = client.GetHome();
-                                if (modifier != null)
-                                    return new ModifyPager<PlatformContent>(result, (x) => modifier != null ? modifier(x) : x);
-                                else
-                                    return result;
+
+                                var pager = (modifier != null) ? 
+                                    new ModifyPager<PlatformContent>(result, (x) => modifier != null ? modifier(x) : x) :
+                                    result;
+
+                                return pager;
                             }
                             catch(Exception ex)
                             {
@@ -358,8 +360,7 @@ namespace Grayjay.Desktop.POC.Port.States
                     }
                     throw new InvalidProgramException();
                 },
-                (client, task) => new PlatformContentPlaceholder(client.Config)
-            );
+                (client, task) => new PlatformContentPlaceholder(client.Config), Math.Min(40, Math.Max(15, requiredSize?.Invoke() ?? 20)));
         }
 
 
@@ -553,7 +554,7 @@ namespace Grayjay.Desktop.POC.Port.States
 
 
         //Standardization
-        private static MultiRefreshPager<T> CreateDistributedLazyPager<T>(Func<GrayjayPlugin, bool> clientCondition, Func<GrayjayPlugin, IPager<T>> action, Func<GrayjayPlugin, Task, T> placeholderCreator)
+        private static MultiRefreshPager<T> CreateDistributedLazyPager<T>(Func<GrayjayPlugin, bool> clientCondition, Func<GrayjayPlugin, IPager<T>> action, Func<GrayjayPlugin, Task, T> placeholderCreator, int pageSize = 20)
         {
             List<string> clientIdsOngoing = new List<string>();
             List<GrayjayPlugin> clients = GetEnabledClients().Where(x => clientCondition(x)).ToList();
@@ -582,7 +583,7 @@ namespace Grayjay.Desktop.POC.Port.States
                     var result = changedPager.AsPagerResult();
                     Logger.i(TAG, $"Resolving {result.Results.Length} lazy results ({result.PagerID})");
                     await GrayjayServer.Instance.WebSocket.Broadcast(result, "PagerUpdated", changedPager.ID);
-                });
+                }, pageSize);
             return pager;
         }
 
