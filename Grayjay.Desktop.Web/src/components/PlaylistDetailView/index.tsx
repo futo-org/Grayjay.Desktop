@@ -141,7 +141,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                 return;
               }
 
-              swap(videos, index1, index2)
+              swap(videos, index1, index2);
             }}
             onDragEnd={() => props.onDragEnd()}
             builder={(index, item, containerRef, startDrag) => {

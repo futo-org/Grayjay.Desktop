@@ -9,7 +9,11 @@ export abstract class PlaylistsBackend {
     }
 
     static async createOrupdate(playlist: IPlaylist): Promise<void> {
-        await Backend.POST("/playlists/CreateOrUpdate", JSON.stringify(playlist), "application/json");
+        const sanitizedPlaylist: IPlaylist = {
+            ... playlist,
+            videos: playlist.videos.filter(v => v !== undefined && v !== null)
+        };
+        await Backend.POST("/playlists/CreateOrUpdate", JSON.stringify(sanitizedPlaylist), "application/json");
     }
 
     static async addContentToPlaylists(content: IPlatformVideo, playlistIds: string[]): Promise<void> {

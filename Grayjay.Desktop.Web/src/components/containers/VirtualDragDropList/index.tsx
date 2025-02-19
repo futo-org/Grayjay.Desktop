@@ -301,7 +301,7 @@ const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
             }
     
             if (previousStartIndex === Infinity && previousEndIndex === -Infinity) {
-                const itemCount = endIdx - startIdx + 1;
+                const itemCount = Math.min(endIdx - startIdx + 1, props.items?.length ?? 0);
                 if (poolItems.length < itemCount) {
                     console.error("pool size is not big enough to set all at once", { poolItems, poolItemsLength: poolItems.length, range, itemCount });
                     return;
@@ -369,7 +369,7 @@ const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
                 const indexOffset = Math.round((e.pageY - startPageY) / props.itemHeight);
                 const swapIndex = Math.max(0, Math.min((props.items?.length ?? 0) - 1, index + indexOffset));
                 if (si != swapIndex) {
-                    props.onSwap?.(range.startIndex + si, range.startIndex + swapIndex);
+                    props.onSwap?.(si, swapIndex);
                     const item1 = pool().find(v => v.index() === si);
                     const item2 = pool().find(v => v.index() === swapIndex);
 
