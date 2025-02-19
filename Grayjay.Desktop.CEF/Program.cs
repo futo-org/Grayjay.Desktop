@@ -311,9 +311,9 @@ namespace Grayjay.Desktop
                 };
 
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
-                    cef.Start("--disable-web-security --cache-path=/home/koen/Downloads/test --use-alloy-style --use-native " + extraArgs);
+                    cef.Start("--disable-web-security --use-alloy-style --use-native " + extraArgs);
                 else
-                    cef.Start("--disable-web-security --cache-path=/home/koen/Downloads/test --use-alloy-style --use-views --no-sandbox " + extraArgs);
+                    cef.Start("--disable-web-security --use-alloy-style --use-views --no-sandbox " + extraArgs);
             }
             Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({watch.ElapsedMilliseconds}ms)");
 
