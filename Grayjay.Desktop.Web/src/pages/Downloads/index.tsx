@@ -1,4 +1,4 @@
-import { createResource, type Component, For, Show, createMemo, onCleanup, createSignal, Switch, Match } from 'solid-js';
+import { createResource, type Component, For, Show, createMemo, onCleanup, createSignal, Switch, Match, batch } from 'solid-js';
 import { createResourceDefault, getBestThumbnail, getPlaylistThumbnail, proxyImage, toHumanBitrate, toHumanBytesSize } from '../../utility';
 import { PlatformBackend } from '../../backend/PlatformBackend';
 import { ChannelBackend } from '../../backend/ChannelBackend';
@@ -20,9 +20,15 @@ import videoIcon from '../../assets/icons/videos.svg';
 import audioIcon from '../../assets/icons/ic_audio.svg';
 import searchIcon from '../../assets/icons/icon24_search.svg';
 import folderIcon from '../../assets/icons/icon_folder.svg';
+import fileIcon from '../../assets/icons/icon_import_filled.svg';
 import iconDownloads from '../../assets/icons/icon24_download.svg';
 import iconTrash from '../../assets/icons/icon_trash.svg';
-
+import iconQueue from '../../assets/icons/icon_add_to_queue.svg';
+import iconPlaylist from '../../assets/icons/icon_nav_playlists.svg';
+import iconWatchLater from '../../assets/icons/icon24_watch_later.svg';
+import iconAddToPlaylist from '../../assets/icons/icon24_add_to_playlist.svg';
+import iconDelete from '../../assets/icons/icon_trash.svg';
+import iconHide from '../../assets/icons/icon24_hide.svg';
 
 import styles from './index.module.css';
 import { IVideoDownload } from '../../backend/models/downloads/IVideoDownload';
@@ -37,10 +43,13 @@ import EmptyContentView from '../../components/EmptyContentView';
 import { ContentType } from '../../backend/models/ContentType';
 import PlaylistView from '../../components/content/PlaylistView';
 import { Portal } from 'solid-js/web';
-import SettingsMenu, { Menu, MenuItemButton } from '../../components/menus/Overlays/SettingsMenu';
+import SettingsMenu, { Menu, MenuItemButton, MenuSeperator } from '../../components/menus/Overlays/SettingsMenu';
 import Anchor, { AnchorStyle } from '../../utility/Anchor';
 import { PlayList } from 'dashjs';
 import { IPlaylist } from '../../backend/models/IPlaylist';
+import { IPlatformContent } from '../../backend/models/content/IPlatformContent';
+import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
+import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
 
 const DownloadsPage: Component = () => {
   const navigate = useNavigate();
@@ -206,6 +215,67 @@ const DownloadsPage: Component = () => {
     } as Menu)
   }
 
+
+  const [settingsContent$, setSettingsContent] = createSignal<IVideoLocal>();
+  const settingsMenu$ = createMemo(() => {
+      const content = settingsContent$();        
+      return {
+          title: "",
+          items: [
+          
+              ... (content?.contentType === ContentType.MEDIA ? [ 
+                  new MenuItemButton("Add to queue", iconQueue, undefined, ()=>{
+                      video?.actions.addToQueue(content as any as IPlatformVideo);
+                  }),
+                  /*
+                  new MenuItemButton("Play feed as queue", iconPlaylist, undefined, ()=>{
+
+                  }),
+                  new MenuSeperator(),*/
+                  new MenuItemButton("Watch later", iconWatchLater, undefined, async () => {
+                      await WatchLaterBackend.add(content as any as IPlatformVideo);
+                      await video?.actions?.refetchWatchLater();
+                  }),
+                  new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
+                      await UIOverlay.overlayAddToPlaylist(content as any as IPlatformVideo);
+                  })
+              ] : []),
+              new MenuSeperator(),
+              new MenuItemButton("Export", fileIcon, undefined, ()=>{
+                  if(content)
+                    exportDownload(content?.id);
+              }),
+              new MenuItemButton("Delete", iconDelete, undefined, ()=>{
+                  if(content)
+                    deleteDownload(content?.id);
+              })
+              /*
+              new MenuSeperator(),
+              new MenuItemButton("Hide creator from feed", iconHide, undefined, ()=>{
+
+              }),*/
+          ]
+      } as Menu;
+  });
+    const [show$, setShow] = createSignal<boolean>(false);
+    const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
+    function onSettingsClicked(element: HTMLElement, content: IVideoLocal) {
+        contentAnchor.setElement(element);
+        
+        batch(() => {
+            setSettingsContent(content);
+            setShow(true);
+        });
+    }
+    function onSettingsHidden() {
+        batch(() => {
+            setSettingsContent(undefined);
+            setShow(false);
+        });
+    }
+
+
+
   function gridUI() {
     const data = getDownloadedItems();
     let scrollContainerRef: HTMLDivElement | undefined;
@@ -236,7 +306,7 @@ const DownloadsPage: Component = () => {
                             "margin-bottom": "10px"
                         }}
                         builder={(index, item) =>
-                          <DownloadedView downloaded={item()} />
+                          <DownloadedView downloaded={item()} onSettings={(e, content)=> onSettingsClicked(e, content)} />
                         } />
                 </ScrollContainer>
         </Match>
@@ -541,6 +611,9 @@ const DownloadsPage: Component = () => {
               }
             ]} />
         </Show>
+            <Portal>
+                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} />
+            </Portal>
       </div>
     </LoaderContainer>
   );

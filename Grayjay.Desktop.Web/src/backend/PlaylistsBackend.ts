@@ -34,4 +34,8 @@ export abstract class PlaylistsBackend {
     static async delete(id: string): Promise<void> {
         await Backend.DELETE("/playlists/Delete?id=" + id);
     }
+
+    static async renamePlaylist(id: string, newName: string): Promise<void> {
+        await Backend.POST("/playlists/RenamePlaylist?id=" + id, JSON.stringify(newName), "application/json");
+    }
 }

@@ -21,20 +21,25 @@ namespace Grayjay.ClientServer.Transcoding
             Logger.i(nameof(FFMPEG), "Determining FFMPEG command");
 
             string version;
-            string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "ffmpeg" : "ffmpeg.exe";
+            string fileName = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
             string ffmpegPath = null;
 
             if (File.Exists(fileName))
             {
                 ffmpegPath = fileName;
             }
-            else
+            //We only do this for Linux because some users want to use system-dep, and it generally being present on PATH.
+            //On Windows/MacOS we always assume embedded version should work, or something else is wrong that needs to be fixed.
+            else if (OperatingSystem.IsLinux())
             {
                 ffmpegPath = Environment.GetEnvironmentVariable("PATH")
-                    .Split(";").FirstOrDefault(x => File.Exists(Path.Combine(x, fileName)));
+                    .Split(":")
+                    .FirstOrDefault(x => File.Exists(Path.Combine(x, fileName)));
                 if (ffmpegPath != null)
                     ffmpegPath = Path.Combine(ffmpegPath, fileName);
             }
+            else
+                ffmpegPath = fileName; //Assume command
 
             _ffmpegCommand = ffmpegPath;
             Logger.i(nameof(FFMPEG), "Verifying FFMPEG: " + _ffmpegCommand);

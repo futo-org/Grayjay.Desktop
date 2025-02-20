@@ -68,6 +68,8 @@ namespace Grayjay.ClientServer.Sync
                 Ordering = StateWatchLater.Instance.GetWatchLaterOrdering()
             });
 
+            await StateWatchLater.Instance.BroadcastChangesAsync();
+
 
             var newHistory = StateHistory.GetRecentHistory(data.LastHistory);
             if (newHistory.Count > 0)

@@ -257,7 +257,7 @@ namespace Grayjay.Desktop.POC.Port.States
         public static IPager<PlatformContent> SearchLazy(string query, string? type = null, string? order = null, Dictionary<string, string[]>? filters = null, List<string>? excludeClientIds = null)
         {
             return CreateDistributedLazyPager(
-                (client) => excludeClientIds != null ? !excludeClientIds.Contains(client.ID) : true,
+                (client) => (excludeClientIds != null ? !excludeClientIds.Contains(client.ID) : true) && (client.Descriptor?.AppSettings?.TabEnabled?.EnableSearch ?? false),
                 (client) => client.Search(query, type, order, GetClientSpecificFilters(PluginConfigState.FromClient(client).CapabilitiesSearch, filters)),
                 (client, task) => new PlatformContentPlaceholder(client.Config)
             );

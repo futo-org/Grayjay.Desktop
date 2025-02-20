@@ -13,6 +13,7 @@ import InputText from '../../components/basics/inputs/InputText';
 import { SubscriptionsBackend } from '../../backend/SubscriptionsBackend';
 import OverlayImageSelector from '../OverlayImageSelector';
 import OverlaySubscriptionsSelector from '../OverlaySubscriptionsSelector';
+import ScrollContainer from '../../components/containers/ScrollContainer';
 
 
 export interface OverlaySubscriptionGroupEditDialogProps {
@@ -120,7 +121,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <img src={iconClose} />
               </div>
             </div>
-            <div style="margin-left: 20px; margin-right: 20px;">
+            <ScrollContainer style={{"margin-left": "20px", "margin-right": "20px", "height": "65vh"}}>
               <div style="margin-top: 20px;">
                 <div class={styles.sectionTitle}>Image</div>
                 <div class={styles.sectionDescription}>Edit which image is used as background for your group</div>
@@ -157,7 +158,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                   }</For>
                 </div>
               </div>
-            </div>
+            </ScrollContainer>
             <div style="height: 1px; background-color: rgba(255, 255, 255, 0.09); margin-top: 10px; margin-bottom: 10px;"></div>
             <div style="text-align: right">
                   <Show when={selected$().length > 0}>

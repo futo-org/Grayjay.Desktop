@@ -375,6 +375,24 @@ export interface UIOverlay {
           )
         });
       },
+      overlayTextPrompt(title: string, description: string, placeholder: string, buttonText: string, onText: (str: string) => void) {
+        this.overlay({
+          dialog: {
+            title: title,
+            description: description,
+            input: new DialogInputText(placeholder),
+            buttons: [{
+              title: buttonText,
+              style: "primary",
+              onClick: async (output: IDialogOutput) => {
+                if(output.text) {
+                  onText(output.text);
+                }
+              }
+            }]
+          }
+        });
+      },
       overlayNewPlaylist(onCreated?: (playlist: IPlaylist) => void) {
         this.overlay({
           dialog: {

@@ -26,7 +26,7 @@
 .subBar {
     margin-left: 24px;
     margin-right: 24px;
-    margin-bottom: 24px;
+    margin-bottom: 15px;
     padding-bottom: 10px;
     flex-shrink: 0;
     overflow-x: auto;
@@ -111,7 +111,7 @@
     position: relative;
     margin-left: 25px;
     margin-right: 25px;
-    margin-bottom: 5px;
+    margin-bottom: 15px;
     padding-right: 90px;
 }
 .subGroupExpand {
