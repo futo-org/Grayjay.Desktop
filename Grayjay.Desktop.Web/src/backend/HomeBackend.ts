@@ -9,7 +9,7 @@ export abstract class HomeBackend {
         return await Backend.GET("/home/HomeLoad") as PagerResult<IPlatformVideo>;
     }
     static async homeLoadLazy(): Promise<PagerResult<IPlatformVideo>> {
-        return await Backend.GET("/home/HomeLoadLazy") as PagerResult<IPlatformVideo>;
+        return await Backend.GET("/home/HomeLoadLazy?initialPageSize=30") as PagerResult<IPlatformVideo>;
     }
 
     static async homeNextPage(): Promise<PagerResult<IPlatformVideo>> {
