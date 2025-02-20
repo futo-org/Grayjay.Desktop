@@ -70,11 +70,11 @@ namespace Grayjay.ClientServer.Threading
                 Monitor.PulseAll(_queueLock);
             }
 
-            foreach (Thread worker in _threads)
+            /*foreach (Thread worker in _threads)
             {
                 if (worker.IsAlive)
                     worker.Join();
-            }
+            }*/
         }
 
         private void ManagedThread()

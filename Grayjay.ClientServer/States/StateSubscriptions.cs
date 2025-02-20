@@ -509,6 +509,11 @@ namespace Grayjay.Desktop.POC.Port.States
             }
         }
 
+        public static void Shutdown()
+        {
+            _threadPool.Stop();
+        }
+
         public class SubscriptionProgress
         {
             public int Progress { get; set; }
