@@ -151,6 +151,7 @@ namespace Grayjay.ClientServer.States
 
         public static void Shutdown()
         {
+            StateSubscriptions.Shutdown();
             AppCancellationToken.Cancel();
             Connection.Dispose();
             Connection = null;
