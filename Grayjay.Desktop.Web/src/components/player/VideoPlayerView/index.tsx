@@ -895,7 +895,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         const newLevel = props.sourceQuality;
         console.log("Source Quality changed: " + newLevel);
         if(hlsPlayer) {
-            hlsPlayer!.currentLevel = newLevel ?? -1;
+            hlsPlayer!.currentLevel = newLevel && newLevel >= 0 && newLevel < hlsPlayer!.levels.length ? (hlsPlayer!.levels.length - newLevel) : -1;
         }
     });
 
