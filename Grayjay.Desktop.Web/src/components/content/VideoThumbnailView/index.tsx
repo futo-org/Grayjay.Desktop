@@ -15,6 +15,7 @@ interface VideoProps {
   onSettings?: (element: HTMLDivElement, content: IPlatformVideo) => void;
   style?: JSX.CSSProperties;
   imageStyle?: JSX.CSSProperties;
+  useCache?: boolean;
 }
 
 const VideoThumbnailView: Component<VideoProps> = (props) => {
@@ -59,7 +60,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
           draggable={true}
           onDragStart={startDrag}
           onClick={onClicked}>
-            <img class={styles.image} src={bestThumbnail$()?.url?.replace("u0026", "&")} referrerPolicy='no-referrer' />
+            <img class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
 
           <Show when={pluginIconUrl()}>
             <img src={pluginIconUrl()} class={styles.sourceIcon} />

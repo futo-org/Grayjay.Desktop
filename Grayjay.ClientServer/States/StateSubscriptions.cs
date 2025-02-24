@@ -276,7 +276,7 @@ namespace Grayjay.Desktop.POC.Port.States
             return _subscriptionsOthers.FindObject(x => x.isChannel(url));
         }
 
-        public static Subscription AddSubscription(PlatformChannel channel, DateTime? creationDate = null, bool isUserInteraction = false)
+        public static async Task<Subscription> AddSubscription(PlatformChannel channel, DateTime? creationDate = null, bool isUserInteraction = false)
         {
             var subObj = new Subscription(channel);
             if(creationDate != null)
@@ -286,7 +286,7 @@ namespace Grayjay.Desktop.POC.Port.States
 
             if (isUserInteraction)
             {
-                Task.Run(async () =>
+                await Task.Run(async () =>
                 {
                     try
                     {

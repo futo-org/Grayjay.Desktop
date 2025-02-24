@@ -373,7 +373,7 @@ const SubscriptionsPage: Component = () => {
               <SettingsMenu menu={reloadMenu} show={showReloadMenu$()} anchor={anchor} onHide={()=>setShowReloadMenu(false)} />
             </Portal>
             <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} />
+              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} useCache={true} />
             </ScrollContainer>
           </div>
         </Show>

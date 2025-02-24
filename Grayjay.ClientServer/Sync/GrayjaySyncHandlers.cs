@@ -97,7 +97,7 @@ namespace Grayjay.ClientServer.Sync
         }
 
         [SyncHandler(GJSyncOpcodes.SyncSubscriptions)]
-        public void HandleSyncSubscriptions(SyncSession session, SyncSubscriptionsPackage subscriptions)
+        public async Task HandleSyncSubscriptions(SyncSession session, SyncSubscriptionsPackage subscriptions)
         {
             Console.WriteLine($"SyncSubscriptions received {subscriptions.Subscriptions.Count} subs");
 
@@ -109,7 +109,7 @@ namespace Grayjay.ClientServer.Sync
                     var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
                     if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
                     {
-                        StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
+                        await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
                         added.Add(sub);
                     }
                 }

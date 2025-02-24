@@ -6,6 +6,7 @@ using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -341,7 +342,7 @@ namespace Grayjay.Desktop
             DotCefWindow window = null;
             if (cef != null && !isHeadless && !isServer)
             {
-                window = cef.CreateWindowAsync("about:blank", ((int)(900)), ((int)(500)), ((int)(1300)), ((int)(900)), title: "Grayjay", iconPath: Path.GetFullPath("grayjay.png"), appId: "com.futo.grayjay.desktop").Result;
+                window = cef.CreateWindowAsync("about:blank", ((int)(900)), ((int)(550)), ((int)(1300)), ((int)(950)), title: "Grayjay", iconPath: Path.GetFullPath("grayjay.png"), appId: "com.futo.grayjay.desktop").Result;
                 await window.SetDevelopmentToolsEnabledAsync(true);
                 Logger.i(nameof(Program), $"Main: Starting window finished ({watch.ElapsedMilliseconds}ms)");
             }
@@ -535,7 +536,6 @@ namespace Grayjay.Desktop
                     }
                 }).Start();
             });
-            
 
             Logger.i(nameof(Program), "Main: Waiting for window exit.");
             if (window != null)

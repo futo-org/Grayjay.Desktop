@@ -88,13 +88,13 @@ namespace Grayjay.ClientServer.Dialogs
         }
 
         [DialogMethod("import")]
-        public void Dialog_Import(CustomDialog dialog, JsonElement parameter)
+        public async Task Dialog_Import(CustomDialog dialog, JsonElement parameter)
         {
             var toImport = Channels.Where(x => Selected.Any(y => x.IsSameUrl(y))).ToList();
 
             foreach(var item in toImport)
             {
-                StateSubscriptions.AddSubscription(item);
+                await StateSubscriptions.AddSubscription(item);
             }
             Status = "finished";
             Update();
