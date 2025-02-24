@@ -875,13 +875,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                 } as IMenuItemGroup : undefined,
                 (videoSourceQualities$() && videoSourceQualities$().length > 0) ? {
                     key: "Video Quality (" + (videoSourceQualities$().length) + ")",
-                    value: (videoQuality$() == -1) ? getAutoQualityLabel() : 
+                    value: (videoQuality$() == -1) ? "Auto" : 
                         ((videoQuality$()) ? (videoSourceQualities$()[videoQuality$()].width + "x" + videoSourceQualities$()[videoQuality$()].height) : undefined),
                     type: "group",
                     subMenu: {
                         title: "Stream qualities",
                         items: [{
-                            name: getAutoQualityLabel() ,
+                            name: "Auto",
                             value: "Auto",
                             type: "option",
                             onSelected: (val: any) => {
