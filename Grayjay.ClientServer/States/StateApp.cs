@@ -3,6 +3,7 @@ using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
 using Grayjay.ClientServer.Store;
+using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -22,6 +23,8 @@ namespace Grayjay.ClientServer.States
         public static DatabaseConnection Connection { get; private set; }
 
         public static CancellationTokenSource AppCancellationToken { get; private set; } = new CancellationTokenSource();
+
+        public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16);
 
 
         static StateApp()
@@ -98,7 +101,7 @@ namespace Grayjay.ClientServer.States
             {
                 try
                 {
-                    StatePlugins.CheckForUpdates();
+                    await StatePlugins.CheckForUpdates();
 
                     await Task.Delay(2500);
                     foreach (var update in StatePlugins.GetKnownPluginUpdates())
@@ -133,7 +136,7 @@ namespace Grayjay.ClientServer.States
                     {
                         int count = 0;
                         int countComp = 0;
-                        ThreadPool.GetAvailableThreads(out count, out countComp);
+                        System.Threading.ThreadPool.GetAvailableThreads(out count, out countComp);
                         Console.WriteLine($"Threadpool available: {count}, {countComp} Completers");
                         Thread.Sleep(1000);
                     }
@@ -152,6 +155,7 @@ namespace Grayjay.ClientServer.States
         public static void Shutdown()
         {
             StateSubscriptions.Shutdown();
+            ThreadPool.Stop();
             AppCancellationToken.Cancel();
             Connection.Dispose();
             Connection = null;

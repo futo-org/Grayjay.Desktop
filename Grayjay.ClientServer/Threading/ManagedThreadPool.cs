@@ -23,7 +23,24 @@ namespace Grayjay.ClientServer.Threading
             Stop();
         }
 
+        public Task<T> Run<T>(Func<T> task)
+        {
+            TaskCompletionSource<T> result = new TaskCompletionSource<T>();
 
+            Run(() =>
+            {
+                try
+                {
+                    result.SetResult(task());
+                }
+                catch(Exception ex)
+                {
+                    result.SetException(ex);
+                }
+            });
+
+            return result.Task;
+        }
         public void Run(Action task)
         {
             if (task == null)
@@ -48,6 +65,7 @@ namespace Grayjay.ClientServer.Threading
                 {
                     Thread worker = new Thread(ManagedThread)
                     {
+                        Name = "ManagedThreadPool",
                         IsBackground = true
                     };
                     _threads.Add(worker);
