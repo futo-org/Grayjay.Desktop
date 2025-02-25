@@ -25,7 +25,8 @@ namespace Grayjay.ClientServer.States
 
         public static CancellationTokenSource AppCancellationToken { get; private set; } = new CancellationTokenSource();
 
-        public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16);
+        public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16, "Global");
+        public static ManagedThreadPool ThreadPoolDownload { get; } = new ManagedThreadPool(4, "Download");
 
 
         static StateApp()
@@ -128,7 +129,7 @@ namespace Grayjay.ClientServer.States
                 });
             }
 
-            _ = Task.Run(async () =>
+            ThreadPool.Run(() =>
             {
                 StateTelemetry.Upload();
             });
@@ -142,7 +143,7 @@ namespace Grayjay.ClientServer.States
                         int countComp = 0;
                         System.Threading.ThreadPool.GetAvailableThreads(out count, out countComp);
                         Console.WriteLine($"Threadpool available: {count}, {countComp} Completers");
-                        Thread.Sleep(1000);
+                        Thread.Sleep(500);
                     }
                 }).Start();
 

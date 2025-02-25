@@ -47,7 +47,7 @@ namespace Grayjay.Desktop.POC.Port.States
         private static ChannelFeed _global = new ChannelFeed();
         private static Dictionary<string, ChannelFeed> _feeds = new Dictionary<string, ChannelFeed>();
 
-        private static ManagedThreadPool _threadPool = new ManagedThreadPool(GrayjaySettings.Instance.Subscriptions.SubscriptionConcurrency);
+        private static ManagedThreadPool _threadPool = new ManagedThreadPool(GrayjaySettings.Instance.Subscriptions.SubscriptionConcurrency, "Subscriptions");
 
         public static event Action<List<Subscription>, bool> OnSubscriptionsChanged;
 
@@ -125,7 +125,7 @@ namespace Grayjay.Desktop.POC.Port.States
             return result.Task;
         }
 
-        public static async Task<(IPager<PlatformContent>, List<Exception>)> getSubscriptionsFeedWithExceptions(bool allowFailure, bool withCacheFallback, List<string> urls, Action<int,int> onProgress, Action<Subscription, PlatformContent> onNewCacheHit = null)
+        public static (IPager<PlatformContent>, List<Exception>) getSubscriptionsFeedWithExceptions(bool allowFailure, bool withCacheFallback, List<string> urls, Action<int,int> onProgress, Action<Subscription, PlatformContent> onNewCacheHit = null)
         {
             var algo = SubscriptionFetchAlgorithm.GetAlgorithm(SubscriptionFetchAlgorithms.Smart, allowFailure, withCacheFallback, _threadPool);
             algo.OnNewCacheHit += onNewCacheHit;
@@ -143,7 +143,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             var feed = (feedId == null) ? _global : GetFeed(feedId);
             Logger.v(nameof(StateSubscriptions), "updateSubscriptionFeed");
-            Task.Run(async () =>
+            StateApp.ThreadPool.Run(() =>
             {
                 lock(feed.LockObject)
                 {
@@ -156,7 +156,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 }
                 try
                 {
-                    var (subsPager, exceptions) = await getSubscriptionsFeedWithExceptions(true, true, (feed.Group != null) ? feed.Group.Urls : null, (progress, total) =>
+                    var (subsPager, exceptions) = getSubscriptionsFeedWithExceptions(true, true, (feed.Group != null) ? feed.Group.Urls : null, (progress, total) =>
                     {
                         feed.SetProgress(progress, total);
                         onProgress?.Invoke(progress, total);
@@ -182,50 +182,60 @@ namespace Grayjay.Desktop.POC.Port.States
             var feed = _global;
             var result = new TaskCompletionSource<IPager<PlatformContent>>();
 
-            lock(feed.LockObject)
+            StateApp.ThreadPool.Run(() =>
             {
-                if(feed.Feed != null && !updated)
+                try
                 {
-                    Logger.i(nameof(StateSubscriptions), "Subscriptions got feed preloaded");
-                    var newSubscriptions = StateSubscriptions.GetSubscriptions()
-                        .Where(x => x.CreationTime > feed.LastUpdate)
-                        .ToList();
-
-                    if(newSubscriptions.Count > 0 && newSubscriptions.Count < 5)
+                    lock (feed.LockObject)
                     {
-                        //Fetch only new feeds of new subscriptions, then combine with the current feed
-                        var intermediateResults = getSubscriptionsFeedWithExceptions(true, false, newSubscriptions
-                            .Select(x => x.Channel.Url)
-                            .ToList(), (progress, total) =>
+                        if (feed.Feed != null && !updated)
+                        {
+                            Logger.i(nameof(StateSubscriptions), "Subscriptions got feed preloaded");
+                            var newSubscriptions = StateSubscriptions.GetSubscriptions()
+                                .Where(x => x.CreationTime > feed.LastUpdate)
+                                .ToList();
+
+                            if (newSubscriptions.Count > 0 && newSubscriptions.Count < 5)
                             {
-                                feed.SetProgress(progress, total);
-                            }).Result;
-                        var newFeed = feed.Feed.GetWindow()
-                            .CombineOrdered(intermediateResults.Item1,
-                                (a, b) => a.DateTime > b.DateTime, true, 30);
-                        newFeed.Initialize();
-                        feed.SetFeed(newFeed);
-                    }
+                                //Fetch only new feeds of new subscriptions, then combine with the current feed
+                                var intermediateResults = getSubscriptionsFeedWithExceptions(true, false, newSubscriptions
+                                    .Select(x => x.Channel.Url)
+                                    .ToList(), (progress, total) =>
+                                    {
+                                        feed.SetProgress(progress, total);
+                                    });
+                                var newFeed = feed.Feed.GetWindow()
+                                    .CombineOrdered(intermediateResults.Item1,
+                                        (a, b) => a.DateTime > b.DateTime, true, 30);
+                                newFeed.Initialize();
+                                feed.SetFeed(newFeed);
+                            }
 
-                    result.SetResult(feed.Feed.GetWindow());
-                }
-                else
-                {
-                    var loadIndex = _loadIndex++;
-                    Logger.i(nameof(StateSubscriptions), $"[{loadIndex}] Starting await update");
-                    feed.OnUpdatedOnce += (exception) =>
-                    {
-                        Logger.i(nameof(StateSubscriptions), $"[{loadIndex}] Subscriptions got feed after update");
-                        if (exception != null)
-                            result.SetException(exception);
-                        else if (feed.Feed != null)
                             result.SetResult(feed.Feed.GetWindow());
+                        }
                         else
-                            throw new InvalidOperationException("No subscription pager after change? Illegal null set on global subscriptions");
-                    };
-                    UpdateSubscriptionFeed(!updated, null);
+                        {
+                            var loadIndex = _loadIndex++;
+                            Logger.i(nameof(StateSubscriptions), $"[{loadIndex}] Starting await update");
+                            feed.OnUpdatedOnce += (exception) =>
+                            {
+                                Logger.i(nameof(StateSubscriptions), $"[{loadIndex}] Subscriptions got feed after update");
+                                if (exception != null)
+                                    result.SetException(exception);
+                                else if (feed.Feed != null)
+                                    result.SetResult(feed.Feed.GetWindow());
+                                else
+                                    throw new InvalidOperationException("No subscription pager after change? Illegal null set on global subscriptions");
+                            };
+                            UpdateSubscriptionFeed(!updated, null);
+                        }
+                    }
                 }
-            }
+                catch(Exception ex)
+                {
+                    result.SetException(ex);
+                }
+            });
 
             return result.Task;
         }

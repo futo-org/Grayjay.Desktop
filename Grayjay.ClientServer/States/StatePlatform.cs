@@ -559,7 +559,7 @@ namespace Grayjay.Desktop.POC.Port.States
             var pageTasks = clients
                 .Select(client =>
                 {
-                    return (client, Task.Run(() =>
+                    return (client, StateApp.ThreadPool.Run(() =>
                     {
                         lock (clientIdsOngoing)
                             clientIdsOngoing.Add(client.Config.ID);
