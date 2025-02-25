@@ -38,7 +38,6 @@ namespace Grayjay.ClientServer
             }
         }
 
-
         public static void OpenUrl(string uri)
         {
 
@@ -69,6 +68,68 @@ namespace Grayjay.ClientServer
                 {
                     throw;
                 }
+            }
+        }
+
+        public static string GetComputerName()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return Environment.MachineName;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return ExecuteCommand("scutil --get ComputerName").Trim();
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                string hostname;
+
+                try
+                {
+                    hostname = Environment.MachineName;
+                    if (!string.IsNullOrEmpty(hostname))
+                        return hostname;
+                }
+                catch (Exception err)
+                {
+                    Console.WriteLine("Error fetching hostname, trying different method...");
+                    Console.WriteLine(err);
+                }
+
+                try
+                {
+                    hostname = ExecuteCommand("hostnamectl hostname").Trim();
+                    if (!string.IsNullOrEmpty(hostname))
+                        return hostname;
+                }
+                catch (Exception err2)
+                {
+                    Console.WriteLine("Error fetching hostname again, using generic name...");
+                    Console.WriteLine(err2);
+
+                    hostname = "linux device";
+                }
+
+                return hostname;
+            }
+            else
+                return Environment.MachineName;
+        }
+
+        private static string ExecuteCommand(string command)
+        {
+            ProcessStartInfo processInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                Arguments = $"-c \"{command}\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (Process process = new Process { StartInfo = processInfo })
+            {
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+                return output;
             }
         }
     }
