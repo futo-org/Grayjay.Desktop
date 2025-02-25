@@ -24,6 +24,8 @@ public class SyncSession : IAuthorizable, IDisposable
     public bool _wasAuthorized = false;
     private Guid _id = Guid.NewGuid();
     private Guid? _remoteId = null;
+    public string? RemoteDeviceName { get; private set; } = null;
+    public string DisplayName => RemoteDeviceName ?? RemotePublicKey;
     private Guid? _lastAuthorizedRemoteId = null;
 
     private bool _connected;
@@ -43,9 +45,10 @@ public class SyncSession : IAuthorizable, IDisposable
     public static SyncHandlers Handlers = new GrayjaySyncHandlers();
 
     public SyncSession(string remotePublicKey, Action<SyncSession, bool, bool> onAuthorized, Action<SyncSession> onUnauthorized,
-        Action<SyncSession, bool> onConnectedChanged, Action<SyncSession> onClose)
+        Action<SyncSession, bool> onConnectedChanged, Action<SyncSession> onClose, string? remoteDeviceName)
     {
         RemotePublicKey = remotePublicKey;
+        RemoteDeviceName = remoteDeviceName;
         _onAuthorized = onAuthorized;
         _onUnauthorized = onUnauthorized;
         _onConnectedChanged = onConnectedChanged;
@@ -77,8 +80,29 @@ public class SyncSession : IAuthorizable, IDisposable
         }
 
         Logger.i<SyncSession>($"Sent AUTHORIZED with session id {_id}");
-        var str = _id.ToString();
-        await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, Encoding.UTF8.GetBytes(str), cancellationToken: cancellationToken);
+
+        if (socketSession.RemoteVersion >= 3)
+        {
+            var idBytes = Encoding.UTF8.GetBytes(_id.ToString());
+            var nameBytes = Encoding.UTF8.GetBytes(OSHelper.GetComputerName());
+            var data = new byte[sizeof(byte) + idBytes.Length + sizeof(byte) + nameBytes.Length];
+            using (var stream = new MemoryStream(data))
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write((byte)idBytes.Length);
+                writer.Write(idBytes);
+                writer.Write((byte)nameBytes.Length);
+                writer.Write(nameBytes);
+            }
+
+            await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, data, cancellationToken: cancellationToken);
+        }
+        else
+        {
+            var str = _id.ToString();
+            await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, Encoding.UTF8.GetBytes(str), cancellationToken: cancellationToken);
+        }
+
         _authorized = true;
         CheckAuthorized();
     }
@@ -140,13 +164,36 @@ public class SyncSession : IAuthorizable, IDisposable
         switch (opcode)
         {
             case Opcode.NOTIFY_AUTHORIZED:
-                _remoteId = data.Length >= 16 ? Guid.Parse(Encoding.UTF8.GetString(data)) : Guid.Empty;
+
+                if (socketSession.RemoteVersion >= 3)
+                {
+                    using var stream = new MemoryStream(data);
+                    using var reader = new BinaryReader(stream);
+                    
+                    var idStringLength = reader.ReadByte();
+                    if (idStringLength > 64)
+                        throw new Exception("Id string must be less than 64 bytes.");
+                    var idString = Encoding.UTF8.GetString(reader.ReadBytes(idStringLength));
+                    var nameLength = reader.ReadByte();
+                    if (nameLength > 64)
+                        throw new Exception("Name string must be less than 64 bytes.");
+                    _remoteId = data.Length >= 16 ? Guid.Parse(idString) : Guid.Empty;
+                    RemoteDeviceName = Encoding.UTF8.GetString(reader.ReadBytes(nameLength));
+                }
+                else
+                {
+                    _remoteId = data.Length >= 16 ? Guid.Parse(Encoding.UTF8.GetString(data)) : Guid.Empty;
+                    RemoteDeviceName = null;
+                }
+
                 _remoteAuthorized = true;
-                Logger.i<SyncSession>($"Received AUTHORIZED with session id {_remoteId}");
+                Logger.i<SyncSession>($"Received AUTHORIZED with session id {_remoteId} (device name: '{RemoteDeviceName ?? "not set"}')");
                 CheckAuthorized();
                 return;
             case Opcode.NOTIFY_UNAUTHORIZED:
                 _remoteAuthorized = false;
+                _remoteId = null;
+                RemoteDeviceName = null;
                 _onUnauthorized(this);
                 return;
                 // Handle other potentially unauthorized packet types...

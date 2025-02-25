@@ -27,6 +27,7 @@ namespace Grayjay.ClientServer.Controllers
                 return new SyncDevice
                 {
                     PublicKey = pk, 
+                    DisplayName = session?.DisplayName ?? StateSync.Instance.GetCachedName(pk),
                     Metadata = session?.Connected == true ? "Connected" : "Disconnected",
                     LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
                 };
@@ -43,6 +44,7 @@ namespace Grayjay.ClientServer.Controllers
                 return new SyncDevice
                 {
                     PublicKey = pk,
+                    DisplayName = session?.DisplayName,
                     Metadata = session?.Connected == true ? "Connected" : "Disconnected",
                     LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
                 };

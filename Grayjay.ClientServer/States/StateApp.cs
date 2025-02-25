@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
@@ -97,32 +98,35 @@ namespace Grayjay.ClientServer.States
             Logger.i(nameof(StateApp), $"Startup: Ensuring Table DBHistory");
             Connection.EnsureTable<DBHistoryIndex>(DBHistoryIndex.TABLE_NAME);
 
-            _ = Task.Run(async () =>
+            if (GrayjaySettings.Instance.Notifications.PluginUpdates)
             {
-                try
+                _ = Task.Run(async () =>
                 {
-                    await StatePlugins.CheckForUpdates();
-
-                    await Task.Delay(2500);
-                    foreach (var update in StatePlugins.GetKnownPluginUpdates())
+                    try
                     {
-                        //TODO: Proper validation
-                        StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
-                            new StateUI.DialogAction("Ignore", () =>
-                            {
+                        await StatePlugins.CheckForUpdates();
 
-                            }, StateUI.ActionStyle.None),
-                            new StateUI.DialogAction("Update", () =>
-                            {
-                                StatePlugins.InstallPlugin(update.SourceUrl);
-                            }, StateUI.ActionStyle.Primary));
+                        await Task.Delay(2500);
+                        foreach (var update in StatePlugins.GetKnownPluginUpdates())
+                        {
+                            //TODO: Proper validation
+                            StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
+                                new StateUI.DialogAction("Ignore", () =>
+                                {
+
+                                }, StateUI.ActionStyle.None),
+                                new StateUI.DialogAction("Update", () =>
+                                {
+                                    StatePlugins.InstallPlugin(update.SourceUrl);
+                                }, StateUI.ActionStyle.Primary));
+                        }
                     }
-                }
-                catch(Exception ex)
-                {
-                    Logger.e(nameof(StateApp), ex.Message, ex);
-                }
-            });
+                    catch (Exception ex)
+                    {
+                        Logger.e(nameof(StateApp), ex.Message, ex);
+                    }
+                });
+            }
 
             _ = Task.Run(async () =>
             {

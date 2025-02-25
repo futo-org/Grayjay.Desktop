@@ -143,7 +143,7 @@ const SyncPage: Component = () => {
           My devices
         </div>
         <ScrollContainer style={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column"}}>
-          <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.publicKey, item.metadata, item.linkType)}</For>
+          <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
         </ScrollContainer>
       </Show>
       <Show when={isQrVisible$()}>
