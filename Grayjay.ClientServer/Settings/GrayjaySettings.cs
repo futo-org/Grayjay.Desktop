@@ -297,6 +297,17 @@ namespace Grayjay.ClientServer.Settings
             public bool ConnectLast { get; set; } = true;
         }
 
+        [SettingsField("Notifications", "group", "Configure update notifications", 11)]
+        public NotificationSettings Notifications { get; set; } = new NotificationSettings();
+        public class NotificationSettings
+        {
+            [SettingsField("App Updates", SettingsField.TOGGLE, "Enable app update notifications", 0)]
+            public bool AppUpdates { get; set; } = true;
+
+            [SettingsField("Plugin Updates", SettingsField.TOGGLE, "Enable plugin update notifications", 0)]
+            public bool PluginUpdates { get; set; } = true;
+        }
+
         [SettingsField("Info", SettingsField.GROUP, "", 13)]
         public InfoData Info { get; } = new InfoData();
 
