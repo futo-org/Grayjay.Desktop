@@ -19,9 +19,9 @@ export abstract class ChannelBackend {
         return Pager.fromMethods<IPlatformContent>(() => this.channelContentLoadSearch(query), this.channelContentNextPage);
     }
     static async channelContentNextPage(): Promise<PagerResult<IPlatformContent>> {
-        return await Backend.GET("/channel/ChannelContentNextPage" ) as PagerResult<IPlatformContent>;
+        return await Backend.GET("/channel/ChannelContentNextPage") as PagerResult<IPlatformContent>;
     }
-    static async channelContentPager(): Promise<Pager<IPlatformContent>> {
+    static async channelContentPager(url: string): Promise<Pager<IPlatformContent>> {
         const result = Pager.fromMethods<IPlatformContent>(this.channelContentLoad, this.channelContentNextPage);
         //TODO: Temporary 2 pages
         (await result).nextPage();

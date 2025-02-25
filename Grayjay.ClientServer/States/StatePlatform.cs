@@ -313,7 +313,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 {
                     lock (clientIdsOngoing)
                         clientIdsOngoing.Add(client.Config.ID);
-                    return client.GetHome();
+                    return client.FromPool(_mainClientPool).GetHome();
                 }).ToDictionary(x => x, y => 1f);
 
             var pager = new MultiDistributionPager<PlatformContent>(pages, true);
@@ -331,7 +331,7 @@ namespace Grayjay.Desktop.POC.Port.States
                         {
                             try
                             {
-                                var result = client.GetHome();
+                                var result = client.FromPool(_mainClientPool).GetHome();
 
                                 var pager = (modifier != null) ? 
                                     new ModifyPager<PlatformContent>(result, (x) => modifier != null ? modifier(x) : x) :
@@ -374,7 +374,7 @@ namespace Grayjay.Desktop.POC.Port.States
             var client = GetChannelClientOrNull(url);
             if (url == null)
                 throw new ArgumentException($"No plugin to load channel [{url}]");
-            var results =  GetChannelContent(client, url, false, 0);
+            var results =  GetChannelContent(client, url, false);
             return results;
         }
         public static IPager<PlatformContent> SearchChannelContent(string url, string query)
@@ -389,15 +389,12 @@ namespace Grayjay.Desktop.POC.Port.States
             return client.FromPool(_channelClientPool)
                 .GetChannelContents(url, type, order);
         }
-        public static IPager<PlatformContent> GetChannelContent(GrayjayPlugin baseClient, string channelUrl, bool isSubscriptionOptimized = false, int usePooledClients = 0)
+        public static IPager<PlatformContent> GetChannelContent(GrayjayPlugin baseClient, string channelUrl, bool isSubscriptionOptimized = false)
         {
             var clientCapabilities = baseClient.GetChannelCapabilities();
             GrayjayPlugin client;
 
-            if (usePooledClients > 1)
-                client = baseClient.FromPool(_channelClientPool);
-            else
-                client = baseClient;
+            client = baseClient.FromPool(_channelClientPool);
 
             DateTime? lastStream = null;
 
@@ -816,7 +813,7 @@ namespace Grayjay.Desktop.POC.Port.States
 
                     //TODO: script
                     var client = new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID));
-                    client.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
+                    client.OnLog += (a, b) => Logger.v($"Plugin [{a.Name}]", b);
                     client.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
                     client.OnScriptException += (config, ex) =>
                     {

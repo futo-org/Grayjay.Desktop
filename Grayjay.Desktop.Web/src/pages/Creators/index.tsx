@@ -34,7 +34,7 @@ const CreatorsPage: Component = () => {
   }, "playlistsPage");
   const [filterText, setFilterText] = createSignal("");
   const [sortBy, setSortBy] = createSignal(0);
-  const [enabledSources, setEnabledSources] = createSignal(StateGlobal.sources$()?.map(v => v.id) ?? []);
+  const [disabledSources, setDisabledSources] = createSignal([] as string[]);
   const filteredSubs = createMemo(() => {
     let result: ISubscription[] | undefined;
 
@@ -43,8 +43,8 @@ const CreatorsPage: Component = () => {
     else
       result = subs$();
 
-    const allEnabled = enabledSources();
-    result = result?.filter(v => allEnabled.indexOf(v.channel.id.pluginID) !== -1);
+    const allDisabled = disabledSources();
+    result = result?.filter(v => allDisabled.indexOf(v.channel.id.pluginID) === -1);
 
     switch (sortBy()) {
       case 0:
@@ -101,7 +101,7 @@ const CreatorsPage: Component = () => {
   };
 
   const valueString$ = createMemo(() => {
-    const a = StateGlobal.sources$()?.filter(v => enabledSources().indexOf(v.id) !== -1)?.map(v => v.name) ?? [];
+    const a = StateGlobal.sources$()?.filter(v => disabledSources().indexOf(v.id) === -1)?.map(v => v.name) ?? [];
     return a.length > 0 ? a.join(", ") : "None";
   });
 
@@ -122,9 +122,9 @@ const CreatorsPage: Component = () => {
                 icon: i.absoluteIconUrl,
                 onToggle: (v) => {
                   if (v)
-                    setEnabledSources([ ... enabledSources(), i.id ]);
+                    setDisabledSources(disabledSources().filter(x=>x != i.id));
                   else
-                    setEnabledSources(enabledSources().filter(v => v !== i.id));
+                    setDisabledSources([... disabledSources(), i.id]);
                 }
               })) ?? []
             }} />

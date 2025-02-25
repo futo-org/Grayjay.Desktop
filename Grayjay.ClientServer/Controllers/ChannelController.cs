@@ -2,12 +2,15 @@
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Pagers;
 using Grayjay.ClientServer.States;
+using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine.Models.Channel;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace Grayjay.ClientServer.Controllers
 {
@@ -25,12 +28,16 @@ namespace Grayjay.ClientServer.Controllers
 
 
         [HttpGet]
-        public PlatformChannel Channel(string url)
+        public async Task<PlatformChannel> Channel(string url)
         {
+            Stopwatch watch = Stopwatch.StartNew();
+            Logger.w(nameof(ChannelController), $"ChannelLoad started");
+            PlatformChannel channel = null;
             var state = this.State().ChannelState;
             try
             {
-                state.ChannelLoaded = StatePlatform.GetChannel(url);
+                channel = StatePlatform.GetChannel(url);
+                state.ChannelLoaded = channel;
             }
             catch(Exception ex)
             {
@@ -39,25 +46,31 @@ namespace Grayjay.ClientServer.Controllers
 
 
             //Update channel subscription
-            if (state.ChannelLoaded != null && !string.IsNullOrEmpty(state.ChannelLoaded.Thumbnail))
+            if (channel != null && !string.IsNullOrEmpty(channel.Thumbnail))
             {
                 var sub = StateSubscriptions.GetSubscription(url);
                 if (sub != null)
                 {
-                    sub.Channel = state.ChannelLoaded;
+                    sub.Channel = channel;
                     sub.SaveAsync();
                 }
             }
 
-            return state.ChannelLoaded;
+            Logger.w(nameof(ChannelController), $"ChannelLoad took {watch.Elapsed.TotalMilliseconds}ms");
+            watch.Stop();
+
+            return channel;
         }
 
         [HttpGet]
-        public PagerResult<PlatformContent> ChannelContentLoad()
+        public PagerResult<PlatformContent> ChannelContentLoad(string url = null)
         {
+            Stopwatch watch = Stopwatch.StartNew();
             var state = this.State().ChannelState;
-            var pager = new AnonymousContentRefPager(StatePlatform.GetChannelContent(state.ChannelLoaded?.Url ?? ""));
+            var pager = new AnonymousContentRefPager(StatePlatform.GetChannelContent(url ?? state.ChannelLoaded?.Url ?? ""));
             state.ChannelPager = pager;
+            watch.Stop();
+            Logger.w(nameof(ChannelController), $"ChannelContentLoad took {watch.Elapsed.TotalMilliseconds}ms");
             return pager.AsPagerResult();
         }
         [HttpGet]
