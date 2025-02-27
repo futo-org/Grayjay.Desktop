@@ -138,39 +138,33 @@ const ChannelPage: Component = () => {
 
   const [error$, setError] = createSignal<any>(undefined);
 
-  createEffect(() => {
-    console.log("url changed", params.url);
-    channelResource.mutate(undefined);
-    channelResource.refetch();
-  });
-
-  const [channel$, channelResource] = createResourceDefault(() => [], async () => {
+  const [channel$, channelResource] = createResourceDefault(params.url, async (u) => {
     console.log("get channel", params.url);
 
-    if(params.url) {
-      try {
-        return await UIOverlay.catchDialogExceptions(async ()=>{
-          const reqUrl = params.url;
-          const result = await ChannelBackend.channelLoad(params.url!);
-          if(reqUrl == params.url && params.url != result.url) {
-            setParams({
-              ...params,
-              url: result.url
-            })
-          }
-          setError(undefined);
-          return result;
-        }, null, ()=>{
-          channelResource.refetch();
-        });
-      }
-      catch(ex) {
-        setError(ex);
-        return undefined;
-      }
-    } 
-    else
-      return undefined; 
+    if (!u) {
+      return undefined;
+    }
+
+    try {
+      return await UIOverlay.catchDialogExceptions(async ()=>{
+        const reqUrl = u;
+        const result = await ChannelBackend.channelLoad(u);
+        if(reqUrl == u && u != result.url) {
+          setParams({
+            ...params,
+            url: result.url
+          })
+        }
+        setError(undefined);
+        return result;
+      }, null, ()=>{
+        channelResource.refetch();
+      });
+    }
+    catch(ex) {
+      setError(ex);
+      return undefined;
+    }
   });
 
   const authorSummary$ = createMemo(() => {
@@ -196,12 +190,13 @@ const ChannelPage: Component = () => {
     }
   };
 
-  createEffect(() => updatePager(untrack(query$), channel$()));
-
+  
   const [channelPager$, setChannelPager] = createSignal<Pager<IPlatformContent>>();
   const [activeTab$, setActiveTab] = createSignal("Videos");
-
+  
   const [query$, setQuery] = createSignal<string>("");
+  createEffect(() => updatePager(untrack(query$), channel$()));
+  
   const isReady$ = createMemo(()=>params?.url && (channel$() && channel$()?.url == params?.url || authorSummary$()))
   const isReadyContents$ = createMemo(()=>!!(params?.url && channelPager$()))
 
