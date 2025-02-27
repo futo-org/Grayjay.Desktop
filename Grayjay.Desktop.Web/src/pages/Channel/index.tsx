@@ -138,12 +138,45 @@ const ChannelPage: Component = () => {
 
   const [error$, setError] = createSignal<any>(undefined);
 
+
+  const authorSummary$ = createMemo(() => {
+    const author = (location.state as any)?.author;
+    console.log("state changed", author);
+    return author;
+  });
+
+  const [canSearchChannel$] = createResourceDefault(async () => [], async () => params.url ? await ChannelBackend.CanSearchChannel(params.url) : false, undefined, false);
+
+  const updatePager = async (query: string, url?: string) => {
+    if (!url) {
+      setChannelPager(undefined);
+      return;
+    }
+
+    setChannelPager(undefined);
+
+    if (!query || query.length < 1) {
+      setChannelPager(await ChannelBackend.channelContentPager(url));
+    } else {
+      console.log("Searching for " + query);
+      setChannelPager(await ChannelBackend.channelContentSearchPager(url, query));
+    }
+  };
+
+  
+  const [channelPager$, setChannelPager] = createSignal<Pager<IPlatformContent>>();
+  const [activeTab$, setActiveTab] = createSignal("Videos");
+  
+  const [query$, setQuery] = createSignal<string>("");
+  
   const [channel$, channelResource] = createResourceDefault(params.url, async (u) => {
     console.log("get channel", params.url);
 
     if (!u) {
       return undefined;
     }
+
+    updatePager(untrack(query$), u);
 
     try {
       return await UIOverlay.catchDialogExceptions(async ()=>{
@@ -166,36 +199,7 @@ const ChannelPage: Component = () => {
       return undefined;
     }
   });
-
-  const authorSummary$ = createMemo(() => {
-    const author = (location.state as any)?.author;
-    console.log("state changed", author);
-    return author;
-  });
-
-  const [canSearchChannel$] = createResourceDefault(async () => [], async () => params.url ? await ChannelBackend.CanSearchChannel(params.url) : false, undefined, false);
-
-  const updatePager = async (query: string, channel?: ISerializedChannel) => {
-    if (!channel) {
-      setChannelPager(undefined);
-      return;
-    }
-
-    setChannelPager(undefined);
-
-    if (!query || query.length < 1) {
-      setChannelPager(await ChannelBackend.channelContentPager());
-    } else {
-      setChannelPager(await ChannelBackend.channelContentSearchPager(query));
-    }
-  };
-
-  
-  const [channelPager$, setChannelPager] = createSignal<Pager<IPlatformContent>>();
-  const [activeTab$, setActiveTab] = createSignal("Videos");
-  
-  const [query$, setQuery] = createSignal<string>("");
-  createEffect(() => updatePager(untrack(query$), channel$()));
+  //createEffect(() => updatePager(untrack(query$), channel$()));
   
   const isReady$ = createMemo(()=>params?.url && (channel$() && channel$()?.url == params?.url || authorSummary$()))
   const isReadyContents$ = createMemo(()=>!!(params?.url && channelPager$()))
@@ -247,7 +251,10 @@ const ChannelPage: Component = () => {
                     "margin-bottom": "24px",
                     "width": "calc(100% - 48px)"
                   }}
-                  onSubmit={() => updatePager(query$(), channel$())} />
+                  onSubmit={() => {
+                    console.log("Channel Search Submit");
+                    updatePager(query$(), channel$()?.url ?? params.url)
+                    }} />
                 </Show>
                       
                 <Show when={error$()}>

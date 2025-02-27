@@ -9,20 +9,20 @@ export abstract class ChannelBackend {
     static async CanSearchChannel(url: string): Promise<boolean> {
         return await Backend.GET("/channel/CanSearchChannel?url=" + encodeURIComponent(url)) as boolean;
     }
-    static async channelContentLoad(): Promise<PagerResult<IPlatformContent>> {
-        return await Backend.GET("/channel/ChannelContentLoad") as PagerResult<IPlatformContent>;
+    static async channelContentLoad(url?: string): Promise<PagerResult<IPlatformContent>> {
+        return await Backend.GET("/channel/ChannelContentLoad?url=" + encodeURIComponent(url ?? "")) as PagerResult<IPlatformContent>;
     }
-    static async channelContentLoadSearch(query: string): Promise<PagerResult<IPlatformContent>> {
-        return await Backend.GET("/channel/ChannelContentLoadSearch?query=" + encodeURIComponent(query)) as PagerResult<IPlatformContent>;
+    static async channelContentLoadSearch(url: string, query: string): Promise<PagerResult<IPlatformContent>> {
+        return await Backend.GET("/channel/ChannelContentLoadSearch?query=" + encodeURIComponent(query) + "&url=" + encodeURIComponent(url)) as PagerResult<IPlatformContent>;
     }
-    static async channelContentSearchPager(query: string): Promise<Pager<IPlatformContent>> {
-        return Pager.fromMethods<IPlatformContent>(() => this.channelContentLoadSearch(query), this.channelContentNextPage);
+    static async channelContentSearchPager(url:string, query: string): Promise<Pager<IPlatformContent>> {
+        return Pager.fromMethods<IPlatformContent>(() => this.channelContentLoadSearch(url, query), this.channelContentNextPage);
     }
     static async channelContentNextPage(): Promise<PagerResult<IPlatformContent>> {
         return await Backend.GET("/channel/ChannelContentNextPage") as PagerResult<IPlatformContent>;
     }
     static async channelContentPager(url: string): Promise<Pager<IPlatformContent>> {
-        const result = Pager.fromMethods<IPlatformContent>(this.channelContentLoad, this.channelContentNextPage);
+        const result = Pager.fromMethods<IPlatformContent>(()=>this.channelContentLoad(url), this.channelContentNextPage);
         //TODO: Temporary 2 pages
         (await result).nextPage();
         return result;

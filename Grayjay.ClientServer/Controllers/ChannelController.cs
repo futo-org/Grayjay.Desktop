@@ -9,6 +9,7 @@ using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 using System.Diagnostics;
 using System.Threading.Channels;
 
@@ -65,6 +66,7 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public PagerResult<PlatformContent> ChannelContentLoad(string url = null)
         {
+            Logger.w(nameof(ChannelController), $"ChannelContentLoad started");
             Stopwatch watch = Stopwatch.StartNew();
             var state = this.State().ChannelState;
             var pager = new AnonymousContentRefPager(StatePlatform.GetChannelContent(url ?? state.ChannelLoaded?.Url ?? ""));
@@ -83,10 +85,10 @@ namespace Grayjay.ClientServer.Controllers
             return client.Capabilities.HasSearchChannelContents;
         }
         [HttpGet]
-        public PagerResult<PlatformVideo> ChannelContentLoadSearch(string query)
+        public PagerResult<PlatformVideo> ChannelContentLoadSearch(string query, string url = null)
         {
             var state = this.State().ChannelState;
-            var pager = StatePlatform.SearchChannelContent(state.ChannelLoaded?.Url ?? "", query);
+            var pager = StatePlatform.SearchChannelContent(url ?? state.ChannelLoaded?.Url ?? "", query);
             state.ChannelPager = pager;
             return pager.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
         }

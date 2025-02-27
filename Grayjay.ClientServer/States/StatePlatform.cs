@@ -258,7 +258,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             return CreateDistributedLazyPager(
                 (client) => (excludeClientIds != null ? !excludeClientIds.Contains(client.ID) : true) && (client.Descriptor?.AppSettings?.TabEnabled?.EnableSearch ?? false),
-                (client) => client.Search(query, type, order, GetClientSpecificFilters(PluginConfigState.FromClient(client).CapabilitiesSearch, filters)),
+                (client) => client.FromPool(_mainClientPool).Search(query, type, order, GetClientSpecificFilters(PluginConfigState.FromClient(client).CapabilitiesSearch, filters)),
                 (client, task) => new PlatformContentPlaceholder(client.Config)
             );
         }
@@ -266,7 +266,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             return CreateDistributedLazyPager(
                 (client) => client.Capabilities.HasChannelSearch && (excludeClientIds != null ? !excludeClientIds.Contains(client.ID) : true),
-                (client) => client.SearchChannelsAsContent(query),
+                (client) => client.FromPool(_mainClientPool).SearchChannelsAsContent(query),
                 (client, task) => new PlatformContentPlaceholder(client.Config)
             );
         }
@@ -275,7 +275,7 @@ namespace Grayjay.Desktop.POC.Port.States
             return CreateDistributedLazyPager(
                 (client) => 
                     client.Capabilities.HasSearchPlaylists && (excludeClientIds != null ? !excludeClientIds.Contains(client.ID) : true),
-                (client) => client.SearchPlaylists(query),
+                (client) => client.FromPool(_mainClientPool).SearchPlaylists(query),
                 (client, task) => new PlatformContentPlaceholder(client.Config)
             );
         }
