@@ -558,6 +558,7 @@ namespace Grayjay.Desktop
             await server.StopServer();
 
             StateApp.Shutdown();
+            Logger.DisposeStaticLogger();
         }
     }
 }

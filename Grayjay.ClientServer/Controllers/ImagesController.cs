@@ -60,8 +60,6 @@ namespace Grayjay.ClientServer.Controllers
                 return BadRequest();
         }
 
-
-
         [HttpGet]
         public IActionResult GetCachedImage(string id)
         {
