@@ -63,7 +63,9 @@ namespace Grayjay.Desktop.POC.Port.States
         }
         public static Task CheckForUpdates()
         {
-            return Task.WhenAll(StatePlatform.GetEnabledClients().Select(async (client) =>
+            var clients = StatePlatform.GetEnabledClients();
+
+            return Task.WhenAll(clients.Select(async (client) =>
             {
                 await StateApp.ThreadPool.Run<bool>(() => CheckForUpdate(client.Config));
             }));

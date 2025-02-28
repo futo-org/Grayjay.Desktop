@@ -79,7 +79,7 @@ namespace Grayjay.ClientServer.States
         }
 
 
-        public static void Startup()
+        public static async Task Startup()
         {
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
@@ -90,6 +90,8 @@ namespace Grayjay.ClientServer.States
 
             Logger.i(nameof(StateApp), "Startup: Initializing PluginEncryptionProvider");
             PluginDescriptor.Encryption = new PluginEncryptionProvider();
+
+            await StatePlatform.UpdateAvailableClients(true);
 
             Logger.i(nameof(StateApp), "Startup: Initializing DatabaseConnection");
             Connection = new DatabaseConnection();
@@ -148,7 +150,7 @@ namespace Grayjay.ClientServer.States
                 }).Start();
 
             //Temporary workaround for youtube
-            Task.Run(() =>
+            ThreadPool.Run(() =>
             {
                 StatePlatform.GetHome();
             });

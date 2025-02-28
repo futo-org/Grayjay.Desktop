@@ -284,7 +284,7 @@ namespace Grayjay.Desktop
 
             Stopwatch watch = Stopwatch.StartNew();
             Logger.i(nameof(Program), "Main: StateApp.Startup");
-            StateApp.Startup();
+            await StateApp.Startup();
             Logger.i(nameof(Program), $"Main: StateApp.Startup finished ({watch.ElapsedMilliseconds}ms)");
 
             watch.Restart();

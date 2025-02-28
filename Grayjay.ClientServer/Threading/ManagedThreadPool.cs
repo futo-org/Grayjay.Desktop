@@ -29,10 +29,12 @@ namespace Grayjay.ClientServer.Threading
         public Task Run(Func<Task> task)
         {
             TaskCompletionSource result = new TaskCompletionSource();
+            string caller = (new System.Diagnostics.StackTrace()).GetFrame(1).GetMethod().Name;
             Run(() =>
             {
                 try
                 {
+                    string callerInner = caller;
                     var taskResult = task();
                     taskResult.ContinueWith((t) =>
                     {
