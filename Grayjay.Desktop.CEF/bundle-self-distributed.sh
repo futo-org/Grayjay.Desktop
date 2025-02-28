@@ -1,12 +1,17 @@
 #!/bin/bash
 
+if [ -z "$1" ]; then
+    echo "Error: Version number is required."
+    echo "Usage: $0 <version>"
+    exit 1
+fi
+
+VERSION=$1
 APP_NAME_BASE="Grayjay"
 BUNDLE_ID="com.futo.grayjay.desktop"
 APPLE_ID="koen@futo.org"
 TEAM_ID="2W7AC6T8T5"
 APP_CERT="Developer ID Application: FUTO Holdings, Inc. (2W7AC6T8T5)"
-#APP_CERT="Apple Development: junk@koenj.com (UPVRSKNGC9)"
-#APP_CERT="Apple Development: Koen Jeukendrup (J5K3GQAZ67)"
 KEYCHAIN_PROFILE="GRAYJAY_PROFILE"
 
 build_sign_notarize() {
@@ -20,7 +25,7 @@ build_sign_notarize() {
 
     # Build backend
     rm -rf bin/ obj/
-    dotnet publish -r $ARCH
+    dotnet publish -r $ARCH -c Release -p:AssemblyVersion=1.$VERSION.0.0
     PUBLISH_PATH="bin/Release/net8.0/$ARCH/publish"
     mkdir -p "$PUBLISH_PATH/wwwroot"
     cp -r ../Grayjay.Desktop.Web/dist "$PUBLISH_PATH/wwwroot/web"
@@ -56,6 +61,15 @@ build_sign_notarize() {
     cp -a Info/Info-Helper-Renderer.plist "$APP_NAME/Contents/Frameworks/dotcefnative Helper (Renderer).app/Contents/Info.plist"
 
     bash ./sign-macos.sh "$APP_NAME"
+
+    rm -f "Grayjay.Desktop-$ARCH.zip"
+    rm -rf "Grayjay.app"
+    mv "Grayjay_$ARCH-signed.app" "Grayjay.app"
+    /usr/bin/ditto -c -k --sequesterRsrc --keepParent "Grayjay.app" "Grayjay.Desktop-$ARCH.zip"
+    if [ $? -ne 0 ]; then
+        echo "Failed to create zip Grayjay.Desktop-$ARCH.zip"
+        exit 1
+    fi
 }
 
 # Build front-end

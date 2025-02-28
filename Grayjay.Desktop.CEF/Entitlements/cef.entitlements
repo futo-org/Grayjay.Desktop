@@ -8,9 +8,13 @@
         <true/>
         <key>com.apple.security.network.server</key>
         <true/>
+        <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+        <true/>
         <key>com.apple.security.files.user-selected.read-write</key>
         <true/>
         <key>com.apple.security.application-groups</key>
+        <string>2W7AC6T8T5.com.futo.grayjay.desktop</string>
+        <key>com.apple.security.keychain-access-groups</key>
         <string>2W7AC6T8T5.com.futo.grayjay.desktop</string>
     </dict>
 </plist>

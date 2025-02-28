@@ -1,86 +1,191 @@
-﻿using Grayjay.ClientServer.Constants;
-using Grayjay.ClientServer.Settings;
-
-namespace Grayjay.Desktop.POC
+﻿namespace Grayjay.Desktop.POC
 {
-    public static class Logger
+    public enum LogLevel
     {
-        private static string _logFile;
-        private static bool _logToFile = true;
-        private static StreamWriter? _logWriter = null;
+        Verbose,
+        Info,
+        Warning,
+        Error
+    }
 
-        static Logger()
+    public class Log : IDisposable
+    {
+        public class Config
         {
-            _logFile = Path.Combine(Directories.Base, "log.txt");
-            if (_logToFile)
-                _logWriter = new StreamWriter(_logFile, false);
+            public string? LogFilePath { get; set; }
+            public bool LogToFile { get; set; } = true;
+            public bool WriteToDebug { get; set; } = true;
+            public string TimestampFormat { get; set; } = "yyyy-MM-dd HH:mm:ss.fff";
+            public bool UseUtcTime { get; set; } = false;
+            public int FlushIntervalMs { get; set; } = 3000;
         }
 
-        private static void logToFile(string msg)
+        private readonly Config _config;
+        private StreamWriter? _logWriter;
+        private readonly object _lock = new object();
+        private readonly object _consoleLock = new object();
+        private bool _disposed;
+        private Timer? _flushTimer;
+
+
+        public Log(Config? config = null)
         {
-            if (_logWriter != null)
+            _config = config ?? new Config();
+            if (_config.LogToFile) InitializeLogWriter();
+            if (_config.LogToFile && _config.FlushIntervalMs > 0)
             {
-                lock (_logWriter)
+                _flushTimer = new Timer(FlushLog, null, _config.FlushIntervalMs, _config.FlushIntervalMs);
+            }
+        }
+
+        private void InitializeLogWriter()
+        {
+            var logFilePath = _config.LogFilePath;
+            if (logFilePath == null)
+                throw new Exception("Log file path must be set.");
+
+            lock (_lock)
+            {
+                try
                 {
-                    _logWriter.WriteLine(msg);
-                    _logWriter.Flush();
+                    _logWriter?.Dispose();
+                    _logWriter = new StreamWriter(logFilePath, append: false) { AutoFlush = false };
+                }
+                catch (Exception ex)
+                {
+                    LogFallback($"Failed to initialize log file: {ex.Message}");
+                    _config.LogToFile = false;
                 }
             }
         }
 
-        public static void i<T>(string msg, Exception ex = null) => i(nameof(T), msg);
-        public static void i(string tag, string msg, Exception ex = null)
+        private void LogFallback(string message)
         {
-            Console.WriteLine($"{tag}:{msg}\n{ex}");
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}\n{ex}");
-            logToFile($"i {tag}:{msg}\n{ex}");
+            lock (_consoleLock)
+            {
+                Console.WriteLine(message);
+            }
+            if (_config.WriteToDebug) System.Diagnostics.Debug.WriteLine(message);
         }
 
-        public static void i<T>(string msg) => i(nameof(T), msg);
-        public static void i(string tag, string msg)
+        public void l(LogLevel level, string tag, string message, Exception? ex = null)
         {
-            Console.WriteLine($"{tag}:{msg}");
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}");
-            logToFile($"i {tag}:{msg}");
-        }
-        public static void w<T>(string msg, Exception ex = null) => w(nameof(T), msg, ex);
-        public static void w(string tag, string msg, Exception ex = null)
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"{tag}:{msg}\n{ex}");
-            Console.ResetColor();
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}\n{ex}");
-            logToFile($"w {tag}:{msg}\n{ex}");
+            if (_disposed) return;
+
+            var time = _config.UseUtcTime ? DateTime.UtcNow : DateTime.Now;
+            string timestamp = time.ToString(_config.TimestampFormat);
+            string levelStr = level.ToString().ToUpper();
+            string logMessage = $"[{timestamp}] [{levelStr}] [{tag}] {message}";
+            if (ex != null) logMessage += $"\nException: {ex.Message}\nStack Trace: {ex.StackTrace}";
+
+            lock (_consoleLock)
+            {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                Console.ForegroundColor = level switch
+                {
+                    LogLevel.Verbose => ConsoleColor.DarkGray,
+                    LogLevel.Info => ConsoleColor.White,
+                    LogLevel.Warning => ConsoleColor.Yellow,
+                    LogLevel.Error => ConsoleColor.Red,
+                    _ => ConsoleColor.White
+                };
+                Console.WriteLine(logMessage);
+                Console.ForegroundColor = originalColor;
+            }
+
+            if (_config.WriteToDebug) System.Diagnostics.Debug.WriteLine(logMessage);
+
+            if (_config.LogToFile && _logWriter != null)
+            {
+                lock (_lock)
+                {
+                    try
+                    {
+                        _logWriter.WriteLine(logMessage);
+                    }
+                    catch (Exception writeEx)
+                    {
+                        LogFallback($"Failed to write to log: {writeEx.Message}");
+                    }
+                }
+            }
         }
 
-        public static void v<T>(string msg) => v(nameof(T), msg);
-        public static void v(string tag, string msg)
+        private void FlushLog(object? state)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"{tag}:{msg}");
-            Console.ResetColor();
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}");
-            logToFile($"v {tag}:{msg}");
+            if (_disposed || _logWriter == null) return;
+            lock (_lock)
+            {
+                try
+                {
+                    _logWriter.Flush();
+                }
+                catch (Exception flushEx)
+                {
+                    LogFallback($"Failed to flush log: {flushEx.Message}");
+                }
+            }
         }
 
+        public void Verbose<T>(string message, Exception? ex = null) => l(LogLevel.Verbose, typeof(T).Name, message, ex);
+        public void Info<T>(string message, Exception? ex = null) => l(LogLevel.Info, typeof(T).Name, message, ex);
+        public void Warning<T>(string message, Exception? ex = null) => l(LogLevel.Warning, typeof(T).Name, message, ex);
+        public void Error<T>(string message, Exception? ex = null) => l(LogLevel.Error, typeof(T).Name, message, ex);
+        public void v<T>(string message, Exception? ex = null) => l(LogLevel.Verbose, typeof(T).Name, message, ex);
+        public void i<T>(string message, Exception? ex = null) => l(LogLevel.Info, typeof(T).Name, message, ex);
+        public void w<T>(string message, Exception? ex = null) => l(LogLevel.Warning, typeof(T).Name, message, ex);
+        public void e<T>(string message, Exception? ex = null) => l(LogLevel.Error, typeof(T).Name, message, ex);
+        public void Verbose(string tag, string message, Exception? ex = null) => l(LogLevel.Verbose, tag, message, ex);
+        public void Info(string tag, string message, Exception? ex = null) => l(LogLevel.Info, tag, message, ex);
+        public void Warning(string tag, string message, Exception? ex = null) => l(LogLevel.Warning, tag, message, ex);
+        public void Error(string tag, string message, Exception? ex = null) => l(LogLevel.Error, tag, message, ex);
+        public void v(string tag, string message, Exception? ex = null) => l(LogLevel.Verbose, tag, message, ex);
+        public void i(string tag, string message, Exception? ex = null) => l(LogLevel.Info, tag, message, ex);
+        public void w(string tag, string message, Exception? ex = null) => l(LogLevel.Warning, tag, message, ex);
+        public void e(string tag, string message, Exception? ex = null) => l(LogLevel.Error, tag, message, ex);
 
-        public static void e<T>(string msg, Exception ex) => e(nameof(T), msg, ex);
-        public static void e(string tag, string msg, Exception ex)
+        public void Dispose()
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"{tag}:{msg}\n{ex}");
-            Console.ResetColor();
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}\n{ex}");
-            logToFile($"e {tag}:{msg}\n{ex}");
+            if (_disposed) return;
+            lock (_lock)
+            {
+                _flushTimer?.Dispose();
+                _logWriter?.Dispose();
+                _logWriter = null;
+                _disposed = true;
+            }
         }
+    }
 
-        public static void e(string tag, string msg)
+    public static class Logger
+    {
+        private static Log.Config _staticConfig = new Log.Config()
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"{tag}:{msg}");
-            Console.ResetColor();
-            System.Diagnostics.Debug.WriteLine($"{tag}:{msg}");
-            logToFile($"e {tag}:{msg}");
+            LogFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt")
+        };
+
+        private static readonly Lazy<Log> _staticLogger = new Lazy<Log>(() => new Log(_staticConfig));
+        public static void Verbose<T>(string message, Exception? ex = null) => _staticLogger.Value.Verbose<T>(message, ex);
+        public static void Info<T>(string message, Exception? ex = null) => _staticLogger.Value.Info<T>(message, ex);
+        public static void Warning<T>(string message, Exception? ex = null) => _staticLogger.Value.Warning<T>(message, ex);
+        public static void Error<T>(string message, Exception? ex = null) => _staticLogger.Value.Error<T>(message, ex);
+        public static void v<T>(string message, Exception? ex = null) => _staticLogger.Value.v<T>(message, ex);
+        public static void i<T>(string message, Exception? ex = null) => _staticLogger.Value.i<T>(message, ex);
+        public static void w<T>(string message, Exception? ex = null) => _staticLogger.Value.w<T>(message, ex);
+        public static void e<T>(string message, Exception? ex = null) => _staticLogger.Value.e<T>(message, ex);
+        public static void Verbose(string tag, string message, Exception? ex = null) => _staticLogger.Value.Verbose(tag, message, ex);
+        public static void Info(string tag, string message, Exception? ex = null) => _staticLogger.Value.Info(tag, message, ex);
+        public static void Warning(string tag, string message, Exception? ex = null) => _staticLogger.Value.Warning(tag, message, ex);
+        public static void Error(string tag, string message, Exception? ex = null) => _staticLogger.Value.Error(tag, message, ex);
+        public static void v(string tag, string message, Exception? ex = null) => _staticLogger.Value.v(tag, message, ex);
+        public static void i(string tag, string message, Exception? ex = null) => _staticLogger.Value.i(tag, message, ex);
+        public static void w(string tag, string message, Exception? ex = null) => _staticLogger.Value.w(tag, message, ex);
+        public static void e(string tag, string message, Exception? ex = null) => _staticLogger.Value.e(tag, message, ex);
+
+        public static void DisposeStaticLogger()
+        {
+            if (_staticLogger.IsValueCreated)
+                _staticLogger.Value.Dispose();
         }
     }
 }
