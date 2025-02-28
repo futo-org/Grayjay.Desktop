@@ -14,8 +14,9 @@ namespace Grayjay.ClientServer
 
         public async Task InvokeAsync(HttpContext context)
         {
+            var requestId = Guid.NewGuid();
             var stopwatch = Stopwatch.StartNew();
-            Logger.v<RequestLoggingMiddleware>($"Request started: {context.Request.Method} {context.Request.Path}");
+            Logger.v<RequestLoggingMiddleware>($"Request started ({requestId}): {context.Request.Method} {context.Request.Path}");
 
             try
             {
@@ -25,7 +26,7 @@ namespace Grayjay.ClientServer
             {
                 stopwatch.Stop();
 
-                Logger.v<RequestLoggingMiddleware>($"Request ended: {context.Request.Method} {context.Request.Path}, " +
+                Logger.v<RequestLoggingMiddleware>($"Request ended ({requestId}): {context.Request.Method} {context.Request.Path}, " +
                     $"Status: {context.Response.StatusCode}, " +
                     $"Duration: {stopwatch.ElapsedMilliseconds}ms");
             }
