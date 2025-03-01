@@ -68,7 +68,8 @@ namespace Grayjay.Desktop.POC.Port.States
 
         static StatePlatform()
         {
-            UpdateAvailableClients(true).Wait();
+            Logger.w(nameof(StatePlatform), "StatePlatform Initialize");
+            //UpdateAvailableClients(true).GetAwaiter().GetResult();
 
             OnSourcesAvailableChanged += (asd) =>
             {
@@ -115,11 +116,11 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static void InjectPlugin(GrayjayPlugin plugin)
         {
-            lock(_clientsLock)
+            ClientsLock(() =>
             {
-                if (!_availableClients.Any(x=>x.Config.ID == plugin.Config.ID))
+                if (!_availableClients.Any(x => x.Config.ID == plugin.Config.ID))
                     _availableClients.Add(plugin);
-            }
+            });
         }
         public static string InjectDevPlugin(PluginConfig config, string source)
         {
@@ -127,7 +128,7 @@ namespace Grayjay.Desktop.POC.Port.States
             string originalId = config.ID;
             config.ID = devId;
 
-            lock (_clientsLock)
+            ClientsLock(() =>
             {
                 var enabledExisting = _enabledClients.Where(x => x is GrayjayPlugin).ToList();
                 var isEnabled = enabledExisting.Any();
@@ -145,19 +146,19 @@ namespace Grayjay.Desktop.POC.Port.States
                 try
                 {
                     StateDeveloper.Instance.InitializeDev(devId);
-                    if(isEnabled)
+                    if (isEnabled)
                     {
                         _enabledClients.Add(newClient);
                         newClient.Initialize();
                     }
                     _availableClients.Add(newClient);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Logger.e(nameof(StatePlatform), $"Failed to initialize DevPlugin: {ex.Message}", ex);
                     StateDeveloper.Instance.LogDevException(devId, $"Failed to initialize due to: {ex.Message}");
                 }
-            }
+            });
             OnDevSourceChanged?.Invoke();
             return devId;
         }
@@ -588,37 +589,61 @@ namespace Grayjay.Desktop.POC.Port.States
 
         //Manage clients
 
-        public static List<GrayjayPlugin> GetEnabledClients()
+        private static long _clientsLockCount = 0;
+        private static T ClientsLock<T>(Func<T> act, bool log = false)
         {
+            T result = default(T);
+            ClientsLock(() => result = act(), log, 2);
+            return result;
+        }
+        private static void ClientsLock(Action act, bool log = false, int level = 1)
+        {
+            long id = (log) ? Interlocked.Increment(ref _clientsLockCount) : 0;
+            string name = (log) ? (new System.Diagnostics.StackTrace()).GetFrame(level).GetMethod().Name : null;
+            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
             lock (_clientsLock)
             {
-                return _enabledClients.ToList();
+                if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
+                act();
             }
+            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
+        }
+
+        public static List<GrayjayPlugin> GetEnabledClients()
+        {
+            return ClientsLock(() =>
+            {
+                return _enabledClients.ToList();
+            });
         }
         public static List<GrayjayPlugin> GetDisabledClients()
         {
-            lock (_clientsLock)
+            return ClientsLock(() =>
             {
-                return _availableClients.Where(x=>!_enabledClients.Contains(x)).ToList();
-            }
+                return _availableClients.Where(x => !_enabledClients.Contains(x)).ToList();
+            });
         }
         public static List<GrayjayPlugin> GetAvailableClients()
         {
-            lock (_clientsLock)
+            return ClientsLock(() =>
             {
                 return _availableClients.ToList();
-            }
+            });
         }
 
         public static GrayjayPlugin GetClient(string id)
         {
-            lock(_clientsLock)
-                return _availableClients.FirstOrDefault(x=>x.Config.ID == id);
+            return ClientsLock(() =>
+            {
+                return _availableClients.FirstOrDefault(x => x.Config.ID == id);
+            });
         }
         public static GrayjayPlugin GetEnabledClient(string id)
         {
-            lock (_clientsLock)
+            return ClientsLock(() =>
+            {
                 return _enabledClients.FirstOrDefault(x => x.Config.ID == id);
+            });
         }
 
         public static DevGrayjayPlugin GetDevClient()
@@ -633,21 +658,33 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static GrayjayPlugin GetContentClientOrNull(string url)
         {
-            lock (_clientsLock)
-                return _enabledClients.FirstOrDefault(x => x.IsContentDetailsUrl(url));
+            GrayjayPlugin[] arr = null;
+            ClientsLock(() =>
+            {
+                arr = _enabledClients.ToArray();
+            });
+            return arr?.FirstOrDefault(x => x.IsContentDetailsUrl(url));
         }
         public static GrayjayPlugin GetContentClient(string url) 
             => GetContentClientOrNull(url) ?? throw new NoPlatformClientException($"No client enabled that supports this content url ({url})");
 
         public static GrayjayPlugin GetChannelClientOrNull(string url)
         {
-            lock (_clientsLock)
-                return _enabledClients.FirstOrDefault(x => x.IsChannelUrl(url));
+            GrayjayPlugin[] arr = null;
+            ClientsLock(() =>
+            {
+                arr = _enabledClients.ToArray();
+            });
+            return arr?.FirstOrDefault(x => x.IsChannelUrl(url));
         }
         public static GrayjayPlugin GetPlaylistClientOrNull(string url)
         {
-            lock (_clientsLock)
-                return _enabledClients.FirstOrDefault(x => x.IsPlaylistUrl(url));
+            GrayjayPlugin[] arr = null;
+            ClientsLock(() =>
+            {
+                arr = _enabledClients.ToArray();
+            });
+            return arr?.FirstOrDefault(x => x.IsPlaylistUrl(url));
         }
         public static GrayjayPlugin GetChannelClient(string url)
             => GetChannelClientOrNull(url) ?? throw new NoPlatformClientException($"No client enabled that supports this content url ({url})");
@@ -685,174 +722,217 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x=>x != id).Distinct().ToArray());
         }
-        public static async Task SelectClients(Action<string, Exception> onEx, params string[] ids)
+        public static Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {
-            List<GrayjayPlugin> removed;
-            lock (_clientsLock)
+            TaskCompletionSource taskResult = new TaskCompletionSource();
+            StateApp.ThreadPool.Run(() =>
             {
-                removed = _enabledClients.ToList();
-                _enabledClients.Clear();
-
-                foreach (var id in ids)
+                try
                 {
-                    var client = GetClient(id);
-                    try
+                    List<GrayjayPlugin> removed;
+                    ClientsLock(() =>
                     {
-                        bool isNew = false;
-                        if (removed.RemoveAll(it => it == client) == 0)
+                        removed = _enabledClients.ToList();
+                        _enabledClients.Clear();
+
+                        foreach (var id in ids)
                         {
-                            client.Initialize();
-                            isNew = true;
+                            var client = GetClient(id);
+                            try
+                            {
+                                bool isNew = false;
+                                if (removed.RemoveAll(it => it == client) == 0)
+                                {
+                                    client.Initialize();
+                                    isNew = true;
+                                }
+
+                                _enabledClients.Add(client);
+                                if (isNew)
+                                    OnSourceEnabled?.Invoke(client);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                                onEx?.Invoke(id, ex);
+                            }
                         }
 
-                        _enabledClients.Add(client);
-                        if (isNew)
-                            OnSourceEnabled?.Invoke(client);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
-                        onEx?.Invoke(id, ex);
-                    }
+                        _enabledClientsPersistent.Save(ids.ToArray());
+
+                        foreach (var oldClient in removed)
+                        {
+                            oldClient.Disable();
+                            OnSourceDisabled?.Invoke(oldClient);
+                        }
+                    });
+                    StateWebsocket.EnabledClientsChanged();
+                    taskResult.SetResult();
                 }
-
-                _enabledClientsPersistent.Save(ids.ToArray());
-
-                foreach (var oldClient in removed)
+                catch(Exception ex)
                 {
-                    oldClient.Disable();
-                    OnSourceDisabled?.Invoke(oldClient);
+                    taskResult.SetException(ex);
                 }
-            }
-            StateWebsocket.EnabledClientsChanged();
+            });
+            return taskResult.Task;
         }
         public static async Task SelectClients(params string[] ids)
         {
             await SelectClients(null, ids);
         }
 
-        public static async Task UpdateAvailableClient(string id)
+        public static Task UpdateAvailableClient(string id)
         {
-            lock (_clientsLock)
+            TaskCompletionSource taskResult = new TaskCompletionSource();
+            StateApp.ThreadPool.Run(() =>
             {
-                var devPlugin = id == StateDeveloper.DEV_ID ? GetDevClient() : null;
-
-
-
-                var enabledClient = _enabledClients.FirstOrDefault(X => X.ID == id);
-                if (enabledClient != null)
+                try
                 {
-                    enabledClient.Disable();
-                    _enabledClients.Remove(enabledClient);
-                    OnSourceDisabled?.Invoke(enabledClient);
-                }
-                var availableClient = _availableClients.FirstOrDefault(x => x.ID == id);
-                _availableClients.Remove(availableClient);
-
-                var plugin = (id != StateDeveloper.DEV_ID) ? StatePlugins.GetPlugin(id) : devPlugin.Descriptor;
-                var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, devPlugin.OriginalID, (devPlugin?.DevScript));
-
-                newClient.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
-                newClient.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
-                newClient.OnScriptException += (config, ex) =>
-                {
-                    if (ex is ScriptCaptchaRequiredException capEx)
+                    ClientsLock(() =>
                     {
-                        Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
-                        StateApp.HandleCaptchaException(config, capEx);
-                    }
-                };
-                _availableClients.Add(newClient);
+                        var devPlugin = id == StateDeveloper.DEV_ID ? GetDevClient() : null;
 
-                if (enabledClient != null)
-                {
-                    var client = GetClient(id);
-                    try
-                    {
-                        bool isNew = false;
-                        client.Initialize();
 
-                        _enabledClients.Add(client);
-                        if (isNew)
-                            OnSourceEnabled?.Invoke(client);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
-                    }
-                }
-            }
-        }
 
-        public static async Task UpdateAvailableClients(bool reloadPlugins = false)
-        {
-            if (reloadPlugins)
-            {
-                StatePlugins.ReloadPluginFile();
-            }
-            string[] enabled;
-            lock (_clientsLock)
-            {
-                foreach (var e in _enabledClients)
-                {
-                    e.Disable();
-                    OnSourceDisabled?.Invoke(e);
-                }
-
-                _enabledClients.Clear();
-                _availableClients.Clear();
-                _icons.Clear();
-
-                StatePlugins.UpdateEmbeddedPlugins();
-                StatePlugins.InstallMissingEmbeddedPlugins();
-
-                foreach (var plugin in StatePlugins.GetPlugins())
-                {
-                    _icons[plugin.Config.ID] = StatePlugins.GetPluginIconOrNull(plugin.Config.ID) ??
-                                              (plugin.Config.AbsoluteIconUrl);
-
-                    //TODO: script
-                    var client = new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID));
-                    client.OnLog += (a, b) => Logger.v($"Plugin [{a.Name}]", b);
-                    client.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
-                    client.OnScriptException += (config, ex) =>
-                    {
-                        if(ex is ScriptCaptchaRequiredException capEx)
+                        var enabledClient = _enabledClients.FirstOrDefault(X => X.ID == id);
+                        if (enabledClient != null)
                         {
-                            Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
-                            StateApp.HandleCaptchaException(config, capEx);
+                            enabledClient.Disable();
+                            _enabledClients.Remove(enabledClient);
+                            OnSourceDisabled?.Invoke(enabledClient);
                         }
-                    };
-                    //TODO: Captcha
-                    _availableClients.Add(client);
-                }
+                        var availableClient = _availableClients.FirstOrDefault(x => x.ID == id);
+                        _availableClients.Remove(availableClient);
 
-                if (_availableClients.DistinctBy(it => it.Config.ID).Count() < _availableClients.Count)
+                        var plugin = (id != StateDeveloper.DEV_ID) ? StatePlugins.GetPlugin(id) : devPlugin.Descriptor;
+                        var newClient = (id != StateDeveloper.DEV_ID) ? new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID)) : new DevGrayjayPlugin(plugin, devPlugin.OriginalID, (devPlugin?.DevScript));
+
+                        newClient.OnLog += (a, b) => Logger.i($"Plugin [{a.Name}]", b);
+                        newClient.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
+                        newClient.OnScriptException += (config, ex) =>
+                        {
+                            if (ex is ScriptCaptchaRequiredException capEx)
+                            {
+                                Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                StateApp.HandleCaptchaException(config, capEx);
+                            }
+                        };
+                        _availableClients.Add(newClient);
+
+                        if (enabledClient != null)
+                        {
+                            var client = GetClient(id);
+                            try
+                            {
+                                bool isNew = false;
+                                client.Initialize();
+
+                                _enabledClients.Add(client);
+                                if (isNew)
+                                    OnSourceEnabled?.Invoke(client);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                            }
+                        }
+                    });
+                    taskResult.SetResult();
+                }
+                catch(Exception ex)
                 {
-                    throw new InvalidOperationException("Attempted to add 2 clients with the same ID");
+                    taskResult.SetException(ex);
                 }
+            });
+            return taskResult.Task;
+        }
 
-                enabled = _enabledClientsPersistent.GetCopy()
-                    .Where(x => _availableClients.Any(y => y.ID == x))
-                    .ToArray();
-                    
-                if(enabled.Length == 0)
-                    StatePlugins.GetEmbeddedSourcesDefault()
-                        .Where(id => _availableClients.Any(it => it.Config.ID == id))
-                        .ToArray();
+        public static Task UpdateAvailableClients(bool reloadPlugins = false)
+        {
+            TaskCompletionSource taskResult = new TaskCompletionSource();
+            StateApp.ThreadPool.Run(async () =>
+            {
+                try
+                {
+                    if (reloadPlugins)
+                    {
+                        StatePlugins.ReloadPluginFile();
+                    }
+                    string[] enabled = null;
+                    ClientsLock(() =>
+                    {
+                        foreach (var e in _enabledClients)
+                        {
+                            e.Disable();
+                            OnSourceDisabled?.Invoke(e);
+                        }
 
-            }
-            await SelectClients(enabled);
+                        _enabledClients.Clear();
+                        _availableClients.Clear();
+                        _icons.Clear();
 
-            _didStartup = true;
-            OnSourcesAvailableChanged?.Invoke(false);
+                        StatePlugins.UpdateEmbeddedPlugins();
+                        StatePlugins.InstallMissingEmbeddedPlugins();
+
+                        foreach (var plugin in StatePlugins.GetPlugins())
+                        {
+                            _icons[plugin.Config.ID] = StatePlugins.GetPluginIconOrNull(plugin.Config.ID) ??
+                                                      (plugin.Config.AbsoluteIconUrl);
+
+                            //TODO: script
+                            var client = new GrayjayPlugin(plugin, StatePlugins.GetPluginScript(plugin.Config.ID));
+                            client.OnBusyCallStart += (a, b) => 
+                                Logger.w(nameof(StatePlatform), $"Plugin [{a.Name}] {b}() Started (On Main)");
+                            client.OnBusyCallEnd += (a, b, c) => 
+                                Logger.w(nameof(StatePlatform), $"Plugin [{a.Name}] {b}() Ended [{c}ms] (On Main)");
+                            client.OnLog += (a, b) => Logger.v($"Plugin [{a.Name}]", b);
+                            client.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
+                            client.OnScriptException += (config, ex) =>
+                            {
+                                if (ex is ScriptCaptchaRequiredException capEx)
+                                {
+                                    Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                    StateApp.HandleCaptchaException(config, capEx);
+                                }
+                            };
+                            //TODO: Captcha
+                            _availableClients.Add(client);
+                        }
+
+                        if (_availableClients.DistinctBy(it => it.Config.ID).Count() < _availableClients.Count)
+                        {
+                            throw new InvalidOperationException("Attempted to add 2 clients with the same ID");
+                        }
+
+                        enabled = _enabledClientsPersistent.GetCopy()
+                            .Where(x => _availableClients.Any(y => y.ID == x))
+                            .ToArray();
+
+                        if (enabled.Length == 0)
+                            StatePlugins.GetEmbeddedSourcesDefault()
+                                .Where(id => _availableClients.Any(it => it.Config.ID == id))
+                                .ToArray();
+
+                    });
+                    await SelectClients(enabled);
+
+                    _didStartup = true;
+                    OnSourcesAvailableChanged?.Invoke(false);
+                    taskResult.SetResult();
+                }
+                catch(Exception ex)
+                {
+                    taskResult.SetException(ex);
+                }
+            });
+            return taskResult.Task;
         }
 
 
-        public static async Task WaitForStartup()
+        public static Task WaitForStartup()
         {
             if (_didStartup)
-                return;
+                return Task.CompletedTask;
             var waitTask = new TaskCompletionSource<bool>();
             Action<bool> handler = null;
             handler = (val) =>
@@ -861,7 +941,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 waitTask.SetResult(true);
             };
             OnSourcesAvailableChanged += handler;
-            await waitTask.Task;
+            return waitTask.Task;
         }
     }
 }
