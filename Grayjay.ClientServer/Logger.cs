@@ -25,8 +25,7 @@
         private readonly object _lock = new object();
         private readonly object _consoleLock = new object();
         private bool _disposed;
-        private Timer? _flushTimer;
-
+        private CancellationTokenSource _flushCancellationTokenSource = new CancellationTokenSource();
 
         public Log(Config? config = null)
         {
@@ -34,7 +33,22 @@
             if (_config.LogToFile) InitializeLogWriter();
             if (_config.LogToFile && _config.FlushIntervalMs > 0)
             {
-                _flushTimer = new Timer(FlushLog, null, _config.FlushIntervalMs, _config.FlushIntervalMs);
+                _ = Task.Run(async () =>
+                {
+                    var delay = TimeSpan.FromMilliseconds(_config.FlushIntervalMs);
+                    try
+                    {
+                        while (!_flushCancellationTokenSource.IsCancellationRequested)
+                        {
+                            await FlushLogAsync();
+                            await Task.Delay(delay, _flushCancellationTokenSource.Token);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Log flusher exited with exception: " + e.ToString());
+                    }
+                });
             }
         }
 
@@ -111,19 +125,17 @@
             }
         }
 
-        private void FlushLog(object? state)
+        private async Task FlushLogAsync()
         {
             if (_disposed || _logWriter == null) return;
-            lock (_lock)
+
+            try
             {
-                try
-                {
-                    _logWriter.Flush();
-                }
-                catch (Exception flushEx)
-                {
-                    LogFallback($"Failed to flush log: {flushEx.Message}");
-                }
+                await _logWriter.FlushAsync();
+            }
+            catch (Exception flushEx)
+            {
+                LogFallback($"Failed to flush log: {flushEx.Message}");
             }
         }
 
@@ -149,7 +161,7 @@
             if (_disposed) return;
             lock (_lock)
             {
-                _flushTimer?.Dispose();
+                _flushCancellationTokenSource.Cancel();
                 _logWriter?.Dispose();
                 _logWriter = null;
                 _disposed = true;
