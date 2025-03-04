@@ -86,6 +86,7 @@ namespace Grayjay.ClientServer.States
 
         public static List<VideoDownload> GetDownloading() => _downloading.GetObjects();
         public static List<VideoLocal> GetDownloaded() => _downloaded.GetObjects();
+        public static List<VideoLocal> GetDownloaded(string groupId) => _downloaded.FindObjects(x => x.GroupID == groupId);
 
         public static VideoDownload GetDownloadingVideo(PlatformID id)
             => _downloading.FindObject(x => x.Video.ID.Equals(id));
@@ -167,6 +168,14 @@ namespace Grayjay.ClientServer.States
                 OnDownloadsChanged?.Invoke();
         }
 
+        public static async Task CheckOutdatedPlaylistVideos(Playlist playlist, PlaylistDownload download)
+        {
+            var outdatedVideos = GetDownloaded(download.PlaylistID)
+                .Where(x => !playlist.Videos.Any(y => y.ID.Equals(x.ID)))
+                .ToArray();
+            foreach (var outdated in outdatedVideos)
+                RemoveDownloaded(outdated);
+        }
         public static async Task StartDownloadCycle()
         {
             lock(_downloadLock)
@@ -189,6 +198,8 @@ namespace Grayjay.ClientServer.States
                         StateDownloads.RemoveDownloadingPlaylist(playlistDownload.PlaylistID);
                         return;
                     }
+
+                    await CheckOutdatedPlaylistVideos(playlist, playlistDownload);
 
                     foreach (var video in playlist.Videos)
                     {

@@ -69,6 +69,15 @@ public class StatePlaylists
             }));
         }
         BroadcastSyncPlaylists(changed);
+        foreach(var playlistId in playlistIds)
+        {
+            var downloaded = StateDownloads.GetDownloadingPlaylist(playlistId);
+            if(downloaded != null)
+            {
+                _ =StateDownloads.StartDownloadCycle();
+                return;
+            }
+        }
     }
 
     public static void RemoveContentFromPlaylist(string playlistId, int index)
@@ -80,6 +89,10 @@ public class StatePlaylists
             var newList = playlist.Videos.ToList();
             newList.RemoveAt(index);
             playlist.Videos = newList;
+
+            var dlPlaylist = StateDownloads.GetDownloadingPlaylist(playlistId);
+            if (dlPlaylist != null)
+                _ = StateDownloads.CheckOutdatedPlaylistVideos(playlist, dlPlaylist);
         });
         BroadcastSyncPlaylists(new List<Playlist>()
         {

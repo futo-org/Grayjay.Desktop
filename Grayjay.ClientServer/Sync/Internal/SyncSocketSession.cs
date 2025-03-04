@@ -46,6 +46,7 @@ public class SyncSocketSession : IDisposable
     public string LocalPublicKey => _localPublicKey;
     private readonly Action<SyncSocketSession, Opcode, byte, byte[]> _onData;
     public string RemoteAddress { get; }
+    public int RemoteVersion { get; private set; } = -1;
     public IAuthorizable? Authorizable { get; set; }
 
     public SyncSocketSession(string remoteAddress, KeyPair localKeyPair, Stream inputStream, Stream outputStream,
@@ -232,15 +233,16 @@ public class SyncSocketSession : IDisposable
 
     private void PerformVersionCheck()
     {
-        const int CURRENT_VERSION = 2;
+        const int CURRENT_VERSION = 3;
+        const int MINIMUM_VERSION = 2;
         _outputStream.Write(BitConverter.GetBytes(CURRENT_VERSION), 0, 4);
         byte[] versionBytes = new byte[4];
         int bytesRead = _inputStream.Read(versionBytes, 0, 4);
         if (bytesRead != 4)
             throw new Exception($"Expected 4 bytes to be read, read {bytesRead}");
-        int version = BitConverter.ToInt32(versionBytes, 0);
-        Logger.i(nameof(SyncSocketSession), $"PerformVersionCheck {version}");
-        if (version != CURRENT_VERSION)
+        RemoteVersion = BitConverter.ToInt32(versionBytes, 0);
+        Logger.i(nameof(SyncSocketSession), $"PerformVersionCheck {RemoteVersion}");
+        if (RemoteVersion < MINIMUM_VERSION)
             throw new Exception("Invalid version");
     }
 

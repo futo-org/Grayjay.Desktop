@@ -276,9 +276,15 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     };
 
-    const handleError = (error: string) => {
+    const handleError = (error: string, fatal: boolean) => {
+        console.info("Error occurred", { fatal, error });
+
+        if (!fatal) {
+            return;
+        }
+
         errorCounter++;
-        console.info("Error occurred", { errorCounter });
+        console.info("Error counter", { errorCounter });
 
         const reloadMedia = () => {
             video?.actions.setStartTime(position);
@@ -869,13 +875,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                 } as IMenuItemGroup : undefined,
                 (videoSourceQualities$() && videoSourceQualities$().length > 0) ? {
                     key: "Video Quality (" + (videoSourceQualities$().length) + ")",
-                    value: (videoQuality$() == -1) ? getAutoQualityLabel() : 
+                    value: (videoQuality$() == -1) ? "Auto" : 
                         ((videoQuality$()) ? (videoSourceQualities$()[videoQuality$()].width + "x" + videoSourceQualities$()[videoQuality$()].height) : undefined),
                     type: "group",
                     subMenu: {
                         title: "Stream qualities",
                         items: [{
-                            name: getAutoQualityLabel() ,
+                            name: "Auto",
                             value: "Auto",
                             type: "option",
                             onSelected: (val: any) => {

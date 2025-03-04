@@ -351,7 +351,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             if(VideoSourceToUse != null)
             {
                 Logger.i(nameof(VideoDownload), "Started downloading video");
-                downloadTasks.Add(Task.Run(async () =>
+                downloadTasks.Add(StateApp.ThreadPoolDownload.Run(async () =>
                 {
                     var progressCallback = (long length, long totalRead, long speed) =>
                     {
@@ -402,12 +402,12 @@ namespace Grayjay.ClientServer.Models.Downloads
                                 break;
                         }
                     }
-                }, cancel));
+                }));
             }
             if(AudioSourceToUse != null)
             {
                 Logger.i(nameof(VideoDownload), "Started downloading audio");
-                downloadTasks.Add(Task.Run(async () =>
+                downloadTasks.Add(StateApp.ThreadPoolDownload.Run(async () =>
                 {
                     var progressCallback = (long length, long totalRead, long speed) =>
                     {
@@ -465,7 +465,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             }
             if(SubtitleSourcetoUse != null)
             {
-                downloadTasks.Add(Task.Run(() =>
+                downloadTasks.Add(StateApp.ThreadPoolDownload.RunAsync(() =>
                 {
                     if (SubtitleSourcetoUse is SubtitleRawSource sbrs)
                         File.WriteAllText(SubtitleFilePath, sbrs.GetSubtitles());
@@ -691,7 +691,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 var rangeStart = readPosition;
                 var rangeEnd = (rangeStart + toRead > totalLength) ? totalLength - 1 : readPosition + toRead;
 
-                tasks.Add(Task.Run(() =>
+                tasks.Add(StateApp.ThreadPoolDownload.Run(() =>
                 {
                     return RequestByteRange(client, url, rangeStart, rangeEnd);
                 }, cancel));
@@ -866,8 +866,11 @@ namespace Grayjay.ClientServer.Models.Downloads
             var fileList = StateApp.GetTemporaryFile(".txt", "filelist-");
             File.WriteAllText(fileList.FullName, string.Join("\n", segmentFiles.Select(x => $"file '{x.FullName}'")));
 
-            var cmd = $"-f concat -safe 0 -i \"{fileList.FullName}\" -c copy \"{targetPath}\"";
-            if (FFMPEG.Execute(cmd, true) == 0)
+            //var cmd = $"-f concat -safe 0 -i \"{fileList.FullName}\" -c copy \"{targetPath}\"";
+            string[] args = new string[]{
+                "-f", "concat", "-safe", "0", "-i", fileList.FullName, "-c", "copy", targetPath
+            };
+            if (FFMPEG.ExecuteSafe(args, true) == 0)
             {
 
             }

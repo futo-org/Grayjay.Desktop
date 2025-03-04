@@ -15,6 +15,7 @@ namespace Grayjay.ClientServer.Controllers
         public class HomeState
         {
             public IPager<PlatformContent> HomePager { get; set; }
+            public int InitialPageSize { get; set; }
         }
 
         private IPager<PlatformContent> EnsureHomePager() => this.State().HomeState.HomePager ?? throw new BadHttpRequestException("No home loaded");
@@ -25,15 +26,24 @@ namespace Grayjay.ClientServer.Controllers
         {
             var home = new AnonymousContentRefPager(StatePlatform.GetHome());
             this.State().HomeState.HomePager = home;
-            return home.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return home.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
         }
         [HttpGet]
-        public async Task<PagerResult<PlatformContent>> HomeLoadLazy(string url)
+        public async Task<PagerResult<PlatformContent>> HomeLoadLazy(int initialPageSize)
         {
             await StatePlatform.WaitForStartup();
-            var home = StatePlatform.GetHomeLazy();
-            this.State().HomeState.HomePager = home;
+            var state = this.State();
+            state.HomeState.InitialPageSize = initialPageSize;
+            var home = StatePlatform.GetHomeLazy((x)=>(x is PlatformVideo vx) ? StateHistory.AddVideoMetadata(vx) : x, ()=>state.HomeState.InitialPageSize);
+            state.HomeState.HomePager = home;
             return home.AsPagerResult();
+        }
+        [HttpGet]
+        public bool HomeSetInitialPageSize(int initialPageSize)
+        {
+            var state = this.State();
+            state.HomeState.InitialPageSize = initialPageSize;
+            return true;
         }
         [HttpGet]
         public PagerResult<PlatformContent> HomeNextPage()
@@ -45,7 +55,7 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     var home = EnsureHomePager();
                     home.NextPage();
-                    return home.AsPagerResult();
+                    return home.AsPagerResult(y => y is PlatformVideo ? StateHistory.AddVideoMetadata((PlatformVideo)y) : y);
                 }
             }
             catch(Exception ex)

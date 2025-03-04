@@ -2,7 +2,9 @@
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
+using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -22,6 +24,9 @@ namespace Grayjay.ClientServer.States
         public static DatabaseConnection Connection { get; private set; }
 
         public static CancellationTokenSource AppCancellationToken { get; private set; } = new CancellationTokenSource();
+
+        public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16, "Global");
+        public static ManagedThreadPool ThreadPoolDownload { get; } = new ManagedThreadPool(4, "Download");
 
 
         static StateApp()
@@ -74,7 +79,7 @@ namespace Grayjay.ClientServer.States
         }
 
 
-        public static void Startup()
+        public static async Task Startup()
         {
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
@@ -86,6 +91,8 @@ namespace Grayjay.ClientServer.States
             Logger.i(nameof(StateApp), "Startup: Initializing PluginEncryptionProvider");
             PluginDescriptor.Encryption = new PluginEncryptionProvider();
 
+            await StatePlatform.UpdateAvailableClients(true);
+
             Logger.i(nameof(StateApp), "Startup: Initializing DatabaseConnection");
             Connection = new DatabaseConnection();
 
@@ -94,27 +101,37 @@ namespace Grayjay.ClientServer.States
             Logger.i(nameof(StateApp), $"Startup: Ensuring Table DBHistory");
             Connection.EnsureTable<DBHistoryIndex>(DBHistoryIndex.TABLE_NAME);
 
-            _ = Task.Run(async () =>
+            if (GrayjaySettings.Instance.Notifications.PluginUpdates)
             {
-                StatePlugins.CheckForUpdates();
-
-                await Task.Delay(2500);
-                foreach(var update in StatePlugins.GetKnownPluginUpdates())
+                _ = Task.Run(async () =>
                 {
-                    //TODO: Proper validation
-                    StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
-                        new StateUI.DialogAction("Ignore", () =>
-                        {
+                    try
+                    {
+                        await StatePlugins.CheckForUpdates();
 
-                        }, StateUI.ActionStyle.None),
-                        new StateUI.DialogAction("Update", () =>
+                        await Task.Delay(2500);
+                        foreach (var update in StatePlugins.GetKnownPluginUpdates())
                         {
-                            StatePlugins.InstallPlugin(update.SourceUrl);
-                        }, StateUI.ActionStyle.Primary));
-                }
-            });
+                            //TODO: Proper validation
+                            StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
+                                new StateUI.DialogAction("Ignore", () =>
+                                {
 
-            _ = Task.Run(async () =>
+                                }, StateUI.ActionStyle.None),
+                                new StateUI.DialogAction("Update", () =>
+                                {
+                                    StatePlugins.InstallPlugin(update.SourceUrl);
+                                }, StateUI.ActionStyle.Primary));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.e(nameof(StateApp), ex.Message, ex);
+                    }
+                });
+            }
+
+            ThreadPool.Run(() =>
             {
                 StateTelemetry.Upload();
             });
@@ -126,14 +143,14 @@ namespace Grayjay.ClientServer.States
                     {
                         int count = 0;
                         int countComp = 0;
-                        ThreadPool.GetAvailableThreads(out count, out countComp);
+                        System.Threading.ThreadPool.GetAvailableThreads(out count, out countComp);
                         Console.WriteLine($"Threadpool available: {count}, {countComp} Completers");
-                        Thread.Sleep(1000);
+                        Thread.Sleep(500);
                     }
                 }).Start();
 
             //Temporary workaround for youtube
-            Task.Run(() =>
+            ThreadPool.Run(() =>
             {
                 StatePlatform.GetHome();
             });
@@ -144,6 +161,8 @@ namespace Grayjay.ClientServer.States
 
         public static void Shutdown()
         {
+            StateSubscriptions.Shutdown();
+            ThreadPool.Stop();
             AppCancellationToken.Cancel();
             Connection.Dispose();
             Connection = null;

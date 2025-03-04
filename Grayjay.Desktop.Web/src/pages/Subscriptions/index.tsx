@@ -182,6 +182,11 @@ const SubscriptionsPage: Component = () => {
         return false;
       else if(obj.contentType == ContentType.NESTED_VIDEO && !filters[FilterType.Media].active[0]())
         return false;
+
+      if(!filters[FilterType.Watched].active[0]()) {
+        if(((obj as any)?.metadata)?.watched)
+          return false;
+      }
       return true;
     };
   }
@@ -368,7 +373,7 @@ const SubscriptionsPage: Component = () => {
               <SettingsMenu menu={reloadMenu} show={showReloadMenu$()} anchor={anchor} onHide={()=>setShowReloadMenu(false)} />
             </Portal>
             <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} />
+              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} useCache={true} />
             </ScrollContainer>
           </div>
         </Show>

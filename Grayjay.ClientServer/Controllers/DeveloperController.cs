@@ -253,7 +253,7 @@ namespace Grayjay.ClientServer.Controllers
                     isOk = crbr.IsOk,
                     header = crbr.Headers,
                     url = crbr.Url,
-                    body = crbr.BodyBytes.GetBytes()
+                    body = (crbr.BodyBytes.Size == 0) ? new byte[0] : crbr.BodyBytes.GetBytes()
                 });
             }
             else if (callResult is IEnumerable ci)

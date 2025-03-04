@@ -22,7 +22,7 @@ do
     cd Grayjay.Desktop.CEF
     rm -rf bin
     dotnet publish -r $runtime -c Release
-    cd ..
+    cd ../Users/koen/projects/Grayjay.Desktop/deploy_linux.sh
 
     # Copy wwwroot
     mkdir -p Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish/wwwroot

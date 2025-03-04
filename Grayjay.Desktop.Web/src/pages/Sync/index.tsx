@@ -120,7 +120,7 @@ const SyncPage: Component = () => {
               Sync devices
             </div>
             <div class={styles.headerSubText}>
-              Sync your settings across all devices. Keep your preferences and configurations up to date automatically with Grayjay.
+              Sync your subscriptions, history, playlists, watch later, as well as other functionality across all devices. Keep your data up to date automatically with Grayjay.
             </div>
           </div>
           <ButtonFlex text={"Show QR"}
@@ -143,7 +143,7 @@ const SyncPage: Component = () => {
           My devices
         </div>
         <ScrollContainer style={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column"}}>
-          <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.publicKey, item.metadata, item.linkType)}</For>
+          <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
         </ScrollContainer>
       </Show>
       <Show when={isQrVisible$()}>

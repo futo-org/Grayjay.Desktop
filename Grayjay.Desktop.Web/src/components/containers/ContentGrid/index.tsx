@@ -41,6 +41,7 @@ import { Event0, Event1 } from "../../../utility/Event";
 export interface ContentGridProps {
     pager: Pager<IPlatformContent> | undefined;
     outerContainerRef: HTMLDivElement | undefined;
+    useCache?: boolean;
 };
 
 const ContentGrid: Component<ContentGridProps> = (props) => {
@@ -231,6 +232,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                         <Switch>
                             <Match when={item()?.contentType == ContentType.MEDIA}>
                                 <VideoThumbnailView video={item() as IPlatformVideo}
+                                    useCache={!!props?.useCache}
                                     onSettings={(e, content)=> onSettingsClicked(e, content)}
                                     onClick={() => {
                                         const url = item().backendUrl ?? item().url;

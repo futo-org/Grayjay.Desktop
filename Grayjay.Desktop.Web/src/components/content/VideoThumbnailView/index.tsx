@@ -15,11 +15,17 @@ interface VideoProps {
   onSettings?: (element: HTMLDivElement, content: IPlatformVideo) => void;
   style?: JSX.CSSProperties;
   imageStyle?: JSX.CSSProperties;
+  useCache?: boolean;
 }
 
 const VideoThumbnailView: Component<VideoProps> = (props) => {
   var bestThumbnail$ = createMemo(()=>{
     return (props.video?.thumbnails?.sources?.length ?? 0 > 0) ? props.video?.thumbnails.sources[Math.max(0, props.video.thumbnails.sources.length - 1)] : null;
+  })
+  var progress$ = createMemo(()=>{
+    let videoAny = props.video as any;
+    console.log(videoAny?.metadata, props.video?.duration);
+    return (videoAny?.metadata?.position && props.video?.duration && props.video.duration > 0) ? (videoAny?.metadata?.position / props.video!.duration) : 0;
   })
   
   const navigate = useNavigate();
@@ -54,7 +60,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
           draggable={true}
           onDragStart={startDrag}
           onClick={onClicked}>
-            <img class={styles.image} src={bestThumbnail$()?.url?.replace("u0026", "&")} referrerPolicy='no-referrer' />
+            <img class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
 
           <Show when={pluginIconUrl()}>
             <img src={pluginIconUrl()} class={styles.sourceIcon} />
@@ -68,6 +74,11 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
           <Show when={!props.video?.isLive}>
             <div class={styles.duration}>{toHumanTime(props.video?.duration ?? 0)}</div>
           </Show>
+            <div class={styles.progressBar}>
+              <div class={styles.progressBarProgress} style={{width: (progress$() * 100) + "%"}}>
+
+              </div>
+            </div>
         </div>
         <div class={styles.title} onClick={props.onClick} onDragStart={startDrag} draggable={true}>{props.video?.name}</div>
         <div class={styles.bottomRow}>

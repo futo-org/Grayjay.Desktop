@@ -59,7 +59,10 @@ export class Menus {
     static getPlaylistItems(id: string, afterRemove?: () => void) {
         return [
           new MenuItemButton("Rename", ic_addToPlaylist, undefined, () => {
-    
+              UIOverlay.overlayTextPrompt("Playlist rename", "Enter the new name for the playlist.", "Some name", "Rename", async (str)=>{
+                if(str && str.length > 0)
+                    await PlaylistsBackend.renamePlaylist(id, str);
+              });
           }),
           new MenuItemButton("Download", ic_download, undefined, async () => {
               const playlist = await PlaylistsBackend.get(id);

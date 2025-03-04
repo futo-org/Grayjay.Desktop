@@ -37,7 +37,11 @@ namespace Grayjay.ClientServer.States
 
         public static bool IsHistoryWatched(string url, long duration)
         {
-            return GetHistoryPosition(url) > duration * 0.7;
+            return IsHistoryWatchedPercentage(GetHistoryPosition(url), (long)(duration * (decimal)0.7));
+        }
+        public static bool IsHistoryWatchedPercentage(long watched, long duration)
+        {
+            return watched > duration * 0.7;
         }
 
         public static void Clear()
@@ -170,5 +174,13 @@ namespace Grayjay.ClientServer.States
                 _history.Delete(item);
         }
 
+
+        public static PlatformVideo AddVideoMetadata(PlatformVideo video)
+        {
+            long watched = StateHistory.GetHistoryPosition(video.Url);
+            return video
+                .AddMetadata("position", watched)
+                .AddMetadata("watched", StateHistory.IsHistoryWatchedPercentage(watched, video.Duration));
+        }
     }
 }

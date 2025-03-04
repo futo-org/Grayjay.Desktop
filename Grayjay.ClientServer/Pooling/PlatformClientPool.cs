@@ -1,5 +1,7 @@
-﻿using Grayjay.Desktop.POC;
+﻿using Grayjay.ClientServer.Controllers;
+using Grayjay.Desktop.POC;
 using Grayjay.Engine;
+using System.Net;
 
 namespace Grayjay.ClientServer.Pooling
 {
@@ -52,6 +54,7 @@ namespace Grayjay.ClientServer.Pooling
                     {
                         Logger.i("Plugin [" + config.Name + "]", msg);
                     };
+                    reserved.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
 
                     reserved.Initialize();
                     _pool[reserved] = _poolCounter;

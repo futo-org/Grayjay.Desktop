@@ -7,7 +7,7 @@ import { DetailsBackend } from '../../../backend/DetailsBackend';
 import { CastConnectionState, useCasting } from '../../../contexts/Casting';
 import { CastingBackend } from '../../../backend/CastingBackend';
 import { Event0 } from "../../../utility/Event";
-import dashjs from 'dashjs';
+import dashjs, { MediaPlayerErrorEvent } from 'dashjs';
 import Hls from 'hls.js';
 import { ChapterType, IChapter } from '../../../backend/models/contentDetails/IChapter';
 import { SettingsBackend } from '../../../backend/SettingsBackend';
@@ -28,7 +28,7 @@ interface VideoProps {
     onFullscreenChange?: (isFullscreen: boolean) => void;
     onProgress?: (progress: number) => void;
     onEnded?: () => void;
-    onError?: (message: string) => void;
+    onError?: (message: string, fatal: boolean) => void;
     onPositionChanged?: (time: Duration) => void;
     onIsPlayingChanged?: (isPlaying: boolean) => void;
     handleTheatre?: () => void;
@@ -465,9 +465,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         props.onVolumeChanged?.(volume);
     };
 
-    const onError = (error: string) => {
-        props.onError?.(error);
-        setIsPlaying(false);
+    const onError = (error: string, fatal: boolean) => {
+        props.onError?.(error, fatal);
+        if (fatal) {
+            setIsPlaying(false);
+        }
     };
 
     createEffect(() => {
@@ -638,21 +640,88 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     onVolumeChanged(dashPlayer?.getVolume() ?? 1);
                 });
 
+                const fatalErrorCodes = [
+                    // Manifest/MPD errors – playback won’t start if these occur:
+                    dashjs.MediaPlayer.errors.MANIFEST_LOADER_PARSING_FAILURE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MANIFEST_LOADER_LOADING_FAILURE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MANIFEST_ERROR_ID_PARSE_CODE,
+                    dashjs.MediaPlayer.errors.MANIFEST_ERROR_ID_NOSTREAMS_CODE,
+                    dashjs.MediaPlayer.errors.MANIFEST_ERROR_ID_MULTIPLEXED_CODE,
+
+                    // Download/Initialization errors – fatal if the manifest or initialization segment cannot be loaded:
+                    dashjs.MediaPlayer.errors.DOWNLOAD_ERROR_ID_MANIFEST_CODE,
+                    dashjs.MediaPlayer.errors.DOWNLOAD_ERROR_ID_INITIALIZATION_CODE,
+                    dashjs.MediaPlayer.errors.DOWNLOAD_ERROR_ID_CONTENT_CODE,
+
+                    // MediaSource errors – indicate that the browser can’t play the stream:
+                    dashjs.MediaPlayer.errors.CAPABILITY_MEDIASOURCE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MEDIASOURCE_TYPE_UNSUPPORTED_CODE,
+
+                    // Additional critical errors (that may block recovery):
+                    dashjs.MediaPlayer.errors.TIME_SYNC_FAILED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.FRAGMENT_LOADER_NULL_REQUEST_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.URL_RESOLUTION_FAILED_GENERIC_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.APPEND_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.REMOVE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.DATA_UPDATE_FAILED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.DOWNLOAD_ERROR_ID_SIDX_CODE,
+                    dashjs.MediaPlayer.errors.DOWNLOAD_ERROR_ID_XLINK_CODE,
+
+                    // DRM/Protection errors – if the content is encrypted and these errors occur, playback cannot proceed:
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_UNKNOWN_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_CLIENT_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_SERVICE_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_OUTPUT_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_HARDWARECHANGE_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEYERR_DOMAIN_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEY_MESSAGE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEY_MESSAGE_NO_CHALLENGE_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.SERVER_CERTIFICATE_UPDATED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.KEY_STATUS_CHANGED_EXPIRED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEY_MESSAGE_NO_LICENSE_SERVER_URL_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.KEY_SYSTEM_ACCESS_DENIED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.KEY_SESSION_CREATED_ERROR_CODE,
+                    dashjs.MediaPlayer.errors.MEDIA_KEY_MESSAGE_LICENSER_ERROR_CODE,
+
+                    // MSS errors – if using Microsoft Smooth Streaming content:
+                    dashjs.MediaPlayer.errors.MSS_NO_TFRF_CODE,
+                    dashjs.MediaPlayer.errors.MSS_UNSUPPORTED_CODEC_CODE,
+
+                    // Offline errors – if your app uses offline playback (optional):
+                    dashjs.MediaPlayer.errors.OFFLINE_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_QUOTA_EXCEED_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_INVALID_STATE_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_NOT_READABLE_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_NOT_FOUND_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_NETWORK_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_DATA_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_TRANSACTION_INACTIVE_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_NOT_ALLOWED_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_NOT_SUPPORTED_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_VERSION_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_TIMEOUT_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_ABORT_ERROR,
+                    dashjs.MediaPlayer.errors.INDEXEDDB_UNKNOWN_ERROR
+                ];
+
                 dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (data) => {
                     console.error("DashJS ERROR", data);
-                    onError(`DashJS Error: ${JSON.stringify(data.error)}`);
+                    const code = (data.error as any)?.code;
+                    onError(`DashJS Error: ${JSON.stringify(data.error)}`, code ? fatalErrorCodes.includes(code) : false);
                 });
 
                 dashPlayer.on(dashjs.MediaPlayer.events.PLAYBACK_ERROR, (data) => {
                     console.error("DashJS PLAYBACK_ERROR", data);
-                    onError(`DashJS Playback Error: ${JSON.stringify(data.error)}`);
+                    const code = (data.error as any)?.code;
+                    onError(`DashJS Playback Error: ${JSON.stringify(data.error)}`, code ? fatalErrorCodes.includes(code) : false);
                 });
 
                 dashPlayer.initialize(videoElement, sourceUrl, true, getResumePosition(shouldResume, startTime)?.as('seconds') ?? 0);
             } else if ((mediaType === 'application/vnd.apple.mpegurl' || mediaType === 'application/x-mpegURL') && !videoElement.canPlayType(mediaType)) {
                 videoElement.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
                     console.error("Player error", {source, lineno, colno, error});
-                    onError(`Video Error: ${JSON.stringify({ source, lineno, colno, error})}`);
+                    onError(`Video Error: ${JSON.stringify({ source, lineno, colno, error})}`, true);
                 };
 
                 videoElement.onloadedmetadata = () => {                   
@@ -731,13 +800,14 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 });
                 hlsPlayer.on(Hls.Events.ERROR, function(eventName, data) {
                     console.error("HLS player error", data);
-                    onError(`HLS Error: ${JSON.stringify({ details: data.details, error: data.error })}`);
+                    onError(`HLS Error: ${JSON.stringify({ details: data.details, error: data.error })}`, data.fatal);
                 });
                 hlsPlayer.loadSource(sourceUrl);
                 hlsPlayer.attachMedia(videoElement);
             } else {
                 videoElement.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
                     console.error("Player error", {source, lineno, colno, error});
+                    onError(`Player error: ${JSON.stringify({source, lineno, colno, error})}`, true);
                 };
 
                 videoElement.onloadedmetadata = () => {                   
@@ -825,7 +895,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         const newLevel = props.sourceQuality;
         console.log("Source Quality changed: " + newLevel);
         if(hlsPlayer) {
-            hlsPlayer!.currentLevel = newLevel ?? -1;
+            hlsPlayer!.currentLevel = newLevel && newLevel >= 0 && newLevel < hlsPlayer!.levels.length ? (hlsPlayer!.levels.length - newLevel) : -1;
         }
     });
 
@@ -978,7 +1048,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     return (
         <div ref={setContainerRef} 
             classList={{
-                [styles.container]: !isFullscreen(), 
+                [styles.container]: !isFullscreen(),
                 [styles.containerFullscreen]: isFullscreen()
             }} 
             style={{ 
@@ -1002,8 +1072,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
             <div
                 classList={{
-                    [styles.controls]: !isFullscreen(), 
-                    [styles.controlsFullscreen]: isFullscreen(), 
+                    [styles.controls]: !isFullscreen(),
+                    [styles.controlsFullscreen]: isFullscreen(),
                     [styles.controlsVisible]: controlsVisible$()
                 }}>
 

@@ -153,7 +153,7 @@ namespace Grayjay.ClientServer.Store
 
     public class DictionaryStore<K, V> : RawValueStore<DictionaryStore<K, V>, Dictionary<K, V>>
     {
-        public DictionaryStore(string name, Dictionary<K, V> def = null, DirectoryInfo parentDir = null) : base(name, def, parentDir)
+        public DictionaryStore(string name, Dictionary<K, V>? def = null, DirectoryInfo? parentDir = null) : base(name, def ?? new Dictionary<K, V>(), parentDir)
         {
         }
 

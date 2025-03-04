@@ -39,8 +39,8 @@ const InputText: Component<InputTextProps> = (props) => {
         merged.onTextChanged?.(text());
     });
 
-    const onKey = (ev: KeyboardEvent) => {
-        if(ev.key === 'Enter') {
+    const onKey = (ev: KeyboardEvent, isUp: Boolean) => {
+        if(ev.key === 'Enter' && isUp) {
             merged.onSubmit?.(text());
         }
     };
@@ -77,8 +77,8 @@ const InputText: Component<InputTextProps> = (props) => {
                             setTouched(true);
                             setText(e.target.value);
                         }} 
-                        onKeyDown={e => onKey(e)}
-                        onKeyUp={e => onKey(e)}
+                        onKeyDown={e => onKey(e, false)}
+                        onKeyUp={e => onKey(e, true)}
                         onFocus={() => { 
                             if (!hasFocus()) {
                                 setHasFocus(true);

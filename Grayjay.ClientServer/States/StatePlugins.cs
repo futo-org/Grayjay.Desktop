@@ -2,6 +2,7 @@
 using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Store;
 using Grayjay.Engine;
 using System.Linq;
@@ -39,7 +40,7 @@ namespace Grayjay.Desktop.POC.Port.States
             descriptor.OnCaptchaChanged += () => OnPluginCaptchaChanged?.Invoke(descriptor);
         }
 
-        public static void CheckForUpdate(PluginConfig plugin)
+        public static bool CheckForUpdate(PluginConfig plugin)
         {
             try
             {
@@ -50,19 +51,24 @@ namespace Grayjay.Desktop.POC.Port.States
                     {
                         _hasUpdates[config.ID] = true;
                     }
+                    return true;
                 }
+                return false;
             }
             catch(Exception ex)
             {
                 Logger.e(nameof(StatePlugins), $"Failed to check updates for plugin [{plugin.Name}]", ex);
+                return false;
             }
         }
-        public static void CheckForUpdates()
+        public static Task CheckForUpdates()
         {
-            StatePlatform.GetEnabledClients().AsParallel().ForAll((client) =>
+            var clients = StatePlatform.GetEnabledClients();
+
+            return Task.WhenAll(clients.Select(async (client) =>
             {
-                CheckForUpdate(client.Config);
-            });
+                await StateApp.ThreadPool.Run<bool>(() => CheckForUpdate(client.Config));
+            }));
         }
         public static bool HasUpdate(string pluginId)
         {
