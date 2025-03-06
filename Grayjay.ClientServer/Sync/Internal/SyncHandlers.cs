@@ -57,9 +57,7 @@ namespace Grayjay.ClientServer.Sync.Internal
                 }
                 catch(Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Opcode {opcode} failed to execute due to: {ex.Message}\n{ex.StackTrace}");
-                    Console.ResetColor();
+                    Logger.Error<SyncHandlers>($"Opcode {opcode} failed to execute", ex);
                 }
             });
         }
@@ -94,9 +92,7 @@ namespace Grayjay.ClientServer.Sync.Internal
                 }
                 catch(Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Opcode {opcode} failed to execute due to: {ex.Message}\n{ex.StackTrace}");
-                    Console.ResetColor();
+                    Logger.Error<SyncHandlers>($"Opcode {opcode} failed", ex);
                 }
             });
         }
@@ -110,10 +106,7 @@ namespace Grayjay.ClientServer.Sync.Internal
             }
             catch(Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Sync conversion failed for type {targetType.Name}:\n" + ex.Message + "\n" + ex.StackTrace);
-                Console.WriteLine($"DATA:\n" + Encoding.UTF8.GetString(data));
-                Console.ResetColor();
+                Logger.Error<SyncHandlers>($"Sync conversion failed for type {targetType.Name}\nDATA:\n" + Encoding.UTF8.GetString(data), ex);
                 throw;
             }
         }

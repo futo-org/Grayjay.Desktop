@@ -9,6 +9,8 @@ using Grayjay.Engine;
 using Microsoft.ClearScript.JavaScript;
 using Newtonsoft.Json.Serialization;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Developer
 {
     [JsonConverter(typeof(V8RemoteObject.Serializer))]

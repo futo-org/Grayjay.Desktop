@@ -753,7 +753,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                                Logger.Error(nameof(StatePlatform), $"Plugin [{client.Config.Name}] failed to initialize", ex);
                                 onEx?.Invoke(id, ex);
                             }
                         }
@@ -813,7 +813,7 @@ namespace Grayjay.Desktop.POC.Port.States
                         {
                             if (ex is ScriptCaptchaRequiredException capEx)
                             {
-                                Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                Logger.Warning(nameof(StatePlatform), $"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString(), capEx);
                                 StateApp.HandleCaptchaException(config, capEx);
                             }
                         };
@@ -833,7 +833,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                                Logger.Error(nameof(StatePlatform), $"Plugin [{client.Config.Name}] failed", ex);
                             }
                         }
                     });
@@ -891,7 +891,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             {
                                 if (ex is ScriptCaptchaRequiredException capEx)
                                 {
-                                    Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                    Logger.Warning(nameof(StatePlatform), $"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString(), capEx);
                                     StateApp.HandleCaptchaException(config, capEx);
                                 }
                             };

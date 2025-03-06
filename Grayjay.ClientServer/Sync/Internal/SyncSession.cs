@@ -5,6 +5,8 @@ using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
 
 namespace Grayjay.ClientServer.Sync.Internal;
 
+using LogLevel = Grayjay.Desktop.POC.LogLevel;
+
 public interface IAuthorizable
 {
     bool IsAuthorized { get; }
@@ -159,7 +161,8 @@ public class SyncSession : IAuthorizable, IDisposable
 
     public void HandlePacket(SyncSocketSession socketSession, Opcode opcode, byte subOpcode, byte[] data)
     {
-        Console.WriteLine($"Handle packet (opcode: {opcode}, subOpcode: {subOpcode}, data length: {data.Length})");
+        if (Logger.WillLog(LogLevel.Debug))
+            Logger.Debug<SyncSession>($"Handle packet (opcode: {opcode}, subOpcode: {subOpcode}, data length: {data.Length})");
 
         switch (opcode)
         {
@@ -208,7 +211,8 @@ public class SyncSession : IAuthorizable, IDisposable
             return;
         }
 
-        Console.WriteLine($"Received (opcode = {opcode}, subOpcode = {subOpcode}) ({data.Length} bytes)");
+        if (Logger.WillLog(LogLevel.Debug))
+            Logger.Debug<SyncSession>($"Received (opcode = {opcode}, subOpcode = {subOpcode}) ({data.Length} bytes)");
 
         Task.Run(() =>
         {

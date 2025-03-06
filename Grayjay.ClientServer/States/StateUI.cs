@@ -11,6 +11,8 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using static Grayjay.ClientServer.Controllers.StateUI;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     public static class StateUI

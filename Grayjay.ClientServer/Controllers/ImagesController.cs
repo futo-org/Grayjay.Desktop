@@ -8,6 +8,8 @@ using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]

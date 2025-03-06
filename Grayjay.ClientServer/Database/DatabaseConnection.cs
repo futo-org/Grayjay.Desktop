@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Grayjay.ClientServer.Database.Indexes;
 using Microsoft.Data.Sqlite;
-using System.Data.Common;
 using System.Reflection;
 using Grayjay.ClientServer.States;
+using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.Database
 {
@@ -68,7 +68,7 @@ namespace Grayjay.ClientServer.Database
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine("Deleting table because broken: " + ex.Message);
+                    Logger.Error<DatabaseConnection>("Deleting table because broken: " + ex.Message);
                     SQL((x) => x.Execute($"DROP TABLE {table}"));
                     result = null;
                 }

@@ -13,6 +13,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.Desktop.CEF
 {
     public class CEFWindowProvider : IWindowProvider
