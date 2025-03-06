@@ -273,7 +273,8 @@ namespace Grayjay.ClientServer.Controllers
                     .ToList();
                 group.Image = new ImageVariable()
                 {
-                    Url = subs.FirstOrDefault()?.Channel.Thumbnail
+                    Url = subs.FirstOrDefault()?.Channel.Thumbnail,
+                    SubscriptionUrl = subs.FirstOrDefault()?.Channel.Url
                 };
             }
             if(group.ID != null)

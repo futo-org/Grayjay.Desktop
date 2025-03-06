@@ -37,6 +37,16 @@ namespace Grayjay.ClientServer.Controllers
             return NoContent();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ImageSubscription(string subUrl)
+        {
+            var sub = StateSubscriptions.GetSubscription(subUrl);
+            if (sub == null)
+                return NotFound();
+            return await CachePassthrough(sub.Channel.Thumbnail);
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> ImageUpload()
         {
