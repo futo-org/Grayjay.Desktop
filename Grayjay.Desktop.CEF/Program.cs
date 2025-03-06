@@ -199,10 +199,11 @@ namespace Grayjay.Desktop
             Console.SetOut(new SuppressingTextWriter(Console.Out));
             Console.SetError(new SuppressingTextWriter(Console.Error));
 
-            Logger.i(nameof(Directories), $"AppContext.BaseDirectory: {AppContext.BaseDirectory}");
-            Logger.i(nameof(Directories), $"Base Directory: {Directories.Base}");
-            Logger.i(nameof(Directories), $"Temporary Directory: {Directories.Temporary}");
-            Logger.i(nameof(Directories), $"Log file path: {Directories.Base}/log.txt");
+            Console.WriteLine($"AppContext.BaseDirectory: {AppContext.BaseDirectory}");
+            Console.WriteLine($"Base Directory: {Directories.Base}");
+            Console.WriteLine($"Temporary Directory: {Directories.Temporary}");
+            Console.WriteLine($"Log Level: {(LogLevel)GrayjaySettings.Instance.Logging.LogLevel}");
+            Console.WriteLine($"Log file path: {Directories.Base}/log.txt");
 
             GrayjayDevSettings.Instance.DeveloperMode = File.Exists("DEV");
 
