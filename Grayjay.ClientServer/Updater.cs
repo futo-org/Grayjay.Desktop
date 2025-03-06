@@ -1,5 +1,6 @@
 ﻿using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
 using System;
 using System.Diagnostics;
 using System.Net;
@@ -117,14 +118,15 @@ namespace Grayjay.ClientServer
                     while (!proc.StandardOutput.EndOfStream)
                     {
                         var line = proc.StandardOutput.ReadLine();
-                        Console.WriteLine(line);
+                        if (line != null)
+                            Logger.Info(nameof(Updater), line);
                     }
                     proc.WaitForExit();
                     return Math.Max(1, proc.ExitCode);
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine("Failed to read updater version, assuming 1");
+                    Logger.Error(nameof(Updater), "Failed to read updater version, assuming 1", ex);
                     return 1;
                 }
             }
@@ -205,7 +207,8 @@ namespace Grayjay.ClientServer
                     while (!chmod.StandardOutput.EndOfStream)
                     {
                         var line = chmod.StandardOutput.ReadLine();
-                        Console.WriteLine(line);
+                        if (line != null)
+                            Logger.Info(nameof(Updater), line);
                     }
                     chmod.WaitForExit();
                 }
@@ -231,11 +234,14 @@ namespace Grayjay.ClientServer
             while (!proc.StandardOutput.EndOfStream)
             {
                 var line = proc.StandardOutput.ReadLine();
+                if (line == null)
+                    continue;
+                
                 Match m = REGEX_UPDATER_VERSION.Match(line);
                 if (m.Success && m.Groups.Count > 1)
                     updaterVersion = int.Parse(m.Groups[1].Value);
 
-                Console.WriteLine(line);
+                Logger.Info(nameof(Updater), line);
             }
             proc.WaitForExit();
             switch (proc.ExitCode)

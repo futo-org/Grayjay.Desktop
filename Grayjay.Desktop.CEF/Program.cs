@@ -5,19 +5,18 @@ using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
-using Grayjay.Desktop.POC;
-using Grayjay.Desktop.POC.Port.States;
-using Microsoft.ClearScript.JavaScript;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+using LogLevel = Grayjay.Desktop.POC.LogLevel;
+
 namespace Grayjay.Desktop
 {
     internal class Program
     {
-        private const bool ShowCefLogs = true;
         private static string? StartingUpFile = null;
         private const string StartingUpFileName = "starting";
         private static string? PortFile = null;
@@ -199,18 +198,23 @@ namespace Grayjay.Desktop
             Console.SetOut(new SuppressingTextWriter(Console.Out));
             Console.SetError(new SuppressingTextWriter(Console.Error));
 
-            Console.WriteLine($"AppContext.BaseDirectory: {AppContext.BaseDirectory}");
-            Console.WriteLine($"Base Directory: {Directories.Base}");
-            Console.WriteLine($"Temporary Directory: {Directories.Temporary}");
-            Console.WriteLine($"Log Level: {(LogLevel)GrayjaySettings.Instance.Logging.LogLevel}");
-            Console.WriteLine($"Log file path: {Directories.Base}/log.txt");
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"AppContext.BaseDirectory: {AppContext.BaseDirectory}"));
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Base Directory: {Directories.Base}"));
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Temporary Directory: {Directories.Temporary}"));
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log Level: {(LogLevel)GrayjaySettings.Instance.Logging.LogLevel}"));
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log file path: {Directories.Base}/log.txt"));
+
+            FUTO.MDNS.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
+            FUTO.MDNS.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
+            Engine.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
+            Engine.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
+            DotCef.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
+            DotCef.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
 
             GrayjayDevSettings.Instance.DeveloperMode = File.Exists("DEV");
 
             foreach(var arg in args)
-            {
-                Console.WriteLine("Arg: " + arg);
-            }
+                Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), "Arg: " + arg));
 
             Updater.SetStartupArguments(string.Join(" ", args.Select(x => (x.Contains(" ") ? $"\"{x}\"" : x))));
 
@@ -302,17 +306,6 @@ namespace Grayjay.Desktop
             using var cef = !isServer ? new DotCefProcess() : null;
             if (cef != null)
             {
-                cef.OutputDataReceived += (msg) =>
-                {
-                    if (msg != null && ShowCefLogs)
-                        Logger.i("CEF", msg);
-                };
-                cef.ErrorDataReceived += (msg) =>
-                {
-                    if (msg != null && ShowCefLogs)
-                        Logger.e("CEF", msg);
-                };
-
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                     cef.Start("--disable-web-security --use-alloy-style --use-native " + extraArgs);
                 else
@@ -440,7 +433,8 @@ namespace Grayjay.Desktop
                                                             while (!chmod.StandardOutput.EndOfStream)
                                                             {
                                                                 var line = chmod.StandardOutput.ReadLine();
-                                                                Console.WriteLine(line);
+                                                                if (line != null)
+                                                                    Logger.Info<Program>(line);
                                                             }
                                                             chmod.WaitForExit();
                                                         }

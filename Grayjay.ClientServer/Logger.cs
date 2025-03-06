@@ -26,8 +26,6 @@ namespace Grayjay.Desktop.POC
             public LogLevel ConsoleLogLevel { get; set; } = LogLevel.Error;
             public LogLevel DebugLogLevel { get; set; } = LogLevel.None;
 #endif
-            public string TimestampFormat { get; set; } = "yyyy-MM-dd HH:mm:ss.fff";
-            public bool UseUtcTime { get; set; } = false;
             public int FlushIntervalMs { get; set; } = 3000;
         }
 
@@ -106,13 +104,7 @@ namespace Grayjay.Desktop.POC
             if (_disposed) 
                 return;
 
-            var time = _config.UseUtcTime ? DateTime.UtcNow : DateTime.Now;
-            string timestamp = time.ToString(_config.TimestampFormat);
-            string levelStr = level.ToString().ToUpper();
-            string logMessage = $"[{timestamp}] [{levelStr}] [{tag}] {message}";
-            if (ex != null) 
-                logMessage += $"\nException: {ex.Message}\nStack Trace: {ex.StackTrace}";
-
+            var logMessage = Logger.FormatLogMessage(level, tag, message, ex);
             if (_config.ConsoleLogLevel > LogLevel.None && level <= _config.ConsoleLogLevel)
             {
                 lock (_consoleLock)
@@ -120,8 +112,8 @@ namespace Grayjay.Desktop.POC
                     ConsoleColor originalColor = Console.ForegroundColor;
                     Console.ForegroundColor = level switch
                     {
-                        LogLevel.Verbose => ConsoleColor.DarkGray,
-                        LogLevel.Debug => ConsoleColor.Blue,
+                        LogLevel.Verbose => ConsoleColor.Gray,
+                        LogLevel.Debug => ConsoleColor.Cyan,
                         LogLevel.Info => ConsoleColor.White,
                         LogLevel.Warning => ConsoleColor.Yellow,
                         LogLevel.Error => ConsoleColor.Red,
@@ -222,21 +214,35 @@ namespace Grayjay.Desktop.POC
         public static void Info<T>(string message, Exception? ex = null) => _staticLogger.Value.Info<T>(message, ex);
         public static void Warning<T>(string message, Exception? ex = null) => _staticLogger.Value.Warning<T>(message, ex);
         public static void Error<T>(string message, Exception? ex = null) => _staticLogger.Value.Error<T>(message, ex);
+        public static void Log<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.Value.l(level, nameof(T), message, ex);
         public static void v<T>(string message, Exception? ex = null) => _staticLogger.Value.v<T>(message, ex);
         public static void i<T>(string message, Exception? ex = null) => _staticLogger.Value.i<T>(message, ex);
         public static void w<T>(string message, Exception? ex = null) => _staticLogger.Value.w<T>(message, ex);
         public static void e<T>(string message, Exception? ex = null) => _staticLogger.Value.e<T>(message, ex);
+        public static void l<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.Value.l(level, nameof(T), message, ex);
         public static void Debug(string tag, string message, Exception? ex = null) => _staticLogger.Value.Verbose(tag, message, ex);
         public static void Verbose(string tag, string message, Exception? ex = null) => _staticLogger.Value.Verbose(tag, message, ex);
         public static void Info(string tag, string message, Exception? ex = null) => _staticLogger.Value.Info(tag, message, ex);
         public static void Warning(string tag, string message, Exception? ex = null) => _staticLogger.Value.Warning(tag, message, ex);
         public static void Error(string tag, string message, Exception? ex = null) => _staticLogger.Value.Error(tag, message, ex);
+        public static void Log(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.Value.l(level, tag, message, ex);
         public static void d(string tag, string message, Exception? ex = null) => _staticLogger.Value.v(tag, message, ex);
         public static void v(string tag, string message, Exception? ex = null) => _staticLogger.Value.v(tag, message, ex);
         public static void i(string tag, string message, Exception? ex = null) => _staticLogger.Value.i(tag, message, ex);
         public static void w(string tag, string message, Exception? ex = null) => _staticLogger.Value.w(tag, message, ex);
         public static void e(string tag, string message, Exception? ex = null) => _staticLogger.Value.e(tag, message, ex);
-        public static bool WillLog(LogLevel logLevel) => _staticLogger.Value.WillLog(logLevel);
+        public static void l(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.Value.l(level, tag, message, ex);
+        public static bool WillLog(LogLevel level) => _staticLogger.Value.WillLog(level);
+
+        public static string FormatLogMessage(LogLevel level, string tag, string message, Exception? ex = null)
+        {
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            string levelStr = level.ToString().ToUpper();
+            string logMessage = $"[{timestamp}] [{levelStr}] [{tag}] {message}";
+            if (ex != null)
+                logMessage += $"\nException: {ex.Message}\nStack Trace: {ex.StackTrace}";
+            return logMessage;
+        }
 
         public static void DisposeStaticLogger()
         {

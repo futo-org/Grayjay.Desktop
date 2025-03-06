@@ -25,6 +25,8 @@ using Microsoft.ClearScript;
 using Newtonsoft.Json;
 using static Grayjay.Engine.Packages.PackageHttp;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]

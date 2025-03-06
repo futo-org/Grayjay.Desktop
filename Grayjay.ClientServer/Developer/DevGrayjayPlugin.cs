@@ -1,6 +1,8 @@
 ﻿using Futo.PlatformPlayer.States;
 using Google.Protobuf.Reflection;
+using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.States;
+using Grayjay.Desktop.POC;
 using Grayjay.Engine;
 using Grayjay.Engine.Exceptions;
 using Grayjay.Engine.Models.Channel;
@@ -9,6 +11,8 @@ using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
 using Microsoft.ClearScript.V8;
+
+using Logger = Grayjay.Desktop.POC.Logger;
 
 namespace Grayjay.ClientServer.Developer
 {
@@ -33,7 +37,7 @@ namespace Grayjay.ClientServer.Developer
             {
                 if (ex is ScriptCaptchaRequiredException capEx)
                 {
-                    Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                    Logger.Warning<DatabaseConnection>($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
                     StateApp.HandleCaptchaException(descriptor.Config, capEx);
                 }
             };
@@ -49,7 +53,7 @@ namespace Grayjay.ClientServer.Developer
             {
                 if (ex is ScriptCaptchaRequiredException capEx)
                 {
-                    Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                    Logger.Warning<DatabaseConnection>($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
                     StateApp.HandleCaptchaException(config, capEx);
                 }
             };

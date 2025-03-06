@@ -5,6 +5,8 @@ using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
 using Grayjay.Engine.Models.Capabilities;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Subscriptions.Algorithms
 {
     public class SmartSubscriptionAlgorithm : SubscriptionsTaskFetchAlgorithm

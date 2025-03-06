@@ -14,6 +14,8 @@ using Grayjay.Engine.Web;
 using System.Runtime.CompilerServices;
 using PlatformID = Grayjay.Engine.Models.General.PlatformID;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.States
 {
     public static class StateDownloads

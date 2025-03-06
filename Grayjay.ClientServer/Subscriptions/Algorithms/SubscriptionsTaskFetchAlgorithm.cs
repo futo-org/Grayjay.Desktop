@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Linq;
 using static System.Formats.Asn1.AsnWriter;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Subscriptions.Algorithms
 {
     public abstract class SubscriptionsTaskFetchAlgorithm : SubscriptionFetchAlgorithm

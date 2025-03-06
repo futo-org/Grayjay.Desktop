@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
-using FUTO.MDNS;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Crypto;
 using Grayjay.ClientServer.Dialogs;
@@ -17,7 +16,6 @@ using Noise;
 using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
 
 namespace Grayjay.ClientServer.States;
-
 
 public class StateSync : IDisposable
 {
@@ -35,7 +33,7 @@ public class StateSync : IDisposable
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly Dictionary<string, SyncSession> _sessions = new Dictionary<string, SyncSession>();
     private readonly Dictionary<string, long> _lastConnectTimes = new Dictionary<string, long>();
-    private readonly ServiceDiscoverer _serviceDiscoverer;
+    private readonly FUTO.MDNS.ServiceDiscoverer _serviceDiscoverer;
     private KeyPair? _keyPair;
     public string? PublicKey { get; private set; }
     public event Action<string>? DeviceRemoved;
@@ -43,7 +41,7 @@ public class StateSync : IDisposable
 
     public StateSync()
     {
-        _serviceDiscoverer = new ServiceDiscoverer(["_gsync._tcp.local"]);
+        _serviceDiscoverer = new FUTO.MDNS.ServiceDiscoverer(["_gsync._tcp.local"]);
         _serviceDiscoverer.OnServicesUpdated += HandleServiceUpdated;
     }
 
@@ -252,7 +250,7 @@ public class StateSync : IDisposable
         }
     }
 
-    private void HandleServiceUpdated(List<DnsService> services)
+    private void HandleServiceUpdated(List<FUTO.MDNS.DnsService> services)
     {
         if (!GrayjaySettings.Instance.Synchronization.ConnectDiscovered)
             return;
