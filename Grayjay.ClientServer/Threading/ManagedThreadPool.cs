@@ -157,7 +157,14 @@ namespace Grayjay.ClientServer.Threading
                     if (!_queue.TryDequeue(out task))
                         task = null;
                 }
-                task?.Invoke();
+                try
+                {
+                    task?.Invoke();
+                }
+                catch(Exception ex)
+                {
+                    Logger.e(nameof(ManagedThreadPool), $"UNCAUGHT EXCEPTION IN THREADPOOL [{Name}]: {ex.Message}");
+                }
             }
         }
     }

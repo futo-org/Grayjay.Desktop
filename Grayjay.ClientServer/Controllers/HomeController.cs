@@ -22,9 +22,9 @@ namespace Grayjay.ClientServer.Controllers
 
 
         [HttpGet]
-        public PagerResult<PlatformVideo> HomeLoad(string url)
+        public async Task<PagerResult<PlatformVideo>> HomeLoad(string url)
         {
-            var home = new AnonymousContentRefPager(StatePlatform.GetHome());
+            var home = new AnonymousContentRefPager(await StatePlatform.GetHome());
             this.State().HomeState.HomePager = home;
             return home.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
         }

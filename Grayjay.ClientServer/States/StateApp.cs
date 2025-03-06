@@ -153,7 +153,7 @@ namespace Grayjay.ClientServer.States
             //Temporary workaround for youtube
             ThreadPool.Run(() =>
             {
-                StatePlatform.GetHome();
+                _ = StatePlatform.GetHome();
             });
 
             Logger.i(nameof(StateApp), "Startup: Initializing Download Cycle");

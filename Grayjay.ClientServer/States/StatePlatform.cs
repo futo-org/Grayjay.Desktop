@@ -20,6 +20,7 @@ using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Pagers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -304,18 +305,27 @@ namespace Grayjay.Desktop.POC.Port.States
             return client.SearchSuggestions(query);
         }
 
-        public static IPager<PlatformContent> GetHome()
+        public static async Task<IPager<PlatformContent>> GetHome()
         {
             List<string> clientIdsOngoing = new List<string>();
             List<GrayjayPlugin> clients = GetEnabledClients().Where(x => true).ToList();
 
-            var pages = clients.AsParallel()
+            var pageTasks = clients
                 .Select(client =>
                 {
-                    lock (clientIdsOngoing)
-                        clientIdsOngoing.Add(client.Config.ID);
-                    return client.FromPool(_mainClientPool).GetHome();
-                }).ToDictionary(x => x, y => 1f);
+                    return (client, StateApp.ThreadPool.Run(() =>
+                    {
+                        lock (clientIdsOngoing)
+                            clientIdsOngoing.Add(client.Config.ID);
+                        return client.FromPool(_mainClientPool).GetHome();
+                    }));
+                });
+
+            Dictionary<IPager<PlatformContent>, float> pages = new Dictionary<IPager<PlatformContent>, float>();
+            foreach(var page in pageTasks)
+            {
+                pages.Add(await page.Item2, 1f);
+            }
 
             var pager = new MultiDistributionPager<PlatformContent>(pages, true);
             pager.Initialize();
