@@ -606,17 +606,17 @@ namespace Grayjay.Desktop.POC.Port.States
             ClientsLock(() => result = act(), log, 2);
             return result;
         }
-        private static void ClientsLock(Action act, bool log = false, int level = 1)
+        private static void ClientsLock(Action act, bool log = true, int level = 1)
         {
             long id = (log) ? Interlocked.Increment(ref _clientsLockCount) : 0;
             string name = (log) ? (new System.Diagnostics.StackTrace()).GetFrame(level).GetMethod().Name : null;
-            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
+            if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
             lock (_clientsLock)
             {
-                if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
+                if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
                 act();
             }
-            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
+            if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
         }
 
         public static List<GrayjayPlugin> GetEnabledClients()

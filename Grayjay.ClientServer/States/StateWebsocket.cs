@@ -40,9 +40,13 @@ public class StateWebsocket
     }
     public static void EnabledClientsChanged()
     {
+        var instance = GrayjayServer.Instance;
+        if (instance == null)
+            return;
+
         Task.Run(async () =>
         {
-            await GrayjayServer.Instance?.WebSocket?.Broadcast(null, "EnabledClientsChanged");
+            await instance.WebSocket.Broadcast(null, "EnabledClientsChanged");
         });
     }
     public static void SyncDevicesChanged()
