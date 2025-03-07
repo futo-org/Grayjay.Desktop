@@ -325,6 +325,41 @@ namespace Grayjay.Desktop
                     File.WriteAllText("cef/launch", "../" + Path.GetFileName(p.MainModule!.FileName));
             }
 
+            using var cef = !isServer ? new DotCefProcess() : null;
+            if (cef != null)
+            {
+                Stopwatch startWindowWatch = Stopwatch.StartNew();
+                var extraArgs = ReconstructArgs(args);
+                Logger.i(nameof(Program), "Extra args: " + extraArgs);
+
+                Logger.i(nameof(Program), "Main: Starting DotCefProcess");
+                if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+                    cef.Start("--disable-web-security --use-alloy-style --use-native " + extraArgs);
+                else
+                    cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + extraArgs);
+                Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({startWindowWatch.ElapsedMilliseconds}ms)");
+            }
+
+            DotCefWindow? window = null;
+            if (cef != null && !isHeadless && !isServer)
+            {
+                Stopwatch startWindowWatch = Stopwatch.StartNew();
+                Logger.i(nameof(Program), "Main: Starting window.");
+                window = await cef.CreateWindowAsync(
+                    url: """data:text/html;base64,PHN0eWxlPkBpbXBvcnQgdXJsKGh0dHBzOi8vZm9udHMuZ29vZ2xlYXBpcy5jb20vY3NzMj9mYW1pbHk9Um9ib3RvOndnaHRANDAwOzcwMCZkaXNwbGF5PXN3YXApO2JvZHl7YmFja2dyb3VuZC1jb2xvcjojMWIxYjFiO21hcmdpbjowO2ZvbnQtZmFtaWx5OlJvYm90byxzYW5zLXNlcmlmfS5sb2FkZXItY29udGFpbmVye2Rpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6Y2VudGVyO2ZsZXgtZGlyZWN0aW9uOmNvbHVtbjthbGlnbi1pdGVtczpjZW50ZXI7d2lkdGg6MTAwJTtoZWlnaHQ6MTAwdmh9LmxvYWRlci1zdmd7d2lkdGg6MjAwcHg7aGVpZ2h0OjIwMHB4O2FuaW1hdGlvbjpnZW50bGUtcHVsc2UgM3MgZWFzZS1pbi1vdXQgaW5maW5pdGV9LmxvYWRpbmctdGV4dHtjb2xvcjojZmZmO2ZvbnQtc2l6ZToyNHB4O21hcmdpbi10b3A6MjBweDtmb250LXdlaWdodDo3MDA7bGV0dGVyLXNwYWNpbmc6MXB4fS5sb2FkaW5nLXRleHQgc3BhbntvcGFjaXR5OjA7YW5pbWF0aW9uOmRvdCAxLjVzIGluZmluaXRlfS5sb2FkaW5nLXRleHQgc3BhbjpudGgtY2hpbGQoMSl7YW5pbWF0aW9uLWRlbGF5OjBzfS5sb2FkaW5nLXRleHQgc3BhbjpudGgtY2hpbGQoMil7YW5pbWF0aW9uLWRlbGF5Oi41c30ubG9hZGluZy10ZXh0IHNwYW46bnRoLWNoaWxkKDMpe2FuaW1hdGlvbi1kZWxheToxc31Aa2V5ZnJhbWVzIGdlbnRsZS1wdWxzZXswJSwxMDAle3RyYW5zZm9ybTpzY2FsZSgxKTtvcGFjaXR5Oi44fTUwJXt0cmFuc2Zvcm06c2NhbGUoMS4xKTtvcGFjaXR5OjF9fUBrZXlmcmFtZXMgZG90ezAle29wYWNpdHk6MH01MCV7b3BhY2l0eToxfTEwMCV7b3BhY2l0eTowfX08L3N0eWxlPjxkaXYgY2xhc3M9bG9hZGVyLWNvbnRhaW5lcj48c3ZnIGNsYXNzPWxvYWRlci1zdmcgZmlsbD1ub25lIGhlaWdodD0yMDAgdmlld0JveD0iMCAwIDQ4IDQ4IndpZHRoPTIwMCB4bWxucz1odHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zz48cGF0aCBkPSJNMjMuODYxMiA0MS4yNTE2TDQ2LjIyMjUgNy4wMDIySDEuNUwyMy44NjEyIDQxLjI1MTZaImZpbGw9dXJsKCNwYWludDBfbGluZWFyXzgyOF85NTA2KSAvPjxwYXRoIGQ9Ik02LjgxMjUgMzAuODcxNUM3LjcyMzgxIDI5Ljg5OTQgOS45ODM4OSAyNy42NzU4IDExLjczMzYgMjYuNTU3OUMxMy40ODMzIDI1LjQ0MDEgMTUuNTgxNCAyMi4yNDQ0IDE2LjQxMTcgMjAuNzg2M0MxOC45NDMxIDE3LjA2IDI0LjYxMzUgOS4yNzk0NSAyNy4wNDM3IDcuOTY3MTNDMjcuNDgxMSA3LjYyNjg5IDI4LjExNyA3LjA5NjMyIDI4LjM4MDMgNi44NzM1OEMyOS4yOTE2IDQuODQ4NCAzMi4zOTAxIDEuNDA1NjYgMzcuNDkzNCAzLjgzNTg2QzM3LjkzMDkgMy42OTAwMyAzOS4wMTIzIDMuNjUzNTggMzkuNDk4MyAzLjY1MzU4QzM5LjExMzUgMy45MTY4NiAzOC4zMDc1IDQuNjg2NCAzOC4xNjE3IDUuNjU4NDhDMzcuNzcyOSA4LjMzMTY0IDM2LjI5ODYgOS44OTEwMyAzNS42MSAxMC4zMzY1QzM1LjEyNCAxMy40MzUgMzQuNDU1NyAxNi4xNjkgMzIuOTk3NiAxNy4xNDFMMzQuMzM0MiAxOS41MTA0QzM2LjMzOTEgMjEuNjM2OSA0MC40OTQ3IDI2LjIyOTkgNDEuMDc3NyAyNy41OTA4QzM5LjEzMzggMjYuOTU4OSAzNy44NzgyIDI2LjM1NTQgMzcuNDkzNCAyNi4xMzI3TDQxLjA3NzcgMzEuMDUzOEMzOC45NzE4IDMwLjg5MTggMzQuMjM3IDI5LjUyMjggMzIuMTQ3MSAyNS4zNDI5QzMyLjk3MzMgMjcuNTc4NiAzMy43ODc0IDMwLjM2NTIgMzQuMDkxMiAzMS40NzlDMzIuOTU3MSAzMC41NDc1IDMwLjUxODggMjcuODQ1OSAyOS44Mzg0IDI0LjQ5MjNDMzAuMDMyOCAyNy43NDg3IDMwLjAwMDQgMzAuMDYxNCAyOS45NTk5IDMwLjgxMDdDMjkuNDEzMSAzMC4zMDQ1IDI4LjE0OTQgMjguNzMyOSAyNy40Njg5IDI2LjQ5NzJWMzAuMjY0QzI2LjY1MjkgMjkuMTI5NCAyNS4wMTEyIDI2LjM3NSAyNC44NjI5IDI0LjI5NjZDMjQuOTk5OCAyNi42NTI0IDI0LjkxNjQgMjcuNzU2NyAyNC44NTY1IDI4LjAxNkwyMS43NTgxIDI1LjA5OTlDMjAuOTI3NyAyNS41NDU0IDE4LjY5NjEgMjYuNTU3OSAxNi40MTE3IDI3LjA0NEMxNC44NTY0IDI4LjM1NjMgMTIuOTY4OSAzMS42NDExIDEyLjIxOTYgMzMuMTE5NFYzMS4yMzZMMTAuMTU0IDMzLjMwMTdMMTAuODgzIDMxLjExNDVMOS41NDY0NCAzMi4yNjg5QzkuMjQyNjUgMzIuNDUxMSA4LjUzNzkgMzIuODE1NiA4LjE0OTEgMzIuODE1NkM4LjI5NDg5IDMyLjQ3NTQgOC41NzQzOSAzMi4xMDY4IDguNjk1OSAzMS45NjUxTDYuOTM0MDEgMzIuNjMzNEM3LjEzNjUxIDMyLjA0NjEgNy43NzI0MiAzMC43NSA4LjY5NTkgMzAuMjY0QzcuNDMyMTkgMzAuNzUgNi45MTM3OCAzMC44NzE1IDYuODEyNSAzMC44NzE1WiJmaWxsPXdoaXRlIC8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGdyYWRpZW50VW5pdHM9dXNlclNwYWNlT25Vc2UgaWQ9cGFpbnQwX2xpbmVhcl84MjhfOTUwNiB4MT0yMy44NjEyIHgyPTIzLjg2MTIgeTE9NDEuMjUxNiB5Mj0tNC40MTQyOD48c3RvcCBzdG9wLWNvbG9yPSMwMUQ2RTYgLz48c3RvcCBzdG9wLWNvbG9yPSMwMTgyRTcgb2Zmc2V0PTEgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz48cCBjbGFzcz1sb2FkaW5nLXRleHQ+TG9hZGluZzxzcGFuPi48L3NwYW4+PHNwYW4+Ljwvc3Bhbj48c3Bhbj4uPC9zcGFuPjwvZGl2Pg==""",
+                    minimumWidth: 900,
+                    minimumHeight: 550,
+                    preferredWidth: 1300,
+                    preferredHeight: 950,
+                    title: "Grayjay",
+                    iconPath: Path.GetFullPath("grayjay.png"),
+                    appId: "com.futo.grayjay.desktop"
+                );
+                await window.SetDevelopmentToolsEnabledAsync(true);
+                Logger.i(nameof(Program), $"Time to window show {sw.ElapsedMilliseconds}ms");
+                Logger.i(nameof(Program), $"Main: Starting window finished ({startWindowWatch.ElapsedMilliseconds}ms)");
+            }
+
             Stopwatch startupTime = Stopwatch.StartNew();
             int proxyParameter = Array.IndexOf(args, "-proxy");
             string? proxyUrl = null;
@@ -349,22 +384,6 @@ namespace Grayjay.Desktop
             //StatePlatform.EnableClient(youtube.Config.ID).Wait();
             //Logger.i(nameof(Program), $"Main: EnableClient finished ({watch.ElapsedMilliseconds}ms)");
 
-
-            watch.Restart();
-            var extraArgs = ReconstructArgs(args);
-            Logger.i(nameof(Program), "Extra args: " + extraArgs);
-
-            Logger.i(nameof(Program), "Main: Starting DotCefProcess");
-            using var cef = !isServer ? new DotCefProcess() : null;
-            if (cef != null)
-            {
-                if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
-                    cef.Start("--disable-web-security --use-alloy-style --use-native " + extraArgs);
-                else
-                    cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + extraArgs);
-            }
-            Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({watch.ElapsedMilliseconds}ms)");
-
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             GrayjayServer server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef) : null), 
                 isHeadless, 
@@ -383,26 +402,7 @@ namespace Grayjay.Desktop
             });
 
             watch.Restart();
-            Logger.i(nameof(Program), "Main: Starting window.");
-            //TODO: Device scale
-            //double scale = 1.5;
-            DotCefWindow window = null;
-            if (cef != null && !isHeadless && !isServer)
-            {
-                window = await cef.CreateWindowAsync(
-                    url: "about:blank", 
-                    minimumWidth: 900, 
-                    minimumHeight: 550,
-                    preferredWidth: 1300,
-                    preferredHeight: 950,
-                    title: "Grayjay", 
-                    iconPath: Path.GetFullPath("grayjay.png"), 
-                    appId: "com.futo.grayjay.desktop"
-                );
-                await window.SetDevelopmentToolsEnabledAsync(true);
-                Logger.i(nameof(Program), $"Main: Starting window finished ({watch.ElapsedMilliseconds}ms)");
-            }
-            watch.Restart();
+
             Logger.i(nameof(Program), "Main: Waiting for ASP to start.");
             server.StartedResetEvent.Wait();
             Logger.i(nameof(Program), $"Main: Waiting for ASP to start finished ({watch.ElapsedMilliseconds}ms)");
