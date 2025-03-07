@@ -600,7 +600,8 @@ namespace Grayjay.Desktop.POC.Port.States
         //Manage clients
 
         private static long _clientsLockCount = 0;
-        private static T ClientsLock<T>(Func<T> act, bool log = false)
+        private static string _clientsLockCaller = "";
+        private static T ClientsLock<T>(Func<T> act, bool log = true)
         {
             T result = default(T);
             ClientsLock(() => result = act(), log, 2);
@@ -613,8 +614,10 @@ namespace Grayjay.Desktop.POC.Port.States
             if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
             lock (_clientsLock)
             {
+                _clientsLockCaller = name;
                 if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
                 act();
+                _clientsLockCaller = "";
             }
             if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
         }

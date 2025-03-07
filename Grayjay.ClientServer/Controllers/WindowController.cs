@@ -1,5 +1,6 @@
 ﻿using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.ConstrainedExecution;
@@ -31,6 +32,20 @@ namespace Grayjay.ClientServer.Controllers
                 state.Ready = true;
                 StateWindow.StateReadyChanged(state, true);
             }
+        }
+
+
+        [HttpGet]
+        public async Task<bool> Delay(int ms)
+        {
+            await Task.Delay(ms);
+            return true;
+        }
+
+        [HttpGet]
+        public string Echo(string str)
+        {
+            return str;
         }
     }
 }

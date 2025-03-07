@@ -162,6 +162,16 @@ namespace Grayjay.ClientServer.States
 
             Logger.i(nameof(StateApp), "Startup: Initializing Download Cycle");
             StateDownloads.StartDownloadCycle();
+
+            if(false) //To verify if async threads are every blocked
+                new Thread(() =>
+                {
+                    while(Connection != null)
+                    {
+                        Task.Run(() => Console.WriteLine("Async Heartbeat"));
+                        Thread.Sleep(1000);
+                    }
+                }).Start();
         }
 
         public static void Shutdown()
