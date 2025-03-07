@@ -60,11 +60,8 @@ namespace Grayjay.ClientServer
                 .AddExceptionHandler<ScriptExceptionHandler>()
                 .AddLogging((logBuilder) =>
                 {
-                    if(!ShowAspLogs)
-                        logBuilder.AddFilter((provider, category, logLevel) =>
-                        {
-                            return !provider.StartsWith("Microsoft.") || logLevel == Microsoft.Extensions.Logging.LogLevel.Error;
-                        });
+                    logBuilder.ClearProviders();
+                    logBuilder.AddProvider(new GrayjayLoggerProvider());
                 })
                 .AddControllers()
                 /*

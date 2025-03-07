@@ -1,32 +1,53 @@
-.containerLoader {
-  height: 100%;
-  width: 100%;
-  position: relative;
-
-  scrollbar-width: 8px;
-  scrollbar-color: #555 #333;
-}
-
-/* HTML: <div class="loader"></div> */
 .loader {
-  width: 80px;
-  aspect-ratio: 1;
-  border: 10px solid #0000;
-  box-sizing: border-box;
-  background:
-    radial-gradient(farthest-side, #fff 98%, #0000) 0 0/20px 20px,
-    radial-gradient(farthest-side, #fff 98%, #0000) 100% 0/20px 20px,
-    radial-gradient(farthest-side, #fff 98%, #0000) 100% 100%/20px 20px,
-    radial-gradient(farthest-side, #fff 98%, #0000) 0 100%/20px 20px,
-    linear-gradient(#fff 0 0) 50%/40px 40px,
-    #000;
-  background-repeat: no-repeat;
-  filter: blur(4px) contrast(10);
-  animation: l12 0.8s infinite;
+  --T: calc(var(--size) / 10);
+  width: var(--size);
+  height: var(--size);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes l12 {
-  100% {
-    background-position: 100% 0, 100% 100%, 0 100%, 0 0, center
+.loader:before {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  width: 100%;
+  padding-bottom: 100%;
+  box-shadow: inset 0 0 0 0 #fff;
+  animation: pulseInOut 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 1rem rgba(255, 255, 255, 0.75));
+}
+
+.loader:after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  width: calc(100% - 2 * var(--T));
+  padding-bottom: calc(100% - 2 * var(--T));
+  box-shadow: 0 0 0 0 #fff;
+  animation: pulseOutIn 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 1rem rgba(255, 255, 255, 0.75));
+}
+
+@keyframes pulseInOut {
+  0%, 100% {
+    box-shadow: inset 0 0 0 0 #fff;
+    opacity: 0;
+  }
+  50% {
+    box-shadow: inset 0 0 0 var(--T) #fff;
+    opacity: 1;
+  }
+}
+
+@keyframes pulseOutIn {
+  0%, 100% {
+    box-shadow: 0 0 0 0 #fff;
+    opacity: 0;
+  }
+  50% {
+    box-shadow: 0 0 0 var(--T) #fff;
+    opacity: 1;
   }
 }

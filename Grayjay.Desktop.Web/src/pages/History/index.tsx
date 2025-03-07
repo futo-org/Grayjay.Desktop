@@ -1,4 +1,4 @@
-import { createResource, type Component, createSignal, onMount, createMemo, createEffect, untrack, batch, Match, Switch } from 'solid-js';
+import { createResource, type Component, createSignal, onMount, createMemo, createEffect, untrack, batch, Match, Switch, Show } from 'solid-js';
 import { useVideo } from '../../contexts/VideoProvider';
 import LoaderContainer from '../../components/basics/loaders/LoaderContainer';
 import { HistoryBackend } from '../../backend/HistoryBackend';
@@ -26,16 +26,16 @@ import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
 import UIOverlay from '../../state/UIOverlay';
 import { Portal } from 'solid-js/web';
 import { useNavigate } from '@solidjs/router';
-import { update } from 'jdenticon';
 import { Pager } from '../../backend/models/pagers/Pager';
+import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
 
 const HistoryPage: Component = () => {
-  const navigate = useNavigate();
   const video = useVideo();
 
   const [query$, setQuery] = createSignal<string>();
   const [historyPager$, setHistoryPager] = createSignal<Pager<IHistoryVideo>>();
 
+  let initialLoadComplete = false;
   let isLoading = false;
   const updateHistoryPager = async (query?: string) => {
     if (isLoading) {
@@ -47,12 +47,15 @@ const HistoryPage: Component = () => {
     try {
       console.log("Fetching history", {query});
       if (query && query.length > 0) {
-        setHistoryPager(await HistoryBackend.historySearchPager(query));
+        const pager = await HistoryBackend.historySearchPager(query);
+        setHistoryPager(pager);
       } else {
-        setHistoryPager(await HistoryBackend.historyPager());
+        const pager = await HistoryBackend.historyPager();
+        setHistoryPager(pager);
       }
     } finally {
       isLoading = false;
+      initialLoadComplete = true;
     }
   };
 
@@ -172,134 +175,146 @@ const HistoryPage: Component = () => {
   let refMoreButton: HTMLDivElement | undefined;
   return (
     <>
-      <LoaderContainer isLoading={!historyPager$()} loadingText={"Loading History"}>
-        <ScrollContainer ref={scrollContainerRef}>
-          <div class={styles.container}>
-            <NavigationBar isRoot={true} />
-            <div style="display: flex; flex-direction: row; width: 100%; align-items: center; margin-top: 40px; margin-bottom: 40px;">
-              <div class={styles.title}>Watch History</div>
-              <div style="flex-grow: 1;"></div>
-              <InputText 
-                placeholder='Search through history'
-                small={true}
+      <ScrollContainer ref={scrollContainerRef}>
+        <div class={styles.container}>
+          <NavigationBar isRoot={true} />
+          <div style="display: flex; flex-direction: row; width: 100%; align-items: center; margin-top: 40px; margin-bottom: 40px;">
+            <div class={styles.title}>Watch History</div>
+            <div style="flex-grow: 1;"></div>
+            <InputText 
+              placeholder='Search through history'
+              small={true}
+              style={{
+                "width": "300px",
+              }} inputContainerStyle={{
+                "background-color": "#212121"
+              }}
+              onTextChanged={(newVal) => setQuery(newVal)}
+              icon={ic_search}
+              showClearButton={true} />
+
+              <CustomButton 
+                icon={ic_trash}
+                text='Clear history'
                 style={{
-                  "width": "300px",
-                }} inputContainerStyle={{
-                  "background-color": "#212121"
+                  "margin-left": "16px",
+                  "margin-right": "32px",
+                  "border": "1px solid #f621215c",
                 }}
-                onTextChanged={(newVal) => setQuery(newVal)}
-                icon={ic_search}
-                showClearButton={true} />
+                onClick={(e) => {
+                  contentAnchor.setElement(e.target as HTMLElement);
+                  batch(() => {
+                    setSettingsContent(undefined);
+                    setShow(true);
+                  });
+                }} />
+          </div>
+          <Switch>
+            <Match when={!historyPager$()?.data?.length && initialLoadComplete && !isLoading}>
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%">
+                <img src={no_videos_in_history} style="width: 307px; margin-top: 150px" />
+              </div>
+            </Match>
+            <Match when={!historyPager$()?.data?.length && (!initialLoadComplete || isLoading)}>
+              <VirtualList 
+                items={new Array(30)}
+                outerContainerRef={scrollContainerRef}
+                itemHeight={110}
+                builder={(index, item) => {
+                  return (
+                    <div class={styles.itemContainer}>
+                      <SkeletonDiv />
+                    </div>
+                  );
+                }
+              } />
+            </Match>
+            <Match when={historyPager$()?.data?.length}>
+              <VirtualList 
+                items={historyPager$()?.data}
+                addedItems={historyPager$()?.addedFilteredItemsEvent}
+                modifiedItems={historyPager$()?.modifiedFilteredItemsEvent}
+                removedItems={historyPager$()?.removedFilteredItemsEvent}
+                outerContainerRef={scrollContainerRef}
+                onEnd={onScrollEnd}
+                itemHeight={110}
+                builder={(index, item) => {
+                  const historyVideo = createMemo(() => item() as IHistoryVideo | undefined);
+                  const bestThumbnail = createMemo(() => (historyVideo()?.video?.thumbnails?.sources?.length ?? 0 > 0) ? historyVideo()!.video?.thumbnails.sources[Math.max(0, historyVideo()!.video.thumbnails.sources.length - 1)] : null);
 
-                <CustomButton 
-                  icon={ic_trash}
-                  text='Clear history'
-                  style={{
-                    "margin-left": "16px",
-                    "margin-right": "32px",
-                    "border": "1px solid #f621215c",
-                  }}
-                  onClick={(e) => {
-                    contentAnchor.setElement(e.target as HTMLElement);
-                    batch(() => {
-                      setSettingsContent(undefined);
-                      setShow(true);
-                    });
-                  }} />
-            </div>
-            <Switch>
-              <Match when={!historyPager$()?.data?.length}>
-                <div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%">
-                  <img src={no_videos_in_history} style="width: 307px; margin-top: 150px" />
-                </div>
-              </Match>
-              <Match when={historyPager$()?.data?.length}>
-                <VirtualList 
-                  items={historyPager$()?.data}
-                  addedItems={historyPager$()?.addedFilteredItemsEvent}
-                  modifiedItems={historyPager$()?.modifiedFilteredItemsEvent}
-                  removedItems={historyPager$()?.removedFilteredItemsEvent}
-                  outerContainerRef={scrollContainerRef}
-                  onEnd={onScrollEnd}
-                  itemHeight={110}
-                  builder={(index, item) => {
-                    const historyVideo = createMemo(() => item() as IHistoryVideo | undefined);
-                    const bestThumbnail = createMemo(() => (historyVideo()?.video?.thumbnails?.sources?.length ?? 0 > 0) ? historyVideo()!.video?.thumbnails.sources[Math.max(0, historyVideo()!.video.thumbnails.sources.length - 1)] : null);
+                  const metadata = createMemo(() => {
+                    const tokens = [];            
+                    const viewCount = historyVideo()?.video?.viewCount;
+                    if (viewCount) {
+                        tokens.push(toHumanNumber(viewCount) + " views");
+                    }
+            
+                    if (tokens.length < 1) {
+                        return undefined;
+                    }
+            
+                    const date = historyVideo()?.video.dateTime;
+                    if (date) {
+                        tokens.push(toHumanNowDiffStringMinDay(date));
+                    }
+            
+                    return tokens.join(" • ");
+                  });
 
-                    const metadata = createMemo(() => {
-                      const tokens = [];            
-                      const viewCount = historyVideo()?.video?.viewCount;
-                      if (viewCount) {
-                          tokens.push(toHumanNumber(viewCount) + " views");
-                      }
-              
-                      if (tokens.length < 1) {
-                          return undefined;
-                      }
-              
-                      const date = historyVideo()?.video.dateTime;
-                      if (date) {
-                          tokens.push(toHumanNowDiffStringMinDay(date));
-                      }
-              
-                      return tokens.join(" • ");
-                    });
+                  const openVideo = () => {
+                    const hv = historyVideo();
+                    if (hv)
+                      video?.actions.openVideo(hv.video, (hv.position > 10000) ? Duration.fromMillis(hv.position) : Duration.fromMillis(hv.position * 1000));
+                  };
 
-                    const openVideo = () => {
-                      const hv = historyVideo();
-                      if (hv)
-                        video?.actions.openVideo(hv.video, (hv.position > 10000) ? Duration.fromMillis(hv.position) : Duration.fromMillis(hv.position * 1000));
-                    };
+                  const openAuthor = () => {
+                    
+                  };
 
-                    const openAuthor = () => {
-                      
-                    };
-
-                    return (<div class={styles.itemContainer}>
-                      <div style="height: 82px; width: 150px; position: relative; border-radius: 4.374px; overflow: hidden; cursor: pointer; flex-shrink: 0;" onClick={openVideo}>
-                        <img src={bestThumbnail()?.url} style={{"height": "100%", "width": "100%", "object-fit": "cover"}} referrerPolicy='no-referrer' />
-                        <div style={{
-                          "position": "absolute",
-                          "bottom": "0px",
-                          "left": "0px",
-                          "right": "0px",
-                          "background-color": "#019BE7",
-                          "height": "3px",
-                          "width": historyVideo() ? `${(getVideoProgressPercentage(historyVideo()?.position, historyVideo()?.video?.duration))}%` : undefined
-                        }} />
-                      </div>
-                      <div style="display: flex; flex-direction: column; height: 100%; margin-left: 20px; width: 100%;">
-                        <div class={styles.videoTitle} onClick={openVideo}>{historyVideo()?.video.name}</div>
-                        <div style="flex-grow: 1"></div>
-                        <div style="display: flex; flex-direction: row; align-items: center;">
-                          <img src={historyVideo()?.video.author.thumbnail} style={{"height": "26px", "width": "26px", "object-fit": "cover", "border-radius": "50%", "cursor": "pointer"}} onClick={openAuthor} referrerPolicy='no-referrer' />
-                          <div style="display: flex; flex-direction: column; height: 100%; margin-left: 8px; gap: 1px;">
-                            <div class={styles.authorTitle} onClick={openAuthor}>{historyVideo()?.video.author.name}</div>
-                            <div class={styles.authorMetadata} onClick={openAuthor}>{metadata()}</div>
-                          </div>
+                  return (<div class={styles.itemContainer}>
+                    <div style="height: 82px; width: 150px; position: relative; border-radius: 4.374px; overflow: hidden; cursor: pointer; flex-shrink: 0;" onClick={openVideo}>
+                      <img src={bestThumbnail()?.url} style={{"height": "100%", "width": "100%", "object-fit": "cover"}} referrerPolicy='no-referrer' />
+                      <div style={{
+                        "position": "absolute",
+                        "bottom": "0px",
+                        "left": "0px",
+                        "right": "0px",
+                        "background-color": "#019BE7",
+                        "height": "3px",
+                        "width": historyVideo() ? `${(getVideoProgressPercentage(historyVideo()?.position, historyVideo()?.video?.duration))}%` : undefined
+                      }} />
+                    </div>
+                    <div style="display: flex; flex-direction: column; height: 100%; margin-left: 20px; width: 100%;">
+                      <div class={styles.videoTitle} onClick={openVideo}>{historyVideo()?.video.name}</div>
+                      <div style="flex-grow: 1"></div>
+                      <div style="display: flex; flex-direction: row; align-items: center;">
+                        <img src={historyVideo()?.video.author.thumbnail} style={{"height": "26px", "width": "26px", "object-fit": "cover", "border-radius": "50%", "cursor": "pointer"}} onClick={openAuthor} referrerPolicy='no-referrer' />
+                        <div style="display: flex; flex-direction: column; height: 100%; margin-left: 8px; gap: 1px;">
+                          <div class={styles.authorTitle} onClick={openAuthor}>{historyVideo()?.video.author.name}</div>
+                          <div class={styles.authorMetadata} onClick={openAuthor}>{metadata()}</div>
                         </div>
                       </div>
-                      <div style="flex-grow: 1"></div>
-                      <IconButton icon={ic_more}
-                        style={{"flex-shrink": 0}}
-                        ref={refMoreButton} 
-                        onClick={(e) => {
-                          contentAnchor.setElement(e.target as HTMLElement);
-                
-                          batch(() => {
-                            setSettingsContent(historyVideo);
-                            setShow(true);
-                          });
-                        }} 
-                      />
-                    </div>);
-                  }
-                } />
-              </Match>
-            </Switch>
-          </div>
-        </ScrollContainer>
-      </LoaderContainer>
+                    </div>
+                    <div style="flex-grow: 1"></div>
+                    <IconButton icon={ic_more}
+                      style={{"flex-shrink": 0}}
+                      ref={refMoreButton} 
+                      onClick={(e) => {
+                        contentAnchor.setElement(e.target as HTMLElement);
+              
+                        batch(() => {
+                          setSettingsContent(historyVideo);
+                          setShow(true);
+                        });
+                      }} 
+                    />
+                  </div>);
+                }
+              } />
+            </Match>
+          </Switch>
+        </div>
+      </ScrollContainer>
       <Portal>
           <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>setShow(false)} anchor={contentAnchor} />
       </Portal>
