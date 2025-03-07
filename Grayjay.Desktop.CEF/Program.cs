@@ -45,6 +45,8 @@ namespace Grayjay.Desktop
 
         private static async Task<bool> WaitForPortFileAndProcess()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             string currentProcessPath = Process.GetCurrentProcess().MainModule!.FileName;
             int waitedSeconds = 0;
 
@@ -60,11 +62,15 @@ namespace Grayjay.Desktop
                 waitedSeconds++;
             }
 
+            Logger.i(nameof(Program), $"WaitForPortFileAndProcess duration {sw.ElapsedMilliseconds}ms");
+
             return false; // Timeout reached without PortFile creation
         }
 
         private static void KillExistingProcessByPath()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             string currentProcessPath = Process.GetCurrentProcess().MainModule!.FileName;
 
             foreach (var process in Process.GetProcesses())
@@ -82,10 +88,14 @@ namespace Grayjay.Desktop
                     // Ignore processes that may throw due to access issues
                 }
             }
+
+            Logger.i(nameof(Program), $"KillExistingProcessByPath duration {sw.ElapsedMilliseconds}ms");
         }
 
         private static async Task<bool> TryOpenWindow()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             try
             {
                 string port = File.ReadAllText(PortFile!);
@@ -96,6 +106,10 @@ namespace Grayjay.Desktop
             catch
             {
                 return false;
+            }
+            finally
+            {
+                Logger.i(nameof(Program), $"TryOpenWindow duration {sw.ElapsedMilliseconds}ms");
             }
         }
 
@@ -182,7 +196,9 @@ namespace Grayjay.Desktop
 
         static async Task EntryPoint(string[] args)
         {
-            if(args.Length > 0 && args[0] == "version")
+            Stopwatch sw = Stopwatch.StartNew();
+
+            if (args.Length > 0 && args[0] == "version")
             {
                 Console.WriteLine(App.Version.ToString());
                 return;
@@ -218,6 +234,9 @@ namespace Grayjay.Desktop
 
             Updater.SetStartupArguments(string.Join(" ", args.Select(x => (x.Contains(" ") ? $"\"{x}\"" : x))));
 
+            Logger.i<Program>($"Initialize {sw.ElapsedMilliseconds}ms");
+            sw.Restart();
+
             PortFile = Path.Combine(Directories.Base, PortFileName);
             Logger.i<Program>($"PortFile path: {PortFile}");
             StartingUpFile = Path.Combine(Directories.Base, StartingUpFileName);
@@ -246,6 +265,8 @@ namespace Grayjay.Desktop
                     KillExistingProcessByPath();
                 }
             }
+
+            Logger.i<Program>($"Check StartingUpFile {sw.ElapsedMilliseconds}ms");
 
             if (File.Exists(PortFile))
             {

@@ -8,6 +8,7 @@ using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
 using Grayjay.Engine.Exceptions;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Logger = Grayjay.Desktop.POC.Logger;
@@ -80,6 +81,8 @@ namespace Grayjay.ClientServer.States
 
         public static async Task Startup()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
 
@@ -162,6 +165,8 @@ namespace Grayjay.ClientServer.States
 
             Logger.i(nameof(StateApp), "Startup: Initializing Download Cycle");
             StateDownloads.StartDownloadCycle();
+
+            Logger.i(nameof(StateApp), $"Startup duration {sw.ElapsedMilliseconds}ms");
         }
 
         public static void Shutdown()

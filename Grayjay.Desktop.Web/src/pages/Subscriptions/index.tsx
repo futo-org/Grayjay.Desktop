@@ -67,7 +67,9 @@ const SubscriptionsPage: Component = () => {
   }, "subsbar");
 
   let doUpdate = false;
-  const [subs$, subsResource] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
+  const [subs$, subsResource] = createResourceDefault(async () => [], async () => {
+    return await SubscriptionsBackend.subscriptions();
+  });
   const [subGroups$, subGroupsResource] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptionGroups());
   
   const [subCachePager$, subPagerCacheResource] = createResourceDefault(async () => {
@@ -378,7 +380,7 @@ const SubscriptionsPage: Component = () => {
           </div>
         </Show>
       </Show>
-      <Show when={!subs$() || subs$()!.length == 0}>
+      <Show when={(!subs$() || subs$()!.length == 0) && !subs$.loading}>
 
         <EmptyContentView 
           icon={iconSubscriptions}
@@ -397,6 +399,9 @@ const SubscriptionsPage: Component = () => {
               action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
             }
           ]} />
+      </Show>
+      <Show when={(!subs$() || subs$()!.length == 0) && subs$.loading}>
+        <LoaderGrid />
       </Show>
     </div>
   );

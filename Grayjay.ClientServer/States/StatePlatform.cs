@@ -606,7 +606,7 @@ namespace Grayjay.Desktop.POC.Port.States
             ClientsLock(() => result = act(), log, 2);
             return result;
         }
-        private static void ClientsLock(Action act, bool log = true, int level = 1)
+        private static void ClientsLock(Action act, bool log = false, int level = 1)
         {
             long id = (log) ? Interlocked.Increment(ref _clientsLockCount) : 0;
             string name = (log) ? (new System.Diagnostics.StackTrace()).GetFrame(level).GetMethod().Name : null;

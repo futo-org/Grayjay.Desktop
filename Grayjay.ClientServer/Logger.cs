@@ -18,7 +18,7 @@ namespace Grayjay.Desktop.POC
         public class Config
         {
             public string? LogFilePath { get; set; }
-            public LogLevel FileLogLevel { get; set; } = LogLevel.Verbose;
+            public LogLevel FileLogLevel { get; set; } = LogLevel.Info;
 #if DEBUG
             public LogLevel ConsoleLogLevel { get; set; } = LogLevel.Info;
             public LogLevel DebugLogLevel { get; set; } = LogLevel.Info;
@@ -197,14 +197,12 @@ namespace Grayjay.Desktop.POC
         private static Log.Config _staticConfig = new Log.Config()
         {
             LogFilePath = Path.Combine(Directories.Base, "log.txt"),
-#if DEBUG
-            FileLogLevel = LogLevel.Debug,
-            ConsoleLogLevel = LogLevel.Verbose,
-            DebugLogLevel = LogLevel.Verbose,
-#else
             FileLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
             ConsoleLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
-            DebugLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel
+#if DEBUG
+            DebugLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#else
+            DebugLogLevel = LogLevel.None
 #endif
         };
 

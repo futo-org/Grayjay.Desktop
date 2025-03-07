@@ -1,29 +1,35 @@
-.container {
-    overflow-y: auto;
-    height: 100%;
-    position: relative;
-    scrollbar-width: 8px;
-    scrollbar-color: #555 #333;
+.skeletonBox {
+  display: inline-block;
+  width: 100%; /* Adjust to your container’s width */
+  height: 100%; /* Adjust to your container’s height */
+  position: relative;
+  overflow: hidden;
+  background: #1b1b1b; /* Solid base color */
 }
 
-.skeletonBox {
-    display: inline-block;
-    height: 1em;
-    position: relative;
-    overflow: hidden;
-    height: 100%;
-    width: 100%;
-  
-    background-image: linear-gradient(90deg, #2d2d2d 0px, rgb(60, 60, 60) 50px, #2d2d2d 100px);
-    background-size: 900px;
-    animation: animate 3s infinite linear;
+.skeletonBox::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -400px; /* Fully hidden during pause */
+  width: 400px; /* Wider for a smoother sweep */
+  height: 100%;
+  background: linear-gradient(
+      90deg,
+      transparent 0%,          /* Invisible start */
+      rgba(255,255,255,0.05) 30%, /* Gradual increase */
+      rgba(255,255,255,0.2) 50%,  /* Softer peak */
+      rgba(255,255,255,0.05) 70%, /* Gradual decrease */
+      transparent 100%          /* Invisible end */
+  );
+  animation: shimmer 2.2s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+  0%, 20% { /* Pause for 0.44 seconds */
+      left: -400px; /* Hidden off-screen */
   }
-  
-@keyframes animate {
-    0% {
-      background-position: -100px;
-    }
-    90%, 100% {
-      background-position: 800px;
-    }
+  100% { /* Moves across in 1.76 seconds */
+      left: 100%;
   }
+}
