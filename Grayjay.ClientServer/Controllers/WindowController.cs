@@ -14,7 +14,16 @@ namespace Grayjay.ClientServer.Controllers
         public async Task StartWindow()
         {
             if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
-                await GrayjayServer.Instance.WindowProvider.CreateWindow("Grayjay (Sub)", 1280, 720, $"{GrayjayServer.Instance.BaseUrl}/web/index.html");
+            {
+                await GrayjayServer.Instance.WindowProvider.CreateWindowAsync(
+                    url: $"{GrayjayServer.Instance.BaseUrl}/web/index.html", 
+                    title: "Grayjay (Sub)",
+                    minimumWidth: 900,
+                    minimumHeight: 550,
+                    preferredWidth: 1300,
+                    preferredHeight: 950
+                );
+            }
             else if (!GrayjayServer.Instance.ServerMode)
                 OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
         }
