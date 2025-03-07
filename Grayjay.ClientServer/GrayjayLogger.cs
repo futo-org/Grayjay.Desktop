@@ -20,25 +20,25 @@ public class GrayjayLogger : ILogger
         switch (logLevel)
         {
             case LogLevel.Trace:
-                //Logger.t(_category, message, exception);
+                Logger.Debug(_category, message, exception); // Trace -> Debug
                 break;
             case LogLevel.Debug:
-                Logger.Debug(_category, message, exception);
+                Logger.Debug(_category, message, exception); // Debug -> Debug
                 break;
             case LogLevel.Information:
-                Logger.Info(_category, message, exception);
+                Logger.Verbose(_category, message, exception); // Information -> Verbose
                 break;
             case LogLevel.Warning:
-                Logger.Warning(_category, message, exception);
+                Logger.Warning(_category, message, exception); // Warning -> Warning
                 break;
             case LogLevel.Error:
-                Logger.Error(_category, message, exception);
+                Logger.Error(_category, message, exception); // Error -> Error
                 break;
             case LogLevel.Critical:
-                Logger.Error(_category, message, exception);
+                Logger.Error(_category, message, exception); // Critical -> Error
                 break;
             default:
-                Logger.Info(_category, message, exception);
+                Logger.Verbose(_category, message, exception); // Fallback to Info
                 break;
         }
     }
@@ -53,17 +53,17 @@ public class GrayjayLogger : ILogger
             case 0: // None
                 return false;
             case 1: // Error
-                return logLevelValue >= (int)LogLevel.Error;
+                return logLevelValue >= (int)LogLevel.Error; // Error (4), Critical (5)
             case 2: // Warning
-                return logLevelValue >= (int)LogLevel.Warning;
+                return logLevelValue >= (int)LogLevel.Warning; // Warning (3), Error (4), Critical (5)
             case 3: // Information
-                return logLevelValue >= (int)LogLevel.Information;
+                return logLevelValue >= (int)LogLevel.Information; // Information (2), Warning (3), Error (4), Critical (5)
             case 4: // Verbose
-                return logLevelValue >= (int)LogLevel.Debug;
+                return logLevelValue >= (int)LogLevel.Debug; // Debug (1), Information (2), Warning (3), Error (4), Critical (5)
             case 5: // Debug
-                return logLevelValue >= (int)LogLevel.Trace;
+                return logLevelValue >= (int)LogLevel.Trace; // Trace (0), Debug (1), Information (2), Warning (3), Error (4), Critical (5)
             default:
-                return false;
+                return false; // Unknown setting, disable logging
         }
     }
 
