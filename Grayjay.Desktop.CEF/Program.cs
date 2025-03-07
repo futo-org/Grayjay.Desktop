@@ -7,6 +7,7 @@ using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -24,20 +25,26 @@ namespace Grayjay.Desktop
         private const int StartupTimeoutSeconds = 5;
         private const int NewWindowTimeoutSeconds = 5;
 
-        private static bool IsProcessRunningByPath(string path)
+        private static bool IsProcessRunningByPath(string path, out Process? matchingProcess)
         {
-            foreach (var process in Process.GetProcesses())
+            matchingProcess = null;
+            int currentProcessId = Process.GetCurrentProcess().Id;
+            string processName = Path.GetFileNameWithoutExtension(path);
+
+            foreach (var process in Process.GetProcessesByName(processName))
             {
                 try
                 {
-                    if (process.MainModule?.FileName == path && process.Id != Process.GetCurrentProcess().Id)
+                    if (process.Id != currentProcessId &&
+                        process.MainModule?.FileName == path)
                     {
+                        matchingProcess = process;
                         return true;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore processes that may throw due to access issues
+                    Logger.Verbose(nameof(Program), $"Error checking process ID={process.Id}", ex);
                 }
             }
             return false;
@@ -46,7 +53,6 @@ namespace Grayjay.Desktop
         private static async Task<bool> WaitForPortFileAndProcess()
         {
             Stopwatch sw = Stopwatch.StartNew();
-
             string currentProcessPath = Process.GetCurrentProcess().MainModule!.FileName;
             int waitedSeconds = 0;
 
@@ -55,7 +61,7 @@ namespace Grayjay.Desktop
                 if (File.Exists(PortFile!))
                     return true;
 
-                if (!IsProcessRunningByPath(currentProcessPath))
+                if (!IsProcessRunningByPath(currentProcessPath, out _))
                     return false;
 
                 await Task.Delay(1000);
@@ -63,24 +69,24 @@ namespace Grayjay.Desktop
             }
 
             Logger.i(nameof(Program), $"WaitForPortFileAndProcess duration {sw.ElapsedMilliseconds}ms");
-
-            return false; // Timeout reached without PortFile creation
+            return false;
         }
 
         private static void KillExistingProcessByPath()
         {
             Stopwatch sw = Stopwatch.StartNew();
-
             string currentProcessPath = Process.GetCurrentProcess().MainModule!.FileName;
+            int currentProcessId = Process.GetCurrentProcess().Id;
 
-            foreach (var process in Process.GetProcesses())
+            string processName = Path.GetFileNameWithoutExtension(currentProcessPath);
+            foreach (var process in Process.GetProcessesByName(processName))
             {
                 try
                 {
-                    if (process.Id != Process.GetCurrentProcess().Id && process.MainModule?.FileName == currentProcessPath)
+                    if (process.Id != currentProcessId && process.MainModule?.FileName == currentProcessPath)
                     {
                         process.Kill();
-                        process.WaitForExit();
+                        process.WaitForExit(1000);
                     }
                 }
                 catch
@@ -98,13 +104,38 @@ namespace Grayjay.Desktop
 
             try
             {
+                string currentProcessPath = Process.GetCurrentProcess().MainModule!.FileName;
+                if (!IsProcessRunningByPath(currentProcessPath, out _))
+                {
+                    Logger.i(nameof(Program), "Process not running, skipping HTTP request");
+                    return false;
+                }
+                Logger.i(nameof(Program), "Process running, proceeding with HTTP request");
+
+                if (!File.Exists(PortFile!))
+                {
+                    Logger.i(nameof(Program), "PortFile missing, skipping HTTP request");
+                    return false;
+                }
+
                 string port = File.ReadAllText(PortFile!);
-                using HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(NewWindowTimeoutSeconds) };
-                var response = await client.GetAsync($"http://127.0.0.1:{port}/Window/StartWindow");
+                if (string.IsNullOrWhiteSpace(port))
+                {
+                    Logger.i(nameof(Program), "PortFile empty or invalid, skipping HTTP request");
+                    return false;
+                }
+
+                var url = $"http://127.0.0.1:{port}/Window/StartWindow";
+                Logger.i(nameof(Program), $"TryOpenWindow: " + url);
+
+                using HttpClient client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
+                var response = await client.GetAsync(url);
+
                 return response.IsSuccessStatusCode;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.i(nameof(Program), $"TryOpenWindow failed", ex);
                 return false;
             }
             finally

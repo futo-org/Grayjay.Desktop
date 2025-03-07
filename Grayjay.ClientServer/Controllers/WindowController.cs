@@ -11,15 +11,12 @@ namespace Grayjay.ClientServer.Controllers
     public class WindowController : ControllerBase
     {
         [HttpGet]
-        public void StartWindow()
+        public async Task StartWindow()
         {
-            new Thread(async () =>
-            {
-                if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
-                    await GrayjayServer.Instance.WindowProvider.CreateWindow("Grayjay (Sub)", 1280, 720, $"{GrayjayServer.Instance.BaseUrl}/web/index.html");
-                else if(!GrayjayServer.Instance.ServerMode)
-                    OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
-            }).Start();
+            if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
+                await GrayjayServer.Instance.WindowProvider.CreateWindow("Grayjay (Sub)", 1280, 720, $"{GrayjayServer.Instance.BaseUrl}/web/index.html");
+            else if (!GrayjayServer.Instance.ServerMode)
+                OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
         }
 
         [HttpGet]
