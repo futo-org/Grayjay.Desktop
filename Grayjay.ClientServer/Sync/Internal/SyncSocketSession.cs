@@ -4,6 +4,8 @@ using Noise;
 
 namespace Grayjay.ClientServer.Sync.Internal;
 
+using LogLevel = Desktop.POC.LogLevel;
+using Logger = Desktop.POC.Logger;
 
 public class SyncSocketSession : IDisposable
 {
@@ -46,6 +48,7 @@ public class SyncSocketSession : IDisposable
     public string LocalPublicKey => _localPublicKey;
     private readonly Action<SyncSocketSession, Opcode, byte, byte[]> _onData;
     public string RemoteAddress { get; }
+    public int RemoteVersion { get; private set; } = -1;
     public IAuthorizable? Authorizable { get; set; }
 
     public SyncSocketSession(string remoteAddress, KeyPair localKeyPair, Stream inputStream, Stream outputStream,
@@ -75,7 +78,7 @@ public class SyncSocketSession : IDisposable
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to run as initiator: {e}");
+                Logger.Error<SyncSocketSession>($"Failed to run as initiator: {e}");
             }
             finally
             {
@@ -98,7 +101,7 @@ public class SyncSocketSession : IDisposable
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to run as responder: {e}");
+                Logger.Error<SyncSocketSession>($"Failed to run as responder: {e}");
             }
             finally
             {
@@ -118,7 +121,7 @@ public class SyncSocketSession : IDisposable
                 _inputStream.Read(messageSizeBytes, 0, 4);
                 int messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
 
-                //Console.WriteLine($"Read message size {messageSize}");
+                //Logger.Info<SyncSocketSession>($"Read message size {messageSize}");
 
                 if (messageSize > MAXIMUM_PACKET_SIZE_ENCRYPTED)
                     throw new Exception($"Message size ({messageSize}) exceeds maximum allowed size ({MAXIMUM_PACKET_SIZE_ENCRYPTED})");
@@ -132,16 +135,16 @@ public class SyncSocketSession : IDisposable
                     bytesRead += read;
                 }
 
-                //Console.WriteLine($"Read message bytes {bytesRead}");
+                //Logger.Info<SyncSocketSession>($"Read message bytes {bytesRead}");
 
                 int plen = _transport!.ReadMessage(_buffer.AsSpan().Slice(0, messageSize), _bufferDecrypted);
-                //Console.WriteLine($"Decrypted message bytes {plen}");
+                //Logger.Info<SyncSocketSession>($"Decrypted message bytes {plen}");
 
                 HandleData(_bufferDecrypted, plen);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception while receiving data: {e}");
+                Logger.Error<SyncSocketSession>($"Exception while receiving data: {e}");
                 break;
             }
         }
@@ -155,7 +158,7 @@ public class SyncSocketSession : IDisposable
         _outputStream.Close();
         _transport?.Dispose();
         _thread = null;
-        Console.WriteLine("Session closed");
+        Logger.Info<SyncSocketSession>("Session closed");
     }
 
     private void HandshakeAsInitiator(string remotePublicKey)
@@ -169,14 +172,14 @@ public class SyncSocketSession : IDisposable
             var (bytesWritten, _, _) = handshakeState.WriteMessage(null, message);
             _outputStream.Write(BitConverter.GetBytes(bytesWritten));
             _outputStream.Write(message, 0, bytesWritten);
-            Console.WriteLine($"HandshakeAsInitiator: Wrote message size {bytesWritten}");
+            Logger.Info<SyncSocketSession>($"HandshakeAsInitiator: Wrote message size {bytesWritten}");
 
             var bytesRead = _inputStream.Read(message, 0, 4);
             if (bytesRead != 4)
                 throw new Exception("Expected exactly 4 bytes (message size)");
 
             var messageSize = BitConverter.ToInt32(message);
-            Console.WriteLine($"HandshakeAsInitiator: Read message size {messageSize}");
+            Logger.Info<SyncSocketSession>($"HandshakeAsInitiator: Read message size {messageSize}");
             bytesRead = 0;
             while (bytesRead < messageSize)
             {
@@ -206,7 +209,7 @@ public class SyncSocketSession : IDisposable
                 throw new Exception($"Expected exactly 4 bytes (message size), read {bytesRead}");
 
             var messageSize = BitConverter.ToInt32(message);
-            Console.WriteLine($"HandshakeAsResponder: Read message size {messageSize}");
+            Logger.Info<SyncSocketSession>($"HandshakeAsResponder: Read message size {messageSize}");
 
             bytesRead = 0;
             while (bytesRead < messageSize)
@@ -222,7 +225,7 @@ public class SyncSocketSession : IDisposable
             var (bytesWritten, _, transport) = handshakeState.WriteMessage(null, message);
             _outputStream.Write(BitConverter.GetBytes(bytesWritten));
             _outputStream.Write(message, 0, bytesWritten);
-            Console.WriteLine($"HandshakeAsResponder: Wrote message size {bytesWritten}");
+            Logger.Info<SyncSocketSession>($"HandshakeAsResponder: Wrote message size {bytesWritten}");
 
             _transport = transport;
 
@@ -232,15 +235,16 @@ public class SyncSocketSession : IDisposable
 
     private void PerformVersionCheck()
     {
-        const int CURRENT_VERSION = 2;
+        const int CURRENT_VERSION = 3;
+        const int MINIMUM_VERSION = 2;
         _outputStream.Write(BitConverter.GetBytes(CURRENT_VERSION), 0, 4);
         byte[] versionBytes = new byte[4];
         int bytesRead = _inputStream.Read(versionBytes, 0, 4);
         if (bytesRead != 4)
             throw new Exception($"Expected 4 bytes to be read, read {bytesRead}");
-        int version = BitConverter.ToInt32(versionBytes, 0);
-        Logger.i(nameof(SyncSocketSession), $"PerformVersionCheck {version}");
-        if (version != CURRENT_VERSION)
+        RemoteVersion = BitConverter.ToInt32(versionBytes, 0);
+        Logger.i(nameof(SyncSocketSession), $"PerformVersionCheck {RemoteVersion}");
+        if (RemoteVersion < MINIMUM_VERSION)
             throw new Exception("Invalid version");
     }
 
@@ -313,14 +317,20 @@ public class SyncSocketSession : IDisposable
                 _sendBuffer[5] = (byte)subOpcode;
                 data.CopyTo(_sendBuffer.AsSpan().Slice(HEADER_SIZE));
 
-                //Console.WriteLine($"Encrypted message bytes {data.Length + HEADER_SIZE}");
+                if (Logger.WillLog(LogLevel.Debug))
+                    Logger.Debug<SyncSocketSession>($"Encrypted message bytes {data.Length + HEADER_SIZE}");
 
                 var len = _transport!.WriteMessage(_sendBuffer.AsSpan().Slice(0, data.Length + HEADER_SIZE), _sendBufferEncrypted);
 
                 _outputStream.Write(BitConverter.GetBytes(len), 0, 4);
-                //Console.WriteLine($"Wrote message size {len}");
+
+                if (Logger.WillLog(LogLevel.Debug))
+                    Logger.Debug<SyncSocketSession>($"Wrote message size {len}");
+
                 _outputStream.Write(_sendBufferEncrypted, 0, len);
-                //Console.WriteLine($"Wrote message bytes {len}");
+
+                if (Logger.WillLog(LogLevel.Debug))
+                    Logger.Debug<SyncSocketSession>($"Wrote message bytes {len}");
             }
             finally
             {
@@ -339,13 +349,19 @@ public class SyncSocketSession : IDisposable
             _sendBuffer[4] = (byte)opcode;
             _sendBuffer[5] = (byte)subOpcode;
 
-            //Console.WriteLine($"Encrypted message bytes {HEADER_SIZE}");
+            if (Logger.WillLog(LogLevel.Debug))
+                Logger.Debug<SyncSocketSession>($"Encrypted message bytes {HEADER_SIZE}");
 
             var len = _transport!.WriteMessage(_sendBuffer.AsSpan().Slice(0, HEADER_SIZE), _sendBufferEncrypted);
             await _outputStream.WriteAsync(BitConverter.GetBytes(len), 0, 4, cancellationToken);
-            //Console.WriteLine($"Wrote message size {len}");
+
+            if (Logger.WillLog(LogLevel.Debug))
+                Logger.Debug<SyncSocketSession>($"Wrote message size {len}");
+
             await _outputStream.WriteAsync(_sendBufferEncrypted, 0, len, cancellationToken);
-            //Console.WriteLine($"Wrote message bytes {len}");
+
+            if (Logger.WillLog(LogLevel.Debug))
+                Logger.Debug<SyncSocketSession>($"Wrote message bytes {len}");
         }
         finally
         {
@@ -383,13 +399,13 @@ public class SyncSocketSession : IDisposable
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Failed to send pong: " + e.ToString());
+                        Logger.Error<SyncSocketSession>("Failed to send pong: " + e.ToString(), e);
                     }
                 });
-                //Console.WriteLine("Received PING, sent PONG");
+                Logger.Debug<SyncSocketSession>("Received PONG");
                 return;
             case Opcode.PONG:
-                //Console.WriteLine("Received PONG");
+                Logger.Debug<SyncSocketSession>("Received PONG");
                 return;
             case Opcode.NOTIFY_AUTHORIZED:
             case Opcode.NOTIFY_UNAUTHORIZED:

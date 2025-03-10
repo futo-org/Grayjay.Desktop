@@ -25,6 +25,8 @@ using Microsoft.ClearScript;
 using Newtonsoft.Json;
 using static Grayjay.Engine.Packages.PackageHttp;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]
@@ -253,7 +255,7 @@ namespace Grayjay.ClientServer.Controllers
                     isOk = crbr.IsOk,
                     header = crbr.Headers,
                     url = crbr.Url,
-                    body = crbr.BodyBytes.GetBytes()
+                    body = (crbr.BodyBytes.Size == 0) ? new byte[0] : crbr.BodyBytes.GetBytes()
                 });
             }
             else if (callResult is IEnumerable ci)

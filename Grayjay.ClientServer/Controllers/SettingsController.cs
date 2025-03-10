@@ -9,6 +9,8 @@ using Grayjay.Engine;
 using Grayjay.Engine.Setting;
 using Microsoft.AspNetCore.Mvc;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]

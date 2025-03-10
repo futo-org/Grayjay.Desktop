@@ -325,7 +325,7 @@ const VirtualFlexibleArrayList: Component<VirtualFlexibleArrayListProps> = (prop
             }
 
             if (previousStartIndex === Infinity && previousEndIndex === -Infinity) {
-                const itemCount = range.endIndex - range.startIndex + 1;
+                const itemCount = Math.min(range.endIndex - range.startIndex + 1, props.items?.length ?? 0);
                 if (poolItems.length < itemCount) {
                     console.error("pool size is not big enough to set all at once", {poolItems, poolItemsLength: poolItems.length, range, itemCount});
                     return;

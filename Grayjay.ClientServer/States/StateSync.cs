@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
-using FUTO.MDNS;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Crypto;
 using Grayjay.ClientServer.Dialogs;
@@ -18,12 +17,12 @@ using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
 
 namespace Grayjay.ClientServer.States;
 
-
 public class StateSync : IDisposable
 {
     private readonly StringArrayStore _authorizedDevices = new StringArrayStore("authorizedDevices", Array.Empty<string>()).Load();
     private readonly StringStore _syncKeyPair = new StringStore("syncKeyPair").Load();
     private readonly DictionaryStore<string, string> _lastAddressStorage = new DictionaryStore<string, string>("lastAddressStorage").Load();
+    private readonly DictionaryStore<string, string> _nameStorage = new DictionaryStore<string, string>("rememberedNameStorage").Load();
 
     private readonly DictionaryStore<string, SyncSessionData> _syncSessionData = new DictionaryStore<string, SyncSessionData>("syncSessionData", new Dictionary<string, SyncSessionData>())
         .Load();
@@ -34,7 +33,7 @@ public class StateSync : IDisposable
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly Dictionary<string, SyncSession> _sessions = new Dictionary<string, SyncSession>();
     private readonly Dictionary<string, long> _lastConnectTimes = new Dictionary<string, long>();
-    private readonly ServiceDiscoverer _serviceDiscoverer;
+    private readonly FUTO.MDNS.ServiceDiscoverer _serviceDiscoverer;
     private KeyPair? _keyPair;
     public string? PublicKey { get; private set; }
     public event Action<string>? DeviceRemoved;
@@ -42,7 +41,7 @@ public class StateSync : IDisposable
 
     public StateSync()
     {
-        _serviceDiscoverer = new ServiceDiscoverer(["_gsync._tcp.local"]);
+        _serviceDiscoverer = new FUTO.MDNS.ServiceDiscoverer(["_gsync._tcp.local"]);
         _serviceDiscoverer.OnServicesUpdated += HandleServiceUpdated;
     }
 
@@ -251,7 +250,7 @@ public class StateSync : IDisposable
         }
     }
 
-    private void HandleServiceUpdated(List<DnsService> services)
+    private void HandleServiceUpdated(List<FUTO.MDNS.DnsService> services)
     {
         if (!GrayjaySettings.Instance.Synchronization.ConnectDiscovered)
             return;
@@ -315,6 +314,11 @@ public class StateSync : IDisposable
         DeviceRemoved?.Invoke(remotePublicKey);
     }
 
+    public string? GetCachedName(string publicKey)
+    {
+        return _nameStorage.GetValue(publicKey, null);
+    }
+
     private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder, Action<SyncSession, SyncSocketSession> onAuthorized)
     {
         SyncSession? session = null;
@@ -338,6 +342,7 @@ public class StateSync : IDisposable
                 {
                     if (!_sessions.TryGetValue(remotePublicKey, out session))
                     {
+                        var remoteDeviceName = _nameStorage.GetValue(remotePublicKey, null);
                         session = new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
                         {
                             if (!isNewSession) {
@@ -356,6 +361,11 @@ public class StateSync : IDisposable
                                 }
                             }
 
+                            var rpk = s.RemotePublicKey;
+                            var rdn = sess.RemoteDeviceName;
+                            if (rpk != null && rdn != null)
+                                _nameStorage.SetAndSave(rpk, rdn);
+
                             onAuthorized(sess, s);
                             lock (_authorizedDevices)
                             {
@@ -371,7 +381,7 @@ public class StateSync : IDisposable
                             StateUI.Dialog(new StateUI.DialogDescriptor()
                             {
                                 Text = "Device Unauthorized",
-                                TextDetails = $"Device [{sess.RemotePublicKey}] tried to connect but was unauthorized (key change?), would you like to remove the device?",
+                                TextDetails = $"Device [{sess.DisplayName}] tried to connect but was unauthorized (key change?), would you like to remove the device?",
                                 Actions = new List<StateUI.DialogAction>()
                                 {
                                     new StateUI.DialogAction()
@@ -407,7 +417,7 @@ public class StateSync : IDisposable
                             }
 
                             DeviceRemoved?.Invoke(remotePublicKey);
-                        });
+                        }, remoteDeviceName);
 
                         _sessions[remotePublicKey] = session;
                     }

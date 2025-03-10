@@ -11,9 +11,13 @@ import StateWebsocket from '../../../state/StateWebsocket';
 import { IVideoLocal } from '../../../backend/models/downloads/IVideoLocal';
 import { useNavigate } from '@solidjs/router';
 import { useVideo } from '../../../contexts/VideoProvider';
+import IconButton from '../../buttons/IconButton';
+import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
+import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
 
 interface DownloadedViewProps {
   downloaded?: IVideoLocal
+  onSettings?: (element: HTMLDivElement, content: IVideoLocal) => void;
 }
 
 const DownloadedView: Component<DownloadedViewProps> = (props) => {
@@ -49,6 +53,8 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
     }
   }
 
+  let refMoreButton: HTMLDivElement | undefined;
+
   return (
     <div class={styles.downloadingCard}>
         <div class={styles.downloadThumbnail} onClick={navigate} style={{"background-image": "url(" + getBestThumbnail(props.downloaded?.videoDetails.thumbnails)?.url + ")"}}>
@@ -68,6 +74,11 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
         <div class={styles.meta}>
           {metaString(props.downloaded)}
         </div>
+        <Show when={props.onSettings}>
+          <IconButton icon={more} ref={refMoreButton}
+            onClick={() => props.onSettings?.(refMoreButton!, props.downloaded!)}
+            style={{position: 'absolute', bottom: '10px', right: '10px' }} />
+        </Show>
     </div>
   )
   /*

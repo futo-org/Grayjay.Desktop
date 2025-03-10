@@ -1,16 +1,13 @@
-import { Component, createSignal, onCleanup, onMount, For, JSX, createMemo, Show, Switch, Match } from "solid-js";
+import { Component } from "solid-js";
 import styles from './index.module.css';
 
-export interface LoaderContainerProps {
-    background?: string,
-    style?: JSX.CSSProperties
-};
+export interface LoaderProps {
+  size?: string;
+}
 
-const Loader: Component<LoaderContainerProps> = (props) => {    
+const Loader: Component<LoaderProps> = (props) => {
     return (
-        <div class={styles.loader} style={props.style}>
-            
-        </div>
+        <span class={styles.loader} style={{ '--size': props.size || '6rem' }} />
     );
 };
 

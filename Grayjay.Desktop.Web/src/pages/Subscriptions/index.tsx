@@ -67,7 +67,9 @@ const SubscriptionsPage: Component = () => {
   }, "subsbar");
 
   let doUpdate = false;
-  const [subs$, subsResource] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
+  const [subs$, subsResource] = createResourceDefault(async () => [], async () => {
+    return await SubscriptionsBackend.subscriptions();
+  });
   const [subGroups$, subGroupsResource] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptionGroups());
   
   const [subCachePager$, subPagerCacheResource] = createResourceDefault(async () => {
@@ -182,6 +184,11 @@ const SubscriptionsPage: Component = () => {
         return false;
       else if(obj.contentType == ContentType.NESTED_VIDEO && !filters[FilterType.Media].active[0]())
         return false;
+
+      if(!filters[FilterType.Watched].active[0]()) {
+        if(((obj as any)?.metadata)?.watched)
+          return false;
+      }
       return true;
     };
   }
@@ -368,12 +375,12 @@ const SubscriptionsPage: Component = () => {
               <SettingsMenu menu={reloadMenu} show={showReloadMenu$()} anchor={anchor} onHide={()=>setShowReloadMenu(false)} />
             </Portal>
             <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} />
+              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} useCache={true} />
             </ScrollContainer>
           </div>
         </Show>
       </Show>
-      <Show when={!subs$() || subs$()!.length == 0}>
+      <Show when={(!subs$() || subs$()!.length == 0) && !subs$.loading}>
 
         <EmptyContentView 
           icon={iconSubscriptions}
@@ -392,6 +399,9 @@ const SubscriptionsPage: Component = () => {
               action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
             }
           ]} />
+      </Show>
+      <Show when={(!subs$() || subs$()!.length == 0) && subs$.loading}>
+        <LoaderGrid />
       </Show>
     </div>
   );

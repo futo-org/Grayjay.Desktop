@@ -27,16 +27,18 @@ import { ContentType } from '../../backend/models/ContentType';
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import EmptyContentView from '../../components/EmptyContentView';
 import { Menus } from '../../Menus';
-import { IPlatformPlaylist } from '../../backend/models/content/IPlatformPlaylist';
 import StateWebsocket from '../../state/StateWebsocket';
 import { createResourceDefault } from '../../utility';
+import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
 
   const navigate = useNavigate();
   const video = useVideo();
-  const [playlists$, playlistsResource] = createResourceDefault(async () => [], async () => await PlaylistsBackend.getAll());
+  const [playlists$, playlistsResource] = createResourceDefault(async () => [], async () => {
+    return await PlaylistsBackend.getAll();
+  });
 
   StateWebsocket.registerHandlerNew("PlaylistsChanged", (packet)=>{
     playlistsResource.refetch();
@@ -218,7 +220,7 @@ const PlaylistsPage: Component = () => {
                   );
                 }} />
             </Show>
-            <Show when={(playlists$()?.length ?? 0) == 0}>
+            <Show when={(playlists$()?.length ?? 0) == 0 && !playlists$.loading}>
               <EmptyContentView 
                   icon={iconPlaylist}
                   title='You have no playlists'
@@ -236,6 +238,9 @@ const PlaylistsPage: Component = () => {
                       action: ()=>{createPlaylist()}
                     }
                   ]} />
+            </Show>
+            <Show when={(playlists$()?.length ?? 0) == 0 && playlists$.loading}>
+              <LoaderGrid />
             </Show>
           </div>
         </ScrollContainer>

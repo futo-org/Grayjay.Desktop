@@ -146,7 +146,7 @@ namespace Grayjay.ClientServer.States
 
                 Logger.i(TAG, $"Caching {results.Length} subscription initial results [{_pager.GetHashCode()}]");
 
-                Task.Run(async () =>
+                StateApp.ThreadPool.Run(() =>
                 {
                     try
                     {
@@ -170,7 +170,7 @@ namespace Grayjay.ClientServer.States
                 _pager.NextPage();
                 var results = _pager.GetResults();
 
-                Task.Run(async () =>
+                StateApp.ThreadPool.Run(() =>
                 {
                     try
                     {

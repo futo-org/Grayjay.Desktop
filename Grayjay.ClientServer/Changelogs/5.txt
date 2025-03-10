@@ -1,0 +1,37 @@
+Features:
+ - Optional packages support (for packages like JSDOM)
+ - Added new official plugins (Dailymotion, Bichute, ApplePodcasts, PeerTube)
+ - Added progress bars on home/subs indicating which one you have already seen
+ - Added support for "Watched" filter
+ - Added app id to window.
+ - Add FFMPEG to osx-arm64 bundle, improving exporting. 
+ - Added image caching on subscriptions
+ - Implemented sync display names (also requires updating the Android application).
+ - Downloads in grid ui can now be deleted, aswell as other options
+
+Improvements:
+ - MacOS builds now signed and notarized
+ - MacOS now performs an update check and notification on bootup (if enabled)
+ - Prevent saving null/undefined entries for playlists, if you have a corrupted playlist, resave it and it will be fixed. 
+ - Improved export for weird video names.
+ - Improved FFMPEG invocation to be more stable, improving exports
+ - Check if error is fatal in video player and only then show the recovery dialog.
+ - Added threading improvements
+ - Conditional, configurable update notifications.
+ - Check for plugin updates on dedicated threadpool, improving app responsiveness
+ - Moving long running tasks to threadpools resulting in a much faster/smoother user experience.
+ - Channel loads are now faster.
+ - Search is now faster.
+ - Improved cookie behavior more in line with android (ability to update cookies)
+ - Adding/removing videos to playlists that are downloaded now properly download/delete said videos
+
+Fixes:
+ - Fixed i toggling when typing in search.
+ - Fixed issue where playlist would get undefined/null entries when swapping at end of playlist.
+ - Fixed issue where creating an empty playlist shows a null entry.
+ - HomeLoadLazy supports variable PageSize, fixing home not being fully populated on large screens.
+ - Switch Linux to use native instead of views framework. 
+ - Fix for HLS quality selection being inversed.
+ - Fixed plugin search disable being ignored
+
+And various other things

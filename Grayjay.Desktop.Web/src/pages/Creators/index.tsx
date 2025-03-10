@@ -23,18 +23,21 @@ import UIOverlay from '../../state/UIOverlay';
 import EmptyContentView from '../../components/EmptyContentView';
 import { Menus } from '../../Menus';
 import StateWebsocket from '../../state/StateWebsocket';
+import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
 
 const CreatorsPage: Component = () => {
   const navigate = useNavigate();
 
   let scrollContainerRef: HTMLDivElement | undefined;
-  const [subs$, subsResource] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
+  const [subs$, subsResource] = createResourceDefault(async () => [], async () => {
+    return await SubscriptionsBackend.subscriptions();
+  });
   StateWebsocket.registerHandlerNew("SubscriptionsChanged", (packet)=>{
     subsResource.refetch();
   }, "playlistsPage");
   const [filterText, setFilterText] = createSignal("");
   const [sortBy, setSortBy] = createSignal(0);
-  const [enabledSources, setEnabledSources] = createSignal(StateGlobal.sources$()?.map(v => v.id) ?? []);
+  const [disabledSources, setDisabledSources] = createSignal([] as string[]);
   const filteredSubs = createMemo(() => {
     let result: ISubscription[] | undefined;
 
@@ -43,8 +46,8 @@ const CreatorsPage: Component = () => {
     else
       result = subs$();
 
-    const allEnabled = enabledSources();
-    result = result?.filter(v => allEnabled.indexOf(v.channel.id.pluginID) !== -1);
+    const allDisabled = disabledSources();
+    result = result?.filter(v => allDisabled.indexOf(v.channel.id.pluginID) === -1);
 
     switch (sortBy()) {
       case 0:
@@ -101,7 +104,7 @@ const CreatorsPage: Component = () => {
   };
 
   const valueString$ = createMemo(() => {
-    const a = StateGlobal.sources$()?.filter(v => enabledSources().indexOf(v.id) !== -1)?.map(v => v.name) ?? [];
+    const a = StateGlobal.sources$()?.filter(v => disabledSources().indexOf(v.id) === -1)?.map(v => v.name) ?? [];
     return a.length > 0 ? a.join(", ") : "None";
   });
 
@@ -122,9 +125,9 @@ const CreatorsPage: Component = () => {
                 icon: i.absoluteIconUrl,
                 onToggle: (v) => {
                   if (v)
-                    setEnabledSources([ ... enabledSources(), i.id ]);
+                    setDisabledSources(disabledSources().filter(x=>x != i.id));
                   else
-                    setEnabledSources(enabledSources().filter(v => v !== i.id));
+                    setDisabledSources([... disabledSources(), i.id]);
                 }
               })) ?? []
             }} />
@@ -172,7 +175,7 @@ const CreatorsPage: Component = () => {
             } />
         </ScrollContainer>
       </Show>
-      <Show when={!subs$() || subs$()!.length == 0}>
+      <Show when={(!subs$() || subs$()!.length == 0) && !subs$.loading}>
         <EmptyContentView 
             icon={iconSubscriptions}
             title='You have no subscriptions'
@@ -190,6 +193,31 @@ const CreatorsPage: Component = () => {
                 action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
               }
             ]} />
+      </Show>
+      <Show when={(!subs$() || subs$()!.length == 0) && subs$.loading}>
+        <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+          <ScrollContainer ref={scrollContainerRef}>
+            <VirtualGrid outerContainerRef={scrollContainerRef}
+              items={new Array(30)}
+              itemHeight={276}
+              itemWidth={200}
+              autosizeWidth={true}
+              notifyEndOnLast={5}
+              style={{
+                "margin-left": "24px",
+                "margin-top": "24px",
+                "margin-bottom": "24px",
+                "margin-right": "24px",
+              }}
+              builder={(index, item) => {
+                return (
+                  <div style="width: calc(100% - 16px); height: calc(100% - 16px); margin-right: 16px; margin-bottom: 16px;">
+                    <SkeletonDiv style={{"border-radius": "8px"}} />
+                  </div>
+                );
+              }} />
+          </ScrollContainer>
+        </div>
       </Show>
       <Portal>
         <SettingsMenu menu={subscriptionMenu$().menu} anchor={anchor} show={showSettings$()} onHide={hideSubscriptionSettings} />

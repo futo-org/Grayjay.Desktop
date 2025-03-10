@@ -1,5 +1,9 @@
-﻿using Grayjay.Desktop.POC;
+﻿using Grayjay.ClientServer.Controllers;
+using Grayjay.Desktop.POC;
 using Grayjay.Engine;
+using System.Net;
+
+using Logger = Grayjay.Desktop.POC.Logger;
 
 namespace Grayjay.ClientServer.Pooling
 {
@@ -20,7 +24,7 @@ namespace Grayjay.ClientServer.Pooling
                 throw new ArgumentException("Pooling only supported for JSClients right now");
             _parent = parentClient;
 
-            Console.WriteLine($"Pool for {_parent.Config.Name} was started");
+            Logger.Info<PlatformClientPool>($"Pool for {_parent.Config.Name} was started");
 
             parentClient.OnStopped += (plugin) =>
             {
@@ -46,12 +50,13 @@ namespace Grayjay.ClientServer.Pooling
                 reserved = _pool.Keys.FirstOrDefault(client => !client.IsBusy);
                 if (reserved == null && _pool.Count < capacity)
                 {
-                    Console.WriteLine($"Started additional [{_parent.Config.Name}] client in pool [{_poolName}] ({_pool.Count + 1}/{capacity})");
+                    Logger.Info<PlatformClientPool>($"Started additional [{_parent.Config.Name}] client in pool [{_poolName}] ({_pool.Count + 1}/{capacity})");
                     reserved = _parent.GetCopy();
                     reserved.OnLog += (config, msg) =>
                     {
                         Logger.i("Plugin [" + config.Name + "]", msg);
                     };
+                    reserved.OnToast += (a, b) => StateUI.Toast($"[{a.Name}] " + b);
 
                     reserved.Initialize();
                     _pool[reserved] = _poolCounter;

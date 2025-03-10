@@ -1,5 +1,6 @@
 ﻿using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
 using System;
 using System.Diagnostics;
 using System.Net;
@@ -117,14 +118,15 @@ namespace Grayjay.ClientServer
                     while (!proc.StandardOutput.EndOfStream)
                     {
                         var line = proc.StandardOutput.ReadLine();
-                        Console.WriteLine(line);
+                        if (line != null)
+                            Logger.Info(nameof(Updater), line);
                     }
                     proc.WaitForExit();
                     return Math.Max(1, proc.ExitCode);
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine("Failed to read updater version, assuming 1");
+                    Logger.Error(nameof(Updater), "Failed to read updater version, assuming 1", ex);
                     return 1;
                 }
             }
@@ -205,7 +207,8 @@ namespace Grayjay.ClientServer
                     while (!chmod.StandardOutput.EndOfStream)
                     {
                         var line = chmod.StandardOutput.ReadLine();
-                        Console.WriteLine(line);
+                        if (line != null)
+                            Logger.Info(nameof(Updater), line);
                     }
                     chmod.WaitForExit();
                 }
@@ -224,17 +227,21 @@ namespace Grayjay.ClientServer
             {
                 FileName = executable,
                 Arguments = "check",
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
             });
             int updaterVersion = -1;
             while (!proc.StandardOutput.EndOfStream)
             {
                 var line = proc.StandardOutput.ReadLine();
+                if (line == null)
+                    continue;
+                
                 Match m = REGEX_UPDATER_VERSION.Match(line);
                 if (m.Success && m.Groups.Count > 1)
                     updaterVersion = int.Parse(m.Groups[1].Value);
 
-                Console.WriteLine(line);
+                Logger.Info(nameof(Updater), line);
             }
             proc.WaitForExit();
             switch (proc.ExitCode)
@@ -245,6 +252,19 @@ namespace Grayjay.ClientServer
                     return (false, updaterVersion);
                 default:
                     return (false, updaterVersion);
+            }
+        }
+        public static int GetLatestMacOSVersion(string server)
+        {
+            try
+            {
+                using (WebClient client = new WebClient())
+                    return int.Parse(client.DownloadString(server + "/VersionLastMacOS.json"));
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get last version", ex);
+                return -1;
             }
         }
 
@@ -298,6 +318,25 @@ namespace Grayjay.ClientServer
                     {
                         Server = config.Server,
                         Platform = targetPlatform
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(Updater), "Failed to get changelog", ex);
+                return null;
+            }
+        }
+        public static Changelog GetTargetChangelog(string server, int version, string platform)
+        {
+            try
+            {
+                using (WebClient client = new WebClient())
+                {
+                    return new Changelog(version, client.DownloadString(server + $"/{version}/{platform}/Changelogs/{version}.txt"))
+                    {
+                        Server = server,
+                        Platform = platform
                     };
                 }
             }

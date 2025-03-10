@@ -13,6 +13,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.Desktop.CEF
 {
     public class CEFWindowProvider : IWindowProvider
@@ -23,11 +25,19 @@ namespace Grayjay.Desktop.CEF
             _cef = process;
         }
 
-        public async Task<IWindow> CreateWindow(string title, int width, int height, string url, int maxWidth = 0, int maxHeight = 0)
+        public async Task<IWindow> CreateWindowAsync(string url, string title, int preferredWidth, int preferredHeight, int minimumWidth, int minimumHeight)
         {
-            var window = _cef.CreateWindowAsync("about:blank", width, height, maxWidth, maxHeight, title: title, iconPath: Path.GetFullPath("grayjay.png")).Result;
-            await window.SetDevelopmentToolsEnabledAsync(true);
+            var window = await _cef.CreateWindowAsync(
+                url: "about:blank",
+                minimumWidth: minimumWidth,
+                minimumHeight: minimumHeight,
+                preferredWidth: preferredWidth,
+                preferredHeight: preferredHeight,
+                title: title, 
+                iconPath: Path.GetFullPath("grayjay.png")
+            );
 
+            await window.SetDevelopmentToolsEnabledAsync(true);
             await window.LoadUrlAsync($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
             await window.WaitForExitAsync(CancellationToken.None);
 
@@ -56,27 +66,38 @@ namespace Grayjay.Desktop.CEF
         {
             //userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
             //double scale = 1.25;
-            var window = await _cef.CreateWindowAsync("about:blank", (int)(385), (int)(833), (int)(385), (int)(833), title: title, iconPath: Path.GetFullPath("grayjay.png"), developerToolsEnabled: true, modifyRequests: true, requestModifier: (window, req) =>
-            {
-                foreach(var header in req.Headers.ToList())
+            var window = await _cef.CreateWindowAsync(
+                url: "about:blank", 
+                minimumWidth: 385, 
+                minimumHeight: 833, 
+                preferredWidth: 385, 
+                preferredHeight: 833, 
+                title: title, 
+                iconPath: Path.GetFullPath("grayjay.png"), 
+                developerToolsEnabled: true, 
+                modifyRequests: true,
+                resizable: false,
+                requestModifier: (window, req) =>
                 {
-                    if (header.Key.ToLower().StartsWith("sec-"))
-                        req.Headers.Remove(header.Key);
-                }
-                req.Headers.Add("Sec-GPC", "1");
-                if(req.Url.Contains("batch"))
-                {
-                    string isBatch = "";
-                }
-                handler(new InterceptorRequest()
-                {
-                    Url = req.Url,
-                    Method = req.Method,
-                    Headers = req.Headers
-                });
-                return req;
-            }, resizable: false, cancellationToken: cancellationToken);
-            window.SetDevelopmentToolsEnabledAsync(true);
+                    foreach(var header in req.Headers.ToList())
+                    {
+                        if (header.Key.ToLower().StartsWith("sec-"))
+                            req.Headers.Remove(header.Key);
+                    }
+                    req.Headers.Add("Sec-GPC", "1");
+                    if(req.Url.Contains("batch"))
+                    {
+                        string isBatch = "";
+                    }
+                    handler(new InterceptorRequest()
+                    {
+                        Url = req.Url,
+                        Method = req.Method,
+                        Headers = req.Headers
+                    });
+                    return req;
+                }, cancellationToken: cancellationToken);
+            await window.SetDevelopmentToolsEnabledAsync(true);
             if (true)
             {
                 await window.ExecuteDevToolsMethodAsync("Page.enable", "{}");

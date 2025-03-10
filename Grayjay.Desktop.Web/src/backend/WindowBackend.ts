@@ -13,4 +13,13 @@ export abstract class WindowBackend {
     static async ready(): Promise<boolean> {
         return await Backend.GET("/window/Ready");
     }
+
+    static async delay(ms: number): Promise<boolean> {
+        return await Backend.GET("/window/Delay?ms=" + ms);
+    }
+
+    static async echo(str: string): Promise<boolean> {
+        await Backend.GET("/window/Echo?str=" + str);
+        return true;
+    }
 }

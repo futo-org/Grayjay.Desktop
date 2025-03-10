@@ -2,15 +2,17 @@
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
-using Grayjay.ClientServer.Store;
-using Grayjay.Desktop.POC;
+using Grayjay.ClientServer.Pooling;
+using Grayjay.ClientServer.Settings;
+using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
 using Grayjay.Engine.Exceptions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Reflection;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+
+using Logger = Grayjay.Desktop.POC.Logger;
+using LogLevel = Grayjay.Desktop.POC.LogLevel;
 
 namespace Grayjay.ClientServer.States
 {
@@ -22,6 +24,9 @@ namespace Grayjay.ClientServer.States
         public static DatabaseConnection Connection { get; private set; }
 
         public static CancellationTokenSource AppCancellationToken { get; private set; } = new CancellationTokenSource();
+
+        public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16, "Global");
+        public static ManagedThreadPool ThreadPoolDownload { get; } = new ManagedThreadPool(4, "Download");
 
 
         static StateApp()
@@ -74,8 +79,10 @@ namespace Grayjay.ClientServer.States
         }
 
 
-        public static void Startup()
+        public static async Task Startup()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
 
@@ -86,6 +93,8 @@ namespace Grayjay.ClientServer.States
             Logger.i(nameof(StateApp), "Startup: Initializing PluginEncryptionProvider");
             PluginDescriptor.Encryption = new PluginEncryptionProvider();
 
+            await StatePlatform.UpdateAvailableClients(true);
+
             Logger.i(nameof(StateApp), "Startup: Initializing DatabaseConnection");
             Connection = new DatabaseConnection();
 
@@ -94,27 +103,37 @@ namespace Grayjay.ClientServer.States
             Logger.i(nameof(StateApp), $"Startup: Ensuring Table DBHistory");
             Connection.EnsureTable<DBHistoryIndex>(DBHistoryIndex.TABLE_NAME);
 
-            _ = Task.Run(async () =>
+            if (GrayjaySettings.Instance.Notifications.PluginUpdates)
             {
-                StatePlugins.CheckForUpdates();
-
-                await Task.Delay(2500);
-                foreach(var update in StatePlugins.GetKnownPluginUpdates())
+                _ = Task.Run(async () =>
                 {
-                    //TODO: Proper validation
-                    StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
-                        new StateUI.DialogAction("Ignore", () =>
-                        {
+                    try
+                    {
+                        await StatePlugins.CheckForUpdates();
 
-                        }, StateUI.ActionStyle.None),
-                        new StateUI.DialogAction("Update", () =>
+                        await Task.Delay(2500);
+                        foreach (var update in StatePlugins.GetKnownPluginUpdates())
                         {
-                            StatePlugins.InstallPlugin(update.SourceUrl);
-                        }, StateUI.ActionStyle.Primary));
-                }
-            });
+                            //TODO: Proper validation
+                            StateUI.Dialog(update.AbsoluteIconUrl, "Update [" + update.Name + "]", "A new version for " + update.Name + " is available.\n\nThese updates may be critical.", null, 0,
+                                new StateUI.DialogAction("Ignore", () =>
+                                {
 
-            _ = Task.Run(async () =>
+                                }, StateUI.ActionStyle.None),
+                                new StateUI.DialogAction("Update", () =>
+                                {
+                                    StatePlugins.InstallPlugin(update.SourceUrl);
+                                }, StateUI.ActionStyle.Primary));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.e(nameof(StateApp), ex.Message, ex);
+                    }
+                });
+            }
+
+            ThreadPool.Run(() =>
             {
                 StateTelemetry.Upload();
             });
@@ -126,24 +145,43 @@ namespace Grayjay.ClientServer.States
                     {
                         int count = 0;
                         int countComp = 0;
-                        ThreadPool.GetAvailableThreads(out count, out countComp);
-                        Console.WriteLine($"Threadpool available: {count}, {countComp} Completers");
-                        Thread.Sleep(1000);
+                        System.Threading.ThreadPool.GetAvailableThreads(out count, out countComp);
+                        
+                        if (Logger.WillLog(LogLevel.Debug))
+                            Logger.Debug<PlatformClientPool>($"Threadpool available: {count}, {countComp} Completers");
+                        Thread.Sleep(500);
                     }
                 }).Start();
 
             //Temporary workaround for youtube
-            Task.Run(() =>
+            ThreadPool.Run(() =>
             {
-                StatePlatform.GetHome();
+                try
+                {
+                    _ = StatePlatform.GetHome();
+                }
+                catch (Exception ex) { }
             });
 
             Logger.i(nameof(StateApp), "Startup: Initializing Download Cycle");
             StateDownloads.StartDownloadCycle();
+
+            if(false) //To verify if async threads are every blocked
+                new Thread(() =>
+                {
+                    while(Connection != null)
+                    {
+                        Task.Run(() => Console.WriteLine("Async Heartbeat"));
+                        Thread.Sleep(1000);
+                    }
+                }).Start();
+            Logger.i(nameof(StateApp), $"Startup duration {sw.ElapsedMilliseconds}ms");
         }
 
         public static void Shutdown()
         {
+            StateSubscriptions.Shutdown();
+            ThreadPool.Stop();
             AppCancellationToken.Cancel();
             Connection.Dispose();
             Connection = null;
@@ -159,7 +197,7 @@ namespace Grayjay.ClientServer.States
             await StateUI.ShowCaptchaWindow(config, ex, (success) =>
             {
                 _hasCaptchaDialog = false;
-                Console.WriteLine("Captcha result: " + success.ToString());
+                Logger.Info(nameof(StateApp), "Captcha result: " + success.ToString());
                 StatePlatform.UpdateAvailableClients(true);
             });
         }

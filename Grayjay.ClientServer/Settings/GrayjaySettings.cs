@@ -43,7 +43,7 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Search history", SettingsField.TOGGLE, "May require restart", 3)]
             public bool SearchHistory { get; set; } = true;
 
-            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the previouw feedstyle is used, if items should automatically preview.", 5)]
+            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview.", 5)]
             public bool PreviewFeedItems { get; set; } = true;
 
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 6)]
@@ -275,7 +275,7 @@ namespace Grayjay.ClientServer.Settings
         public class LoggingSettings
         {
             [SettingsField("Log Level", SettingsField.DROPDOWN, "", 0)]
-            [SettingsDropdownOptions("None", "Error", "Warning", "Information", "Verbose")]
+            [SettingsDropdownOptions("None", "Error", "Warning", "Information", "Verbose", "Debug")]
             public int LogLevel { get; set; } = 0;
 
         }
@@ -295,6 +295,17 @@ namespace Grayjay.ClientServer.Settings
 
             [SettingsField("Connect Last", SettingsField.TOGGLE, "Allow device to automatically connect to last known", 3)]
             public bool ConnectLast { get; set; } = true;
+        }
+
+        [SettingsField("Notifications", "group", "Configure update notifications", 11)]
+        public NotificationSettings Notifications { get; set; } = new NotificationSettings();
+        public class NotificationSettings
+        {
+            [SettingsField("App Updates", SettingsField.TOGGLE, "Enable app update notifications", 0)]
+            public bool AppUpdates { get; set; } = true;
+
+            [SettingsField("Plugin Updates", SettingsField.TOGGLE, "Enable plugin update notifications", 0)]
+            public bool PluginUpdates { get; set; } = true;
         }
 
         [SettingsField("Info", SettingsField.GROUP, "", 13)]

@@ -321,7 +321,7 @@ const VirtualGrid: Component<VirtualGridProps> = (props) => {
             }
             
             if (previousStartIndex === Infinity && previousEndIndex === -Infinity) {
-                const itemCount = endIdx - startIdx + 1;
+                const itemCount = Math.min(endIdx - startIdx + 1, props.items?.length ?? 0);
                 if (poolItems.length < itemCount) {
                     console.error("pool size is not big enough to set all at once", {poolItems, poolItemsLength: poolItems.length, startIdx, endIdx, itemCount});
                     return;

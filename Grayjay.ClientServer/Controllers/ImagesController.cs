@@ -1,11 +1,14 @@
 ﻿using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
+using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
 using Grayjay.Engine.Setting;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+
+using Logger = Grayjay.Desktop.POC.Logger;
 
 namespace Grayjay.ClientServer.Controllers
 {
@@ -36,6 +39,16 @@ namespace Grayjay.ClientServer.Controllers
             return NoContent();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ImageSubscription(string subUrl)
+        {
+            var sub = StateSubscriptions.GetSubscription(subUrl);
+            if (sub == null)
+                return NotFound();
+            return await CachePassthrough(sub.Channel.Thumbnail);
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> ImageUpload()
         {
@@ -57,6 +70,23 @@ namespace Grayjay.ClientServer.Controllers
             }
             else
                 return BadRequest();
+        }
+
+        [HttpGet]
+        public IActionResult GetCachedImage(string id)
+        {
+            var imagePath = StateImages.GetImagePath(id);
+            if (imagePath != null)
+                return PhysicalFile(imagePath, "image/png");
+            return null;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CachePassthrough(string url)
+        {
+            string path = await StateImages.StoreImageUrlOrKeepPassthrough(url);
+            Logger.i(nameof(ImagesController), $"Loading image from cache for [{url}]");
+            return PhysicalFile(path, "image/png");
         }
     }
 }

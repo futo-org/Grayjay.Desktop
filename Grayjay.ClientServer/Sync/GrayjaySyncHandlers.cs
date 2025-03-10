@@ -6,6 +6,7 @@ using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Subscriptions;
 using Grayjay.ClientServer.Sync.Internal;
 using Grayjay.ClientServer.Sync.Models;
+using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine.Models.Feed;
 using static Grayjay.ClientServer.States.StateBackup;
@@ -68,6 +69,8 @@ namespace Grayjay.ClientServer.Sync
                 Ordering = StateWatchLater.Instance.GetWatchLaterOrdering()
             });
 
+            await StateWatchLater.Instance.BroadcastChangesAsync();
+
 
             var newHistory = StateHistory.GetRecentHistory(data.LastHistory);
             if (newHistory.Count > 0)
@@ -95,9 +98,9 @@ namespace Grayjay.ClientServer.Sync
         }
 
         [SyncHandler(GJSyncOpcodes.SyncSubscriptions)]
-        public void HandleSyncSubscriptions(SyncSession session, SyncSubscriptionsPackage subscriptions)
+        public async Task HandleSyncSubscriptions(SyncSession session, SyncSubscriptionsPackage subscriptions)
         {
-            Console.WriteLine($"SyncSubscriptions received {subscriptions.Subscriptions.Count} subs");
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncSubscriptions received {subscriptions.Subscriptions.Count} subs");
 
             List<Subscription> added = new List<Subscription>();
             foreach(var sub in subscriptions.Subscriptions)
@@ -107,7 +110,7 @@ namespace Grayjay.ClientServer.Sync
                     var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
                     if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
                     {
-                        StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
+                        await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
                         added.Add(sub);
                     }
                 }
@@ -132,7 +135,7 @@ namespace Grayjay.ClientServer.Sync
         [SyncHandler(GJSyncOpcodes.SyncSubscriptionGroups)]
         public void HandleSyncSubscriptionGroups(SyncSession session, SyncSubscriptionGroupsPackage pack)
         {
-            Console.WriteLine($"SyncSubscriptionGroups received {pack.Groups.Count} groups");
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncSubscriptionGroups received {pack.Groups.Count} groups");
 
             foreach (SubscriptionGroup group in pack.Groups)
             {
@@ -163,7 +166,7 @@ namespace Grayjay.ClientServer.Sync
         [SyncHandler(GJSyncOpcodes.SyncPlaylists)]
         public void HandleSyncPlaylists(SyncSession session, SyncPlaylistsPackage pack)
         {
-            Console.WriteLine($"SyncPlaylists received {pack.Playlists.Count} playlists");
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncPlaylists received {pack.Playlists.Count} playlists");
 
             foreach (Playlist playlist in pack.Playlists)
             {
@@ -186,7 +189,7 @@ namespace Grayjay.ClientServer.Sync
         [SyncHandler(GJSyncOpcodes.SyncWatchLater)]
         public void HandleSyncWatchLater(SyncSession session, SyncWatchLaterPackage pack)
         {
-            Console.WriteLine($"SyncWatchLater received {pack.Videos.Count} watchlater videos");
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncWatchLater received {pack.Videos.Count} watchlater videos");
 
             var allExisting = StateWatchLater.Instance.GetWatchLater();
             List<string> originalOrder = allExisting.Select(x => x.Url).ToList();
@@ -223,7 +226,7 @@ namespace Grayjay.ClientServer.Sync
         [SyncHandler(GJSyncOpcodes.SyncHistory)]
         public void HandleSyncHistory(SyncSession session, List<HistoryVideo> history)
         {
-            Console.WriteLine($"SyncHistory received {history.Count} videos");
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncHistory received {history.Count} videos");
 
             var lastHistory = DateTime.MinValue;
             foreach(var video in history)

@@ -129,19 +129,23 @@ public class StateWatchLater
         OnChanged?.Invoke(GetWatchLater());
     }
 
-    private void BroadcastChanges(bool orderOnly = false)
+    public void BroadcastChanges(bool orderOnly = false)
     {
         Task.Run(async () =>
         {
-            var videos = GetWatchLater();
-            await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
-            {
-                Videos = (orderOnly) ? new List<PlatformVideo>() : videos.Select(x=>(PlatformVideo)x).ToList(),
-                VideoAdds = (orderOnly) ? new Dictionary<string, long>() : _watchLaterAdds.All(),
-                VideoRemovals = (orderOnly) ? new Dictionary<string, long>() : _watchLaterRemovals.All(),
-                ReorderTime = GetWatchLaterLastReorderTime().ToUnixTimeSeconds(),
-                Ordering = GetWatchLaterOrdering()
-            });
+            await BroadcastChangesAsync(orderOnly);
+        });
+    }
+    public async Task BroadcastChangesAsync(bool orderOnly = false)
+    {
+        var videos = GetWatchLater();
+        await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncWatchLater, new SyncWatchLaterPackage()
+        {
+            Videos = (orderOnly) ? new List<PlatformVideo>() : videos.Select(x => (PlatformVideo)x).ToList(),
+            VideoAdds = (orderOnly) ? new Dictionary<string, long>() : _watchLaterAdds.All(),
+            VideoRemovals = (orderOnly) ? new Dictionary<string, long>() : _watchLaterRemovals.All(),
+            ReorderTime = GetWatchLaterLastReorderTime().ToUnixTimeSeconds(),
+            Ordering = GetWatchLaterOrdering()
         });
     }
     private void BroadcastRemoval(string url, long time)

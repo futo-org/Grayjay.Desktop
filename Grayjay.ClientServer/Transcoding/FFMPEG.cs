@@ -21,20 +21,25 @@ namespace Grayjay.ClientServer.Transcoding
             Logger.i(nameof(FFMPEG), "Determining FFMPEG command");
 
             string version;
-            string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "ffmpeg" : "ffmpeg.exe";
+            string fileName = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
             string ffmpegPath = null;
 
             if (File.Exists(fileName))
             {
                 ffmpegPath = fileName;
             }
-            else
+            //We only do this for Linux because some users want to use system-dep, and it generally being present on PATH.
+            //On Windows/MacOS we always assume embedded version should work, or something else is wrong that needs to be fixed.
+            else if (OperatingSystem.IsLinux())
             {
                 ffmpegPath = Environment.GetEnvironmentVariable("PATH")
-                    .Split(";").FirstOrDefault(x => File.Exists(Path.Combine(x, fileName)));
+                    .Split(":")
+                    .FirstOrDefault(x => File.Exists(Path.Combine(x, fileName)));
                 if (ffmpegPath != null)
                     ffmpegPath = Path.Combine(ffmpegPath, fileName);
             }
+            else
+                ffmpegPath = fileName; //Assume command
 
             _ffmpegCommand = ffmpegPath;
             Logger.i(nameof(FFMPEG), "Verifying FFMPEG: " + _ffmpegCommand);
@@ -88,6 +93,12 @@ namespace Grayjay.ClientServer.Transcoding
             process.WaitForExit();
             return process.ExitCode;
         }
+        public static int ExecuteSafe(string[] args, bool print = true)
+        {
+            var process = ExecuteProcessSafe(args, print);
+            process.WaitForExit();
+            return process.ExitCode;
+        }
         public static bool ExecuteWithTimeout(string command, TimeSpan max, bool print = true)
         {
             var process = ExecuteProcess(command, print);
@@ -102,6 +113,59 @@ namespace Grayjay.ClientServer.Transcoding
             return true;
         }
 
+        private static Process ExecuteProcessSafe(string[] args, bool print = true, Action<string, bool> onLog = null)
+        {
+            if (!IsFFMPEGAvailable())
+                throw new InvalidOperationException("Ffmpeg not present");
+            Process process = new Process();
+            process.StartInfo.FileName = _ffmpegCommand;
+            foreach (var arg in args)
+                process.StartInfo.ArgumentList.Add(arg);
+            if (print)
+            {
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                if (onLog == null)
+                {
+                    process.OutputDataReceived += (sender, args) => Logger.i(nameof(FFMPEG), args.Data);
+                    process.ErrorDataReceived += (sender, args) => Logger.i(nameof(FFMPEG), args.Data);
+                }
+                else
+                {
+                    process.OutputDataReceived += (sender, args) =>
+                    {
+                        Logger.i(nameof(FFMPEG), args.Data);
+                        onLog(args.Data, false);
+                    };
+                    process.ErrorDataReceived += (sender, args) =>
+                    {
+                        Logger.i(nameof(FFMPEG), args.Data);
+                        onLog(args.Data, true);
+                    };
+                }
+            }
+            else
+            {
+                process.StartInfo.UseShellExecute = true;
+                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                if (onLog != null)
+                {
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.OutputDataReceived += (sender, args) => onLog(args.Data, false);
+                    process.ErrorDataReceived += (sender, args) => onLog(args.Data, true);
+                }
+            }
+            process.Start();
+            if (print || onLog != null)
+            {
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+            }
+            return process;
+        }
         private static Process ExecuteProcess(string command, bool print = true, Action<string, bool> onLog = null)
         {
             if (!IsFFMPEGAvailable())

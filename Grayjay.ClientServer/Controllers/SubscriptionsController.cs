@@ -108,7 +108,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             var subs = StateCache.GetSubscriptionCachePager();
             this.State().SubscriptionsState.SubscriptionPagerCache = subs;
-            return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return subs.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
         }
         [HttpGet]
         public PagerResult<PlatformVideo> SubscriptionsCacheNextPage()
@@ -119,7 +119,7 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     var subs = EnsureSubscriptionPagerCache();
                     subs.NextPage();
-                    return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+                    return subs.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
                 }
             }
             catch (Exception ex)
@@ -139,7 +139,10 @@ namespace Grayjay.ClientServer.Controllers
             //return await SubscriptionsCacheLoad(url);
             var subs = await StateSubscriptions.GetGlobalSubscriptionFeed(updated);
             this.State().SubscriptionsState.SubscriptionPager = subs;
-            return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return subs.AsPagerResult(x => x is PlatformVideo, y =>
+            {
+                return StateHistory.AddVideoMetadata((PlatformVideo)y);
+            });
         }
         [HttpGet]
         public PagerResult<PlatformVideo> SubscriptionsNextPage()
@@ -150,7 +153,10 @@ namespace Grayjay.ClientServer.Controllers
                 lock (subs)
                 {
                     subs.NextPage();
-                    return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+                    return subs.AsPagerResult(x => x is PlatformVideo, y =>
+                    {
+                        return StateHistory.AddVideoMetadata((PlatformVideo)y);
+                    });
                 }
             }
             catch (Exception ex)
@@ -169,7 +175,10 @@ namespace Grayjay.ClientServer.Controllers
         {
             var subs = StatePlatform.GetChannelContent(url);
             this.State().SubscriptionsState.FilterPager = subs;
-            return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return subs.AsPagerResult(x => x is PlatformVideo, y =>
+            {
+                return StateHistory.AddVideoMetadata((PlatformVideo)y);
+            });
         }
         [HttpGet]
         public PagerResult<PlatformVideo> SubscriptionsFilterNextPage()
@@ -180,7 +189,9 @@ namespace Grayjay.ClientServer.Controllers
                 lock (subs)
                 {
                     subs.NextPage();
-                    return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+                    return subs.AsPagerResult(x => x is PlatformVideo, y => {
+                        return StateHistory.AddVideoMetadata((PlatformVideo)y);
+                    });
                 }
             }
             catch (Exception ex)
@@ -207,7 +218,10 @@ namespace Grayjay.ClientServer.Controllers
                 else
                     state.SubscriptionGroupPagers.Add(id, subs);
             }
-            return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+            return subs.AsPagerResult(x => x is PlatformVideo, y =>
+            {
+                return StateHistory.AddVideoMetadata((PlatformVideo)y);
+            });
         }
         [HttpGet]
         public PagerResult<PlatformVideo> SubscriptionGroupNextPage(string id)
@@ -221,7 +235,10 @@ namespace Grayjay.ClientServer.Controllers
                         throw new BadHttpRequestException("No subscriptions feed [" + id + "] loaded");
                     var subs = state.SubscriptionGroupPagers[id];
                     subs.NextPage();
-                    return subs.AsPagerResult(x => x is PlatformVideo, y => (PlatformVideo)y);
+                    return subs.AsPagerResult(x => x is PlatformVideo, y =>
+                    {
+                        return StateHistory.AddVideoMetadata((PlatformVideo)y);
+                    });
                 }
             }
             catch (Exception ex)
@@ -256,7 +273,8 @@ namespace Grayjay.ClientServer.Controllers
                     .ToList();
                 group.Image = new ImageVariable()
                 {
-                    Url = subs.FirstOrDefault()?.Channel.Thumbnail
+                    Url = subs.FirstOrDefault()?.Channel.Thumbnail,
+                    SubscriptionUrl = subs.FirstOrDefault()?.Channel.Url
                 };
             }
             if(group.ID != null)
@@ -281,5 +299,6 @@ namespace Grayjay.ClientServer.Controllers
             StateWebsocket.SubscriptionGroupsChanged();
             return result;
         }
+
     }
 }

@@ -15,6 +15,8 @@ using System.Net;
 using System.Text.Json;
 using System.Web;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]
@@ -478,6 +480,9 @@ namespace Grayjay.ClientServer.Controllers
             "https://plugins.grayjay.app/Nebula/NebulaConfig.json",
             "https://plugins.grayjay.app/Soundcloud/SoundcloudConfig.json",
             "https://plugins.grayjay.app/Bilibili/BiliBiliConfig.json",
+            "https://plugins.grayjay.app/Dailymotion/DailymotionConfig.json",
+            "https://plugins.grayjay.app/Bitchute/BitchuteConfig.json",
+            "https://plugins.grayjay.app/ApplePodcasts/ApplePodcastsConfig.json",
             "https://plugins.grayjay.app/PeerTube/PeerTubeConfig.json"
         };
         private static PluginConfig[] _official = new PluginConfig[0];

@@ -21,6 +21,18 @@ namespace Grayjay.ClientServer.Controllers
             StatePlaylists.CreateOrUpdate(playlist);
             return Ok();
         }
+        [HttpPost]
+        public ActionResult RenamePlaylist(string id, [FromBody] string newName)
+        {
+            var playlist = StatePlaylists.Get(id);
+            if (id == null)
+                return NotFound();
+
+            playlist.Name = newName;
+            StatePlaylists.CreateOrUpdate(playlist, true);
+            return Ok();
+        }
+
 
         public class AddContentToPlaylistsRequest
         {

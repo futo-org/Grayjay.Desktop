@@ -61,6 +61,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const [expand$, setExpand] = createSignal(true);
   const [expandType$, setExpandType] = createSignal("subs");
 
+  const [devClicked$, setDevClicked] = createSignal(0);
+
   const [subscriptions$] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
 
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -116,7 +118,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           <img src={collapsed() ? ic_sidebarOpen : ic_sidebarClose} class={styles.collapse} onClick={handleCollapse} />
           </Show>
         </div>
-        <div class={styles.grayjay}>
+        <div class={styles.grayjay} oncontextmenu={()=>setDevClicked(devClicked$() + 1)}>
           <img src={grayjay} />
           <Show when={!collapsed()}>
             <div style="font-size: 20px; top: 2px; left: 60px; position: absolute;">
@@ -146,6 +148,10 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/history", options)} icon={history} name="History" selected={location.pathname === "/web/history"} />
         <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sync", options)} icon={iconSync} name="Sync" selected={location.pathname === "/web/sync"} />
         <SideBarButton collapsed={collapsed()} onClick={() => WindowBackend.startWindow()} icon={iconPlus} name="New Window" selected={false} />
+        <Show when={devClicked$() > 5}>
+          <SideBarButton collapsed={collapsed()} onClick={() => { WindowBackend.echo("test"); WindowBackend.delay(10000); }} icon={iconPlus} name="Delay" selected={false} />
+        </Show>
+        
         <Show when={StateGlobal.isDeveloper$()}>
         <SideBarButton collapsed={collapsed()} onClick={() => {
               const host = window.location.host;
