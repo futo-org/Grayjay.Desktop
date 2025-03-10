@@ -113,7 +113,7 @@ namespace Grayjay.Desktop.POC
                     Console.ForegroundColor = level switch
                     {
                         LogLevel.Verbose => ConsoleColor.Gray,
-                        LogLevel.Debug => ConsoleColor.Cyan,
+                        LogLevel.Debug => ConsoleColor.DarkGray,
                         LogLevel.Info => ConsoleColor.White,
                         LogLevel.Warning => ConsoleColor.Yellow,
                         LogLevel.Error => ConsoleColor.Red,
@@ -198,7 +198,11 @@ namespace Grayjay.Desktop.POC
         {
             LogFilePath = Path.Combine(Directories.Base, "log.txt"),
             FileLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#if DEBUG
+            ConsoleLogLevel = LogLevel.Debug,
+#else
             ConsoleLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#endif
 #if DEBUG
             DebugLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
 #else

@@ -4,6 +4,7 @@ import { IPlatformContent } from "./models/content/IPlatformContent";
 import { IPlatformVideo } from "./models/content/IPlatformVideo";
 import { Pager } from "./models/pagers/Pager";
 import { dateFromAny } from "../utility";
+import { RefreshPager } from "./models/pagers/RefreshPager";
 
 
 export abstract class SubscriptionsBackend {
@@ -24,6 +25,9 @@ export abstract class SubscriptionsBackend {
 
     static async subscriptionsLoad(updated: boolean = false): Promise<PagerResult<IPlatformVideo>> {
         return await Backend.GET("/subscriptions/SubscriptionsLoad?updated=" + updated) as PagerResult<IPlatformVideo>;
+    }
+    static async subscriptionsLoadLazy(updated: boolean = false): Promise<PagerResult<IPlatformVideo>> {
+        return await Backend.GET("/subscriptions/SubscriptionsLoadLazy?updated=" + updated) as PagerResult<IPlatformVideo>;
     }
     static async subscriptionsLoadNew(): Promise<PagerResult<IPlatformVideo>> {
         return await Backend.GET("/subscriptions/SubscriptionsLoadNew") as PagerResult<IPlatformVideo>;
@@ -79,6 +83,12 @@ export abstract class SubscriptionsBackend {
 
     static async subscriptionPager(updated: boolean = false): Promise<Pager<IPlatformContent>> {
         return Pager.fromMethods<IPlatformContent>(()=>this.subscriptionsLoad(updated), this.subscriptionsNextPage);
+    }
+    
+    static async subscriptionPagerLazy(updated: boolean = false): Promise<RefreshPager<IPlatformVideo>> {
+        const result = RefreshPager.fromMethodsRefresh<IPlatformVideo>("subs", ()=>this.subscriptionsLoadLazy(updated), this.subscriptionsNextPage);
+        (await result).nextPage();
+        return result;
     }
 
     static async subscriptionGroupPager(id: string, updated: boolean = false): Promise<Pager<IPlatformContent>> {

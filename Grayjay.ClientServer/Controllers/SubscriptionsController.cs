@@ -134,6 +134,17 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
+        public PagerResult<PlatformVideo> SubscriptionsLoadLazy(bool updated)
+        {
+            //return await SubscriptionsCacheLoad(url);
+            var subs = StateSubscriptions.GetGlobalSubscriptionFeedLazy(updated);
+            this.State().SubscriptionsState.SubscriptionPager = subs;
+            return subs.AsPagerResult(x => x is PlatformVideo, y =>
+            {
+                return StateHistory.AddVideoMetadata((PlatformVideo)y);
+            });
+        }
+        [HttpGet]
         public async Task<PagerResult<PlatformVideo>> SubscriptionsLoad(bool updated)
         {
             //return await SubscriptionsCacheLoad(url);
