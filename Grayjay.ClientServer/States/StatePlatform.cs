@@ -20,6 +20,7 @@ using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Pagers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -304,18 +305,27 @@ namespace Grayjay.Desktop.POC.Port.States
             return client.SearchSuggestions(query);
         }
 
-        public static IPager<PlatformContent> GetHome()
+        public static async Task<IPager<PlatformContent>> GetHome()
         {
             List<string> clientIdsOngoing = new List<string>();
             List<GrayjayPlugin> clients = GetEnabledClients().Where(x => true).ToList();
 
-            var pages = clients.AsParallel()
+            var pageTasks = clients
                 .Select(client =>
                 {
-                    lock (clientIdsOngoing)
-                        clientIdsOngoing.Add(client.Config.ID);
-                    return client.FromPool(_mainClientPool).GetHome();
-                }).ToDictionary(x => x, y => 1f);
+                    return (client, StateApp.ThreadPool.Run(() =>
+                    {
+                        lock (clientIdsOngoing)
+                            clientIdsOngoing.Add(client.Config.ID);
+                        return client.FromPool(_mainClientPool).GetHome();
+                    }));
+                });
+
+            Dictionary<IPager<PlatformContent>, float> pages = new Dictionary<IPager<PlatformContent>, float>();
+            foreach(var page in pageTasks)
+            {
+                pages.Add(await page.Item2, 1f);
+            }
 
             var pager = new MultiDistributionPager<PlatformContent>(pages, true);
             pager.Initialize();
@@ -590,7 +600,8 @@ namespace Grayjay.Desktop.POC.Port.States
         //Manage clients
 
         private static long _clientsLockCount = 0;
-        private static T ClientsLock<T>(Func<T> act, bool log = false)
+        private static string _clientsLockCaller = "";
+        private static T ClientsLock<T>(Func<T> act, bool log = true)
         {
             T result = default(T);
             ClientsLock(() => result = act(), log, 2);
@@ -600,13 +611,15 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             long id = (log) ? Interlocked.Increment(ref _clientsLockCount) : 0;
             string name = (log) ? (new System.Diagnostics.StackTrace()).GetFrame(level).GetMethod().Name : null;
-            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
+            if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquiring ({id}) [{name}]");
             lock (_clientsLock)
             {
-                if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
+                _clientsLockCaller = name;
+                if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Acquired ({id}) [{name}]");
                 act();
+                _clientsLockCaller = "";
             }
-            if (log) Logger.v(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
+            if (log && Logger.WillLog(LogLevel.Debug)) Logger.d(nameof(StatePlatform), $"ClientsLock Freed ({id}) [{name}]");
         }
 
         public static List<GrayjayPlugin> GetEnabledClients()
@@ -753,7 +766,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                                Logger.Error(nameof(StatePlatform), $"Plugin [{client.Config.Name}] failed to initialize", ex);
                                 onEx?.Invoke(id, ex);
                             }
                         }
@@ -813,7 +826,7 @@ namespace Grayjay.Desktop.POC.Port.States
                         {
                             if (ex is ScriptCaptchaRequiredException capEx)
                             {
-                                Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                Logger.Warning(nameof(StatePlatform), $"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString(), capEx);
                                 StateApp.HandleCaptchaException(config, capEx);
                             }
                         };
@@ -833,7 +846,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"Plugin [{client.Config.Name}] failed to initialize due to: {ex.Message}\n{ex.StackTrace}");
+                                Logger.Error(nameof(StatePlatform), $"Plugin [{client.Config.Name}] failed", ex);
                             }
                         }
                     });
@@ -891,7 +904,7 @@ namespace Grayjay.Desktop.POC.Port.States
                             {
                                 if (ex is ScriptCaptchaRequiredException capEx)
                                 {
-                                    Console.WriteLine($"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString());
+                                    Logger.Warning(nameof(StatePlatform), $"Captcha required: " + capEx.Message + "\n" + capEx.Url + "\n" + "Has Body: " + (capEx.Body != null).ToString(), capEx);
                                     StateApp.HandleCaptchaException(config, capEx);
                                 }
                             };

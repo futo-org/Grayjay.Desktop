@@ -49,7 +49,7 @@ namespace Grayjay.ClientServer
             {
                 if (ServerMode)
                 {
-                    Console.WriteLine("Running in Server mode, listening to all ips on port 11338");
+                    Logger.Info<GrayjayServer>("Running in Server mode, listening to all ips on port 11338");
                     serverOptions.Listen(IPAddress.Any, 11338);
                 }
                 else
@@ -60,11 +60,8 @@ namespace Grayjay.ClientServer
                 .AddExceptionHandler<ScriptExceptionHandler>()
                 .AddLogging((logBuilder) =>
                 {
-                    if(!ShowAspLogs)
-                        logBuilder.AddFilter((provider, category, logLevel) =>
-                        {
-                            return !provider.StartsWith("Microsoft.") || logLevel == Microsoft.Extensions.Logging.LogLevel.Error;
-                        });
+                    logBuilder.ClearProviders();
+                    logBuilder.AddProvider(new GrayjayLoggerProvider());
                 })
                 .AddControllers()
                 /*

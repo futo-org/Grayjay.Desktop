@@ -2,17 +2,17 @@
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
+using Grayjay.ClientServer.Pooling;
 using Grayjay.ClientServer.Settings;
-using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Threading;
-using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
 using Grayjay.Engine.Exceptions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Reflection;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+
+using Logger = Grayjay.Desktop.POC.Logger;
+using LogLevel = Grayjay.Desktop.POC.LogLevel;
 
 namespace Grayjay.ClientServer.States
 {
@@ -81,6 +81,8 @@ namespace Grayjay.ClientServer.States
 
         public static async Task Startup()
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             if (Connection != null)
                 throw new InvalidOperationException("Connection already set");
 
@@ -144,7 +146,9 @@ namespace Grayjay.ClientServer.States
                         int count = 0;
                         int countComp = 0;
                         System.Threading.ThreadPool.GetAvailableThreads(out count, out countComp);
-                        Console.WriteLine($"Threadpool available: {count}, {countComp} Completers");
+                        
+                        if (Logger.WillLog(LogLevel.Debug))
+                            Logger.Debug<PlatformClientPool>($"Threadpool available: {count}, {countComp} Completers");
                         Thread.Sleep(500);
                     }
                 }).Start();
@@ -152,11 +156,26 @@ namespace Grayjay.ClientServer.States
             //Temporary workaround for youtube
             ThreadPool.Run(() =>
             {
-                StatePlatform.GetHome();
+                try
+                {
+                    _ = StatePlatform.GetHome();
+                }
+                catch (Exception ex) { }
             });
 
             Logger.i(nameof(StateApp), "Startup: Initializing Download Cycle");
             StateDownloads.StartDownloadCycle();
+
+            if(false) //To verify if async threads are every blocked
+                new Thread(() =>
+                {
+                    while(Connection != null)
+                    {
+                        Task.Run(() => Console.WriteLine("Async Heartbeat"));
+                        Thread.Sleep(1000);
+                    }
+                }).Start();
+            Logger.i(nameof(StateApp), $"Startup duration {sw.ElapsedMilliseconds}ms");
         }
 
         public static void Shutdown()
@@ -178,7 +197,7 @@ namespace Grayjay.ClientServer.States
             await StateUI.ShowCaptchaWindow(config, ex, (success) =>
             {
                 _hasCaptchaDialog = false;
-                Console.WriteLine("Captcha result: " + success.ToString());
+                Logger.Info(nameof(StateApp), "Captcha result: " + success.ToString());
                 StatePlatform.UpdateAvailableClients(true);
             });
         }

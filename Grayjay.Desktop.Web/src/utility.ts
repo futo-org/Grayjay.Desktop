@@ -52,8 +52,10 @@ export function proxyImageVariable(imgVar?: any): string | undefined {
   if(imgVar.url?.startsWith("/"))
     return imgVar.url;
 
+  if(imgVar.subscriptionUrl)
+    return `/Images/ImageSubscription?subUrl=${encodeURIComponent(imgVar.subscriptionUrl)}`;
   if(imgVar.url)
-    return `/proxy/Image?url=${encodeURIComponent(imgVar.url)}`;
+    return `/Images/CachePassthrough?url=${encodeURIComponent(imgVar.url)}`;
   return undefined;
 }
 

@@ -15,6 +15,8 @@ using System.Net;
 using System.Text.Json;
 using System.Web;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]

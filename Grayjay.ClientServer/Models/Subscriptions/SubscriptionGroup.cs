@@ -16,6 +16,7 @@
     {
         public string Url { get; set; }
         public int ResId { get; set; }
+        public string SubscriptionUrl { get; set; }
         public string PresetName { get; set; }
     }
 }

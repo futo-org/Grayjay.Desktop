@@ -5,6 +5,8 @@ using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.States;
 
+using Logger = Desktop.POC.Logger;
+
 public class StateCasting : IDisposable
 {
     private ServiceDiscoverer? _serviceDiscoverer = null;
@@ -178,7 +180,7 @@ public class StateCasting : IDisposable
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception occurred when broadcasting records: {e.Message}, {e.StackTrace}");
+                Logger.Error(nameof(StateApp), $"Exception occurred when broadcasting records: {e.Message}, {e.StackTrace}", e);
             }
         });
     }

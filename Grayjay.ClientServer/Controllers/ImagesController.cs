@@ -8,6 +8,8 @@ using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
+using Logger = Grayjay.Desktop.POC.Logger;
+
 namespace Grayjay.ClientServer.Controllers
 {
     [Route("[controller]/[action]")]
@@ -36,6 +38,16 @@ namespace Grayjay.ClientServer.Controllers
                 return File(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), "image/png");
             return NoContent();
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ImageSubscription(string subUrl)
+        {
+            var sub = StateSubscriptions.GetSubscription(subUrl);
+            if (sub == null)
+                return NotFound();
+            return await CachePassthrough(sub.Channel.Thumbnail);
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> ImageUpload()

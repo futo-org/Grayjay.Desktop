@@ -1,5 +1,7 @@
 ﻿using Grayjay.ClientServer.Parsers;
 using Grayjay.ClientServer.Proxy;
+using Grayjay.ClientServer.Subscriptions;
+using Grayjay.Desktop.POC.Port.States;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using System;
@@ -13,7 +15,7 @@ namespace Grayjay.ClientServer.Controllers
     public class ProxyController: ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> Image(string url)
+        public async Task<IActionResult> Image(string url, string cacheName = null)
         {
             if (string.IsNullOrEmpty(url))
                 throw new BadHttpRequestException("Missing url");
@@ -30,7 +32,7 @@ namespace Grayjay.ClientServer.Controllers
                 foreach (var header in result.Content.Headers)
                     Response.Headers.Add(header.Key, new StringValues(header.Value.ToArray()));
 
-                return new FileStreamResult(result.Content.ReadAsStream(), result.Content.Headers.ContentType.MediaType);
+                return new FileStreamResult(await result.Content.ReadAsStreamAsync(), result.Content.Headers.ContentType.MediaType);
             }
         }
 

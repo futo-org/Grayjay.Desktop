@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Grayjay.Desktop.POC;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -89,8 +90,7 @@ namespace Grayjay.ClientServer
                 }
                 catch (Exception err)
                 {
-                    Console.WriteLine("Error fetching hostname, trying different method...");
-                    Console.WriteLine(err);
+                    Logger.Error<OSHelper>("Error fetching hostname, trying different method...", err);
                 }
 
                 try
@@ -101,9 +101,7 @@ namespace Grayjay.ClientServer
                 }
                 catch (Exception err2)
                 {
-                    Console.WriteLine("Error fetching hostname again, using generic name...");
-                    Console.WriteLine(err2);
-
+                    Logger.Error<OSHelper>("Error fetching hostname again, using generic name...", err2);
                     hostname = "linux device";
                 }
 

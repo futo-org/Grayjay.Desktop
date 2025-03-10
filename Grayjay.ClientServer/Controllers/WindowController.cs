@@ -1,5 +1,6 @@
 ﻿using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.ConstrainedExecution;
@@ -11,15 +12,21 @@ namespace Grayjay.ClientServer.Controllers
     public class WindowController : ControllerBase
     {
         [HttpGet]
-        public void StartWindow()
+        public async Task StartWindow()
         {
-            new Thread(async () =>
+            if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
             {
-                if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
-                    await GrayjayServer.Instance.WindowProvider.CreateWindow("Grayjay (Sub)", 1280, 720, $"{GrayjayServer.Instance.BaseUrl}/web/index.html");
-                else if(!GrayjayServer.Instance.ServerMode)
-                    OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
-            }).Start();
+                await GrayjayServer.Instance.WindowProvider.CreateWindowAsync(
+                    url: $"{GrayjayServer.Instance.BaseUrl}/web/index.html", 
+                    title: "Grayjay (Sub)",
+                    minimumWidth: 900,
+                    minimumHeight: 550,
+                    preferredWidth: 1300,
+                    preferredHeight: 950
+                );
+            }
+            else if (!GrayjayServer.Instance.ServerMode)
+                OSHelper.OpenUrl($"{GrayjayServer.Instance.BaseUrl}/web/index.html");
         }
 
         [HttpGet]
@@ -31,6 +38,20 @@ namespace Grayjay.ClientServer.Controllers
                 state.Ready = true;
                 StateWindow.StateReadyChanged(state, true);
             }
+        }
+
+
+        [HttpGet]
+        public async Task<bool> Delay(int ms)
+        {
+            await Task.Delay(ms);
+            return true;
+        }
+
+        [HttpGet]
+        public string Echo(string str)
+        {
+            return str;
         }
     }
 }
