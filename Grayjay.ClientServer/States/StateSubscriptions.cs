@@ -156,6 +156,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 }
                 try
                 {
+                    Logger.w(nameof(StateSubscriptions), "Started new Subscriptions update");
                     var (subsPager, exceptions) = getSubscriptionsFeedWithExceptions(true, true, (feed.Group != null) ? feed.Group.Urls : null, (progress, total) =>
                     {
                         feed.SetProgress(progress, total);
@@ -171,12 +172,37 @@ namespace Grayjay.Desktop.POC.Port.States
                 finally
                 {
                     feed.IsGlobalUpdating = false;
+                    Logger.w(nameof(StateSubscriptions), "Finished Subscriptions update");
                 }
             });
         }
 
         private static int _loadIndex = 0;
         public static ChannelFeed GetGlobalFeed() => _global;
+        public static IPager<PlatformContent> GetGlobalSubscriptionFeedLazy(bool updated)
+        {
+            //TODO: None of this is great. But having to lazily respond with this pager in general isn't great logic wise. 
+            TaskCompletionSource<IPager<PlatformContent>> compSource = new TaskCompletionSource<IPager<PlatformContent>>();
+            StateApp.ThreadPool.Run(async () =>
+            {
+                try
+                {
+                    compSource.SetResult(await GetGlobalSubscriptionFeed(updated));
+                }
+                catch(Exception ex)
+                {
+                    compSource.SetException(ex);
+                }
+            });
+            return new LazyRefreshPager<PlatformContent>(compSource.Task, 
+                new PlaceholderPager<PlatformContent>(5, () => new PlatformContentPlaceholder("")), 
+                async (changedPager) =>
+                {
+                    var result = changedPager.AsPagerResult();
+                    Logger.i(nameof(StateSubscriptions), $"Resolving {result.Results.Length} lazy results ({result.PagerID})");
+                    await GrayjayServer.Instance.WebSocket.Broadcast(result, "PagerUpdated", changedPager.ID);
+                }, 20);
+        }
         public static Task<IPager<PlatformContent>> GetGlobalSubscriptionFeed(bool updated)//, SubscriptionGroup group = null)
         {
             var feed = _global;

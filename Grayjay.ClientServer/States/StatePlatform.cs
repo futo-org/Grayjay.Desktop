@@ -683,12 +683,22 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static GrayjayPlugin GetChannelClientOrNull(string url)
         {
-            GrayjayPlugin[] arr = null;
-            ClientsLock(() =>
+            Stopwatch w = Stopwatch.StartNew();
+            try
             {
-                arr = _enabledClients.ToArray();
-            });
-            return arr?.FirstOrDefault(x => x.IsChannelUrl(url));
+                GrayjayPlugin[] arr = null;
+                ClientsLock(() =>
+                {
+                    arr = _enabledClients.ToArray();
+                });
+                return arr?.FirstOrDefault(x => x.IsChannelUrl(url));
+            }
+            finally
+            {
+                w.Stop();
+                if (w.Elapsed.TotalMilliseconds > 100)
+                    Logger.w(nameof(StatePlatform), $"GetChannelClients TOOK LONG: {w.Elapsed.TotalMilliseconds}ms");
+            }
         }
         public static GrayjayPlugin GetPlaylistClientOrNull(string url)
         {

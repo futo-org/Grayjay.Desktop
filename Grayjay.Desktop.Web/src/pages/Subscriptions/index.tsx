@@ -78,7 +78,7 @@ const SubscriptionsPage: Component = () => {
   const [subPager$, subPagerResource] = createResourceDefault(async () => {
     const shouldUpdate = doUpdate;
     doUpdate = false;
-    const subscriptionPager = await SubscriptionsBackend.subscriptionPager(shouldUpdate);
+    const subscriptionPager = await SubscriptionsBackend.subscriptionPagerLazy(shouldUpdate);
     subPagerCacheResource.refetch();
     return subscriptionPager;
   });
