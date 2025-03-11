@@ -42,6 +42,11 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>FUTO.Updater.Client</TargetPath>
     </ContentWithTargetPath>
+    <ContentWithTargetPath Include="deps/linux-arm64/FUTO.Updater.Client" Condition="'$(RuntimeIdentifier)'=='linux-arm64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>FUTO.Updater.Client</TargetPath>
+    </ContentWithTargetPath>
     
     <ContentWithTargetPath Include="deps/win-x64/ffmpeg.exe" Condition="'$(RuntimeIdentifier)'=='win-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -49,6 +54,11 @@
       <TargetPath>ffmpeg.exe</TargetPath>
     </ContentWithTargetPath>
     <ContentWithTargetPath Include="deps/linux-x64/ffmpeg" Condition="'$(RuntimeIdentifier)'=='linux-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>ffmpeg</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="deps/linux-arm64/ffmpeg" Condition="'$(RuntimeIdentifier)'=='linux-arm64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>ffmpeg</TargetPath>
