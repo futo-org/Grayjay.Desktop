@@ -125,7 +125,7 @@ namespace Grayjay.ClientServer.Settings
         public PlaybackSettings Playback { get; set; } = new PlaybackSettings();
         public class PlaybackSettings
         {
-            [SettingsField("Primary Language", SettingsField.DROPDOWN, "", 0)]
+            [SettingsField("Primary Language", SettingsField.DROPDOWN, "", -1)]
             [SettingsDropdownOptions("English")]
             public int PrimaryLanguage { get; set; } = 0;
 
@@ -151,6 +151,9 @@ namespace Grayjay.ClientServer.Settings
                     _ => null
                 };
             }
+
+            [SettingsField("Prefer Original Audio", SettingsField.TOGGLE, "", 0)]
+            public bool PreferOriginalAudio { get; set; } = true;
 
             [SettingsField("Default Playback Speed", SettingsField.DROPDOWN, "", 1)]
             [SettingsDropdownOptions("0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25")]

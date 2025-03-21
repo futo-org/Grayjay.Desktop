@@ -56,6 +56,13 @@ namespace Grayjay.ClientServer.Helpers
 
         public static IAudioSource SelectBestAudioSource(List<IAudioSource> sources, List<string> prefContainers, string? prefLanguage = Language.ENGLISH, long? targetBitrate = null)
         {
+            var hasPriority = sources.Any(x => x.Priority);
+            if (hasPriority)
+                sources = sources.Where(x => x.Priority).ToList();
+            var hasOriginal = sources.Any(x => x.Original);
+            if (hasOriginal && GrayjaySettings.Instance.Playback.PreferOriginalAudio)
+                sources = sources.Where(x => x.Original).ToList();
+
             var languageToFilter = (prefLanguage != null && sources.Any(x => x.Language == prefLanguage) 
                 ? prefLanguage
                 : (sources.Any(x => x.Language == Language.ENGLISH) ? Language.ENGLISH : Language.UNKNOWN));
