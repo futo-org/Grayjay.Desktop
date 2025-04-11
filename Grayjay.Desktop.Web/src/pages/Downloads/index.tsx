@@ -276,79 +276,72 @@ const DownloadsPage: Component = () => {
 
 
 
-  function gridUI() {
+  function gridUI(scrollContainerRef: HTMLDivElement | undefined) {
     const data = getDownloadedItems();
-    let scrollContainerRef: HTMLDivElement | undefined;
     return (
       <Switch>
-        <Match when={videoType$() != "playlist"}>
-          
-                <ScrollContainer ref={scrollContainerRef} style={{"margin-left": "-25px", "margin-right": "-25px"}}>
-                    <VirtualGrid outerContainerRef={scrollContainerRef}
-                        items={data!}
-                        itemWidth={300}
-                        calculateHeight={(width) => {
-                            const aspectRatio = 16 / 9;
-                            const thumbnailHeight = width / aspectRatio;
-                            const margin1 = 16;
-                            const fontSize = 18;
-                            const textHeight = 1.2 * fontSize;
-                            const margin2 = 16;
-                            const dataHeight = 32;
-                            const totalHeight = thumbnailHeight + margin1 + textHeight + margin2 + dataHeight;
-                            return totalHeight;                        
-                        }}
-                        autosizeWidth={true}
-                        notifyEndOnLast={5}
-                        style={{
-                            "margin-left": "15px",
-                            "margin-top": "15px",
-                            "margin-bottom": "10px"
-                        }}
-                        builder={(index, item) =>
-                          <DownloadedView downloaded={item()} onSettings={(e, content)=> onSettingsClicked(e, content)} />
-                        } />
-                </ScrollContainer>
+        <Match when={videoType$() != "playlist"}>          
+          <VirtualGrid outerContainerRef={scrollContainerRef}
+              items={data!}
+              itemWidth={300}
+              calculateHeight={(width) => {
+                  const aspectRatio = 16 / 9;
+                  const thumbnailHeight = width / aspectRatio;
+                  const margin1 = 16;
+                  const fontSize = 18;
+                  const textHeight = 1.2 * fontSize;
+                  const margin2 = 16;
+                  const dataHeight = 32;
+                  const totalHeight = thumbnailHeight + margin1 + textHeight + margin2 + dataHeight;
+                  return totalHeight;                        
+              }}
+              autosizeWidth={true}
+              notifyEndOnLast={5}
+              style={{
+                  "margin-left": "15px",
+                  "margin-top": "15px",
+                  "margin-bottom": "10px"
+              }}
+              builder={(index, item) =>
+                <DownloadedView downloaded={item()} onSettings={(e, content)=> onSettingsClicked(e, content)} />
+              } />
         </Match>
         <Match when={videoType$() == "playlist"}>
-          
-        <ScrollContainer ref={scrollContainerRef} style={{"margin-left": "-25px", "margin-right": "-25px"}}>
           <VirtualGrid outerContainerRef={scrollContainerRef}
-                        items={downloadingPlaylists$()}
-                        itemWidth={300}
-                        calculateHeight={(width) => {
-                            const aspectRatio = 16 / 9;
-                            const thumbnailHeight = width / aspectRatio;
-                            const margin1 = 16;
-                            const fontSize = 18;
-                            const textHeight = 1.2 * fontSize;
-                            const margin2 = 16;
-                            const dataHeight = 32;
-                            const totalHeight = thumbnailHeight + margin1 + textHeight + margin2 + dataHeight;
-                            return totalHeight;                        
-                        }}
-                        autosizeWidth={true}
-                        notifyEndOnLast={5}
-                        style={{
-                            "margin-left": "30px",
-                            "margin-top": "15px",
-                            "margin-bottom": "10px"
-                        }}
-                        builder={(index, item) =>
-                          <Show when={!!item()}>
-                            <PlaylistView name={item().playlist.name} 
-                              itemCount={item().playlist.videos.length}
-                              thumbnail={getPlaylistThumbnail(item().playlist) ?? ""} onClick={()=>navigate("/web/playlist?id=" + item().playlist.id)}
-                              onSettings={(el)=>{ showPlaylistMenu(item(), el)}} />
-                          </Show>
-                        } />
-                </ScrollContainer>
+            items={downloadingPlaylists$()}
+            itemWidth={300}
+            calculateHeight={(width) => {
+                const aspectRatio = 16 / 9;
+                const thumbnailHeight = width / aspectRatio;
+                const margin1 = 16;
+                const fontSize = 18;
+                const textHeight = 1.2 * fontSize;
+                const margin2 = 16;
+                const dataHeight = 32;
+                const totalHeight = thumbnailHeight + margin1 + textHeight + margin2 + dataHeight;
+                return totalHeight;                        
+            }}
+            autosizeWidth={true}
+            notifyEndOnLast={5}
+            style={{
+                "margin-left": "30px",
+                "margin-top": "15px",
+                "margin-bottom": "10px"
+            }}
+            builder={(index, item) =>
+              <Show when={!!item()}>
+                <PlaylistView name={item().playlist.name} 
+                  itemCount={item().playlist.videos.length}
+                  thumbnail={getPlaylistThumbnail(item().playlist) ?? ""} onClick={()=>navigate("/web/playlist?id=" + item().playlist.id)}
+                  onSettings={(el)=>{ showPlaylistMenu(item(), el)}} />
+              </Show>
+            } />
                 
-                <Portal>
-                    <Show when={playlistMenu$()}>
-                      <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} />
-                    </Show>
-                </Portal>
+            <Portal>
+                <Show when={playlistMenu$()}>
+                  <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} />
+                </Show>
+            </Portal>
         </Match>
       </Switch>
     );
@@ -481,10 +474,10 @@ const DownloadsPage: Component = () => {
   }
 
   const video = useVideo();
+  let scrollContainerRef: HTMLDivElement | undefined;
   return (
     <LoaderContainer isLoading={!isReady$()} loadingText={"Loading Downloads"} loadingSubText={params.url} background='#141414'>
-      <div style="display: flex; flex-direction: column; height: 100%;">
-  
+      <ScrollContainer ref={scrollContainerRef}>
         <Show when={storageInfo$()}>
         <div class={styles.storageContainer}>
           <div class={styles.sizeLine}>
@@ -561,7 +554,6 @@ const DownloadsPage: Component = () => {
                   <TogglePill name='Playlists' value={videoType$() == "playlist"} onToggle={()=>{setVideoType("playlist")}} />
               </div>
               <div class={styles.viewTypes}>
-                <div style="margin-right: auto" />
                 <Show when={selected$().length > 0}>
                   <div style="display: inline-block; text-align: right;">
                     
@@ -589,7 +581,7 @@ const DownloadsPage: Component = () => {
             </div>
             <Switch>
               <Match when={viewType$() == "grid"}>
-                {gridUI()}
+                {gridUI(scrollContainerRef)}
               </Match>
               <Match when={viewType$() == "list"}>
                 {listUI()}
@@ -614,7 +606,7 @@ const DownloadsPage: Component = () => {
             <Portal>
                 <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} />
             </Portal>
-      </div>
+      </ScrollContainer>
     </LoaderContainer>
   );
 };
