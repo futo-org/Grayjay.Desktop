@@ -11,9 +11,13 @@ using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Internal;
-using Grayjay.Desktop.POC;
 using Noise;
-using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
+using SyncClient;
+
+using Opcode = SyncShared.Opcode;
+using Logger = Grayjay.Desktop.POC.Logger;
+using SyncShared;
+using System.Threading;
 
 namespace Grayjay.ClientServer.States;
 
@@ -28,8 +32,6 @@ public class StateSync : IDisposable
         .Load();
 
     private TcpListener? _serverSocket;
-    private Thread? _thread;
-    private Thread? _connectThread;
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly Dictionary<string, SyncSession> _sessions = new Dictionary<string, SyncSession>();
     private readonly Dictionary<string, long> _lastConnectTimes = new Dictionary<string, long>();
@@ -38,7 +40,11 @@ public class StateSync : IDisposable
     public string? PublicKey { get; private set; }
     public event Action<string>? DeviceRemoved;
     public event Action<string, SyncSession>? DeviceUpdatedOrAdded;
+    public const string RelayServer = "relay.grayjay.app";
+    private SyncSocketSession? _relaySession;
+    public string? _pairingCode = Utilities.GenerateReadablePassword(8); //TODO: Set to null whenever pairing is not desired
 
+    private static readonly SyncHandlers _handlers = new GrayjaySyncHandlers();
     public StateSync()
     {
         _serviceDiscoverer = new FUTO.MDNS.ServiceDiscoverer(["_gsync._tcp.local"]);
@@ -92,7 +98,7 @@ public class StateSync : IDisposable
 
         Logger.i<StateSync>($"Sync key pair initialized (public key = {PublicKey})");
 
-        _thread = new Thread(() =>
+        _ = Task.Run(async () =>
         {
             try
             {
@@ -102,9 +108,9 @@ public class StateSync : IDisposable
 
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    var clientSocket = _serverSocket.AcceptTcpClient();
-                    var session = CreateSocketSession(clientSocket, true, (session, socketSession) => { });
-                    session.StartAsResponder();
+                    var clientSocket = await _serverSocket.AcceptTcpClientAsync();
+                    var session = CreateSocketSession(clientSocket, true, (session) => { });
+                    await session.StartAsResponderAsync();
                 }
             }
             catch (Exception e)
@@ -112,11 +118,160 @@ public class StateSync : IDisposable
                 Logger.e<StateSync>("StateSync server socket had an unexpected error.", e);
             }
         });
-        _thread.Start();
+
+        _ = Task.Run(async () =>
+        {
+            while (!_cancellationTokenSource.IsCancellationRequested)
+            {
+                const string RelayPublicKey = "xGbHRzDOvE6plRbQaFgSen82eijF+gxS0yeUaeEErkw=";
+
+                try
+                {
+                    Logger.i<StateSync>("Starting relay session...");
+
+                    var socket = new TcpClient("relay.grayjay.app", 9000);
+                    _relaySession = new SyncSocketSession((socket.Client.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
+                        socket.GetStream(),
+                        socket.GetStream(),
+                        isHandshakeAllowed: (_, pk, pairingCode) =>
+                        {
+                            Logger.v<StateSync>($"Check if handshake allowed from '{pk}'.");
+                            if (pk == RelayPublicKey)
+                                return true;
+
+                            lock (_authorizedDevices)
+                            {
+                                if (_authorizedDevices.Contains(pk))
+                                    return true;
+                            }
+
+                            Logger.v<StateSync>($"Check if handshake allowed with pairing code '{pairingCode}' with active pairing code '{_pairingCode}'.");
+                            if (_pairingCode == null || pairingCode == null || pairingCode.Length == 0)
+                                return false;
+
+                            return _pairingCode == pairingCode;
+                        },
+                        onNewChannel: (s, c) =>
+                        {
+                            var remotePublicKey = c.RemotePublicKey;
+                            if (remotePublicKey == null)
+                            {
+                                Logger.e<StateSync>("Remote public key should never be null in onNewChannel.");
+                                return;
+                            }
+
+                            Logger.i<StateSync>($"New channel established from relay (pk: '{c.RemotePublicKey}').");
+
+                            SyncSession? session;
+                            lock (_sessions)
+                            {
+                                if (!_sessions.TryGetValue(remotePublicKey, out session) || session == null)
+                                {
+                                    var remoteDeviceName = _nameStorage.GetValue(remotePublicKey, null);
+                                    session = CreateNewSyncSession(remotePublicKey, remoteDeviceName, (s) => { });
+                                    _sessions[remotePublicKey] = session;
+                                }
+
+                                session.AddChannel(c);
+                            }
+
+                            c.SetDataHandler((_, channel, opcode, subOpcode, data) => session.HandlePacket(opcode, subOpcode, data));
+                            c.SetCloseHandler((channel) => session.RemoveChannel(channel));
+                        }, 
+                        onChannelEstablished: async (_, channel, isResponder) =>
+                        {
+                            await HandleAuthorizationAsync(channel, isResponder);
+                        },
+                        onHandshakeComplete: async (relaySession) =>
+                        {
+                            try
+                            {
+                                while (!_cancellationTokenSource.IsCancellationRequested)
+                                {
+                                    string[] unconnectedAuthorizedDevices;
+                                    lock (_authorizedDevices)
+                                        unconnectedAuthorizedDevices = _authorizedDevices.Value.Where(pk => !IsConnected(pk)).ToArray();
+
+                                    await relaySession.PublishConnectionInformationAsync(unconnectedAuthorizedDevices, PORT, true, false, false, true, _cancellationTokenSource.Token);
+                                    var connectionInfos = await relaySession.RequestBulkConnectionInfoAsync(unconnectedAuthorizedDevices, _cancellationTokenSource.Token);
+                                    foreach (var connectionInfoPair in connectionInfos)
+                                    {
+                                        var targetKey = connectionInfoPair.Key;
+                                        var connectionInfo = connectionInfoPair.Value;
+                                        var potentialLocalAddresses = connectionInfo.Ipv4Addresses.Concat(connectionInfo.Ipv6Addresses).Where(l => l != connectionInfo.RemoteIp).ToList();
+                                        if (connectionInfo.AllowLocalDirect)
+                                        {
+                                            _ = Task.Run(async () =>
+                                            {
+                                                try
+                                                {
+                                                    var syncDeviceInfo = new SyncDeviceInfo(targetKey, potentialLocalAddresses.Select(l => l.ToString()).ToArray(), PORT, null);
+                                                    Logger.Verbose<StateSync>($"Attempting to connect directly, locally to '{targetKey}'.");
+                                                    await ConnectAsync(syncDeviceInfo, cancellationToken: _cancellationTokenSource.Token);
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    Logger.e<StateSync>($"Failed to start direct connection using connection info with {targetKey}.", e);
+                                                }
+                                            });
+                                        }
+
+                                        var remoteAddress = connectionInfo.RemoteIp;
+                                        if (connectionInfo.AllowRemoteDirect)
+                                        {
+                                            //TODO: Try connecting directly, remotely, set allow to true when implemented, only useful for port forwarded scenarios?
+                                        }
+
+                                        if (connectionInfo.AllowRemoteHolePunched)
+                                        {
+                                            //TODO: Implement hole punching, set allow to true when implemented
+                                        }
+
+                                        if (connectionInfo.AllowRemoteProxied)
+                                        {
+                                            try
+                                            {
+                                                Logger.Verbose<StateSync>($"Attempting relayed connection with '{targetKey}'.");
+                                                await relaySession.StartRelayedChannelAsync(targetKey, null, _cancellationTokenSource.Token);
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Logger.e<StateSync>($"Failed to start relayed channel with {targetKey}.", e);
+                                            }
+                                        }
+                                    }
+
+                                    await Task.Delay(TimeSpan.FromSeconds(15), _cancellationTokenSource.Token);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.e<StateSync>("Unhandled exception in relay session.", e);
+                                relaySession.Dispose();
+                            }
+                        });
+
+                    _relaySession.Authorizable = AlwaysAuthorized.Instance;
+                    await _relaySession.StartAsInitiatorAsync(RelayPublicKey, null, _cancellationTokenSource.Token);
+
+                    Logger.i<StateSync>("Started relay session.");
+                }
+                catch (Exception e)
+                {
+                    Logger.e<StateSync>("Relay session failed.", e);
+                    await Task.Delay(5000);
+                }
+                finally
+                {
+                    _relaySession?.Dispose();
+                    _relaySession = null;
+                }
+            }
+        });
 
         if (GrayjaySettings.Instance.Synchronization.ConnectLast)
         {
-            _connectThread = new Thread(() =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -139,28 +294,17 @@ public class StateSync : IDisposable
                                 lastKnownMap = new();
                         }
 
-                        var pairs = authorizedDevices.Select(publicKey => 
-                        {
-                            var connected = IsConnected(publicKey);
-                            if (connected)
-                                return null;
-
-                            if (!lastKnownMap.TryGetValue(publicKey, out var lastAddress) || lastAddress == null)
-                                return null;
-
-                            return new 
-                            {
-                                PublicKey = publicKey, 
-                                LastAddress = lastAddress
-                            };
-                        }).Where(v => v != null).Select(v => v!).ToList();
+                        var pairs = authorizedDevices
+                            .Where(pk => !IsConnected(pk) && lastKnownMap.TryGetValue(pk, out var addr) && addr != null)
+                            .Select(pk => new { PublicKey = pk, LastAddress = lastKnownMap[pk] })
+                            .ToList();
 
                         foreach (var pair in pairs)
                         {
                             try
                             {
-                                var syncDeviceInfo = new SyncDeviceInfo(pair.PublicKey, [ pair.LastAddress ], PORT);
-                                Connect(syncDeviceInfo);
+                                var syncDeviceInfo = new SyncDeviceInfo(pair.PublicKey, [ pair.LastAddress ], PORT, null);
+                                await ConnectAsync(syncDeviceInfo);
                             }
                             catch (Exception e)
                             {
@@ -177,16 +321,85 @@ public class StateSync : IDisposable
                     Logger.e<StateSync>("StateSync connect thread had an unexpected error.", e);
                 }
             });
-            _connectThread.Start();
         }
     }
 
+    private SyncSession CreateNewSyncSession(string remotePublicKey, string? remoteDeviceName, Action<SyncSession>? onAuthorized)
+    {
+        return new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
+        {
+            if (!isNewSession)
+            {
+                return;
+            }
+
+            var rdn = sess.RemoteDeviceName;
+            if (rdn != null)
+                _nameStorage.SetAndSave(remotePublicKey, rdn);
+
+            onAuthorized?.Invoke(sess);
+            lock (_authorizedDevices)
+            {
+                if (!_authorizedDevices.Value.Contains(remotePublicKey))
+                    _authorizedDevices.Save(_authorizedDevices.Value.Concat([remotePublicKey]).ToArray());
+            }
+
+            StateWebsocket.SyncDevicesChanged();
+            DeviceUpdatedOrAdded?.Invoke(remotePublicKey, sess);
+
+            await CheckForSyncAsync(sess);
+        }, onUnauthorized: sess => {
+            StateUI.Dialog(new StateUI.DialogDescriptor()
+            {
+                Text = "Device Unauthorized",
+                TextDetails = $"Device [{sess.DisplayName}] tried to connect but was unauthorized (key change?), would you like to remove the device?",
+                Actions = new List<StateUI.DialogAction>()
+                {
+                    new StateUI.DialogAction()
+                    {
+                        Text = "Ignore",
+                        Action = (resp) =>
+                        {
+
+                        }
+                    },
+                    new StateUI.DialogAction()
+                    {
+                        Text = "Remove",
+                        Action = (resp) =>
+                        {
+                            Unauthorize(remotePublicKey);
+                        }
+                    }
+                }
+            });
+        }, onConnectedChanged: (sess, connected) =>
+        {
+            Logger.i<StateSync>($"{sess.RemotePublicKey} connected: {connected}");
+            StateWebsocket.SyncDevicesChanged();
+            DeviceUpdatedOrAdded?.Invoke(remotePublicKey, sess);
+        }, onClose: sess =>
+        {
+            Logger.i<StateSync>($"{sess.RemotePublicKey} closed");
+
+            lock (_sessions)
+            {
+                _sessions.Remove(remotePublicKey);
+            }
+
+            DeviceRemoved?.Invoke(remotePublicKey);
+        }, dataHandler: (sess, opcode, subOpcode, data) =>
+        {
+            _handlers.Handle(sess, opcode, subOpcode, data);
+        }, remoteDeviceName);
+    }
     public SyncDeviceInfo GetSyncDeviceInfo()
     {
         return new SyncDeviceInfo(
             publicKey: PublicKey!, 
             addresses: Utilities.GetIPs().Select(x => x.ToString()).ToArray(),
-            port: PORT);
+            port: PORT,
+            pairingCode: _pairingCode);
     }
 
     public SyncSessionData GetSyncSessionData(string key)
@@ -274,9 +487,7 @@ public class StateSync : IDisposable
                     base64 += new string('=', padding);
                 var pkey = Convert.ToBase64String(Convert.FromBase64String(base64));
 
-                var syncDeviceInfo = new SyncDeviceInfo(pkey, addresses, port);
                 var authorized = IsAuthorized(pkey);
-
                 if (authorized && !IsConnected(pkey))
                 {
                     var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -290,14 +501,18 @@ public class StateSync : IDisposable
                     }
                     Logger.i<StateSync>($"Found authorized device '{name}' with pkey={pkey}, attempting to connect");
 
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        Connect(syncDeviceInfo);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.e<StateSync>($"Failed to connect to {pkey}", ex);
-                    }
+                        try
+                        {
+                            await ConnectAsync(addresses, port, pkey);
+                            Logger.i<StateSync>($"Connected to found authorized device '{name}' with pkey={pkey}.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.e<StateSync>($"Failed to connect to {pkey}", ex);
+                        }
+                    });
                 }
             }
         }
@@ -319,20 +534,40 @@ public class StateSync : IDisposable
         return _nameStorage.GetValue(publicKey, null);
     }
 
-    private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder, Action<SyncSession, SyncSocketSession> onAuthorized)
+    private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder, Action<SyncSession>? onAuthorized)
     {
         SyncSession? session = null;
-
+        ChannelSocket? channelSocket = null;
         return new SyncSocketSession((socket.Client.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
             socket.GetStream(),
             socket.GetStream(),
-            onClose: s => session?.RemoveSocketSession(s),
+            onClose: s =>
+            {
+                if (session != null && channelSocket != null)
+                    session.RemoveChannel(channelSocket);
+            },
+            isHandshakeAllowed: (_, pk, pairingCode) =>
+            {
+                Logger.v<StateSync>($"Check if handshake allowed from '{pk}'.");
+
+                lock (_authorizedDevices)
+                {
+                    if (_authorizedDevices.Contains(pk))
+                        return true;
+                }
+
+                Logger.v<StateSync>($"Check if handshake allowed with pairing code '{pairingCode}' with active pairing code '{_pairingCode}'.");
+                if (_pairingCode == null || pairingCode == null || pairingCode.Length == 0)
+                    return false;
+
+                return _pairingCode == pairingCode;
+            },
             onHandshakeComplete: async s =>
             {
                 var remotePublicKey = s.RemotePublicKey;
                 if (remotePublicKey == null)
                 {
-                    s.Stop();
+                    s.Dispose();
                     return;
                 }
 
@@ -343,115 +578,60 @@ public class StateSync : IDisposable
                     if (!_sessions.TryGetValue(remotePublicKey, out session))
                     {
                         var remoteDeviceName = _nameStorage.GetValue(remotePublicKey, null);
-                        session = new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
+                        Logger.i<StateSync>($"{s.RemotePublicKey} authorized");
+                        lock (_lastAddressStorage)
                         {
-                            if (!isNewSession) {
-                                return;
-                            }
-
-                            Logger.i<StateSync>($"{s.RemotePublicKey} authorized");
-                            lock(_lastAddressStorage) 
+                            if (_lastAddressStorage.Value == null)
+                                _lastAddressStorage.Save(new() { { remotePublicKey, s.RemoteAddress } });
+                            else
                             {
-                                if (_lastAddressStorage.Value == null)
-                                    _lastAddressStorage.Save(new() { { remotePublicKey, s.RemoteAddress } });
-                                else
-                                {
-                                    _lastAddressStorage.Value[remotePublicKey] = s.RemoteAddress;
-                                    _lastAddressStorage.SaveThis();   
-                                }
+                                _lastAddressStorage.Value[remotePublicKey] = s.RemoteAddress;
+                                _lastAddressStorage.SaveThis();
                             }
+                        }
 
-                            var rpk = s.RemotePublicKey;
-                            var rdn = sess.RemoteDeviceName;
-                            if (rpk != null && rdn != null)
-                                _nameStorage.SetAndSave(rpk, rdn);
-
-                            onAuthorized(sess, s);
-                            lock (_authorizedDevices)
-                            {
-                                if (!_authorizedDevices.Value.Contains(remotePublicKey))
-                                    _authorizedDevices.Save(_authorizedDevices.Value.Concat([ remotePublicKey ]).ToArray());
-                            }
-                            
-                            StateWebsocket.SyncDevicesChanged();
-                            DeviceUpdatedOrAdded?.Invoke(remotePublicKey, sess);
-
-                            await CheckForSyncAsync(sess);
-                        }, onUnauthorized: sess => {
-                            StateUI.Dialog(new StateUI.DialogDescriptor()
-                            {
-                                Text = "Device Unauthorized",
-                                TextDetails = $"Device [{sess.DisplayName}] tried to connect but was unauthorized (key change?), would you like to remove the device?",
-                                Actions = new List<StateUI.DialogAction>()
-                                {
-                                    new StateUI.DialogAction()
-                                    {
-                                        Text = "Ignore",
-                                        Action = (resp) =>
-                                        {
-
-                                        }
-                                    },
-                                    new StateUI.DialogAction()
-                                    {
-                                        Text = "Remove",
-                                        Action = (resp) =>
-                                        {
-                                            Unauthorize(remotePublicKey);
-                                        }
-                                    }
-                                }
-                            });
-                        }, onConnectedChanged: (sess, connected) =>
-                        {
-                            Logger.i<StateSync>($"{s.RemotePublicKey} connected: {connected}");
-                            StateWebsocket.SyncDevicesChanged();
-                            DeviceUpdatedOrAdded?.Invoke(remotePublicKey, sess);
-                        }, onClose: sess => 
-                        {
-                            Logger.i<StateSync>($"{s.RemotePublicKey} closed");
-
-                            lock (_sessions)
-                            {
-                                _sessions.Remove(remotePublicKey);
-                            }
-
-                            DeviceRemoved?.Invoke(remotePublicKey);
-                        }, remoteDeviceName);
-
+                        session = CreateNewSyncSession(remotePublicKey, remoteDeviceName, onAuthorized);
                         _sessions[remotePublicKey] = session;
                     }
 
-                    session.AddSocketSession(s);
+                    channelSocket = new ChannelSocket(s);
+                    session.AddChannel(channelSocket);
                 }
 
-                if (isResponder)
-                {
-                    var isAuthorized = IsAuthorized(remotePublicKey);
-                    if (!isAuthorized)
-                    {
-                        //Show sync confirm dialog
-                        var dialog = new SyncConfirmDialog(remotePublicKey);
-                        _ = dialog.Show();
-                    }
-                    else
-                    {
-                        await session.AuthorizeAsync(s);
-                        Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because already authorized");
-                    }
-                }
-                else
-                {
-                    await session.AuthorizeAsync(s);
-                    Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because initiator");
-                }
+                await HandleAuthorizationAsync(channelSocket, isResponder);
             },
-            onData: (s, opcode, subOpcode, data) => session?.HandlePacket(s, opcode, subOpcode, data));
+            onData: (s, opcode, subOpcode, data) => session?.HandlePacket(opcode, subOpcode, data));
     }
 
-    public Task BroadcastJsonAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => BroadcastAsync((byte)Opcode.DATA, subOpcode, GJsonSerializer.AndroidCompatible.SerializeObj(data), cancellationToken);
-    public Task BroadcastAsync(byte opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => BroadcastAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
-    public async Task BroadcastAsync(byte opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
+    private async Task HandleAuthorizationAsync(IChannel channel, bool isResponder, CancellationToken cancellationToken = default)
+    {
+        SyncSession syncSession = ((SyncSession?)channel.SyncSession)!;
+        var remotePublicKey = channel.RemotePublicKey!;
+        if (isResponder)
+        {
+            var isAuthorized = IsAuthorized(remotePublicKey);
+            if (!isAuthorized)
+            {
+                //Show sync confirm dialog
+                var dialog = new SyncConfirmDialog(remotePublicKey);
+                _ = dialog.Show();
+            }
+            else
+            {
+                await syncSession.AuthorizeAsync(cancellationToken);
+                Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because already authorized");
+            }
+        }
+        else
+        {
+            await syncSession.AuthorizeAsync(cancellationToken);
+            Logger.i<StateSync>($"Connection authorized for {remotePublicKey} because initiator");
+        }
+    }
+
+    public Task BroadcastJsonAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => BroadcastAsync(Opcode.DATA, subOpcode, GJsonSerializer.AndroidCompatible.SerializeObj(data), cancellationToken);
+    public Task BroadcastAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => BroadcastAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
+    public async Task BroadcastAsync(Opcode opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
     {
         //TODO: Should be done in parallel
         foreach(var session in GetSessions())
@@ -459,7 +639,7 @@ public class StateSync : IDisposable
             try
             {
                 if (session.IsAuthorized && session.Connected)
-                    await session.SendAsync(opcode, subOpcode, data, cancellationToken);
+                    await session.SendAsync(opcode, subOpcode, data, cancellationToken: cancellationToken);
             }
             catch(Exception ex)
             {
@@ -500,24 +680,43 @@ public class StateSync : IDisposable
                 session.Value.Dispose();
             _sessions.Clear();
         }
-
-        //_thread?.Join();
-        _thread = null;
-        _connectThread = null;
     }
 
-    public SyncSocketSession Connect(SyncDeviceInfo deviceInfo, Action<SyncSocketSession?, bool, string>? onStatusUpdate = null)
+    public async Task ConnectAsync(SyncDeviceInfo deviceInfo, Action<bool?, string>? onStatusUpdate = null, CancellationToken cancellationToken = default)
     {
-        onStatusUpdate?.Invoke(null, false, "Connecting...");
-        var socket = new TcpClient(deviceInfo.Addresses[0], deviceInfo.Port);
-        onStatusUpdate?.Invoke(null, false, "Handshaking...");
+        try
+        {
+            await ConnectAsync(deviceInfo.Addresses, deviceInfo.Port, deviceInfo.PublicKey, deviceInfo.PairingCode, onStatusUpdate, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Logger.e<StateSync>("Failed to connect directly.", e);
+            var relaySession = _relaySession;
+            if (relaySession != null)
+            {
+                onStatusUpdate?.Invoke(null, "Connecting via relay...");
+                await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, deviceInfo.PairingCode, cancellationToken);
+                onStatusUpdate?.Invoke(true, "Connected");
+            }
+            else
+            {
+                throw new Exception("Failed to connect.");
+            }
+        }
+    }
 
-        var session = CreateSocketSession(socket, false, (s, ss) => 
-        { 
-            onStatusUpdate?.Invoke(ss, false, "Handshaking...");
+    private async Task<SyncSocketSession> ConnectAsync(string[] addresses, int port, string remotePublicKey, string? pairingCode = null, Action<bool?, string>? onStatusUpdate = null, CancellationToken cancellationToken = default)
+    {
+        onStatusUpdate?.Invoke(null, "Connecting directly...");
+
+        var socket = new TcpClient(addresses[0], port);
+        var session = CreateSocketSession(socket, false, (s) =>
+        {
+            onStatusUpdate?.Invoke(true, "Authorized");
         });
-        
-        session.StartAsInitiator(deviceInfo.PublicKey);
+
+        onStatusUpdate?.Invoke(null, "Handshaking...");
+        await session.StartAsInitiatorAsync(remotePublicKey, pairingCode, cancellationToken);
         return session;
     }
 

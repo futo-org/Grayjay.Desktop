@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer;
@@ -186,5 +187,18 @@ public static class Utilities
             return originalArr.Count;
         else
             return newIndex;
+    }
+
+    public static string GenerateReadablePassword(int length)
+    {
+        const string validChars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        byte[] randomBytes = new byte[length];
+        RandomNumberGenerator.Fill(randomBytes);
+        char[] result = new char[length];
+
+        for (int i = 0; i < length; i++)
+            result[i] = validChars[randomBytes[i] % validChars.Length];
+
+        return new string(result);
     }
 }

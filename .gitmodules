@@ -13,3 +13,6 @@
 [submodule "JustCef"]
 	path = JustCef
 	url = ../JustCef.git
+[submodule "SyncServer"]
+	path = SyncServer
+	url = ../syncserver.git
