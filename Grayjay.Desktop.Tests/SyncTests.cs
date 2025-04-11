@@ -1,5 +1,6 @@
-using Grayjay.ClientServer.Sync.Internal;
 using Noise;
+using SyncClient;
+using SyncShared;
 using System.Diagnostics;
 using System.IO.Pipes;
 
@@ -51,6 +52,7 @@ namespace Grayjay.Desktop.Tests
             var initiatorSession = new SyncSocketSession("", initiatorKeyPair,
                 initiatorInput, initiatorOutput,
                 onClose: (session) => Console.WriteLine("Initiator session closed"),
+                onNewChannel: (session, channel) => { },
                 onHandshakeComplete: (session) =>
                 {
                     Console.WriteLine("Initiator handshake complete");
@@ -61,17 +63,17 @@ namespace Grayjay.Desktop.Tests
                     Console.WriteLine($"Initiator received: Opcode {opcode}, Subopcode {subOpcode}, Data.Length: {data.Length}");
                     if (data.Length == randomBytesExactlyOnePacket.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytesExactlyOnePacket, data);
+                        Assert.IsTrue(randomBytesExactlyOnePacket.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytesExactlyOnePacket valid");
                     }
                     else if (data.Length == randomBytes.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytes, data);
+                        Assert.IsTrue(randomBytes.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytes valid");
                     }
                     else if (data.Length == randomBytesBig.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytesBig, data);
+                        Assert.IsTrue(randomBytesBig.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytesBig valid");
                     }
                 });
@@ -80,6 +82,7 @@ namespace Grayjay.Desktop.Tests
             var responderSession = new SyncSocketSession("", responderKeyPair,
                 responderInput, responderOutput,
                 onClose: (session) => Console.WriteLine("Responder session closed"),
+                onNewChannel: (session, channel) => { },
                 onHandshakeComplete: (session) =>
                 {
                     Console.WriteLine("Responder handshake complete");
@@ -90,24 +93,24 @@ namespace Grayjay.Desktop.Tests
                     Console.WriteLine($"Responder received: Opcode {opcode}, Subopcode {subOpcode}, Data.Length: {data.Length}");
                     if (data.Length == randomBytesExactlyOnePacket.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytesExactlyOnePacket, data);
+                        Assert.IsTrue(randomBytesExactlyOnePacket.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytesExactlyOnePacket valid");
                     }
                     else if (data.Length == randomBytes.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytes, data);
+                        Assert.IsTrue(randomBytes.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytes valid");
                     }
                     else if (data.Length == randomBytesBig.Length)
                     {
-                        CollectionAssert.AreEqual(randomBytes, data);
+                        Assert.IsTrue(randomBytes.AsSpan().SequenceEqual(data));
                         Console.WriteLine("randomBytesBig valid");
                     }
                 });
 
             // Start the sessions in parallel using tasks
-            initiatorSession.StartAsInitiator(responderSession.LocalPublicKey);
-            responderSession.StartAsResponder();
+            await initiatorSession.StartAsInitiatorAsync(responderSession.LocalPublicKey);
+            await responderSession.StartAsResponderAsync();
 
             WaitHandle.WaitAll([handshakeInitiatorCompleted.WaitHandle, handshakeResponderCompleted.WaitHandle], 10000);
 
@@ -115,13 +118,13 @@ namespace Grayjay.Desktop.Tests
             responderSession.Authorizable = new Authorized();
 
             // Simulate initiator sending a PING and responder replying with PONG
-            await initiatorSession.SendAsync((byte)SyncSocketSession.Opcode.PING);
-            await responderSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesExactlyOnePacket);
+            await initiatorSession.SendAsync((byte)Opcode.PING);
+            await responderSession.SendAsync((byte)Opcode.DATA, 0, randomBytesExactlyOnePacket);
 
-            await initiatorSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 1, randomBytes);
+            await initiatorSession.SendAsync((byte)Opcode.DATA, 1, randomBytes);
 
             var sw = Stopwatch.StartNew();
-            await responderSession.SendAsync((byte)SyncSocketSession.Opcode.DATA, 0, randomBytesBig);
+            await responderSession.SendAsync((byte)Opcode.DATA, 0, randomBytesBig);
             Console.WriteLine($"Sent 10MB in {sw.ElapsedMilliseconds}ms");
 
             // Wait for a brief period to simulate some delay and allow communication

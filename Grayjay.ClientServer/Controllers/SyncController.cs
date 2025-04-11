@@ -6,6 +6,7 @@ using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Internal;
 using Grayjay.ClientServer.Sync.Models;
 using Microsoft.AspNetCore.Mvc;
+using SyncClient;
 
 namespace Grayjay.ClientServer.Controllers
 {
@@ -29,7 +30,7 @@ namespace Grayjay.ClientServer.Controllers
                     PublicKey = pk, 
                     DisplayName = session?.DisplayName ?? StateSync.Instance.GetCachedName(pk),
                     Metadata = session?.Connected == true ? "Connected" : "Disconnected",
-                    LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
+                    LinkType = (int)(session?.LinkType ?? LinkType.None)
                 };
             }).ToList());
         }
@@ -46,7 +47,7 @@ namespace Grayjay.ClientServer.Controllers
                     PublicKey = pk,
                     DisplayName = session?.DisplayName,
                     Metadata = session?.Connected == true ? "Connected" : "Disconnected",
-                    LinkType = session?.Connected == true ? (int)LinkType.Local : (int)LinkType.None
+                    LinkType = (int)(session?.LinkType ?? LinkType.None)
                 };
             }).Where(x=>x != null).ToList());
         }
@@ -71,15 +72,12 @@ namespace Grayjay.ClientServer.Controllers
 
             try
             {
-                StateSync.Instance.Connect(syncDeviceInfo, (s, complete, message) => 
+                await StateSync.Instance.ConnectAsync(syncDeviceInfo, (complete, message) => 
                 {
-                    if (complete)
-                    {
-                        if (s != null)
-                            dialog.SetSuccess();
-                        else
-                            dialog.SetMessage(message);
-                    }
+                    if (complete.GetValueOrDefault(false))
+                        dialog.SetSuccess();
+                    else
+                        dialog.SetMessage(message);
                 });
             }
             catch (Exception e)

@@ -1,26 +1,23 @@
 using Grayjay.ClientServer.Serializers;
-using Grayjay.Desktop.POC;
+using SyncClient;
+using SyncShared;
 using System.Text;
-using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
 
 namespace Grayjay.ClientServer.Sync.Internal;
 
 using LogLevel = Grayjay.Desktop.POC.LogLevel;
+using Logger = Grayjay.Desktop.POC.Logger;
 
-public interface IAuthorizable
+public class SyncSession : IDisposable, IAuthorizable
 {
-    bool IsAuthorized { get; }
-}
-
-public class SyncSession : IAuthorizable, IDisposable
-{
-    private readonly List<SyncSocketSession> _socketSessions = new List<SyncSocketSession>();
+    private readonly List<IChannel> _channels = new List<IChannel>();
     private bool _authorized;
     private bool _remoteAuthorized;
     private readonly Action<SyncSession, bool, bool> _onAuthorized;
     private readonly Action<SyncSession> _onUnauthorized;
     private readonly Action<SyncSession> _onClose;
     private readonly Action<SyncSession, bool> _onConnectedChanged;
+    private readonly Action<SyncSession, Opcode, byte, ReadOnlySpan<byte>> _dataHandler;
     public string RemotePublicKey { get; }
     public bool IsAuthorized => _authorized && _remoteAuthorized;
     public bool _wasAuthorized = false;
@@ -44,10 +41,38 @@ public class SyncSession : IAuthorizable, IDisposable
         }
     }
 
-    public static SyncHandlers Handlers = new GrayjaySyncHandlers();
+    public LinkType LinkType
+    {
+        get
+        {
+
+            var hasDirect = false;
+            var hasRemote = false;
+
+            lock (_channels)
+            {
+                foreach (var channel in _channels)
+                {
+                    if (channel is ChannelRelayed)
+                        hasRemote = true;
+                    if (channel is ChannelSocket)
+                        hasDirect = true;
+
+                    if (hasRemote && hasDirect)
+                        return LinkType.Local;
+                }
+            }
+
+            if (hasRemote)
+                return LinkType.Proxied;
+            if (hasDirect)
+                return LinkType.Local;
+            return LinkType.None;
+        }
+    }
 
     public SyncSession(string remotePublicKey, Action<SyncSession, bool, bool> onAuthorized, Action<SyncSession> onUnauthorized,
-        Action<SyncSession, bool> onConnectedChanged, Action<SyncSession> onClose, string? remoteDeviceName)
+        Action<SyncSession, bool> onConnectedChanged, Action<SyncSession> onClose, Action<SyncSession, Opcode, byte, ReadOnlySpan<byte>> dataHandler, string? remoteDeviceName)
     {
         RemotePublicKey = remotePublicKey;
         RemoteDeviceName = remoteDeviceName;
@@ -55,71 +80,48 @@ public class SyncSession : IAuthorizable, IDisposable
         _onUnauthorized = onUnauthorized;
         _onConnectedChanged = onConnectedChanged;
         _onClose = onClose;
+        _dataHandler = dataHandler;
     }
 
-    public void AddSocketSession(SyncSocketSession socketSession)
+    public void AddChannel(IChannel channel)
     {
-        if (socketSession.RemotePublicKey != RemotePublicKey)
+        if (channel.RemotePublicKey != RemotePublicKey)
             throw new Exception("Public key of session must match public key of socket session");
 
-        lock (_socketSessions)
+        channel.Authorizable = this;
+        channel.SyncSession = this;
+        lock (_channels)
         {
-            _socketSessions.Add(socketSession);
-            Connected = _socketSessions.Any();
+            _channels.Add(channel);
+            Connected = _channels.Any();
         }
-
-        socketSession.Authorizable = this;
     }
 
-    public async Task AuthorizeAsync(SyncSocketSession? socketSession = null, CancellationToken cancellationToken = default)
+    public async Task AuthorizeAsync(CancellationToken cancellationToken = default)
     {
-        if (socketSession == null)
-        {
-            lock (_socketSessions)
-            {
-                socketSession = _socketSessions.First();
-            }
-        }
-
         Logger.i<SyncSession>($"Sent AUTHORIZED with session id {_id}");
 
-        if (socketSession.RemoteVersion >= 3)
+        var idBytes = Encoding.UTF8.GetBytes(_id.ToString());
+        var nameBytes = Encoding.UTF8.GetBytes(OSHelper.GetComputerName());
+        var data = new byte[sizeof(byte) + idBytes.Length + sizeof(byte) + nameBytes.Length];
+        using (var stream = new MemoryStream(data))
+        using (var writer = new BinaryWriter(stream))
         {
-            var idBytes = Encoding.UTF8.GetBytes(_id.ToString());
-            var nameBytes = Encoding.UTF8.GetBytes(OSHelper.GetComputerName());
-            var data = new byte[sizeof(byte) + idBytes.Length + sizeof(byte) + nameBytes.Length];
-            using (var stream = new MemoryStream(data))
-            using (var writer = new BinaryWriter(stream))
-            {
-                writer.Write((byte)idBytes.Length);
-                writer.Write(idBytes);
-                writer.Write((byte)nameBytes.Length);
-                writer.Write(nameBytes);
-            }
+            writer.Write((byte)idBytes.Length);
+            writer.Write(idBytes);
+            writer.Write((byte)nameBytes.Length);
+            writer.Write(nameBytes);
+        }
 
-            await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, data, cancellationToken: cancellationToken);
-        }
-        else
-        {
-            var str = _id.ToString();
-            await socketSession.SendAsync(Opcode.NOTIFY_AUTHORIZED, 0, Encoding.UTF8.GetBytes(str), cancellationToken: cancellationToken);
-        }
+        await SendAsync(Opcode.NOTIFY, (byte)NotifyOpcode.AUTHORIZED, data, cancellationToken: cancellationToken);
 
         _authorized = true;
         CheckAuthorized();
     }
 
-    public async Task UnauthorizeAsync(SyncSocketSession? socketSession = null, CancellationToken cancellationToken = default)
+    public async Task UnauthorizeAsync(CancellationToken cancellationToken = default)
     {
-        if (socketSession == null)
-        {
-            lock (_socketSessions)
-            {
-                socketSession = _socketSessions.First();
-            }
-        }
-
-        await socketSession.SendAsync(Opcode.NOTIFY_UNAUTHORIZED, cancellationToken: cancellationToken);
+        await SendAsync(Opcode.NOTIFY, (byte)NotifyOpcode.UNAUTHORIZED, cancellationToken: cancellationToken);
     }
 
     private void CheckAuthorized()
@@ -135,71 +137,69 @@ public class SyncSession : IAuthorizable, IDisposable
         }
     }
 
-    public void RemoveSocketSession(SyncSocketSession socketSession)
+    public void RemoveChannel(IChannel channel)
     {
-        lock (_socketSessions)
+        lock (_channels)
         {
-            _socketSessions.Remove(socketSession);
-            Connected = _socketSessions.Any();
+            _channels.Remove(channel);
+            Connected = _channels.Any();
         }
     }
 
     public void Close()
     {
-        lock (_socketSessions)
+        lock (_channels)
         {
-            var socketSessionsToClose = _socketSessions.ToList();
-            foreach (var socketSession in socketSessionsToClose)
-            {
-                socketSession.Stop();
-            }
-            _socketSessions.Clear();
+            var channelsToClose = _channels.ToList();
+            foreach (var channel in channelsToClose)
+                channel.Dispose();
+            _channels.Clear();
         }
 
         _onClose(this);
     }
 
-    public void HandlePacket(SyncSocketSession socketSession, Opcode opcode, byte subOpcode, byte[] data)
+    public void HandlePacket(Opcode opcode, byte subOpcode, ReadOnlySpan<byte> data)
     {
         if (Logger.WillLog(LogLevel.Debug))
             Logger.Debug<SyncSession>($"Handle packet (opcode: {opcode}, subOpcode: {subOpcode}, data length: {data.Length})");
 
         switch (opcode)
         {
-            case Opcode.NOTIFY_AUTHORIZED:
-
-                if (socketSession.RemoteVersion >= 3)
+            case Opcode.NOTIFY:
+                switch ((NotifyOpcode)subOpcode)
                 {
-                    using var stream = new MemoryStream(data);
-                    using var reader = new BinaryReader(stream);
-                    
-                    var idStringLength = reader.ReadByte();
-                    if (idStringLength > 64)
-                        throw new Exception("Id string must be less than 64 bytes.");
-                    var idString = Encoding.UTF8.GetString(reader.ReadBytes(idStringLength));
-                    var nameLength = reader.ReadByte();
-                    if (nameLength > 64)
-                        throw new Exception("Name string must be less than 64 bytes.");
-                    _remoteId = data.Length >= 16 ? Guid.Parse(idString) : Guid.Empty;
-                    RemoteDeviceName = Encoding.UTF8.GetString(reader.ReadBytes(nameLength));
-                }
-                else
-                {
-                    _remoteId = data.Length >= 16 ? Guid.Parse(Encoding.UTF8.GetString(data)) : Guid.Empty;
-                    RemoteDeviceName = null;
-                }
+                    case NotifyOpcode.AUTHORIZED:
+                        var offset = 0;
+                        var idStringLength = data[offset];
+                        offset++;
+                        if (idStringLength > 64)
+                            throw new Exception("Id string must be less than 64 bytes.");
 
-                _remoteAuthorized = true;
-                Logger.i<SyncSession>($"Received AUTHORIZED with session id {_remoteId} (device name: '{RemoteDeviceName ?? "not set"}')");
-                CheckAuthorized();
-                return;
-            case Opcode.NOTIFY_UNAUTHORIZED:
-                _remoteAuthorized = false;
-                _remoteId = null;
-                RemoteDeviceName = null;
-                _onUnauthorized(this);
-                return;
-                // Handle other potentially unauthorized packet types...
+                        var idString = Encoding.UTF8.GetString(data.Slice(offset, idStringLength));
+                        offset += idStringLength;
+
+                        var nameLength = data[offset];
+                        offset++;
+                        if (nameLength > 64)
+                            throw new Exception("Name string must be less than 64 bytes.");
+
+                        _remoteId = data.Length >= 16 ? Guid.Parse(idString) : Guid.Empty;
+                        RemoteDeviceName = Encoding.UTF8.GetString(data.Slice(offset, nameLength));
+                        offset += nameLength;
+
+                        _remoteAuthorized = true;
+                        Logger.i<SyncSession>($"Received AUTHORIZED with session id {_remoteId} (device name: '{RemoteDeviceName ?? "not set"}')");
+                        CheckAuthorized();
+                        return;
+                    case NotifyOpcode.UNAUTHORIZED:
+                        _remoteAuthorized = false;
+                        _remoteId = null;
+                        RemoteDeviceName = null;
+                        _onUnauthorized(this);
+                        return;
+                }
+                break;
         }
 
         if (!IsAuthorized)
@@ -214,41 +214,40 @@ public class SyncSession : IAuthorizable, IDisposable
         if (Logger.WillLog(LogLevel.Debug))
             Logger.Debug<SyncSession>($"Received (opcode = {opcode}, subOpcode = {subOpcode}) ({data.Length} bytes)");
 
-        Task.Run(() =>
+        try
         {
-            try
-            {
-                Handlers?.HandleAsync(this, socketSession, (byte)opcode, subOpcode, data);
-            }
-            catch (Exception e)
-            {
-                //TODO: Should be disconnected? socketSession.Dispose();
-                Logger.w<SyncSession>("Failed to handle packet", e);
-            }
-        });
+            _dataHandler.Invoke(this, opcode, subOpcode, data);
+        }
+        catch (Exception e)
+        {
+            //TODO: Should be disconnected? socketSession.Dispose();
+            Logger.w<SyncSession>("Failed to handle packet", e);
+        }
     }
 
-
-    public async Task SendAsync(byte opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
+    //TODO: local connections should be used before udp and udp before relayed
+    public async Task SendAsync(Opcode opcode, byte subOpcode, byte[]? data = null, int offset = 0, int count = -1, CancellationToken cancellationToken = default)
     {
-        List<SyncSocketSession> socketSessions;
-        lock (_socketSessions)
+        //TODO: Make this more efficient
+        //TODO: Prefer local over remote, etc
+        List<IChannel> channels;
+        lock (_channels)
         {
-            socketSessions = _socketSessions.ToList();
+            channels = _channels.ToList();
         }
 
-        if (socketSessions.Count == 0)
+        if (channels.Count == 0)
         {
             Logger.v<SyncSession>($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to no connected sockets");
             return;
         }
 
         var sent = false;
-        foreach (var socketSession in socketSessions) 
+        foreach (var channel in channels) 
         {
             try
             {
-                await socketSession.SendAsync(opcode, subOpcode, data, cancellationToken: cancellationToken);
+                await channel.SendAsync(opcode, subOpcode, data, offset, count, cancellationToken: cancellationToken);
                 sent = true;
                 break;
             }
@@ -262,8 +261,8 @@ public class SyncSession : IAuthorizable, IDisposable
             throw new Exception($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to send errors and no remaining candidates");
     }
 
-    public Task SendAsync(byte opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
-    public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync((byte)Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), cancellationToken);
+    public Task SendAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken: cancellationToken);
+    public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync(Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), cancellationToken: cancellationToken);
 
     public void Dispose()
     {

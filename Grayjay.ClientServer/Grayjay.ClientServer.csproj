@@ -97,6 +97,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Grayjay.Engine\Grayjay.Engine\Grayjay.Engine.csproj" />
     <ProjectReference Include="..\FUTO.MDNS\FUTO.MDNS\FUTO.MDNS.csproj" />
+    <ProjectReference Include="..\SyncServer\SyncClient\SyncClient.csproj" />
+    <ProjectReference Include="..\SyncServer\SyncShared\SyncShared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

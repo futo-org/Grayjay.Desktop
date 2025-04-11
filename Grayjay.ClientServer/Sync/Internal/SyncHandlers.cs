@@ -1,17 +1,20 @@
-﻿using Grayjay.ClientServer.Serializers;
-using Grayjay.Desktop.POC;
+﻿using Grayjay.ClientServer.Casting;
+using Grayjay.ClientServer.Serializers;
+using SyncClient;
 using System.Collections;
 using System.Reflection;
 using System.Text;
-using static Grayjay.ClientServer.Sync.Internal.SyncSocketSession;
+
+using Logger = Grayjay.Desktop.POC.Logger;
+using Opcode = SyncShared.Opcode;
 
 namespace Grayjay.ClientServer.Sync.Internal
 {
     //While convenient AF, this shit is not gonna AOT compile. Worst case, keep this in Grayjay.Desktop
     public abstract class SyncHandlers
     {
-        protected Dictionary<byte, Action<SyncSession, SyncSocketSession, byte, byte[]>> _handlers;
-        protected Dictionary<byte, Func<SyncSession, SyncSocketSession, byte, byte[], Task>> _asyncHandlers;
+        protected Dictionary<byte, Action<SyncSession, byte, ReadOnlySpan<byte>>> _handlers;
+        protected Dictionary<byte, Func<SyncSession, byte, byte[], Task>> _asyncHandlers;
 
         public SyncHandlers()
         {
@@ -29,10 +32,10 @@ namespace Grayjay.ClientServer.Sync.Internal
         }
 
         //TODO: Support automatic responses on return value?
-        private Action<SyncSession, SyncSocketSession, byte, byte[]> GetInvokeMethod(MethodInfo method)
+        private Action<SyncSession, byte, ReadOnlySpan<byte>> GetInvokeMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
-            return new Action<SyncSession, SyncSocketSession, byte, byte[]>((ses, sock, opcode, data) =>
+            return new Action<SyncSession, byte, ReadOnlySpan<byte>>((ses, opcode, data) =>
             {
                 object[] paras = new object[parameters.Length];
                 for(int i = 0; i < parameters.Length; i++)
@@ -40,10 +43,8 @@ namespace Grayjay.ClientServer.Sync.Internal
                     ParameterInfo param = parameters[i];
                     if (param.ParameterType == typeof(SyncSession))
                         paras[i] = ses;
-                    else if (param.ParameterType == typeof(SyncSocketSession))
-                        paras[i] = sock;
                     else if (param.ParameterType == typeof(byte[]))
-                        paras[i] = data;
+                        paras[i] = data.ToArray();
                     else if (param.ParameterType == typeof(string))
                         paras[i] = Encoding.UTF8.GetString(data);
                     else if(!param.ParameterType.IsPrimitive || param.ParameterType.IsArray || param.ParameterType.IsSubclassOf(typeof(ICollection)))
@@ -62,10 +63,10 @@ namespace Grayjay.ClientServer.Sync.Internal
             });
         }
 
-        private Func<SyncSession, SyncSocketSession, byte, byte[], Task> GetAsyncInvokeMethod(MethodInfo method)
+        private Func<SyncSession, byte, byte[], Task> GetAsyncInvokeMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
-            return new Func<SyncSession, SyncSocketSession, byte, byte[], Task>(async (ses, sock, opcode, data) =>
+            return new Func<SyncSession, byte, byte[], Task>(async (ses, opcode, data) =>
             {
                 object[] paras = new object[parameters.Length];
                 for(int i = 0; i < parameters.Length; i++)
@@ -73,10 +74,8 @@ namespace Grayjay.ClientServer.Sync.Internal
                     ParameterInfo param = parameters[i];
                     if (param.ParameterType == typeof(SyncSession))
                         paras[i] = ses;
-                    else if (param.ParameterType == typeof(SyncSocketSession))
-                        paras[i] = sock;
-                    else if (param.ParameterType == typeof(byte[]))
-                        paras[i] = data;
+                    else if (param.ParameterType == typeof(ReadOnlySpan<byte>))
+                        paras[i] = data.ToArray();
                     else if (param.ParameterType == typeof(string))
                         paras[i] = Encoding.UTF8.GetString(data);
                     else if(!param.ParameterType.IsPrimitive || param.ParameterType.IsArray || param.ParameterType.IsSubclassOf(typeof(ICollection)))
@@ -97,7 +96,7 @@ namespace Grayjay.ClientServer.Sync.Internal
             });
         }
         //Default Json, can be overriden.
-        protected virtual object ConvertNativeObject(Type targetType, byte[] data)
+        protected virtual object ConvertNativeObject(Type targetType, ReadOnlySpan<byte> data)
         {
             try
             {
@@ -111,9 +110,9 @@ namespace Grayjay.ClientServer.Sync.Internal
             }
         }
 
-        public virtual void HandleAsync(SyncSession session, SyncSocketSession socket, byte opcode, byte subOpcode, byte[] data)
+        public virtual void Handle(SyncSession session, Opcode opcode, byte subOpcode, ReadOnlySpan<byte> data)
         {
-            if (opcode != (byte)Opcode.DATA)
+            if (opcode != Opcode.DATA)
             {
                 Logger.w<SyncHandlers>($"Only DATA opcodes allowed in SyncHandlers.Handle (opcode = {opcode}, subOpcode = {subOpcode})");
                 return;
@@ -122,13 +121,17 @@ namespace Grayjay.ClientServer.Sync.Internal
             var handled = false;
             if (_handlers.TryGetValue(subOpcode, out var handler) && handler != null)
             {
-                handler(session, socket, subOpcode, data);
+                handler(session, subOpcode, data);
                 handled = true;
             }
 
             if (_asyncHandlers.TryGetValue(subOpcode, out var asyncHandler) && asyncHandler != null)
             {
-                asyncHandler(session, socket, subOpcode, data);
+                var d = data.ToArray();
+                _ = Task.Run(async () =>
+                {
+                    await asyncHandler(session, subOpcode, d);
+                });
                 handled = true;
             }
             
