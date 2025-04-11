@@ -205,9 +205,8 @@ public class StateSync : IDisposable
                                             {
                                                 try
                                                 {
-                                                    var syncDeviceInfo = new SyncDeviceInfo(targetKey, potentialLocalAddresses.Select(l => l.ToString()).ToArray(), PORT, null);
                                                     Logger.Verbose<StateSync>($"Attempting to connect directly, locally to '{targetKey}'.");
-                                                    await ConnectAsync(syncDeviceInfo, cancellationToken: _cancellationTokenSource.Token);
+                                                    await ConnectAsync(potentialLocalAddresses.Select(l => l.ToString()).ToArray(), PORT, targetKey, cancellationToken: _cancellationTokenSource.Token);
                                                 }
                                                 catch (Exception e)
                                                 {

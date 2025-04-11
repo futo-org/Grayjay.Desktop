@@ -10,6 +10,7 @@ import ButtonFlex from '../../components/buttons/ButtonFlex';
 import Button from '../../components/buttons/Button';
 import { DownloadBackend } from '../../backend/DownloadBackend';
 import Loader from '../../components/basics/loaders/Loader';
+import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 
 export interface OverlayDownloadDialogProps {
   url?: string,
@@ -137,8 +138,8 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
           </div>
         </div>
         <Show when={!sources$()}>
-          <div style="min-width: 500px;">
-            <Loader style={{"margin-left": "auto", "margin-right": "auto"}} />
+          <div style="min-width: 500px; padding: 12px;">
+            <CenteredLoader />
           </div>
         </Show>
         <Show when={sources$()}>
