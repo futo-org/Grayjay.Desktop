@@ -136,6 +136,12 @@ namespace Grayjay.ClientServer
                     if (!File.Exists(staticFilesPath) && executableDirectory != null)
                         staticFilesPath = Path.Combine(executableDirectory, "../Resources/wwwroot");
                 }
+                if (OperatingSystem.IsLinux())
+                {
+                    string? executableDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
+                    if (!File.Exists(staticFilesPath) && executableDirectory != null)
+                        staticFilesPath = Path.Combine(executableDirectory, "wwwroot");
+                }
 
                 Logger.i(nameof(GrayjayServer), $"RunServerAsync: Static files path '" + Path.GetFullPath(staticFilesPath) + "'.");
                 _app.UseStaticFiles(new StaticFileOptions
