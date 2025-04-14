@@ -47,26 +47,26 @@ public class SyncSession : IDisposable, IAuthorizable
         {
 
             var hasDirect = false;
-            var hasRemote = false;
+            var hasRelayed = false;
 
             lock (_channels)
             {
                 foreach (var channel in _channels)
                 {
                     if (channel is ChannelRelayed)
-                        hasRemote = true;
+                        hasRelayed = true;
                     if (channel is ChannelSocket)
                         hasDirect = true;
 
-                    if (hasRemote && hasDirect)
-                        return LinkType.Local;
+                    if (hasRelayed && hasDirect)
+                        return LinkType.Direct;
                 }
             }
 
-            if (hasRemote)
-                return LinkType.Proxied;
+            if (hasRelayed)
+                return LinkType.Relayed;
             if (hasDirect)
-                return LinkType.Local;
+                return LinkType.Direct;
             return LinkType.None;
         }
     }

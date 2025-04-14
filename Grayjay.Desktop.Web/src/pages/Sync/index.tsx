@@ -31,11 +31,11 @@ const SyncPage: Component = () => {
         break;
       case 1:
         icon = iconLocal;
-        status = "Local";
+        status = "Direct";
         break;
       case 2:
         icon = iconInternet;
-        status = "Proxied";
+        status = "Relayed";
         break;
     }
   

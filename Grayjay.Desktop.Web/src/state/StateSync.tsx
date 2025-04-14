@@ -54,9 +54,9 @@ function createState() {
                 default:
                     return "Offline";
                 case 1:
-                    return "Local";
+                    return "Direct";
                 case 2:
-                    return "Proxied";
+                    return "Relayed";
             }
         }
     };
