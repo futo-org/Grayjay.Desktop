@@ -8,5 +8,13 @@ namespace Grayjay.ClientServer.SubsExchange
         public string ChannelUrl { get; set; }
         public PlatformChannel Channel { get; set; }
         public PlatformContent[] Content { get; set; }
+
+        public ChannelResolve() { }
+        public ChannelResolve(string channelUrl, PlatformContent[] content, PlatformChannel channel = null)
+        {
+            ChannelUrl = channelUrl;
+            Content = content;
+            Channel = channel;
+        }
     }
 }

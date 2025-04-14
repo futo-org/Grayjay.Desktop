@@ -30,6 +30,12 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
     function select(image: IImageVariable) {
       setSelected(image);
     }
+    function selectSubscription(url: string, imageUrl?: string){
+      setSelected({
+        subscriptionUrl: url,
+        url: imageUrl
+      })
+    }
     function selectUrl(url: string){
       setSelected({
         url: url
@@ -41,6 +47,12 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
         return false;
       return selected$()?.url == url;
     }
+    function isSelectedSubscription(url: string) {
+      if(!selected$()?.subscriptionUrl)
+        return false;
+      return selected$()?.subscriptionUrl == url;
+    }
+
 
     function uploadImage() {
       promptFile(async (file)=>{
@@ -104,7 +116,7 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
           <div class={styles.sectionDescription}>Select a creator thumbnail as image</div>
           <div class={styles.subscriptionsContainer}>
             <For each={subscriptions$()}>{ sub =>
-              <div class={styles.subscription} classList={{[styles.enabled]: isSelectedUrl(sub.channel.thumbnail)}} onClick={()=>selectUrl(sub.channel.thumbnail)}>
+              <div class={styles.subscription} classList={{[styles.enabled]: isSelectedSubscription(sub.channel.url)}} onClick={()=>selectSubscription(sub.channel.url, sub.channel.thumbnail)}>
                 <div class={styles.check}>
                   <img src={iconCheck} />
                 </div>

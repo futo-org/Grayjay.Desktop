@@ -951,26 +951,25 @@
 							console.log("Required packages:", testPluginPackages);
 							applyPackages(testPluginPackages);
 
-							if(this.Plugin.loadUsingTag)
-							{
+							if (this.Plugin.loadUsingTag) {
 								this.Plugin.currentPluginError = ""
 								//Create script tag
 								const scriptUrl = absScriptUrl + "?x=" + new Date().getTime();
-								if(lastScriptTag)
+								if (lastScriptTag)
 									lastScriptTag.parentNode.removeChild(lastScriptTag);
 								lastScriptTag = document.createElement('script');
 								lastScriptTag.src = scriptUrl;
 								lastScriptTag.crossorigin = "anonymous";
-								lastScriptTag.onerror = function() {
-									Vue.nextTick(()=>{
+								lastScriptTag.onerror = function () {
+									Vue.nextTick(() => {
 										this.Plugin.currentPluginError = "Exception loading script: " + scriptUrl;
 									});
 								}
 								document.getElementsByTagName('body')[0].appendChild(lastScriptTag);
 							}
-							else
+							else {
 								eval(this.Plugin.currentScript);
-
+							}
 							const date = new Date();
 							this.Plugin.lastLoadTime =
 								(date.getHours()+"").padStart(2, '0') + ":" +

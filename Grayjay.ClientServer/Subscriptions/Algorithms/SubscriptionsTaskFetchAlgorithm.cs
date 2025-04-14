@@ -1,4 +1,6 @@
-﻿using Grayjay.ClientServer.States;
+﻿using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.States;
+using Grayjay.ClientServer.SubsExchange;
 using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
@@ -20,10 +22,12 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
         private const string TAG = "SubscriptionsTaskFetchAlgorithm";
 
         private ManagedThreadPool _pool = null;
+        private SubsExchangeClient _subsExchangeClient = null;
 
-        protected SubscriptionsTaskFetchAlgorithm(bool allowFailure = false, bool withCacheFallback = true, ManagedThreadPool pool = null) : base(allowFailure, withCacheFallback)
+        protected SubscriptionsTaskFetchAlgorithm(bool allowFailure = false, bool withCacheFallback = true, ManagedThreadPool pool = null, SubsExchangeClient subsExchangeClient = null) : base(allowFailure, withCacheFallback)
         {
             _pool = pool;
+            _subsExchangeClient = subsExchangeClient;
         }
 
         public override Dictionary<GrayjayPlugin, int> CountRequests(Dictionary<Subscription, List<string>> subs)
@@ -64,12 +68,44 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
             }
 
             var exs = new List<Exception>();
+
+            ExchangeContract contract = null;
+            List<SubscriptionTask> providedTasks = null;
+
+            try
+            {
+                var contractableTasks = tasks.Where(x => !x.FromPeek && !x.FromCache && (x.Type == ResultCapabilities.TYPE_VIDEOS || x.Type == ResultCapabilities.TYPE_MIXED)).ToList();
+                contract = (contractableTasks.Count > 10) ? _subsExchangeClient?.RequestContract(contractableTasks.Select(y => new ChannelRequest(y.Url)).ToArray()) : null;
+                if ((contract?.Provided?.Length ?? 0) > 0)
+                    Logger.i<SubscriptionFetchAlgorithm>($"Received subscription exchange contract (Requires {contract?.Required?.Length}, Provides {contract?.Provided?.Length}), ID: {contract.ID}");
+                if (contract != null && contract.Required.Length > 0)
+                {
+                    providedTasks = new List<SubscriptionTask>();
+                    foreach (var task in tasks.ToList())
+                    {
+                        if (!task.FromCache && !task.FromPeek && contract.Provided.Contains(task.Url))
+                        {
+                            providedTasks.Add(task);
+                            tasks.Remove(task);
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.e<SubscriptionFetchAlgorithm>("Failed to retrieve SubsExchange contract due to: " + ex.Message, ex);
+            }
+
+
+
             var failedPlugins = new List<string>();
             var cachedChannels = new List<string>();
             var forkTasks = ExecuteSubscriptionTasks(tasks, failedPlugins, cachedChannels);
 
             var taskResults = new List<SubscriptionTaskResult>();
 
+            int resolveCount = 0;
+            long resolveTime = 0;
             Stopwatch sw = new Stopwatch();
             sw.Start();
             foreach (var task in forkTasks)
@@ -116,35 +152,120 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
             sw.Stop();
             int timeTotal = ((int)sw.ElapsedMilliseconds);
 
+            //Resolve Subscription Exchange
+            if(contract != null)
+            {
+                void Resolve()
+                {
+                    try
+                    {
+                        Stopwatch sw = Stopwatch.StartNew();
+                        var resolves = taskResults.Where(x => x.Pager != null && (x.Task.Type == ResultCapabilities.TYPE_MIXED || x.Task.Type == ResultCapabilities.TYPE_VIDEOS) && contract.Required.Contains(x.Task.Url))
+                            .Select(x => new ChannelResolve(x.Task.Url, x.Pager.GetResults().Where(x => x is PlatformVideo).ToArray()))
+                            .ToArray();
+
+                        var resolveRequestStart = DateTime.Now;
+
+                        var resolve = _subsExchangeClient.ResolveContract(contract, resolves);
+
+                        Logger.i<Subscription>($"Subscription Exchange contract resolved request in {DateTime.Now.Subtract(resolveRequestStart).TotalMilliseconds}ms");
+
+                        if (resolve != null)
+                        {
+                            resolveCount = resolves.Length;
+                            StateUI.Toast($"SubsExchange (Res: {resolves.Length}, Prov: {resolve.Length})");
+                            foreach (var result in resolve)
+                            {
+                                var task = providedTasks?.FirstOrDefault(x => x.Url == result.ChannelUrl);
+                                if (task != null)
+                                {
+                                    taskResults.Add(new SubscriptionTaskResult(task, new AdhocPager<PlatformContent>((i) => new PlatformContent[0], result.Content), null));
+                                    providedTasks.Remove(task);
+                                }
+                            }
+                        }
+
+                        if (providedTasks != null)
+                        {
+                            foreach (var task in providedTasks)
+                            {
+                                taskResults.Add(new SubscriptionTaskResult(task, null, new InvalidOperationException("No data received from exchange")));
+                            }
+                        }
+                        sw.Stop();
+                        resolveTime = (long)sw.Elapsed.TotalMilliseconds;
+                        Logger.i<SubscriptionFetchAlgorithm>($"Subscription Exchange contract resolved in {resolveTime}ms");
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.e<SubscriptionFetchAlgorithm>("Failed to resolve Subscription Exchange contract due to: " + ex.Message, ex);
+                    }
+                }
+                try
+                {
+                    if ((providedTasks?.Count ?? 0) == 0)
+                    {
+                        StateApp.ThreadPool.Run(() =>
+                        {
+                            Resolve();
+                        });
+                    }
+                    else
+                        Resolve();
+                }
+                catch(Exception ex)
+                {
+                    Logger.e<SubscriptionFetchAlgorithm>($"Resolve failed", ex);
+                }
+            }
+
+
+
             Logger.i("StateSubscriptions", $"Subscriptions results in {timeTotal}ms");
 
             var groupedPagers = taskResults
                 .GroupBy(result => result.Task.Sub.Channel.Url)
                 .Select(entry =>
                 {
-                    var sub = entry.Any() ? entry.First().Task.Sub : null;
-                    var liveTasks = entry.Where(result => !result.Task.FromCache);
-                    var cachedTasks = entry.Where(result => result.Task.FromCache);
-                    var innerLivePager = new MultiChronoContentPager(liveTasks.Select(result => result.Pager), true);
-                    innerLivePager.Initialize();
-                    var livePager = liveTasks.Any() ? StateCache.CachePagerResults(innerLivePager, it => SetNewCacheHit(sub, it)) : null;
-
-                    IPager<PlatformContent> cachedPager = cachedTasks.Any() ? new MultiChronoContentPager(cachedTasks.Select(result => result.Pager).ToList(), true) : null;
-                    if (cachedPager != null && cachedPager is MultiPager<PlatformContent> mcp)
-                        mcp.Initialize();
-
-
-                    if (livePager != null && cachedPager == null)
-                        return livePager;
-                    else if (livePager == null && cachedPager != null)
-                        return cachedPager;
-                    else if (cachedPager == null)
-                        return new EmptyPager<PlatformContent>();
-                    else
+                    try
                     {
-                        var mergedPager = new MultiChronoContentPager(new List<IPager<PlatformContent>>() { livePager, cachedPager }, true);
-                        mergedPager.Initialize();
-                        return mergedPager;
+                        var sub = entry.Any() ? entry.First().Task.Sub : null;
+                        var liveTasks = entry.Where(result => !result.Task.FromCache).ToList();
+                        var cachedTasks = entry.Where(result => result.Task.FromCache);
+                        var failedLiveTasks = liveTasks.Where(x => x.Exception != null);
+                        liveTasks = liveTasks.Where(x => x.Exception == null).ToList();
+                        if (failedLiveTasks.Any())
+                        {
+                            foreach (var item in failedLiveTasks)
+                                Logger.e<SubscriptionFetchAlgorithm>($"Subscription live task failed for [{item.Task.Sub.Channel.Name}]", item.Exception); 
+                            exs.AddRange(failedLiveTasks.Select(x => x.Exception).DistinctBy(x => x.Message).ToList());
+                        }
+                        var innerLivePager = new MultiChronoContentPager(liveTasks.Select(result => result.Pager), true);
+                        innerLivePager.Initialize();
+                        var livePager = liveTasks.Any() ? StateCache.CachePagerResults(innerLivePager, it => SetNewCacheHit(sub, it)) : null;
+
+                        IPager<PlatformContent> cachedPager = cachedTasks.Any() ? new MultiChronoContentPager(cachedTasks.Select(result => result.Pager).ToList(), true) : null;
+                        if (cachedPager != null && cachedPager is MultiPager<PlatformContent> mcp)
+                            mcp.Initialize();
+
+
+                        if (livePager != null && cachedPager == null)
+                            return livePager;
+                        else if (livePager == null && cachedPager != null)
+                            return cachedPager;
+                        else if (cachedPager == null)
+                            return new EmptyPager<PlatformContent>();
+                        else
+                        {
+                            var mergedPager = new MultiChronoContentPager(new List<IPager<PlatformContent>>() { livePager, cachedPager }, true);
+                            mergedPager.Initialize();
+                            return mergedPager;
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.e<SubscriptionFetchAlgorithm>($"Failed to resolve a pager for subscription task", ex);
+                        return new EmptyPager<PlatformContent>();
                     }
                 }).ToList();
 

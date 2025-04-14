@@ -31,13 +31,13 @@ namespace Grayjay.ClientServer.SubsExchange
         public ExchangeContract RequestContract(params ChannelRequest[] channels)
         {
             string data = POST("/api/Channel/Contract", JsonSerializer.Serialize(channels), "application/json");
-            ExchangeContract contract = JsonSerializer.Deserialize<ExchangeContract>(data);
+            ExchangeContract contract = GJsonSerializer.AndroidCompatible.DeserializeObj<ExchangeContract>(data);
             return contract;
         }
         public async Task<ExchangeContract> RequestContractAsync(params ChannelRequest[] channels)
         {
             string data = await POSTAsync("/api/Channel/Contract", JsonSerializer.Serialize(channels), "application/json");
-            ExchangeContract contract = JsonSerializer.Deserialize<ExchangeContract>(data);
+            ExchangeContract contract = GJsonSerializer.AndroidCompatible.DeserializeObj<ExchangeContract>(data);
             return contract;
         }
 
@@ -46,14 +46,14 @@ namespace Grayjay.ClientServer.SubsExchange
         {
             var contractResolve = ConvertResolves(resolves);
             string result = POST("/api/Channel/Resolve?contractId=" + contract.ID, JsonSerializer.Serialize(contractResolve), "application/json");
-            ChannelResult[] results = GJsonSerializer.Deserialize<ChannelResult[]>(result);
+            ChannelResult[] results = GJsonSerializer.AndroidCompatible.DeserializeObj<ChannelResult[]>(result);
             return results;
         }
         public async Task<ChannelResult[]> ResolveContractAsync(ExchangeContract contract, ChannelResolve[] resolves)
         {
             var contractResolve = ConvertResolves(resolves);
             string result = await POSTAsync("/api/Channel/Resolve?contractId=" + contract.ID, JsonSerializer.Serialize(contractResolve), "application/json");
-            ChannelResult[] results = GJsonSerializer.Deserialize<ChannelResult[]>(result);
+            ChannelResult[] results = GJsonSerializer.AndroidCompatible.DeserializeObj<ChannelResult[]>(result);
             return results;
         }
 

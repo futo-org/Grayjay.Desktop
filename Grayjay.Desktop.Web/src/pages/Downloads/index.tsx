@@ -1,5 +1,5 @@
 import { createResource, type Component, For, Show, createMemo, onCleanup, createSignal, Switch, Match, batch } from 'solid-js';
-import { createResourceDefault, getBestThumbnail, getPlaylistThumbnail, proxyImage, toHumanBitrate, toHumanBytesSize } from '../../utility';
+import { createResourceDefault, getBestThumbnail, getDummyVideo, getPlaylistThumbnail, proxyImage, toHumanBitrate, toHumanBytesSize } from '../../utility';
 import { PlatformBackend } from '../../backend/PlatformBackend';
 import { ChannelBackend } from '../../backend/ChannelBackend';
 import { useVideo } from '../../contexts/VideoProvider';
@@ -55,8 +55,24 @@ const DownloadsPage: Component = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [storageInfo$, storageInfoResource] = createResourceDefault(async () => [], async () => await DownloadBackend.getStorageInfo());
-  const [downloading$, downloadingResource] = createResourceDefault(async () => [], async () => (await DownloadBackend.getDownloading()).sort((a,b)=>b.state - a.state));
+  const [downloading$, downloadingResource] = createResourceDefault(async () => [], 
+  /*  
+  async () => ([1,2,3,4,5,6,7, 8,9].map(x=>
+      { return {
+        video: getDummyVideo(),
+        videoDetails: getDummyVideo(),
+        progress: 1 * Math.random(),
+        downloadSpeedVideo: parseInt(100000 * Math.random()),
+        downloadSpeedAudio: parseInt(10000 * Math.random()),
+        downloadSpeed: parseInt(100000 * Math.random()),
+        videoFileSize: 123500,
+        audioFileSize: 27300
+      } as IVideoDownload})
+    ));*/
+    async () => (await DownloadBackend.getDownloading()).sort((a,b)=>b.state - a.state));
   const [downloadingPlaylists$, downloadingPlaylistsResource] = createResourceDefault(async ()=> [], async () => await DownloadBackend.getDownloadingPlaylists());
+
+  
   /*
   const [downloading$, downloadingResource] = createResourceDefault(async () => [], async () => {
     const item = await DownloadBackend.getDownloaded();
@@ -536,7 +552,7 @@ const DownloadsPage: Component = () => {
         </div>
         </Show>
         <Show when={downloading$() && downloading$()!.length > 0}>
-          <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px;">
+          <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; white-space: nowrap; overflow-y: hidden; min-height: 300px;">
             <h2>Downloading</h2>
             <div>
               <For each={downloading$()}>{ downloading =>

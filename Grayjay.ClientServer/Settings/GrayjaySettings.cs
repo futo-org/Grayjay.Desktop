@@ -65,6 +65,9 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Show Subscriptions Group", SettingsField.TOGGLE, "If subscription groups should be shown above your subscriptions", 5)]
             public bool ShowSubscriptionGroups { get; set; } = true;
 
+            [SettingsField("Use Subscriptions Exchange (Experimental)", SettingsField.TOGGLE, "Uses a centralized crowd-sourced server to significantly reduce the required requests, in exchange you submit your subscriptions to the server", 6)]
+            public bool UseSubscriptionExchange { get; set; } = false;
+
             [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview", 6)]
             public bool PreviewFeedItems { get; set; } = true;
 

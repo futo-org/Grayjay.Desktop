@@ -30,5 +30,6 @@ interface ISubscriptionGroup {
 interface IImageVariable {
     url?: string,
     resId?: number,
-    presetName?: string
+    presetName?: string,
+    subscriptionUrl?: string
 }

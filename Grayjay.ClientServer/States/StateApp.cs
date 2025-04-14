@@ -125,6 +125,29 @@ namespace Grayjay.ClientServer.States
                                     StatePlugins.InstallPlugin(update.SourceUrl);
                                 }, StateUI.ActionStyle.Primary));
                         }
+
+                        new Thread(async () =>
+                        {
+                            int i = 0;
+                            while (!StateApp.AppCancellationToken.IsCancellationRequested)
+                            {
+                                try
+                                {
+                                    if (i % 60 == 0)
+                                    {
+                                        Logger.i("StateApp", "Checking for plugin updates");
+                                        await StatePlugins.CheckForUpdates();
+                                    }
+
+                                    Thread.Sleep(1000);
+                                    i++;
+                                }
+                                catch(Exception ex)
+                                {
+                                    Logger.e("StateApp", "Failed to check for plugin updates due to: " + ex.Message, ex);
+                                }
+                            }
+                        }).Start();
                     }
                     catch (Exception ex)
                     {

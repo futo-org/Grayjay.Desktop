@@ -5,6 +5,8 @@ import UIOverlay from "./state/UIOverlay";
 import ExceptionModel from "./backend/exceptions/ExceptionModel";
 import { IPlaylist } from "./backend/models/IPlaylist";
 import { Accessor, createResource, InitializedResourceOptions, InitializedResourceReturn, Resource, ResourceFetcher, ResourceOptions, ResourceReturn, ResourceSource } from "solid-js";
+import { IPlatformVideo } from "./backend/models/content/IPlatformVideo";
+import { IPlatformAuthorLink } from "./backend/models/IPlatformAuthorLink";
 
 const countInKilo: number = 1000;
 const countInMillion: number = countInKilo * 1000;
@@ -443,4 +445,44 @@ export function createResourceDefault<T, S, R>(
   };
 
   return createResource(source, safeFetcher, options);
+}
+
+
+export function getDummyVideo() : IPlatformVideo {
+  return {
+    id: {
+      pluginID: "",
+      platform: "Dummy",
+      value: crypto.randomUUID()
+    } as IPlatformID,
+    name: crypto.randomUUID(),
+    author: {
+      id: {
+        pluginID: "",
+        platform: "Dummy",
+        value: crypto.randomUUID()
+      } as IPlatformID,
+      name: "Dummy",
+      url: "",
+      thumbnail: "",//?
+      subscribers: 100//?
+    } as IPlatformAuthorLink,
+    dateTime: "",
+    url: "",
+    shareUrl: "",
+
+    contentType: 1,
+    thumbnails: {
+      sources: [
+        {
+          url: "",
+          quality: 1
+        } as IThumbnail
+      ]
+    } as IThumbnails,
+    duration: parseInt((Math.random() * 400)),
+    viewCount: parseInt(Math.random() * 1000000),
+
+    isLive: false
+  } as IPlatformVideo
 }
