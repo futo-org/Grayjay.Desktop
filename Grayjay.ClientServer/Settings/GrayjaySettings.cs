@@ -298,6 +298,15 @@ namespace Grayjay.ClientServer.Settings
 
             [SettingsField("Connect Last", SettingsField.TOGGLE, "Allow device to automatically connect to last known", 3)]
             public bool ConnectLast { get; set; } = true;
+
+            [SettingsField("Discover through relay", SettingsField.TOGGLE, "Allow paired devices to be discovered and connected to through the relay", 4)]
+            public bool DiscoverThroughRelay { get; set; } = true;
+
+            [SettingsField("Pair through relay", SettingsField.TOGGLE, "Allow devices to be paired through the relay", 4)]
+            public bool PairThroughRelay { get; set; } = true;
+
+            [SettingsField("Connection through relay", SettingsField.TOGGLE, "Allow devices to be connected to through the relay", 4)]
+            public bool ConnectThroughRelay { get; set; } = true;
         }
 
         [SettingsField("Notifications", "group", "Configure update notifications", 11)]

@@ -18,6 +18,8 @@ using Opcode = SyncShared.Opcode;
 using Logger = Grayjay.Desktop.POC.Logger;
 using SyncShared;
 using System.Threading;
+using System.Collections.Concurrent;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Grayjay.ClientServer.States;
 
@@ -30,6 +32,8 @@ public class StateSync : IDisposable
 
     private readonly DictionaryStore<string, SyncSessionData> _syncSessionData = new DictionaryStore<string, SyncSessionData>("syncSessionData", new Dictionary<string, SyncSessionData>())
         .Load();
+
+    private readonly ConcurrentDictionary<string, Action<bool?, string>> _remotePendingStatusUpdate = new();
 
     private TcpListener? _serverSocket;
     private CancellationTokenSource? _cancellationTokenSource;
@@ -109,7 +113,7 @@ public class StateSync : IDisposable
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
                     var clientSocket = await _serverSocket.AcceptTcpClientAsync();
-                    var session = CreateSocketSession(clientSocket, true, (session) => { });
+                    var session = CreateSocketSession(clientSocket, true);
                     await session.StartAsResponderAsync();
                 }
             }
@@ -133,24 +137,7 @@ public class StateSync : IDisposable
                     _relaySession = new SyncSocketSession((socket.Client.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
                         socket.GetStream(),
                         socket.GetStream(),
-                        isHandshakeAllowed: (_, pk, pairingCode) =>
-                        {
-                            Logger.v<StateSync>($"Check if handshake allowed from '{pk}'.");
-                            if (pk == RelayPublicKey)
-                                return true;
-
-                            lock (_authorizedDevices)
-                            {
-                                if (_authorizedDevices.Contains(pk))
-                                    return true;
-                            }
-
-                            Logger.v<StateSync>($"Check if handshake allowed with pairing code '{pairingCode}' with active pairing code '{_pairingCode}'.");
-                            if (_pairingCode == null || pairingCode == null || pairingCode.Length == 0)
-                                return false;
-
-                            return _pairingCode == pairingCode;
-                        },
+                        isHandshakeAllowed: IsHandshakeAllowed,
                         onNewChannel: (s, c) =>
                         {
                             var remotePublicKey = c.RemotePublicKey;
@@ -168,7 +155,7 @@ public class StateSync : IDisposable
                                 if (!_sessions.TryGetValue(remotePublicKey, out session) || session == null)
                                 {
                                     var remoteDeviceName = _nameStorage.GetValue(remotePublicKey, null);
-                                    session = CreateNewSyncSession(remotePublicKey, remoteDeviceName, (s) => { });
+                                    session = CreateNewSyncSession(remotePublicKey, remoteDeviceName);
                                     _sessions[remotePublicKey] = session;
                                 }
 
@@ -192,7 +179,7 @@ public class StateSync : IDisposable
                                     lock (_authorizedDevices)
                                         unconnectedAuthorizedDevices = _authorizedDevices.Value.Where(pk => !IsConnected(pk)).ToArray();
 
-                                    await relaySession.PublishConnectionInformationAsync(unconnectedAuthorizedDevices, PORT, true, false, false, true, _cancellationTokenSource.Token);
+                                    await relaySession.PublishConnectionInformationAsync(unconnectedAuthorizedDevices, PORT, GrayjaySettings.Instance.Synchronization.DiscoverThroughRelay, false, false, GrayjaySettings.Instance.Synchronization.DiscoverThroughRelay && GrayjaySettings.Instance.Synchronization.ConnectThroughRelay, _cancellationTokenSource.Token);
                                     var connectionInfos = await relaySession.RequestBulkConnectionInfoAsync(unconnectedAuthorizedDevices, _cancellationTokenSource.Token);
                                     foreach (var connectionInfoPair in connectionInfos)
                                     {
@@ -226,7 +213,7 @@ public class StateSync : IDisposable
                                             //TODO: Implement hole punching, set allow to true when implemented
                                         }
 
-                                        if (connectionInfo.AllowRemoteProxied)
+                                        if (connectionInfo.AllowRemoteRelayed && GrayjaySettings.Instance.Synchronization.ConnectThroughRelay)
                                         {
                                             try
                                             {
@@ -323,7 +310,19 @@ public class StateSync : IDisposable
         }
     }
 
-    private SyncSession CreateNewSyncSession(string remotePublicKey, string? remoteDeviceName, Action<SyncSession>? onAuthorized)
+    private void OnAuthorized(string remotePublicKey)
+    {
+        if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
+            m?.Invoke(true, "Authorized");
+    }
+
+    private void OnUnauthorized(string remotePublicKey)
+    {
+        if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
+            m?.Invoke(false, "Unauthorized");
+    }
+
+    private SyncSession CreateNewSyncSession(string remotePublicKey, string? remoteDeviceName)
     {
         return new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
         {
@@ -336,7 +335,7 @@ public class StateSync : IDisposable
             if (rdn != null)
                 _nameStorage.SetAndSave(remotePublicKey, rdn);
 
-            onAuthorized?.Invoke(sess);
+            OnAuthorized(remotePublicKey);
             lock (_authorizedDevices)
             {
                 if (!_authorizedDevices.Value.Contains(remotePublicKey))
@@ -348,6 +347,8 @@ public class StateSync : IDisposable
 
             await CheckForSyncAsync(sess);
         }, onUnauthorized: sess => {
+            OnUnauthorized(remotePublicKey);
+
             StateUI.Dialog(new StateUI.DialogDescriptor()
             {
                 Text = "Device Unauthorized",
@@ -387,6 +388,9 @@ public class StateSync : IDisposable
             }
 
             DeviceRemoved?.Invoke(remotePublicKey);
+
+            if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
+                m?.Invoke(false, "Connection closed");
         }, dataHandler: (sess, opcode, subOpcode, data) =>
         {
             _handlers.Handle(sess, opcode, subOpcode, data);
@@ -533,7 +537,31 @@ public class StateSync : IDisposable
         return _nameStorage.GetValue(publicKey, null);
     }
 
-    private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder, Action<SyncSession>? onAuthorized)
+    private bool IsHandshakeAllowed(LinkType linkType, SyncSocketSession syncSocketSession, string publicKey, string? pairingCode)
+    {
+        Logger.v<StateSync>($"Check if handshake allowed from '{publicKey}'.");
+
+        lock (_authorizedDevices)
+        {
+            if (_authorizedDevices.Contains(publicKey))
+            {
+                if (linkType == LinkType.Relayed && !GrayjaySettings.Instance.Synchronization.ConnectThroughRelay)
+                    return false;
+                return true;
+            }
+        }
+
+        Logger.v<StateSync>($"Check if handshake allowed with pairing code '{pairingCode}' with active pairing code '{_pairingCode}'.");
+        if (_pairingCode == null || pairingCode == null || pairingCode.Length == 0)
+            return false;
+
+        if (linkType == LinkType.Relayed && !GrayjaySettings.Instance.Synchronization.PairThroughRelay)
+            return false;
+
+        return _pairingCode == pairingCode;
+    }
+
+    private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder)
     {
         SyncSession? session = null;
         ChannelSocket? channelSocket = null;
@@ -545,22 +573,7 @@ public class StateSync : IDisposable
                 if (session != null && channelSocket != null)
                     session.RemoveChannel(channelSocket);
             },
-            isHandshakeAllowed: (_, pk, pairingCode) =>
-            {
-                Logger.v<StateSync>($"Check if handshake allowed from '{pk}'.");
-
-                lock (_authorizedDevices)
-                {
-                    if (_authorizedDevices.Contains(pk))
-                        return true;
-                }
-
-                Logger.v<StateSync>($"Check if handshake allowed with pairing code '{pairingCode}' with active pairing code '{_pairingCode}'.");
-                if (_pairingCode == null || pairingCode == null || pairingCode.Length == 0)
-                    return false;
-
-                return _pairingCode == pairingCode;
-            },
+            isHandshakeAllowed: IsHandshakeAllowed,
             onHandshakeComplete: async s =>
             {
                 var remotePublicKey = s.RemotePublicKey;
@@ -589,7 +602,7 @@ public class StateSync : IDisposable
                             }
                         }
 
-                        session = CreateNewSyncSession(remotePublicKey, remoteDeviceName, onAuthorized);
+                        session = CreateNewSyncSession(remotePublicKey, remoteDeviceName);
                         _sessions[remotePublicKey] = session;
                     }
 
@@ -691,15 +704,16 @@ public class StateSync : IDisposable
         {
             Logger.e<StateSync>("Failed to connect directly.", e);
             var relaySession = _relaySession;
-            if (relaySession != null)
+            if (relaySession != null && GrayjaySettings.Instance.Synchronization.PairThroughRelay)
             {
                 onStatusUpdate?.Invoke(null, "Connecting via relay...");
+                if (onStatusUpdate != null)
+                    _remotePendingStatusUpdate[deviceInfo.PublicKey] = onStatusUpdate;
                 await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, deviceInfo.PairingCode, cancellationToken);
-                onStatusUpdate?.Invoke(true, "Connected");
             }
             else
             {
-                throw new Exception("Failed to connect.");
+                throw;
             }
         }
     }
@@ -709,11 +723,9 @@ public class StateSync : IDisposable
         onStatusUpdate?.Invoke(null, "Connecting directly...");
 
         var socket = new TcpClient(addresses[0], port);
-        var session = CreateSocketSession(socket, false, (s) =>
-        {
-            onStatusUpdate?.Invoke(true, "Authorized");
-        });
-
+        var session = CreateSocketSession(socket, false);
+        if (onStatusUpdate != null)
+            _remotePendingStatusUpdate[remotePublicKey] = onStatusUpdate;
         onStatusUpdate?.Invoke(null, "Handshaking...");
         await session.StartAsInitiatorAsync(remotePublicKey, pairingCode, cancellationToken);
         return session;
