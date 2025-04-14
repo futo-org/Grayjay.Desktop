@@ -1,4 +1,5 @@
 ﻿using Grayjay.ClientServer.Settings;
+using Grayjay.ClientServer.SubsExchange;
 using Grayjay.ClientServer.Threading;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
@@ -11,7 +12,7 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
 {
     public class SmartSubscriptionAlgorithm : SubscriptionsTaskFetchAlgorithm
     {
-        public SmartSubscriptionAlgorithm(bool allowFailure = false, bool withCacheFallback = true, ManagedThreadPool pool = null) : base( allowFailure, withCacheFallback, pool)
+        public SmartSubscriptionAlgorithm(bool allowFailure = false, bool withCacheFallback = true, ManagedThreadPool pool = null, SubsExchangeClient client = null) : base( allowFailure, withCacheFallback, pool, client)
         {
         }
 

@@ -178,6 +178,8 @@ namespace Grayjay.ClientServer.Subscriptions
                         LastLiveStream = mostRecent;
                     else if (LastVideo.Year > 3000)
                         LastLiveStream = DateTime.MinValue;
+                    else
+                        LastLiveStream = DateTime.MinValue;
                     LastStreamUpdate = DateTime.Now;
                     break;
                 case ResultCapabilities.TYPE_POSTS:
