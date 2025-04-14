@@ -45,29 +45,20 @@ public class SyncSession : IDisposable, IAuthorizable
     {
         get
         {
-
-            var hasDirect = false;
-            var hasRelayed = false;
+            var linkType = LinkType.None;
 
             lock (_channels)
             {
                 foreach (var channel in _channels)
                 {
-                    if (channel is ChannelRelayed)
-                        hasRelayed = true;
-                    if (channel is ChannelSocket)
-                        hasDirect = true;
-
-                    if (hasRelayed && hasDirect)
+                    if (channel.LinkType == LinkType.Direct)
                         return LinkType.Direct;
+                    if (channel.LinkType == LinkType.Relayed)
+                        linkType = LinkType.Relayed;
                 }
             }
 
-            if (hasRelayed)
-                return LinkType.Relayed;
-            if (hasDirect)
-                return LinkType.Direct;
-            return LinkType.None;
+            return linkType;
         }
     }
 
@@ -233,7 +224,7 @@ public class SyncSession : IDisposable, IAuthorizable
         List<IChannel> channels;
         lock (_channels)
         {
-            channels = _channels.ToList();
+            channels = _channels.OrderBy(c => (int)c.LinkType).ToList();
         }
 
         if (channels.Count == 0)
