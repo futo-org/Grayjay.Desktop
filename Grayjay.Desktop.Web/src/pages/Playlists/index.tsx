@@ -31,11 +31,8 @@ import StateWebsocket from '../../state/StateWebsocket';
 import { createResourceDefault } from '../../utility';
 import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
 import InputText from '../../components/basics/inputs/InputText';
-import SettingsDropdown from '../../components/basics/inputs/SettingsDropdown';
-import StateGlobal from '../../state/StateGlobal';
 import Dropdown from '../../components/basics/inputs/Dropdown';
 import ic_search from '../../assets/icons/search.svg';
-import { Event1 } from '../../utility/Event';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
