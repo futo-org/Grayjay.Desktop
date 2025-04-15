@@ -11,7 +11,7 @@ import { PlaylistsBackend } from '../../backend/PlaylistsBackend';
 import UIOverlay from '../../state/UIOverlay';
 import PlaylistView from '../../components/content/PlaylistView';
 import Anchor, { AnchorStyle } from '../../utility/Anchor';
-import SettingsMenu, { Menu, MenuItemButton, MenuSeperator } from '../../components/menus/Overlays/SettingsMenu';
+import SettingsMenu, { Menu, MenuItemButton, MenuItemCheckbox, MenuSeperator } from '../../components/menus/Overlays/SettingsMenu';
 import { IPlaylist } from '../../backend/models/IPlaylist';
 import { Portal } from 'solid-js/web';
 
@@ -30,6 +30,12 @@ import { Menus } from '../../Menus';
 import StateWebsocket from '../../state/StateWebsocket';
 import { createResourceDefault } from '../../utility';
 import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
+import InputText from '../../components/basics/inputs/InputText';
+import SettingsDropdown from '../../components/basics/inputs/SettingsDropdown';
+import StateGlobal from '../../state/StateGlobal';
+import Dropdown from '../../components/basics/inputs/Dropdown';
+import ic_search from '../../assets/icons/search.svg';
+import { Event1 } from '../../utility/Event';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -115,6 +121,81 @@ const PlaylistsPage: Component = () => {
     });
   }
 
+  const [filterText, setFilterText] = createSignal("");
+  const [sortBy, setSortBy] = createSignal(0);
+  
+  const filteredPlaylists$ = createMemo((prev: IPlaylist[] | undefined) => {
+    let result: IPlaylist[] | undefined;
+  
+    if (filterText() && filterText().length > 0)
+      result = playlists$()?.filter(v => v.name.toLowerCase().indexOf(filterText().toLowerCase()) !== -1);
+    else
+      result = playlists$()?.slice();
+  
+    switch (sortBy()) {
+      case 0: // Name (A-Z)
+        result?.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 1: // Name (Z-A)
+        result?.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 2: // Modified Date (Oldest)
+        result?.sort((a, b) => {
+          const aDate = a.dateUpdate ? new Date(a.dateUpdate).getTime() : 0;
+          const bDate = b.dateUpdate ? new Date(b.dateUpdate).getTime() : 0;
+          return aDate - bDate;
+        });
+        break;
+      case 3: // Modified Date (Newest)
+        result?.sort((a, b) => {
+          const aDate = a.dateUpdate ? new Date(a.dateUpdate).getTime() : 0;
+          const bDate = b.dateUpdate ? new Date(b.dateUpdate).getTime() : 0;
+          return bDate - aDate;
+        });
+        break;
+      case 4: // Creation Date (Oldest)
+        result?.sort((a, b) => {
+          const aDate = a.dateCreated ? new Date(a.dateCreated).getTime() : 0;
+          const bDate = b.dateCreated ? new Date(b.dateCreated).getTime() : 0;
+          return aDate - bDate;
+        });
+        break;
+      case 5: // Creation Date (Newest)
+        result?.sort((a, b) => {
+          const aDate = a.dateCreated ? new Date(a.dateCreated).getTime() : 0;
+          const bDate = b.dateCreated ? new Date(b.dateCreated).getTime() : 0;
+          return bDate - aDate;
+        });
+        break;
+      case 6: // Play Date (Oldest)
+        result?.sort((a, b) => {
+          const aDate = a.datePlayed ? new Date(a.datePlayed).getTime() : 0;
+          const bDate = b.datePlayed ? new Date(b.datePlayed).getTime() : 0;
+          return aDate - bDate;
+        });
+        break;
+      case 7: // Play Date (Newest)
+        result?.sort((a, b) => {
+          const aDate = a.datePlayed ? new Date(a.datePlayed).getTime() : 0;
+          const bDate = b.datePlayed ? new Date(b.datePlayed).getTime() : 0;
+          return bDate - aDate;
+        });
+        break;
+    }
+    return result;
+  });
+  
+  const sortOptions = [
+    "Name (A-Z)",
+    "Name (Z-A)",
+    "Modified Date (Oldest)",
+    "Modified Date (Newest)",
+    "Creation Date (Oldest)",
+    "Creation Date (Newest)",
+    "Play Date (Oldest)",
+    "Play Date (Newest)"
+  ];
+
   return (
     <div class={styles.container}>
       <NavigationBar isRoot={true} defaultSearchType={ContentType.PLAYLIST} />
@@ -178,10 +259,24 @@ const PlaylistsPage: Component = () => {
                 }}
                 onClick={() =>createPlaylist()} />
             </div>
+
+            <div class={styles.containerFilters}>
+              <InputText icon={ic_search} placeholder={"Search playlists"}
+                value={filterText()}
+                showClearButton={true}
+                inputContainerStyle={{
+                  "height": "70px", 
+                  "background": "#141414"
+                }}
+                onTextChanged={(v) => {
+                  setFilterText(v);
+                }} />
+              <Dropdown label="Sort by" onSelectedChanged={(v) => setSortBy(v)} value={sortBy()} options={sortOptions} anchorStyle={AnchorStyle.BottomLeft} style={{"width": "280px"}} />
+            </div>
             
-            <Show when={(playlists$()?.length ?? 0) > 0}>
+            <Show when={(filteredPlaylists$()?.length ?? 0) > 0}>
               <VirtualGrid outerContainerRef={scrollContainerRef}
-                items={playlists$()}
+                items={filteredPlaylists$()}
                 itemWidth={320}
                 calculateHeight={(width) => {
                   const aspectRatio = 320 / 250;
@@ -220,7 +315,7 @@ const PlaylistsPage: Component = () => {
                   );
                 }} />
             </Show>
-            <Show when={(playlists$()?.length ?? 0) == 0 && !playlists$.loading}>
+            <Show when={(filteredPlaylists$()?.length ?? 0) == 0 && !playlists$.loading}>
               <EmptyContentView 
                   icon={iconPlaylist}
                   title='You have no playlists'
@@ -239,7 +334,7 @@ const PlaylistsPage: Component = () => {
                     }
                   ]} />
             </Show>
-            <Show when={(playlists$()?.length ?? 0) == 0 && playlists$.loading}>
+            <Show when={(filteredPlaylists$()?.length ?? 0) == 0 && playlists$.loading}>
               <LoaderGrid />
             </Show>
           </div>

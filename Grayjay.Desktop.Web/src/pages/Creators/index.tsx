@@ -44,7 +44,7 @@ const CreatorsPage: Component = () => {
     if (filterText() && filterText().length > 0)
       result = subs$()?.filter(v => v.channel.name.toLowerCase().indexOf(filterText().toLowerCase()) !== -1);
     else
-      result = subs$();
+      result = subs$()?.slice();
 
     const allDisabled = disabledSources();
     result = result?.filter(v => allDisabled.indexOf(v.channel.id.pluginID) === -1);

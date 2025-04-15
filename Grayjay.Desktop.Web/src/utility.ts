@@ -486,3 +486,31 @@ export function getDummyVideo() : IPlatformVideo {
     isLive: false
   } as IPlatformVideo
 }
+
+export function updateDataArray<T>(oldArray: T[], newArray: T[], modifiedCallback: (startIndex: number, endIndex: number) => void, addedCallback: (startIndex: number, endIndex: number) => void, removedCallback: (startIndex: number, endIndex: number) => void) {
+  const minLength = Math.min(oldArray.length, newArray.length);
+
+  // Update common elements
+  for (let i = 0; i < minLength; i++) {
+      oldArray[i] = newArray[i];
+  }
+  
+  if(minLength > 0) {
+      console.info(`modifiedCallback(0, ${minLength - 1})`);
+      modifiedCallback(0, minLength - 1);
+  }
+
+  // If new array is longer, add remaining elements
+  if (newArray.length > oldArray.length) {
+      oldArray.push(...newArray.slice(minLength));
+      console.info(`addedCallback(0, ${newArray.length - 1})`);
+      addedCallback(minLength, newArray.length - 1);
+  } else if (newArray.length < oldArray.length) { 
+      // If new array is shorter, remove remaining elements
+      if (oldArray.length > 0) {
+          console.info(`removedCallback(${minLength}, ${oldArray.length - 1})`);
+          removedCallback(minLength, oldArray.length - 1);
+      }
+      oldArray.length = newArray.length;
+  }
+}
