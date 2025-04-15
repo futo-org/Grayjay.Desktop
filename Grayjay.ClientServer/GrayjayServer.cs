@@ -127,17 +127,11 @@ namespace Grayjay.ClientServer
             }
             else
             {
-                string staticFilesPath = Path.GetFullPath("wwwroot");
-                if (OperatingSystem.IsMacOS())
-                {
-                    string? executableDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
-                    if (!File.Exists(staticFilesPath) && executableDirectory != null)
-                        staticFilesPath = Path.Combine(executableDirectory, "wwwroot");
-                    if (!File.Exists(staticFilesPath) && executableDirectory != null)
-                        staticFilesPath = Path.Combine(executableDirectory, "../Resources/wwwroot");
-                }
+                string? staticFilesPath = Utilities.FindDirectory("wwwroot");
+                if (staticFilesPath == null)
+                    throw new Exception("Failed to find wwwroot.");
 
-                Logger.i(nameof(GrayjayServer), $"RunServerAsync: Static files path '" + Path.GetFullPath(staticFilesPath) + "'.");
+                Logger.i(nameof(GrayjayServer), $"RunServerAsync: Static files path '" + staticFilesPath + "'.");
                 _app.UseStaticFiles(new StaticFileOptions
                 {
                     FileProvider = new PhysicalFileProvider(staticFilesPath),

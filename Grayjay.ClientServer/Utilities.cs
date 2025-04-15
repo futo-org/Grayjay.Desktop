@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -200,5 +201,45 @@ public static class Utilities
             result[i] = validChars[randomBytes[i] % validChars.Length];
 
         return new string(result);
+    }
+
+    public static string? FindDirectory(string directoryName)
+    {
+        // 1. Check next to the executable
+        string? executablePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
+        if (executablePath != null)
+        {
+            string exeDirPath = Path.Combine(executablePath, directoryName);
+            if (Directory.Exists(exeDirPath))
+            {
+                return Path.GetFullPath(exeDirPath);
+            }
+        }
+
+        // 2. Check in Resources directory (macOS-specific, e.g., for bundled apps)
+        if (OperatingSystem.IsMacOS() && executablePath != null)
+        {
+            string resourcesDirPath = Path.Combine(executablePath, "../Resources", directoryName);
+            if (Directory.Exists(resourcesDirPath))
+            {
+                return Path.GetFullPath(resourcesDirPath);
+            }
+        }
+
+        // 3. Check in the current working directory
+        string workingDirPath = Path.Combine(Directory.GetCurrentDirectory(), directoryName);
+        if (Directory.Exists(workingDirPath))
+        {
+            return Path.GetFullPath(workingDirPath);
+        }
+
+        // 4. Check in the application base directory (AppContext.BaseDirectory)
+        string baseDirPath = Path.Combine(AppContext.BaseDirectory, directoryName);
+        if (Directory.Exists(baseDirPath))
+        {
+            return Path.GetFullPath(baseDirPath);
+        }
+
+        return null;
     }
 }
