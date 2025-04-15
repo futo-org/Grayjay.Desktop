@@ -601,7 +601,7 @@ namespace Grayjay.Desktop.POC.Port.States
 
         private static long _clientsLockCount = 0;
         private static string _clientsLockCaller = "";
-        private static T ClientsLock<T>(Func<T> act, bool log = true)
+        private static T ClientsLock<T>(Func<T> act, bool log = false)
         {
             T result = default(T);
             ClientsLock(() => result = act(), log, 2);

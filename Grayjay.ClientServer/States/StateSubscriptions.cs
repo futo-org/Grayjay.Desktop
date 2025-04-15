@@ -1,11 +1,13 @@
 ﻿
 using Grayjay.ClientServer;
+using Grayjay.ClientServer.Crypto;
 using Grayjay.ClientServer.Models.Subscriptions;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Subscriptions;
 using Grayjay.ClientServer.Subscriptions.Algorithms;
+using Grayjay.ClientServer.SubsExchange;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Models;
 using Grayjay.ClientServer.Threading;
@@ -44,6 +46,11 @@ namespace Grayjay.Desktop.POC.Port.States
         private static DictionaryStore<string, long> _groupsRemoved = new DictionaryStore<string, long>("groups_removed", new Dictionary<string, long>())
             .Load();
 
+        private const string _subsExchangeServer = "https://exchange.grayjay.app";
+        private static StringStore _subscriptionKey = new StringStore("sub_exchange_key")
+            .Load();
+
+
         private static ChannelFeed _global = new ChannelFeed();
         private static Dictionary<string, ChannelFeed> _feeds = new Dictionary<string, ChannelFeed>();
 
@@ -53,6 +60,8 @@ namespace Grayjay.Desktop.POC.Port.States
 
         static StateSubscriptions()
         {
+            if (string.IsNullOrEmpty(_subscriptionKey.Value))
+                GenerateNewSubsExchangeKey();
             _global.OnUpdateProgress += (int progress, int total) => GrayjayServer.Instance?.WebSocket?.Broadcast(new SubscriptionProgress(progress, total), "subProgress", "global");
 
             OnSubscriptionsChanged += (subs, n) =>
@@ -60,6 +69,21 @@ namespace Grayjay.Desktop.POC.Port.States
                 StateWebsocket.SubscriptionsChanged();
             };
         }
+
+        public static void GenerateNewSubsExchangeKey()
+        {
+            var newKey = SubsExchangeClient.CreatePrivateKey();
+            _subscriptionKey.Save(EncryptionProvider.Instance.Encrypt(newKey));
+        }
+        public static SubsExchangeClient GetSubsExchangeClient()
+        {
+            if (string.IsNullOrEmpty(_subscriptionKey.Value))
+                throw new InvalidOperationException("No valid subscription exchange key set");
+
+            var key = EncryptionProvider.Instance.Decrypt(_subscriptionKey.Value);
+            return new SubsExchangeClient(_subsExchangeServer, key);
+        }
+
 
         public static List<IManagedStore> ToMigrateCheck()
         {
@@ -127,7 +151,20 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static (IPager<PlatformContent>, List<Exception>) getSubscriptionsFeedWithExceptions(bool allowFailure, bool withCacheFallback, List<string> urls, Action<int,int> onProgress, Action<Subscription, PlatformContent> onNewCacheHit = null)
         {
-            var algo = SubscriptionFetchAlgorithm.GetAlgorithm(SubscriptionFetchAlgorithms.Smart, allowFailure, withCacheFallback, _threadPool);
+            SubsExchangeClient client = null;
+            if(GrayjaySettings.Instance.Subscriptions.UseSubscriptionExchange)
+            {
+                try
+                {
+                    client = GetSubsExchangeClient();
+                }
+                catch(Exception ex)
+                {
+                    Logger.e("StateSubscriptions", "Failed to get subscription client", ex);
+                }
+            }    
+
+            var algo = SubscriptionFetchAlgorithm.GetAlgorithm(SubscriptionFetchAlgorithms.Smart, allowFailure, withCacheFallback, _threadPool, client);
             algo.OnNewCacheHit += onNewCacheHit;
             algo.OnProgress += onProgress;
 

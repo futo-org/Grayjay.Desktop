@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer.Threading;
+﻿using Grayjay.ClientServer.SubsExchange;
+using Grayjay.ClientServer.Threading;
 using Grayjay.Engine;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
@@ -65,12 +66,12 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
             }
         }
 
-        public static SubscriptionFetchAlgorithm GetAlgorithm(SubscriptionFetchAlgorithms algo, bool allowFailure, bool withCacheFallback, ManagedThreadPool threadPool = null)
+        public static SubscriptionFetchAlgorithm GetAlgorithm(SubscriptionFetchAlgorithms algo, bool allowFailure, bool withCacheFallback, ManagedThreadPool threadPool = null, SubsExchangeClient client = null)
         {
             switch (algo)
             {
                 case SubscriptionFetchAlgorithms.Smart:
-                    return new SmartSubscriptionAlgorithm(allowFailure, withCacheFallback, threadPool);
+                    return new SmartSubscriptionAlgorithm(allowFailure, withCacheFallback, threadPool, client);
                 case SubscriptionFetchAlgorithms.Cache:
                     return new CachedSubscriptionAlgorithm(20);
                 default:
