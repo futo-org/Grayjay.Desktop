@@ -168,7 +168,8 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             items={filteredVideos$()}
             itemHeight={107}
             onSwap={(index1, index2) => {
-              const videos = filteredVideos$();
+              //Only possible when unfiltered so directly modify the underlying array
+              const videos = props.videos;
               if (!videos) {
                 return;
               }

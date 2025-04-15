@@ -18,9 +18,9 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-left: 24px;
-    margin-right: 24px;
-    width: calc(100% - 48px);
+    margin-left: 12px;
+    margin-right: 12px;
+    width: calc(100% - 24px);
     gap: 12px;
     margin-top: 24px;
 }
