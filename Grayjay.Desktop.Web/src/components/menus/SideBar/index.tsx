@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -12,6 +12,7 @@ import playlists from '../../../assets/icons/icon_nav_playlists.svg';
 import creators from '../../../assets/icons/icon_nav_creators.svg';
 import ic_sidebarOpen from '../../../assets/icons/sidebar-open.svg';
 import ic_sidebarClose from '../../../assets/icons/sidebar-close.svg';
+import ic_more from '../../../assets/icons/icon_button_more.svg';
 import history from '../../../assets/icons/icon_nav_history.svg';
 import download from '../../../assets/icons/icon24_download.svg';
 import iconSync from '../../../assets/icons/ic_sync.svg';
@@ -23,8 +24,6 @@ import iconLink from '../../../assets/icons/icon_link.svg';
 import iconSources from '../../../assets/icons/ic_circles.svg';
 import iconChevronDown from '../../../assets/icons/icon16_chevron_down.svg';
 import iconPlus from '../../../assets/icons/icon24_add.svg'
-import VirtualFlexibleList from '../../containers/VirtualFlexibleList';
-import VirtualFlexibleArrayList from '../../containers/VirtualFlexibleArrayList';
 import ScrollContainer from '../../containers/ScrollContainer';
 import { SubscriptionsBackend } from '../../../backend/SubscriptionsBackend';
 import SideBarCreator from '../SideBarCreator';
@@ -35,6 +34,7 @@ import Globals from '../../../globals';
 import StateGlobal from '../../../state/StateGlobal';
 import { createResourceDefault } from '../../../utility';
 import { LocalBackend } from '../../../backend/LocalBackend';
+import { Portal } from 'solid-js/web';
 
 export interface SideBarProps {
   alwaysMinimized?: boolean;
@@ -62,17 +62,100 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const [expandType$, setExpandType] = createSignal("subs");
 
   const [devClicked$, setDevClicked] = createSignal(0);
+  const [moreOverlayVisible$, setMoreOverlayVisible] = createSignal(false);
 
   const [subscriptions$] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
 
   let scrollContainerRef: HTMLDivElement | undefined;
 
-  const subs = subscriptions$();
   createEffect(() => {
     const subs = subscriptions$();
     console.log("Subs loaded: " + !!subs);
   });
 
+  const topButtons$ = createMemo(() => {
+    const list: Array<{
+      icon: string,
+      name: string,
+      selected: boolean,
+      path?: string,
+      action?: () => void,
+      onRightClick?: () => void
+    }> = [
+      { icon: home,          name: 'Home',          path: '/web/home',          selected: location.pathname === '/web/home' || location.pathname === '/web/index.html' },
+      { icon: subscriptions, name: 'Subscriptions',  path: '/web/subscriptions', selected: location.pathname === '/web/subscriptions' },
+      { icon: creators,      name: 'Creators',       path: '/web/creators',      selected: location.pathname === '/web/creators' },
+      { icon: playlists,     name: 'Playlists',      path: '/web/playlists',     selected: location.pathname === '/web/playlists' },
+    ];
+  
+    if (video?.watchLater()?.length) {
+      list.push({
+        icon: iconWatchLater,
+        name: 'Watch Later',
+        path: '/web/watchLater',
+        selected: location.pathname === '/web/watchLater'
+      });
+    }
+  
+    list.push(
+      { icon: iconSources, name: 'Sources',   path: '/web/sources',   selected: location.pathname === '/web/sources' },
+      { icon: download,    name: 'Downloads', path: '/web/downloads', selected: location.pathname === '/web/downloads' },
+      { icon: history,     name: 'History',   path: '/web/history',   selected: location.pathname === '/web/history' },
+      { icon: iconSync,    name: 'Sync',      path: '/web/sync',      selected: location.pathname === '/web/sync' },
+      { icon: iconPlus,    name: 'New Window', action: () => WindowBackend.startWindow(), selected: false }
+    );
+  
+    if (devClicked$() > 5) {
+      list.push({
+        icon: iconPlus,
+        name: 'Delay',
+        action: () => { WindowBackend.echo('test'); WindowBackend.delay(10000); },
+        selected: false
+      });
+    }
+  
+    if (StateGlobal.isDeveloper$()) {
+      const host = window.location.host;
+      list.push({
+        icon: iconLink,
+        name: 'Developer',
+        path: '/Developer/Index',
+        selected: location.pathname === '/Developer/Index',
+        onRightClick: () => LocalBackend.open(`http://${host}/Developer/Index`)
+      });
+    }
+  
+    return list;
+  });
+
+  const [visibleTopButtonCount$, setVisibleTopButtonCount] = createSignal<number>(0);
+  const [moreTopButtonCount$, setMoreTopButtonCount] = createSignal<number>(0);
+  const [remainingSpace$, setRemainingSpace] = createSignal<number>(0);
+  const [topButtonListHeight$, setTopButtonListHeight] = createSignal<number>(0);
+  
+  const bottomButtons$ = createMemo(() => {
+    const list: Array<{ icon: string, name: string, selected: boolean, path?: string, action?: () => void }> = [];
+  
+    if (!StateGlobal.didPurchase$()) {
+      list.push({
+        icon: iconBuy,
+        name: 'Buy Grayjay',
+        path: '/web/buy',
+        selected: location.pathname === '/web/buy'
+      });
+    }
+  
+    list.push({
+      icon: iconSettings,
+      name: 'Settings',
+      action: () => UIOverlay.overlaySettings(),
+      selected: location.pathname === '/web/settings'
+    });
+  
+    return list;
+  });
+
+  const useMoreButton = true;
   const handleResize = () => {
     if (props.alwaysMinimized === true) {
       return;
@@ -92,6 +175,46 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           setCollapsed(false);
           wasAutoCollapsed = false;
         }
+      }
+
+      const bottomButtonCount = bottomButtons$().length;
+      const totalBottomButtonHeight = 44 /* button height */ * bottomButtonCount + 4 /* gap */ * (bottomButtonCount - 1) + 10 /* margin top */ + 1 /* divider */;
+      const availableSideBarTopHeight = window.innerHeight - 10 /* margin top */ - 10 /* margin bottom */ - totalBottomButtonHeight;
+      const topButtonsRootHeight = (canToggleCollapse() ? (56 + 16 /* top margin */ + 4 /* bottom margin */ + 6 /* gap */) : 0) + (48 + 8 /* bottom margin */ + 6 /* gap */);
+      const availableSidebarTopButtonsHeight = availableSideBarTopHeight - topButtonsRootHeight;
+      const topButtonCount = topButtons$().length;
+      const topButtonsVisible = Math.min(Math.floor((availableSidebarTopButtonsHeight + 6 /* gap */) / (44 + 6 /* gap */)), topButtonCount);
+
+      if (useMoreButton) {
+        const topButtonListHeight = topButtonsVisible * 44 + (topButtonsVisible - 1) * 6 /* gap */;
+        setTopButtonListHeight(topButtonListHeight);
+        const remainingSpace = Math.max(availableSidebarTopButtonsHeight - topButtonListHeight, 0);
+        setRemainingSpace(remainingSpace);
+
+        if (topButtonsVisible == topButtonCount) {
+          //All buttons visible
+          setVisibleTopButtonCount(topButtonsVisible);
+          setMoreTopButtonCount(0);
+          setMoreOverlayVisible(false);
+
+        } else {
+          //Not all buttons visible, no potential for showing subscriptions
+          setVisibleTopButtonCount(topButtonsVisible - 1);
+          setMoreTopButtonCount(topButtonCount - (topButtonsVisible - 1));
+        }
+
+        console.log({topButtonsRootHeight, remainingSpace, innerHeight: window.innerHeight, bottomButtonCount, totalBottomButtonHeight, availableSideBarTopHeight, availableSidebarTopButtonsHeight, topButtonCount, topButtonsVisible});
+      } else {
+        const topButtonListHeight = topButtonCount * 44 + (topButtonCount - 1) * 6 /* gap */;
+        setTopButtonListHeight(topButtonListHeight);
+
+        const remainingSpace = Math.max(availableSidebarTopButtonsHeight - topButtonListHeight, 0);
+        setRemainingSpace(remainingSpace);
+
+        setVisibleTopButtonCount(topButtonCount);
+        setMoreTopButtonCount(0);
+
+        console.log({topButtonsRootHeight, remainingSpace, innerHeight: window.innerHeight, bottomButtonCount, totalBottomButtonHeight, availableSideBarTopHeight, availableSidebarTopButtonsHeight, topButtonCount, topButtonsVisible});
       }
     });
   };
@@ -136,34 +259,27 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             </div>
           </Show>
         </div>
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/home", options)} icon={home} name="Home" selected={location.pathname === "/web/home" || location.pathname === "/web/index.html"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/subscriptions", options)} icon={subscriptions} name="Subscriptions" selected={location.pathname === "/web/subscriptions"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/creators", options)} icon={creators} name="Creators" selected={location.pathname === "/web/creators"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/playlists", options)} icon={playlists} name="Playlists" selected={location.pathname === "/web/playlists"} />
-        <Show when={video?.watchLater()?.length}>
-          <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/watchLater", options)} icon={iconWatchLater} name="Watch Later" selected={location.pathname === "/web/watchLater"} />
-        </Show>
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sources", options)} icon={iconSources} name="Sources" selected={location.pathname === "/web/sources"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/downloads", options)} icon={download} name="Downloads" selected={location.pathname === "/web/downloads"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/history", options)} icon={history} name="History" selected={location.pathname === "/web/history"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => navigateTo("/web/sync", options)} icon={iconSync} name="Sync" selected={location.pathname === "/web/sync"} />
-        <SideBarButton collapsed={collapsed()} onClick={() => WindowBackend.startWindow()} icon={iconPlus} name="New Window" selected={false} />
-        <Show when={devClicked$() > 5}>
-          <SideBarButton collapsed={collapsed()} onClick={() => { WindowBackend.echo("test"); WindowBackend.delay(10000); }} icon={iconPlus} name="Delay" selected={false} />
-        </Show>
-        
-        <Show when={StateGlobal.isDeveloper$()}>
-        <SideBarButton collapsed={collapsed()} onClick={() => {
-              const host = window.location.host;
-              window.location.href = ("http://" + host + "/Developer/Index");
-        }} onRightClick={()=>{
-          const host = window.location.host;
-          const url = ("http://" + host + "/Developer/Index");
-          LocalBackend.open(url);
-        }} icon={iconLink} name="Developer" selected={location.pathname === "/Developer/Index"} />
+        {topButtons$().slice(0, visibleTopButtonCount$()).map(btn => (
+          <SideBarButton
+            collapsed={collapsed()}
+            icon={btn.icon}
+            name={btn.name}
+            selected={btn.selected}
+            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
+            onRightClick={btn.onRightClick}
+          />
+        ))}
+        <Show when={moreTopButtonCount$() > 0}>
+          <SideBarButton
+              collapsed={collapsed()}
+              icon={ic_more}
+              name={"More"}
+              selected={false}
+              onClick={() => setMoreOverlayVisible(true)}
+            />
         </Show>
       </div>
-      <Show when={!collapsed() && subscriptions$()?.length} fallback={<div style="flex-grow:1"></div>}>
+      <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())}>
               Subscriptions
@@ -195,11 +311,36 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         </div>
       </Show>
       <div class={styles.buttonListBottom}>
-        <Show when={!StateGlobal.didPurchase$()}>
-          <SideBarButton collapsed={collapsed()} onClick={() => navigate("/web/buy", options)} icon={iconBuy} name="Buy Grayjay" selected={location.pathname === "/web/buy"} />
-        </Show>
-        <SideBarButton collapsed={collapsed()} onClick={() => UIOverlay.overlaySettings()} icon={iconSettings} name="Settings" selected={location.pathname === "/web/settings"} />
+        {bottomButtons$().map(btn => (
+          <SideBarButton
+            collapsed={collapsed()}
+            icon={btn.icon}
+            name={btn.name}
+            selected={btn.selected}
+            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
+          />
+        ))}
       </div>
+      <Portal>
+        <Show when={moreTopButtonCount$() > 0 && moreOverlayVisible$()}>
+          <div style="height: 100%; width: 100%; position: absolute; top: 0px; left: 0px; background-color: #0000009e" onClick={() => setMoreOverlayVisible(false)}>
+            <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
+    flex-direction: column; align-items: center; gap: 6px;">
+              {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (
+                  <SideBarButton
+                    collapsed={false}
+                    icon={btn.icon}
+                    name={btn.name}
+                    selected={btn.selected}
+                    onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
+                    onRightClick={btn.onRightClick}
+                  />
+                ))}
+            </div>
+          </div>
+
+        </Show>
+      </Portal>
     </div>
   );
 };

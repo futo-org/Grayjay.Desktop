@@ -1,6 +1,7 @@
 import { Accessor, createSignal } from "solid-js";
 import { Pager } from "./Pager";
 import StateWebsocket from "../../../state/StateWebsocket";
+import { updateDataArray } from "../../../utility";
 
 
 export abstract class RefreshPager<T> extends Pager<T> {
@@ -14,8 +15,8 @@ export abstract class RefreshPager<T> extends Pager<T> {
                 const result = packet.payload as PagerResult<T>;
 
                 const newDataFiltered = result.results.filter(this.filter ? this.filter : (item) => true);
-                this.updateDataArray(this.data, result.results, (a, b) => this.modified(a, b), (a, b) => this.added(a, b), (a, b) => this.removed(a, b));
-                this.updateDataArray(this.dataFiltered, newDataFiltered, (a, b) => this.modifiedFiltered(a, b), (a, b) => this.addedFiltered(a, b), (a, b) => this.removedFiltered(a, b));
+                updateDataArray(this.data, result.results, (a, b) => this.modified(a, b), (a, b) => this.added(a, b), (a, b) => this.removed(a, b));
+                updateDataArray(this.dataFiltered, newDataFiltered, (a, b) => this.modifiedFiltered(a, b), (a, b) => this.addedFiltered(a, b), (a, b) => this.removedFiltered(a, b));
             }
         }, this.uniqueId);
     }
