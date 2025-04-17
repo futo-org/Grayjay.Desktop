@@ -162,7 +162,7 @@ const CreatorsPage: Component = () => {
             }}
             builder={(index, item) =>
               <CreatorView {... item()?.channel} 
-                metadata={`${toHumanNumber(item()?.channel?.subscribers)} subscribers`}
+                metadata={((item()?.channel?.subscribers && item()?.channel?.subscribers > 0) ? (toHumanNumber(item()?.channel?.subscribers) + " subscribers") : "")}
                 onClick={() => {
                   const url = item()?.channel?.url;
                   if(url)
