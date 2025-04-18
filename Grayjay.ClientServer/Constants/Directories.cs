@@ -78,6 +78,8 @@ public static class Directories
     private static readonly Lazy<string> _temporaryDirectory = new Lazy<string>(() =>
     {
         string dir = Path.Combine(Base, "temp_files");
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
         EnsureDirectoryExists(dir);
         return dir;
     });

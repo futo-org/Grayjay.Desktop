@@ -1026,7 +1026,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         const tokens = [];
 
         const viewCount = viewCount$();
-        if (viewCount) {
+        if (viewCount && viewCount > 0) {
             tokens.push(toHumanNumber(viewCount) + " views");
         }
 

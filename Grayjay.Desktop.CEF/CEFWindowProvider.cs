@@ -4,6 +4,7 @@ using Grayjay.ClientServer.Browser;
 using Grayjay.Desktop.POC;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
@@ -388,9 +389,17 @@ namespace Grayjay.Desktop.CEF
 
             public event Action OnClosed;
 
+            private ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse>>> _proxyHandlers = new ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse>>>();
+
             public Window(DotCefWindow window)
             {
                 _window = window;
+                _window.SetRequestProxy((cef, req) =>
+                {
+                    if (_proxyHandlers.ContainsKey(req.Url))
+                        return _proxyHandlers[req.Url](req);
+                    return null;
+                });
                 _window.OnClose += () =>
                 {
                     OnClosed?.Invoke();
@@ -400,6 +409,38 @@ namespace Grayjay.Desktop.CEF
             public void Close()
             {
                 _window.CloseAsync();
+            }
+
+            public void SetRequestProxy(string url, Func<WindowRequest, Task<WindowResponse>> handler)
+            {
+                var ipcHandle = (IPCRequest req) =>
+                {
+                    return handler(new WindowRequest()
+                    {
+                        Url = req.Url,
+                        Headers = req.Headers,
+                        Method = req.Method
+                    }).ContinueWith<IPCResponse>(t =>
+                    {
+                        if(t is Task<WindowResponse> vt)
+                        {
+                            if (vt.Status == TaskStatus.RanToCompletion)
+                            {
+                                return new IPCResponse()
+                                {
+                                    StatusCode = vt.Result.StatusCode,
+                                    StatusText = vt.Result.StatusText,
+                                    Headers = vt.Result.Headers,
+                                    BodyStream = vt.Result.BodyStream
+                                };
+                            }
+                            else
+                                throw vt.Exception;
+                        }
+                        return null;
+                    });
+                };
+                _proxyHandlers.AddOrUpdate(url, ipcHandle, (x,v) => { return ipcHandle; });
             }
         }
     }

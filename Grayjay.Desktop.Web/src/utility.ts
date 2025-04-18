@@ -447,6 +447,16 @@ export function createResourceDefault<T, S, R>(
   return createResource(source, safeFetcher, options);
 }
 
+export function positiveOrQ(num: number | undefined){
+  if(!num || num <= 0)
+    return "?";
+  return num;
+}
+export function resolutionOrUnknown(width: number | undefined, height: number | undefined){
+  if(!width || !height || width <= 0 || height <= 0)
+    return "";
+  return width + "x" + height;
+}
 
 export function getDummyVideo() : IPlatformVideo {
   return {

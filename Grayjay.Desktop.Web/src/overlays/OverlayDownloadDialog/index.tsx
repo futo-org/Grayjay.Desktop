@@ -5,7 +5,7 @@ import iconClose from '../../assets/icons/icon24_close.svg';
 import UIOverlay from '../../state/UIOverlay';
 
 import iconCheck from '../../assets/icons/icon_checkmark.svg'
-import { toHumanBitrate } from '../../utility';
+import { positiveOrQ, resolutionOrUnknown, toHumanBitrate } from '../../utility';
 import ButtonFlex from '../../components/buttons/ButtonFlex';
 import Button from '../../components/buttons/Button';
 import { DownloadBackend } from '../../backend/DownloadBackend';
@@ -44,9 +44,9 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
 
     const videoSources$: Accessor<SourceItem[]> = createMemo(()=>(sources$()) ? sources$()!.videoSources?.map((x: any, index: number)=>({
       name: x.name,
-      meta: x.width + "x" + x.height,
+      meta: resolutionOrUnknown(x.width, x.height),
       subSources: (x.type == "HLSSource" && sources$()?.manifestSources[index])
-        ? sources$()?.manifestSources[index].map((z: any)=>({name: z.name, meta: `${z.width}x${z.height}`})) : []
+        ? sources$()?.manifestSources[index].map((z: any)=>({name: z.name, meta: `${resolutionOrUnknown(z.width, z.height)}`})) : []
     })) : ((sources$()?.audioSources?.length ?? 0) == 0) ? [
       {name: "2160p"},
       {name: "1440p"},

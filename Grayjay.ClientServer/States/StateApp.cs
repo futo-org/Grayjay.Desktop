@@ -28,6 +28,15 @@ namespace Grayjay.ClientServer.States
         public static ManagedThreadPool ThreadPool { get; } = new ManagedThreadPool(16, "Global");
         public static ManagedThreadPool ThreadPoolDownload { get; } = new ManagedThreadPool(4, "Download");
 
+        //TODO: Make this more easily accessible from controllers (request=>window)
+        public static IWindow MainWindow { get; private set; }
+        
+
+        public static void SetMainWindow(IWindow window)
+        {
+            MainWindow = window;
+        }
+
 
         static StateApp()
         {

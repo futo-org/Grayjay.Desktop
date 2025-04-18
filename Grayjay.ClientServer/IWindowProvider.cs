@@ -14,6 +14,8 @@ namespace Grayjay.ClientServer
     {
         event Action OnClosed;
 
+        void SetRequestProxy(string url, Func<WindowRequest, Task<WindowResponse>> handler);
+
         void Close();
     }
 
@@ -22,5 +24,19 @@ namespace Grayjay.ClientServer
         public string Url { get; set; }
         public string Method { get; set; }
         public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class WindowRequest
+    {
+        public required string Method { get; set; }
+        public required string Url { get; set; }
+        public required Dictionary<string, string> Headers { get; set; }
+    }
+    public class WindowResponse
+    {
+        public required int StatusCode { get; init; }
+        public required string StatusText { get; init; }
+        public required Dictionary<string, string> Headers { get; init; }
+        public required Stream? BodyStream { get; init; }
     }
 }

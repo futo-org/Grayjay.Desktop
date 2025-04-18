@@ -245,7 +245,7 @@ const HistoryPage: Component = () => {
                   const metadata = createMemo(() => {
                     const tokens = [];            
                     const viewCount = historyVideo()?.video?.viewCount;
-                    if (viewCount) {
+                    if (viewCount && viewCount > 0) {
                         tokens.push(toHumanNumber(viewCount) + " views");
                     }
             

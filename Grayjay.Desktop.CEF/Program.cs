@@ -332,11 +332,14 @@ namespace Grayjay.Desktop
                 var extraArgs = ReconstructArgs(args);
                 Logger.i(nameof(Program), "Extra args: " + extraArgs);
 
+
+                string userDataDirCmd = "--user-data-dir=\"" + Path.Combine(Directories.Temporary, "chrome_" + Guid.NewGuid().ToString()) + "\" ";
+
                 Logger.i(nameof(Program), "Main: Starting DotCefProcess");
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
-                    cef.Start("--disable-web-security --use-alloy-style --use-native " + extraArgs);
+                    cef.Start("--disable-web-security --use-alloy-style --use-native " + userDataDirCmd + extraArgs);
                 else
-                    cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + extraArgs);
+                    cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + userDataDirCmd + extraArgs);
                 Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({startWindowWatch.ElapsedMilliseconds}ms)");
             }
 
@@ -419,6 +422,8 @@ namespace Grayjay.Desktop
                 await window.LoadUrlAsync($"{server.BaseUrl}/web/index.html");
             else if (!isServer)
                 OSHelper.OpenUrl($"{server.BaseUrl}/web/index.html");
+
+            StateApp.SetMainWindow(new CEFWindowProvider.Window(window));
 
             watch.Stop();
 

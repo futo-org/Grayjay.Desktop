@@ -11,6 +11,7 @@ using Grayjay.Engine.Models.Video;
 using Grayjay.Engine.Models.Video.Sources;
 using Microsoft.AspNetCore.Mvc;
 using System.IO.Compression;
+using System.Text.Json.Nodes;
 using PlatformID = Grayjay.Engine.Models.General.PlatformID;
 
 namespace Grayjay.ClientServer.Controllers
@@ -75,6 +76,37 @@ namespace Grayjay.ClientServer.Controllers
         public async Task<bool> ImportPlaylists(string id)
         {
             return false;
+        }
+
+
+        [HttpGet]
+        public async Task<bool> ImportNewPipe()
+        {
+
+            if (GrayjayServer.Instance.ServerMode)
+                throw DialogException.FromException("Import not supported in server-mode", new Exception("For import support, run the application in ui mode, server support might be added at a later time"));
+
+            var file = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowFileDialogAsync([
+                ("JSON (*.json)", "*.json")
+            ]);
+
+            if (!string.IsNullOrEmpty(file))
+            {
+                try
+                {
+                    string json = System.IO.File.ReadAllText(file);
+                    JsonObject obj = JsonObject.Parse(json).AsObject();
+                    if (!obj.ContainsKey("subscriptions") || obj["subscriptions"].GetValueKind() != System.Text.Json.JsonValueKind.Array)
+                        return false;
+                    StateBackup.ImportNewPipeSubs(obj);
+                }
+                catch(Exception ex)
+                {
+                    Logger.e<ImportController>(ex.Message, ex);
+                    StateUI.DialogError("Failed to parse NewPipe Subscriptions", ex);
+                }
+            }
+            return true;
         }
 
     }

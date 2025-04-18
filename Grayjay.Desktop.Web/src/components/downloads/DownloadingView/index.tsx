@@ -1,7 +1,7 @@
 import { Component, Match, Show, Switch, createMemo, createSignal, onCleanup } from 'solid-js'
 
 import styles from './index.module.css';
-import { getBestThumbnail, proxyImage, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber } from '../../../utility';
+import { getBestThumbnail, positiveOrQ, proxyImage, resolutionOrUnknown, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber } from '../../../utility';
 import StateGlobal from '../../../state/StateGlobal';
 import SubscribeButton from '../../buttons/SubscribeButton';
 import settings from '../../../assets/icons/icon24_settings.svg';
@@ -55,7 +55,7 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
   function metaString(downloading: IVideoDownload): string{
     const parts = [];
     if(downloading.videoSource)
-      parts.push(`${downloading.videoSource.width}x${downloading.videoSource.height}`);
+      parts.push(`${resolutionOrUnknown(downloading.videoSource.width, downloading.videoSource.height)}`);
     if(downloading.audioSource)
       parts.push(toHumanBitrate(downloading.audioSource.bitrate));
     return parts.join(" • ");

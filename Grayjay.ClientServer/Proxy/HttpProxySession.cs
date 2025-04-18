@@ -123,7 +123,12 @@ namespace Grayjay.ClientServer.Proxy
 
                         if (registryEntry.RequestHeaderOptions.InjectHost)
                             incomingRequest.Headers["host"] = parsedUrl.Host;
+                        else if (registryEntry.RequestHeaderOptions.ReplaceHost && incomingRequest.Headers.ContainsKey("host"))
+                            incomingRequest.Headers["host"] = parsedUrl.Host;
+
                         if (registryEntry.RequestHeaderOptions.InjectOrigin)
+                            incomingRequest.Headers["origin"] = parsedUrl.Scheme + "://" + parsedUrl.Host;
+                        else if (registryEntry.RequestHeaderOptions.ReplaceOrigin && incomingRequest.Headers.ContainsKey("origin"))
                             incomingRequest.Headers["origin"] = parsedUrl.Scheme + "://" + parsedUrl.Host;
 
                         if (registryEntry.RequestHeaderOptions.InjectReferer)
@@ -134,13 +139,28 @@ namespace Grayjay.ClientServer.Proxy
                             else
                                 incomingRequest.Headers["referer"] = url;
                         }
+                        else if (registryEntry.RequestHeaderOptions.ReplaceOrigin && incomingRequest.Headers.ContainsKey("referer"))
+                        {
+                            if (isRelativeProxy)
+                                incomingRequest.Headers["referer"] = registryEntry.Url;
+                            else
+                                incomingRequest.Headers["referer"] = url;
+                        }
 
                         foreach (var r in registryEntry.RequestHeaderOptions.HeadersToInject)
-                        {
-                            if (r.Value == null)
-                                incomingRequest.Headers.Remove(r.Key);
-                            else
-                                incomingRequest.Headers[r.Key] = r.Value;
+                            {
+                                if (r.Value == null)
+                                    incomingRequest.Headers.Remove(r.Key);
+                                else
+                                    incomingRequest.Headers[r.Key] = r.Value;
+                            }
+
+                        if (registryEntry.RequestModifier != null && false)
+                        {   //BROKEN FOR NOW
+                            //TODO: Figure out why this causes streams to break, despite correct headers
+                            (var newUrl, incomingRequest) = registryEntry.RequestModifier(url, incomingRequest);
+                            parsedUrl = Utilities.ParseUrl(newUrl);
+                            incomingRequest.Path = parsedUrl.Path;
                         }
 
                         if (registryEntry.RequestExecutor != null)
@@ -160,6 +180,15 @@ namespace Grayjay.ClientServer.Proxy
                         var (c, s) = await OpenWriteConnectionAsync(parsedUrl.Scheme, parsedUrl.Host, parsedUrl.Port, _cancellationTokenSource.Token);
                         using var destinationClient = c;
                         using var destinationStream = new HttpProxyStream(s);
+
+                        /*
+                        incomingRequest.Headers = incomingRequest.Headers.Where(x =>
+                            x.Key.Equals("Referer", StringComparison.OrdinalIgnoreCase) ||
+                            x.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase) ||
+                            x.Key.Equals("Accept-Encoding", StringComparison.OrdinalIgnoreCase) ||
+                            x.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
+                            x.Key.Equals("Range", StringComparison.OrdinalIgnoreCase)).ToDictionary(x => x.Key, y => y.Value);
+                        */
 
                         await destinationStream.WriteRequestAsync(incomingRequest, _cancellationTokenSource.Token);
                         if (incomingRequest.Headers.TryGetValue("transfer-encoding", out var te) && te == "chunked")

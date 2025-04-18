@@ -14,6 +14,7 @@ using System.Dynamic;
 using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using static Grayjay.ClientServer.Controllers.StateUI;
 using static System.Formats.Asn1.AsnWriter;
@@ -312,6 +313,31 @@ public class StateBackup
         new ImportStructureDialog(export).Start();
     }
 
+
+    public static void ImportNewPipeSubs(JsonObject obj)
+    {
+        try
+        {
+            List<string> subs = new List<string>();
+            var jsonSubs = obj["subscriptions"].AsArray();
+            foreach(var item in jsonSubs)
+            {
+                var jsonSubObj = item.AsObject();
+                if (jsonSubObj.ContainsKey("url"))
+                    subs.Add(((string?)jsonSubObj["url"].AsValue()));
+            }
+
+            if(subs.Count > 0)
+            {
+                var dialog = new ImportSubscriptionsDialog(subs.Distinct().ToList());
+                dialog.Show();
+            }
+        }
+        catch(Exception ex){
+            Logger.e<StateBackup>(ex.Message, ex);
+            StateUI.DialogError("Failed to parse NewPipe Subscriptions", ex);
+        }
+    }
 
 
     public static ExportStructure Export()

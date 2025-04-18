@@ -118,6 +118,9 @@ namespace Grayjay.Desktop.POC.Port.States
 
         public static Prompt PromptPlugin(string sourceUrl)
         {
+            string possiblePrefix = "grayjay://plugin/";
+            if (sourceUrl.StartsWith(possiblePrefix))
+                sourceUrl = sourceUrl.Substring(possiblePrefix.Length);
             using (WebClient client = new WebClient())
             {
                 if (!sourceUrl.StartsWith("http"))
@@ -197,7 +200,7 @@ namespace Grayjay.Desktop.POC.Port.States
 
                 if (!config.VerifyAuthority())
                     throw new Exception("Plugin public key appears invalid or tampered");
-                if (!config.VerifySignature(script))
+                if (!string.IsNullOrEmpty(config.ScriptSignature) && !config.VerifySignature(script))
                     throw new Exception("Plugin script is tampered with and does not match the signature");
 
                 var tempDescriptor = new PluginDescriptor(config);

@@ -56,8 +56,8 @@ const DownloadsPage: Component = () => {
   const [params, setParams] = useSearchParams();
   const [storageInfo$, storageInfoResource] = createResourceDefault(async () => [], async () => await DownloadBackend.getStorageInfo());
   const [downloading$, downloadingResource] = createResourceDefault(async () => [], 
-  /*  
-  async () => ([1,2,3,4,5,6,7, 8,9].map(x=>
+  
+  async () => /*([1,2,3,4,5,6,7, 8,9].map(x=>
       { return {
         video: getDummyVideo(),
         videoDetails: getDummyVideo(),

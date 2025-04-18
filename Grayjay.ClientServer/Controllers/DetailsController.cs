@@ -337,42 +337,7 @@ namespace Grayjay.ClientServer.Controllers
             string iframeId = Guid.NewGuid().ToString();
             liveChatProxyEntry.WithModifyResponseString((resp, str) =>
             {
-                if (!str.Contains("</body>"))
-                    return str;
-                List<string> js = new List<string>();
-                if (window.RemoveElements != null)
-                {
-                    foreach (var element in window.RemoveElements)
-                    {
-                        js.Add($"console.log('Removing [' + {JsonConvert.SerializeObject(element)} + ']')");
-                        js.Add($"document.querySelectorAll({JsonConvert.SerializeObject(element)}).forEach(x=>x.remove())");
-                    }
-                }
-                if(window.RemoveElementsInterval != null)
-                {
-                    StringBuilder builder = new StringBuilder();
-                    foreach(var element in window.RemoveElementsInterval)
-                    {
-                        builder.AppendLine($"document.querySelectorAll({JsonConvert.SerializeObject(element)}).forEach(x=>x.remove())");
-                    }
-                    js.Add("setInterval(()=>{\n" + builder.ToString() + "}, 1000)");
-                }
-
-                if (js.Count == 0)
-                    return str;
-
-                string toInject = string.Join("\n", js);
-
-                str = new BrowserSimulatorBuilder()
-                    //.WithLocation(window.Url)
-                    .WithNavigatorValue("webdriver", "false")
-                    .HideGetOwnProptyDescriptos("webdriver")
-                    .InjectHtml(str);
-
-                return str
-                    .Replace("</body>", "<script>(()=>{\n"
-                        + toInject
-                        + "\n})()</script></body>");
+                return ModifyLiveChatResponse(window, str);
             });
             var state = this.State().DetailsState;
 
@@ -381,8 +346,88 @@ namespace Grayjay.ClientServer.Controllers
                 httpProxy.Remove(oldProxy.Id);
             state._liveChatProxy = liveChatProxyEntry;
             //TODO: Proper urls
-            window.Url = httpProxy.Add(liveChatProxyEntry)!.Replace("127.0.0.1", "localhost");
-            return window;
+
+            var uiWindow = StateApp.MainWindow;
+            if(uiWindow != null && false) //TODO: Broken
+            {
+                uiWindow.SetRequestProxy(window.Url, async (req) =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        foreach (var header in req.Headers)
+                            client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+
+
+                        var resp = await client.GetAsync(window.Url, HttpCompletionOption.ResponseContentRead);
+
+
+                        var resultHeaders = new Dictionary<string, string>(resp.Headers.ToDictionary(x => x.Key, y => string.Join(";", y.Value)), StringComparer.OrdinalIgnoreCase);
+                        if (resultHeaders.ContainsKey("x-frame-options"))
+                            resultHeaders["x-frame-options"] = "ALLOWALL";
+                        else
+                            resultHeaders.Add("x-frame-options", "ALLOWALL");
+
+                        string data = await resp.Content.ReadAsStringAsync();
+                        data = ModifyLiveChatResponse(window, data);
+
+                        return new WindowResponse()
+                        {
+                            Headers = resultHeaders,
+                            StatusCode = (int)resp.StatusCode,
+                            StatusText = resp.StatusCode.ToString(),
+                            BodyStream = new MemoryStream(Encoding.UTF8.GetBytes(data))
+                        };
+                    }
+                });
+            }
+            else
+            {
+                window.Url = httpProxy.Add(liveChatProxyEntry)!.Replace("127.0.0.1", "localhost");
+            }
+
+                return window;
+        }
+
+        private string ModifyLiveChatResponse(LiveChatWindowDescriptor window, string str)
+        {
+
+            if (!str.Contains("</body>"))
+                return str;
+            List<string> js = new List<string>();
+            if (window.RemoveElements != null)
+            {
+                foreach (var element in window.RemoveElements)
+                {
+                    js.Add($"console.log('Removing [' + {JsonConvert.SerializeObject(element)} + ']')");
+                    js.Add($"document.querySelectorAll({JsonConvert.SerializeObject(element)}).forEach(x=>x.remove())");
+                }
+            }
+            if (window.RemoveElementsInterval != null)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var element in window.RemoveElementsInterval)
+                {
+                    builder.AppendLine($"document.querySelectorAll({JsonConvert.SerializeObject(element)}).forEach(x=>x.remove())");
+                }
+                js.Add("setInterval(()=>{\n" + builder.ToString() + "}, 1000)");
+            }
+
+            if (js.Count == 0)
+                return str;
+
+            string toInject = string.Join("\n", js);
+
+            str = new BrowserSimulatorBuilder()
+                //.WithLocation(window.Url)
+                .WithNavigatorValue("webdriver", "false")
+                .HideGetOwnProptyDescriptos("webdriver")
+                .InjectHtml(str);
+
+            return str
+                .Replace("</body>", "<script>(()=>{\n"
+                    + toInject
+                    + "\n})()</script></body>");
         }
 
 
@@ -495,8 +540,14 @@ namespace Grayjay.ClientServer.Controllers
             }
             else if (proxySettings != null && proxySettings.Value.ShouldProxy)
             {
+                var modifier = (sourceVideo is JSSource jsS) ? jsS.GetRequestModifier() : null;
+                var executor = (sourceVideo is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
+
                 videoUrl = sourceVideo != null
-                    ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry() { Url = (sourceVideo as VideoUrlSource)!.Url }, proxySettings?.ProxyAddress))
+                    ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry() {
+                        RequestModifier = modifier?.ToProxyFunc(),
+                        Url = (sourceVideo as VideoUrlSource)!.Url 
+                    }, proxySettings?.ProxyAddress))
                     : null;
             }
             else
@@ -518,8 +569,11 @@ namespace Grayjay.ClientServer.Controllers
             }
             else if (proxySettings != null && proxySettings.Value.ShouldProxy)
             {
+                var modifier = (sourceVideo is JSSource jsS) ? jsS.GetRequestModifier() : null;
+                var executor = (sourceVideo is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
                 audioUrl = sourceAudio != null ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
                 {
+                    RequestModifier = modifier?.ToProxyFunc(),
                     Url = (sourceAudio as AudioUrlSource)!.Url
                 }, proxySettings?.ProxyAddress)) : null;
             }
@@ -872,8 +926,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectVideoUrlSource(VideoUrlSource sourceVideo, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
+            var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
+            var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
+
             var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
-            {
+            {   
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
             })) : sourceVideo.Url;
             return new SourceDescriptor(videoUrl, sourceVideo.Container)
@@ -884,8 +942,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectAudioUrlSource(AudioUrlSource sourceAudio, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
+            var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
+            var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
+
             var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
             })) : sourceAudio.Url;
             return new SourceDescriptor(audioUrl, sourceAudio.Container)

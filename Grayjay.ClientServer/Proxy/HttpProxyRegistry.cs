@@ -5,9 +5,12 @@ namespace Grayjay.ClientServer.Proxy
 {
     public class RequestHeaderOptions
     {
-        public bool InjectHost = true;
-        public bool InjectOrigin = true;
-        public bool InjectReferer = true;
+        public bool InjectHost = false;
+        public bool InjectOrigin = false;
+        public bool InjectReferer = false;
+        public bool ReplaceReferer = true;
+        public bool ReplaceOrigin = true;
+        public bool ReplaceHost = true;
         public Dictionary<string, string> HeadersToInject = new Dictionary<string, string>();
     }
 
@@ -24,9 +27,8 @@ namespace Grayjay.ClientServer.Proxy
         public bool IsRelative { get; set; }
         public RequestHeaderOptions RequestHeaderOptions { get; set; } = new();
         public ResponseHeaderOptions ResponseHeaderOptions { get; set; } = new();
-        /// <summary>
-        /// Return a modifier when the response body is to be modified, else return null
-        /// </summary>
+
+        public Func<string, HttpProxyRequest, (string, HttpProxyRequest)> RequestModifier { get; set; }
         public Func<HttpProxyRequest, HttpProxyResponse> RequestExecutor { get; set; }
         public Func<HttpProxyResponse, Func<byte[], byte[]>?>? ResponseModifier { get; set; } = null;
         public string[]? SupportedMethods { get; set; } = null;

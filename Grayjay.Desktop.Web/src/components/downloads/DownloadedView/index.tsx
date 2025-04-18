@@ -1,7 +1,7 @@
 import { Component, Show, createMemo, createSignal, onCleanup } from 'solid-js'
 
 import styles from './index.module.css';
-import { getBestThumbnail, proxyImage, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber, toHumanTime } from '../../../utility';
+import { getBestThumbnail, positiveOrQ, proxyImage, resolutionOrUnknown, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber, toHumanTime } from '../../../utility';
 import StateGlobal from '../../../state/StateGlobal';
 import SubscribeButton from '../../buttons/SubscribeButton';
 import settings from '../../../assets/icons/icon24_settings.svg';
@@ -29,7 +29,7 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
 
     const parts = [];
     if(downloading.videoSources && downloading.videoSources.length > 0)
-      parts.push(`${downloading.videoSources[0].width}x${downloading.videoSources[0].height}`);
+      parts.push(`${resolutionOrUnknown(downloading.videoSources[0].width, downloading.videoSources[0].height)}`);
     if(downloading.audioSources && downloading.audioSources.length > 0)
       parts.push(toHumanBitrate(downloading.audioSources[0].bitrate));
     return parts.join(" • ");

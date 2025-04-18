@@ -8,6 +8,8 @@ using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Pooling;
 using Grayjay.Engine;
 using Grayjay.Engine.Pagers;
+using Grayjay.ClientServer.Proxy;
+using Grayjay.Engine.Models.Video.Additions;
 
 namespace Grayjay.ClientServer
 {
@@ -215,6 +217,33 @@ namespace Grayjay.ClientServer
         }*/
 
 
+        public static Func<string, HttpProxyRequest, (string, HttpProxyRequest)> ToProxyFunc(this IRequestModifier mod)
+        {
+            return (url, req) =>
+            {
+                var headers = req.Headers;
+
+                var modReq = mod.ModifyRequest(url, headers);
+
+                /*
+                foreach(var header in modReq.Headers)
+                {
+                    var key = req.Headers.Keys.FirstOrDefault(x => x.Equals(header.Key, StringComparison.OrdinalIgnoreCase));
+                    if (key != null)
+                        req.Headers[key] = header.Value;
+                    else
+                        req.Headers.Add(header.Key, header.Value);
+                }*/
+                req.Headers = modReq.Headers ?? req.Headers;
+                if (string.IsNullOrEmpty(modReq.Url))
+                    modReq.Url = url;
+                return (modReq.Url, req);
+            };
+        }
+        public static Func<HttpProxyRequest, HttpProxyResponse> ToProxyFunc(this RequestExecutor exe)
+        {
+            throw new NotImplementedException();
+        }
 
 
 
