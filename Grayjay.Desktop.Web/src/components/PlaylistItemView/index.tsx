@@ -16,6 +16,7 @@ interface PlaylistItemViewProps {
   onRemove?: () => void;
   onSettings?: (e: HTMLElement) => void;
   onDragStart?: (e: MouseEvent, el: HTMLElement) => void;
+  isEditable?: boolean;
 }
 
 const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
@@ -26,11 +27,13 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
     return (props.item && props.item.thumbnails.sources.length > 0) ? props.item.thumbnails.sources[Math.max(0, props.item.thumbnails.sources.length - 1)] : null;
   });
 
+  const editable$ = createMemo(() => props.isEditable ?? true);
+
   return (
     <div style="display: flex; flex-direction: row; align-items: center; width: 100%; height: 100%; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid #2E2E2E; box-sizing: border-box; background-color: #141414" onClick={() => {{
       props.onPlay?.();
     }}}>
-      <Show when={props.onDragStart} fallback={<div style="width: 12px"></div>}>
+      <Show when={props.onDragStart && editable$()} fallback={<div style="width: 12px"></div>}>
         <img src={iconDrag} style="width: 24px; height: 24px; padding: 20px; cursor: pointer;" onMouseDown={(e) => props.onDragStart?.(e, e.target as HTMLElement)} />
       </Show>
       <img src={bestThumbnail$()?.url} style="width: auto; height: 100%; border-radius: 6px; aspect-ratio: 16/9; background-size: cover; cursor: pointer;" referrerPolicy='no-referrer' />
@@ -56,11 +59,13 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
           </div>
         </div>
       </div>
-      <IconButton icon={iconClose} style={{ "margin-left": "16px" }} onClick={(e) => {
-        props.onRemove?.();
-        e.preventDefault();
-        e.stopPropagation();
-      }} />
+      <Show when={editable$()}>
+        <IconButton icon={iconClose} style={{ "margin-left": "16px" }} onClick={(e) => {
+          props.onRemove?.();
+          e.preventDefault();
+          e.stopPropagation();
+        }} />
+      </Show>
       <IconButton ref={moreElement} icon={iconMore} style={{ "margin-left": "16px", "margin-right": "16px" }} onClick={(e) => {
         props.onSettings?.(e.target as HTMLElement);
         e.preventDefault();

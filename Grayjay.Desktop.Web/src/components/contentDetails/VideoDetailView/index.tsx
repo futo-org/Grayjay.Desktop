@@ -1387,8 +1387,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 }}>
                                     <div class={styles.authorName} onClick={onClickAuthor}>{author$()?.name}</div>
                                     <div style="flex-grow:1;"></div>
-                                    <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(author$()?.subscribers)} subscribers</div>
-                                    <div style="flex-grow:1;"></div>
+                                    <Show when={(author$()?.subscribers ?? 0) > 0}>
+                                        <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(author$()?.subscribers)} subscribers</div>
+                                        <div style="flex-grow:1;"></div>
+                                    </Show>
                                 </div>
 
                                 <SubscribeButton author={author$()?.url} style={{"margin-top": "29px"}} />

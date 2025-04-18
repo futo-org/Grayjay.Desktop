@@ -44,7 +44,7 @@ const CreatorsPage: Component = () => {
     if (filterText() && filterText().length > 0)
       result = subs$()?.filter(v => v.channel.name.toLowerCase().indexOf(filterText().toLowerCase()) !== -1);
     else
-      result = subs$();
+      result = subs$()?.slice();
 
     const allDisabled = disabledSources();
     result = result?.filter(v => allDisabled.indexOf(v.channel.id.pluginID) === -1);
@@ -162,7 +162,7 @@ const CreatorsPage: Component = () => {
             }}
             builder={(index, item) =>
               <CreatorView {... item()?.channel} 
-                metadata={`${toHumanNumber(item()?.channel?.subscribers)} subscribers`}
+                metadata={((item()?.channel?.subscribers && item()?.channel?.subscribers > 0) ? (toHumanNumber(item()?.channel?.subscribers) + " subscribers") : "")}
                 onClick={() => {
                   const url = item()?.channel?.url;
                   if(url)

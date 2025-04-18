@@ -232,7 +232,7 @@ const ChannelPage: Component = () => {
                 maximumHeight={540}>
               <ChannelTopBar bannerUrl={channel$()?.banner ?? authorSummary$()?.banner} 
                 thumbnailUrl={channel$()?.thumbnail ?? authorSummary$()?.thumbnail}
-                metadata={`${toHumanNumber(channel$()?.subscribers ?? 0)} subscribers`}
+                metadata={(((channel$()?.subscribers ?? 0) > 0) ? (toHumanNumber(channel$()?.subscribers) + " subscribers") : "")}
                 name={channel$()?.name ?? authorSummary$()?.name}
                 authorUrl={channel$()?.url ?? authorSummary$()?.url}
                 activeTab={activeTab$()}

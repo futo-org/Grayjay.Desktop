@@ -289,8 +289,7 @@ public class StateSync : IDisposable
                         {
                             try
                             {
-                                var syncDeviceInfo = new SyncDeviceInfo(pair.PublicKey, [ pair.LastAddress ], PORT, null);
-                                await ConnectAsync(syncDeviceInfo);
+                                await ConnectAsync([pair.LastAddress], PORT, pair.PublicKey, null);
                             }
                             catch (Exception e)
                             {

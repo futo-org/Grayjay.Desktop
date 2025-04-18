@@ -22,6 +22,9 @@ import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import PlaylistItemView from '../PlaylistItemView';
 import { Menus } from '../../Menus';
 import { useNavigate } from '@solidjs/router';
+import InputText from '../basics/inputs/InputText';
+import Dropdown from '../basics/inputs/Dropdown';
+import ic_search from '../../assets/icons/search.svg';
 
 interface PlaylistDetailViewProps {
   type: string;
@@ -66,8 +69,10 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
           await UIOverlay.overlayAddToPlaylist(content, () => props.refetch?.());
         }),
         new MenuItemButton("Download", iconDownload, undefined, () => props.onDownload(content)),
-        new MenuSeperator(),
-        new MenuItemButton("Remove", iconTrash, undefined, () => props.onRemove(content))
+        ... (isEditable$() ? [ 
+          new MenuSeperator(),
+          new MenuItemButton("Remove", iconTrash, undefined, () => props.onRemove(content)) 
+        ] : [])
       ]
     } as Menu;
   });
@@ -89,6 +94,20 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
       setShow(false);
     });
   }
+
+  const [filterText$, setFilterText] = createSignal("");
+  
+  const isEditable$ = createMemo(() => (filterText$()?.length ?? 0) == 0);
+  const filteredVideos$ = createMemo(() => {
+    let result: IPlatformVideo[] | undefined;
+    
+    if (filterText$() && filterText$().length > 0)
+      result = props.videos?.filter(v => v.name.toLowerCase().indexOf(filterText$().toLowerCase()) !== -1);
+    else
+      result = props.videos?.slice();
+
+    return result;
+  });
 
   let scrollContainerRef: HTMLDivElement | undefined;
   return (
@@ -132,10 +151,24 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             onClick={() => props.onShuffleAll()} />
         </div>
         <ScrollContainer ref={scrollContainerRef}>
+          <div class={styles.containerFilters}>
+            <InputText icon={ic_search} placeholder={"Search playlists"}
+              value={filterText$()}
+              showClearButton={true}
+              inputContainerStyle={{
+                "height": "70px", 
+                "background": "#141414"
+              }}
+              onTextChanged={(v) => {
+                setFilterText(v);
+              }} />
+          </div>
+
           <VirtualDragDropList outerContainerRef={scrollContainerRef}
-            items={props.videos}
+            items={filteredVideos$()}
             itemHeight={107}
             onSwap={(index1, index2) => {
+              //Only possible when unfiltered so directly modify the underlying array
               const videos = props.videos;
               if (!videos) {
                 return;
@@ -148,6 +181,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               const video = createMemo(() => item() as IPlatformVideo | undefined);
               return (
                 <PlaylistItemView item={video()} 
+                  isEditable={isEditable$()}
                   onRemove={() => {
                     const v = video();
                     if (!v) return;

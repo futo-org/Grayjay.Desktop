@@ -1,3 +1,4 @@
+import { updateDataArray } from "../../../utility";
 import { Event0, Event1 } from "../../../utility/Event";
 
 //TODO: Split out filtered pager to avoid data duplication
@@ -21,7 +22,7 @@ export abstract class Pager<T> {
 
     setFilter(filter: (arg0: T)=>boolean) {
         this.filter = filter;
-        this.updateDataArray(this.dataFiltered, this.data.filter(filter), (a, b) => this.modifiedFiltered(a, b), (a, b) => this.addedFiltered(a, b), (a, b) => this.removedFiltered(a, b));
+        updateDataArray<T>(this.dataFiltered, this.data.filter(filter), (a, b) => this.modifiedFiltered(a, b), (a, b) => this.addedFiltered(a, b), (a, b) => this.removedFiltered(a, b));
         this.filterChangedEvent.invoke();
     }
 
@@ -149,34 +150,6 @@ export abstract class Pager<T> {
             console.error("NextPage failed: ", ex);
             this.hasMore = false;
             throw ex;
-        }
-    }
-
-    updateDataArray(oldArray: T[], newArray: T[], modifiedCallback: (startIndex: number, endIndex: number) => void, addedCallback: (startIndex: number, endIndex: number) => void, removedCallback: (startIndex: number, endIndex: number) => void) {
-        const minLength = Math.min(oldArray.length, newArray.length);
-    
-        // Update common elements
-        for (let i = 0; i < minLength; i++) {
-            oldArray[i] = newArray[i];
-        }
-        
-        if(minLength > 0) {
-            console.info(`modifiedCallback(0, ${minLength - 1})`);
-            modifiedCallback(0, minLength - 1);
-        }
-    
-        // If new array is longer, add remaining elements
-        if (newArray.length > oldArray.length) {
-            oldArray.push(...newArray.slice(minLength));
-            console.info(`addedCallback(0, ${newArray.length - 1})`);
-            addedCallback(minLength, newArray.length - 1);
-        } else if (newArray.length < oldArray.length) { 
-            // If new array is shorter, remove remaining elements
-            if (oldArray.length > 0) {
-                console.info(`removedCallback(${minLength}, ${oldArray.length - 1})`);
-                removedCallback(minLength, oldArray.length - 1);
-            }
-            oldArray.length = newArray.length;
         }
     }
 
