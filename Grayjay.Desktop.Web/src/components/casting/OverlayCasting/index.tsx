@@ -21,6 +21,8 @@ import InputText from '../../basics/inputs/InputText';
 import ButtonFlex from '../../buttons/ButtonFlex';
 import UIOverlay from '../../../state/UIOverlay';
 import { CastingBackend } from '../../../backend/CastingBackend';
+import { Portal } from 'solid-js/web';
+import Button from '../../buttons/Button';
 
 const getDeviceIcon = (device?: CastingDeviceInfo, active?: boolean) => {
     if (!device) {
@@ -333,34 +335,65 @@ const OverlayCasting: Component = () => {
     const casting = useCasting();
 
     return (
-        <Show when={casting?.dialogState() !== CastingDialogState.Closed}>
-            <div class={styles.containerCastingBackground} onClick={() => casting?.actions.close()}>
-                <div class={styles.containerCasting} onClick={(ev) => {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                }}>
-                    <div class={styles.containerCastingHeader}>
-                        <div class={styles.containerCastingHeaderTitle}>Casting</div>
-                        <div style="flex-grow: 1"></div>
-                        <div class={styles.closeButton} onClick={() => casting?.actions.close()}>
-                            <img src={iconClose} />
+        <>
+            <Show when={casting?.dialogState() !== CastingDialogState.Closed}>
+                <div class={styles.containerCastingBackground} onClick={() => casting?.actions.close()}>
+                    <div class={styles.containerCasting} onClick={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    }}>
+                        <div class={styles.containerCastingHeader}>
+                            <div class={styles.containerCastingHeaderTitle}>Casting</div>
+                            <div style="flex-grow: 1"></div>
+                            <div class={styles.closeButton} onClick={() => casting?.actions.close()}>
+                                <img src={iconClose} />
+                            </div>
+                        </div>
+
+                        <Switch>
+                            <Match when={casting?.dialogState() == CastingDialogState.DeviceList}>
+                                <DeviceList />
+                            </Match>
+                            <Match when={casting?.dialogState() == CastingDialogState.AddDeviceManually}>
+                                <AddDeviceManually />
+                            </Match>
+                            <Match when={casting?.dialogState() == CastingDialogState.ActiveDevice}>
+                                <ActiveDeviceView />
+                            </Match>
+                        </Switch>
+                    </div>
+                </div>
+            </Show>
+            <Portal>
+                <Show when={casting?.activeDevice.device() && casting?.activeDevice.state() === CastConnectionState.Connecting}>
+                    <div class={styles.containerCastingBackground} onClick={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    }}>
+                        <div class={styles.containerCasting}>
+                            <div class={styles.containerCastingHeader}>
+                                <div class={styles.containerCastingHeaderTitle}>Casting</div>
+                                <div style="flex-grow: 1"></div>
+                            </div>
+                            
+                            <div style="display: flex; width: 100%; flex-direction: column; justify-content: center; align-items: center; margin-top: 32px">
+                                <div style="color: #FFF; font-family: Inter; font-size: 24px; font-style: normal; font-weight: 600;">Connecting to casting device</div>
+                                <CircleLoader style={{"margin-top": "16px"}} />
+                                <div style="color: #8C8C8C; text-align: center; leading-trim: both; text-edge: cap; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 400; line-height: normal; text-align: center; margin-top: 32px">Make sure you are on the same network VPNs and guest networks can cause issues</div>
+                            </div>
+
+                            <div style="display: flex; width: 100%; flex-direction: column; justify-content: center; align-items: end; margin-top: 32px">
+                                <ButtonFlex small={true} onClick={async () => {
+                                        casting?.actions.disconnect();
+                                    }}
+                                    text='Disconnect'
+                                    style={{ border: "1px solid rgba(1, 155, 231, 0)", "margin-left": "16px", "flex-shrink": "0" }}></ButtonFlex>
+                            </div>
                         </div>
                     </div>
-
-                    <Switch>
-                        <Match when={casting?.dialogState() == CastingDialogState.DeviceList}>
-                            <DeviceList />
-                        </Match>
-                        <Match when={casting?.dialogState() == CastingDialogState.AddDeviceManually}>
-                            <AddDeviceManually />
-                        </Match>
-                        <Match when={casting?.dialogState() == CastingDialogState.ActiveDevice}>
-                            <ActiveDeviceView />
-                        </Match>
-                    </Switch>
-                </div>
-            </div>
-        </Show>
+                </Show>
+            </Portal>
+        </>
     );
 };
 
