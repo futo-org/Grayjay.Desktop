@@ -74,6 +74,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const [positionBuffered, setPositionBuffered] = createSignal(Duration.fromMillis(0));
     const [isFullscreen, setIsFullscreen] = createSignal(false);
     const [isCasting, setIsCasting] = createSignal(casting?.activeDevice.device() ? true : false);
+    const [isAudioOnly, setIsAudioOnly] = createSignal(false);
     const [isLoading, setIsLoading] = createSignal(true);
     const [resumePositionVisible, setResumePositionVisible] = createSignal(false);
     const [endControlsVisible$, setEndControlsVisible] = createSignal(false);
@@ -490,7 +491,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
     const changeSource = (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
         console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
-
+        setIsAudioOnly(false);
+        
         if (currentUrl === sourceUrl) {
             if (startTime) {
                 const startTime_ms = startTime.as('milliseconds');
@@ -612,6 +614,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
                     const videoWidth = videoElement?.videoWidth ?? 0;
                     const videoHeight = videoElement?.videoHeight ?? 0;
+                    setIsAudioOnly(videoWidth === 0 && videoHeight === 0);
                     if (videoWidth === 0 || videoHeight === 0)
                         setVideoDimensions({ width: 1920, height: 1080 });
                     else
@@ -727,6 +730,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 videoElement.onloadedmetadata = () => {                   
                     const videoWidth = videoElement?.videoWidth ?? 0;
                     const videoHeight = videoElement?.videoHeight ?? 0;
+                    setIsAudioOnly(videoWidth === 0 && videoHeight === 0);
                     if (videoWidth === 0 || videoHeight === 0)
                         setVideoDimensions({ width: 1920, height: 1080 });
                     else
@@ -813,6 +817,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 videoElement.onloadedmetadata = () => {                   
                     const videoWidth = videoElement?.videoWidth ?? 0;
                     const videoHeight = videoElement?.videoHeight ?? 0;
+                    setIsAudioOnly(videoWidth === 0 && videoHeight === 0);
                     if (videoWidth === 0 || videoHeight === 0)
                         setVideoDimensions({ width: 1920, height: 1080 });
                     else
@@ -1059,12 +1064,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             onMouseLeave={hideControls}
             onDblClick={handleDblClick}>
 
-
             <ErrorBoundary fallback={(err, reset) => (<div></div>)}>
                 <video ref={videoElement} style="width: 100%; height: 100%;" onclick={()=>console.log("received click")}></video>
             </ErrorBoundary>
             
-            <div class={styles.containerCasting} style={{"display": isCasting() ? "block" : "none"}}>
+            <div class={styles.containerCasting} style={{"display": isAudioOnly() || isCasting() ? "block" : "none"}}>
                 <Show when={props.source?.thumbnailUrl}>
                     <img src={props.source?.thumbnailUrl} onLoad={(ev) => { setThumbnailDimensions({ width: ev.currentTarget.naturalWidth, height: ev.currentTarget.naturalHeight }); }} referrerPolicy='no-referrer' />
                 </Show>
