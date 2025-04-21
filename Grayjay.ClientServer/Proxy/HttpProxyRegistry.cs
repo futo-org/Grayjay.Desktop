@@ -28,8 +28,8 @@ namespace Grayjay.ClientServer.Proxy
         public RequestHeaderOptions RequestHeaderOptions { get; set; } = new();
         public ResponseHeaderOptions ResponseHeaderOptions { get; set; } = new();
 
-        public Func<string, HttpProxyRequest, (string, HttpProxyRequest)> RequestModifier { get; set; }
-        public Func<HttpProxyRequest, HttpProxyResponse> RequestExecutor { get; set; }
+        public Func<string, HttpProxyRequest, (string, HttpProxyRequest)>? RequestModifier { get; set; }
+        public Func<HttpProxyRequest, HttpProxyResponse>? RequestExecutor { get; set; }
         public Func<HttpProxyResponse, Func<byte[], byte[]>?>? ResponseModifier { get; set; } = null;
         public string[]? SupportedMethods { get; set; } = null;
         public bool FollowRedirects { get; set; } = true;

@@ -322,7 +322,7 @@ namespace Grayjay.ClientServer.Controllers
                 if (_didLogIn())
                 {
                     Logger.i(nameof(SourcesController), "Logged in!");
-                    window.Close();
+                    _ = window?.CloseAsync();
                 }
             }
             void _closed()
@@ -342,7 +342,7 @@ namespace Grayjay.ClientServer.Controllers
                     onCompleted?.Invoke(false);
             }
 
-            string captchaUrl = null;
+            string? captchaUrl = null;
             if (authConfig.CaptchaUrl != null)
                 captchaUrl = authConfig.CaptchaUrl;
             else if (!string.IsNullOrEmpty(ex.Url))

@@ -136,7 +136,8 @@ namespace Grayjay.ClientServer.Controllers
                 if(_didLogIn())
                 {
                     Logger.i(nameof(SourcesController), "Logged in!");
-                    window.Close();
+                    if (window != null)
+                        _ = window.CloseAsync();
                 }
             }
             void _closed()

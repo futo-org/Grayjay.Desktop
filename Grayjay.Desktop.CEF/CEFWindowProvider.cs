@@ -375,7 +375,7 @@ namespace Grayjay.Desktop.CEF
             }
 
             if (!string.IsNullOrEmpty(userAgent))
-                window.ExecuteDevToolsMethodAsync("Network.setUserAgentOverride", "{\"userAgent\": \"" + userAgent + "\"}");
+                await window.ExecuteDevToolsMethodAsync("Network.setUserAgentOverride", "{\"userAgent\": \"" + userAgent + "\"}");
             
             await window.LoadUrlAsync(url);
             Logger.i(nameof(CEFWindowProvider), "Window created.");
@@ -389,7 +389,7 @@ namespace Grayjay.Desktop.CEF
 
             public event Action OnClosed;
 
-            private ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse>>> _proxyHandlers = new ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse>>>();
+            private ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse?>>> _proxyHandlers = new ConcurrentDictionary<string, Func<IPCRequest, Task<IPCResponse?>>>();
 
             public Window(DotCefWindow window)
             {
@@ -398,7 +398,7 @@ namespace Grayjay.Desktop.CEF
                 {
                     if (_proxyHandlers.ContainsKey(req.Url))
                         return _proxyHandlers[req.Url](req);
-                    return null;
+                    throw new Exception("This should never happen.");
                 });
                 _window.OnClose += () =>
                 {
@@ -406,12 +406,12 @@ namespace Grayjay.Desktop.CEF
                 };
             }
 
-            public void Close()
+            public async Task CloseAsync(CancellationToken cancellationToken = default)
             {
-                _window.CloseAsync();
+                await _window.CloseAsync(cancellationToken: cancellationToken);
             }
 
-            public void SetRequestProxy(string url, Func<WindowRequest, Task<WindowResponse>> handler)
+            public async Task SetRequestProxyAsync(string url, Func<WindowRequest, Task<WindowResponse>> handler, CancellationToken cancellationToken = default)
             {
                 var ipcHandle = (IPCRequest req) =>
                 {
@@ -420,7 +420,7 @@ namespace Grayjay.Desktop.CEF
                         Url = req.Url,
                         Headers = req.Headers,
                         Method = req.Method
-                    }).ContinueWith<IPCResponse>(t =>
+                    }).ContinueWith<IPCResponse?>(t =>
                     {
                         if(t is Task<WindowResponse> vt)
                         {
@@ -435,12 +435,13 @@ namespace Grayjay.Desktop.CEF
                                 };
                             }
                             else
-                                throw vt.Exception;
+                                throw vt.Exception ?? new Exception("Incomplete but no exception");
                         }
                         return null;
                     });
                 };
                 _proxyHandlers.AddOrUpdate(url, ipcHandle, (x,v) => { return ipcHandle; });
+                await _window.AddUrlToProxyAsync(url, cancellationToken);
             }
         }
     }

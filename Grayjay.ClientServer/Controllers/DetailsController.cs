@@ -305,7 +305,7 @@ namespace Grayjay.ClientServer.Controllers
 
 
         [HttpGet]
-        public LiveChatWindowDescriptor? GetLiveChatWindow()
+        public async Task<LiveChatWindowDescriptor?> GetLiveChatWindow()
         {
             var video = EnsureVideo(this.State());
             if (!video.IsLive)
@@ -348,9 +348,9 @@ namespace Grayjay.ClientServer.Controllers
             //TODO: Proper urls
 
             var uiWindow = StateApp.MainWindow;
-            if(uiWindow != null && false) //TODO: Broken
+            if(uiWindow != null) //TODO: Broken
             {
-                uiWindow.SetRequestProxy(window.Url, async (req) =>
+                await uiWindow.SetRequestProxyAsync(window.Url, async (req) =>
                 {
                     using (HttpClient client = new HttpClient())
                     {
@@ -358,10 +358,7 @@ namespace Grayjay.ClientServer.Controllers
                             client.DefaultRequestHeaders.Add(header.Key, header.Value);
                         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
 
-
                         var resp = await client.GetAsync(window.Url, HttpCompletionOption.ResponseContentRead);
-
-
                         var resultHeaders = new Dictionary<string, string>(resp.Headers.ToDictionary(x => x.Key, y => string.Join(";", y.Value)), StringComparer.OrdinalIgnoreCase);
                         if (resultHeaders.ContainsKey("x-frame-options"))
                             resultHeaders["x-frame-options"] = "ALLOWALL";
@@ -371,12 +368,16 @@ namespace Grayjay.ClientServer.Controllers
                         string data = await resp.Content.ReadAsStringAsync();
                         data = ModifyLiveChatResponse(window, data);
 
+                        var bytes = Encoding.UTF8.GetBytes(data);
+                        resultHeaders["Content-Length"] = bytes.Length.ToString();
+                        resultHeaders["Content-Type"] = "text/html";
+
                         return new WindowResponse()
                         {
                             Headers = resultHeaders,
                             StatusCode = (int)resp.StatusCode,
                             StatusText = resp.StatusCode.ToString(),
-                            BodyStream = new MemoryStream(Encoding.UTF8.GetBytes(data))
+                            BodyStream = new MemoryStream(bytes)
                         };
                     }
                 });
@@ -926,12 +927,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectVideoUrlSource(VideoUrlSource sourceVideo, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
-            var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
+            //var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
+            //var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
 
             var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {   
-                RequestModifier = modifier?.ToProxyFunc(),
+                RequestModifier = null,//modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
             })) : sourceVideo.Url;
             return new SourceDescriptor(videoUrl, sourceVideo.Container)
@@ -942,12 +943,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectAudioUrlSource(AudioUrlSource sourceAudio, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
-            var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
+            //var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
+            //var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
 
             var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {
-                RequestModifier = modifier?.ToProxyFunc(),
+                RequestModifier = null,//modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
             })) : sourceAudio.Url;
             return new SourceDescriptor(audioUrl, sourceAudio.Container)

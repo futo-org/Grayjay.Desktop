@@ -14,9 +14,9 @@ namespace Grayjay.ClientServer
     {
         event Action OnClosed;
 
-        void SetRequestProxy(string url, Func<WindowRequest, Task<WindowResponse>> handler);
+        Task SetRequestProxyAsync(string url, Func<WindowRequest, Task<WindowResponse>> handler, CancellationToken cancellationToken = default);
 
-        void Close();
+        Task CloseAsync(CancellationToken cancellationToken = default);
     }
 
     public class InterceptorRequest

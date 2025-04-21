@@ -351,7 +351,7 @@ namespace Grayjay.Desktop.POC.Port.States
                 if (_didLogIn())
                 {
                     Logger.i(nameof(SourcesController), "Logged in!");
-                    window.Close();
+                    _ = window?.CloseAsync();
                 }
             }
             void _closed()
