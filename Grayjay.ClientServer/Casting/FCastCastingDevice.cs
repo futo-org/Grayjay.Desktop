@@ -18,6 +18,7 @@ public class FCastCastingDevice : CastingDevice
 
     private IPEndPoint? _localEndPoint = null;
     public override IPEndPoint? LocalEndPoint => _localEndPoint;
+    private DateTime _lastPong = DateTime.Now;
 
     public override async Task ChangeSpeedAsync(double speed, CancellationToken cancellationToken = default)
     {
@@ -146,62 +147,114 @@ public class FCastCastingDevice : CastingDevice
 
             TcpClient? client = null;
 
-            //Data loop
-            while (!cancellationTokenSource.IsCancellationRequested)
-            {
-                try
+            await Task.WhenAll(
+            [
+                Task.Run(async () =>
                 {
-                    ConnectionState.SetState(CastConnectionState.Connecting);
-
-                    var sessionToDispose = _session;
-                    if (sessionToDispose != null)
+                    //Data loop
+                    while (!cancellationTokenSource.IsCancellationRequested)
                     {
-                        _session = null;
-                        sessionToDispose?.Dispose();
+                        try
+                        {
+                            ConnectionState.SetState(CastConnectionState.Connecting);
+
+                            var sessionToDispose = _session;
+                            if (sessionToDispose != null)
+                            {
+                                _session = null;
+                                sessionToDispose?.Dispose();
+                            }
+
+                            client?.Dispose();
+                            _localEndPoint = null;
+
+                            FCastSession newSession;
+                            if (connectedClient != null)
+                            {
+                                newSession = new FCastSession(connectedClient.GetStream());
+                                client = connectedClient;
+                                connectedClient = null;
+                            }
+                            else
+                            {
+                                var c = new TcpClient();
+                                await c.ConnectAsync(rep!, cancellationTokenSource.Token);
+                                newSession = new FCastSession(c.GetStream());
+                                client = c;
+                            }
+
+                            _lastPong = DateTime.Now;
+
+                            newSession.OnPlaybackUpdate += (update) =>
+                            {
+                                PlaybackState.SetDuration(TimeSpan.FromSeconds(update.Duration));
+                                PlaybackState.SetSpeed(update.Speed);
+                                PlaybackState.SetTime(TimeSpan.FromSeconds(update.Time));
+                                PlaybackState.SetIsPlaying(update.State == 1);
+                            };
+
+                            newSession.OnVolumeUpdate += (update) =>
+                            {
+                                PlaybackState.SetVolume(update.Volume);
+                            };
+
+                            newSession.OnPong += () =>
+                            {
+                                _lastPong = DateTime.Now;
+                            };
+
+                            _session = newSession;
+                            _localEndPoint = client.Client.LocalEndPoint as IPEndPoint;
+                            ConnectionState.SetState(CastConnectionState.Connected);
+                            await newSession.ReceiveLoopAsync(cancellationTokenSource.Token);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.e(nameof(FCastCastingDevice), $"Exception occurred in FCast loop.", ex);
+                            await Task.Delay(TimeSpan.FromSeconds(2), cancellationTokenSource.Token);
+                        }
                     }
-
-                    client?.Dispose();
-                    _localEndPoint = null;
-
-                    FCastSession newSession;
-                    if (connectedClient != null)
-                    {
-                        newSession = new FCastSession(connectedClient.GetStream());
-                        client = connectedClient;
-                        connectedClient = null;
-                    }
-                    else
-                    {
-                        var c = new TcpClient();
-                        await c.ConnectAsync(rep!, cancellationTokenSource.Token);
-                        newSession = new FCastSession(c.GetStream());
-                        client = c;
-                    }
-
-                    newSession.OnPlaybackUpdate += (update) =>
-                    {
-                        PlaybackState.SetDuration(TimeSpan.FromSeconds(update.Duration));
-                        PlaybackState.SetSpeed(update.Speed);
-                        PlaybackState.SetTime(TimeSpan.FromSeconds(update.Time));
-                        PlaybackState.SetIsPlaying(update.State == 1);
-                    };
-
-                    newSession.OnVolumeUpdate += (update) =>
-                    {
-                        PlaybackState.SetVolume(update.Volume);
-                    };
-
-                    _session = newSession;
-                    _localEndPoint = client.Client.LocalEndPoint as IPEndPoint;
-                    ConnectionState.SetState(CastConnectionState.Connected);
-                    await newSession.ReceiveLoopAsync(cancellationTokenSource.Token);
-                }
-                catch (Exception ex)
+                }),
+                Task.Run(async () =>
                 {
-                    Logger.e(nameof(FCastCastingDevice), $"Exception occurred in FCast loop.", ex);
-                    await Task.Delay(TimeSpan.FromSeconds(2), cancellationTokenSource.Token);
-                }
-            }
+                    //Ping loop
+                    while (!cancellationTokenSource.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(5), cancellationTokenSource.Token);
+                            if (cancellationTokenSource.IsCancellationRequested)
+                                break;
+
+                            var session = _session;
+                            if (session == null)
+                                continue;
+
+                            try
+                            {
+                                await session.SendMessageAsync(Opcode.Ping, cancellationTokenSource.Token);
+
+                                var durationSinceLastPong = DateTime.Now - _lastPong;
+                                if (durationSinceLastPong > TimeSpan.FromSeconds(15))
+                                {
+                                    Logger.i<FCastCastingDevice>($"Duration since last pong ({durationSinceLastPong.TotalSeconds} seconds) is too long, closing session.");
+                                    session.Dispose();
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.e(nameof(FCastCastingDevice), $"Exception occurred in FCast ping loop while sending ping, closing session.", e);
+                                session.Dispose();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.e(nameof(FCastCastingDevice), $"Exception occurred in FCast ping loop.", ex);
+                        }
+                    }
+                })
+            ]);
+
 
             ConnectionState.SetState(CastConnectionState.Disconnected);
 

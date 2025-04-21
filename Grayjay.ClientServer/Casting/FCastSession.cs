@@ -50,6 +50,7 @@ public class FCastSession : IDisposable
     public event Action<PlaybackUpdateMessage>? OnPlaybackUpdate;
     public event Action<VolumeUpdateMessage>? OnVolumeUpdate;
     public event Action<PlaybackErrorMessage>? OnPlaybackError;
+    public event Action? OnPong;
     public event Action<VersionMessage>? OnVersion;
 
     public FCastSession(Stream stream)
@@ -246,6 +247,10 @@ public class FCastSession : IDisposable
                 Logger.i(nameof(FCastSession), "Received ping");
                 await SendMessageAsync(Opcode.Pong, cancellationToken);
                 Logger.i(nameof(FCastSession), "Sent pong");
+                break;
+            case Opcode.Pong:
+                Logger.i(nameof(FCastSession), "Received pong");
+                OnPong?.Invoke();
                 break;
             default:
                 Logger.i(nameof(FCastSession), "Error handling packet");
