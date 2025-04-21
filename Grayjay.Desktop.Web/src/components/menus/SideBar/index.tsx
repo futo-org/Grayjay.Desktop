@@ -41,6 +41,8 @@ export interface SideBarProps {
   classList?: { [k: string]: boolean | undefined; };
   style?: JSX.CSSProperties;
   onNavigate?: (path: string) => void;
+  onMoreOpened?: () => void;
+  onMoreClosed?: () => void;
 };
 
 const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
@@ -63,7 +65,6 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
 
   const [devClicked$, setDevClicked] = createSignal(0);
   const [moreOverlayVisible$, setMoreOverlayVisible] = createSignal(false);
-
   const [subscriptions$] = createResourceDefault(async () => [], async () => await SubscriptionsBackend.subscriptions());
 
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -157,10 +158,6 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
 
   const useMoreButton = true;
   const handleResize = () => {
-    if (props.alwaysMinimized === true) {
-      return;
-    }
-
     batch(() => {
       if (window.innerWidth < 1200) {
         if (!collapsed()) {
@@ -195,8 +192,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           //All buttons visible
           setVisibleTopButtonCount(topButtonsVisible);
           setMoreTopButtonCount(0);
+          props?.onMoreClosed?.();
           setMoreOverlayVisible(false);
-
         } else {
           //Not all buttons visible, no potential for showing subscriptions
           setVisibleTopButtonCount(topButtonsVisible - 1);
@@ -275,7 +272,10 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
               icon={ic_more}
               name={"More"}
               selected={false}
-              onClick={() => setMoreOverlayVisible(true)}
+              onClick={() => {
+                props?.onMoreOpened?.();
+                setMoreOverlayVisible(true);
+              }}
             />
         </Show>
       </div>
@@ -323,7 +323,15 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       </div>
       <Portal>
         <Show when={moreTopButtonCount$() > 0 && moreOverlayVisible$()}>
-          <div style="height: 100%; width: 100%; position: absolute; top: 0px; left: 0px; background-color: #0000009e" onClick={() => setMoreOverlayVisible(false)}>
+          <div style="height: 100%; width: 100%; position: absolute; top: 0px; left: 0px; background-color: #0000009e; z-index: 2" onClick={(ev) => {
+            props?.onMoreClosed?.();
+            setMoreOverlayVisible(false);
+            ev.preventDefault();
+            ev.stopPropagation();
+          }} onMouseMove={(ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+          }}>
             <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
     flex-direction: column; align-items: center; gap: 6px;">
               {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (

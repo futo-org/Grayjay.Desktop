@@ -1740,7 +1740,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             </Show>
             <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Theatre}>
                 <div style={{ "position": "absolute", "left": "0px", "top": "0px", "z-index": 2, "width": sideBarHidden$() ? "10px" : undefined, "cursor": sideBarAutoHidden$() && sideBarHidden$() ? "none" : undefined }} onMouseMove={handleSideBarMove} onMouseLeave={handleSideBarMouseLeave}>
-                    <SideBar alwaysMinimized={true} onNavigate={() => minimize()} style={{ "transition": "transform 0.3s ease-in-out" }} classList={{ [styles.sideBarHidden]: sideBarHidden$() }}></SideBar>
+                    <SideBar alwaysMinimized={true} onNavigate={() => minimize()} style={{ "transition": "transform 0.3s ease-in-out" }} classList={{ [styles.sideBarHidden]: sideBarHidden$() }} onMoreOpened={() => setSideBarHidden(true)}></SideBar>
                 </div>
             </Show>
         </div>

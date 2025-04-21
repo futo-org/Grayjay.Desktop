@@ -348,7 +348,7 @@ namespace Grayjay.ClientServer.Controllers
             //TODO: Proper urls
 
             var uiWindow = StateApp.MainWindow;
-            if(uiWindow != null) //TODO: Broken
+            if(uiWindow != null)
             {
                 await uiWindow.SetRequestProxyAsync(window.Url, async (req) =>
                 {
