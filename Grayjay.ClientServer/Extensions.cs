@@ -217,7 +217,7 @@ namespace Grayjay.ClientServer
         }*/
 
 
-        public static Func<string, HttpProxyRequest, (string, HttpProxyRequest)> ToProxyFunc(this RequestModifier mod)
+        public static Func<string, HttpProxyRequest, (string, HttpProxyRequest)> ToProxyFunc(this IRequestModifier mod)
         {
             return (url, req) =>
             {

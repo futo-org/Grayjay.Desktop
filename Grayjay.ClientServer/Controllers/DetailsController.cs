@@ -927,12 +927,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectVideoUrlSource(VideoUrlSource sourceVideo, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            //var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
-            //var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
+            var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
+            var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
 
             var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {   
-                RequestModifier = null,//modifier?.ToProxyFunc(),
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
             })) : sourceVideo.Url;
             return new SourceDescriptor(videoUrl, sourceVideo.Container)
@@ -943,12 +943,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectAudioUrlSource(AudioUrlSource sourceAudio, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            //var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
-            //var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
+            var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
+            var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
 
             var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {
-                RequestModifier = null,//modifier?.ToProxyFunc(),
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
             })) : sourceAudio.Url;
             return new SourceDescriptor(audioUrl, sourceAudio.Container)
