@@ -218,7 +218,7 @@ public class StateSync : IDisposable
                                             try
                                             {
                                                 Logger.Verbose<StateSync>($"Attempting relayed connection with '{targetKey}'.");
-                                                await relaySession.StartRelayedChannelAsync(targetKey, null, _cancellationTokenSource.Token);
+                                                await relaySession.StartRelayedChannelAsync(targetKey, APP_ID, null, _cancellationTokenSource.Token);
                                             }
                                             catch (Exception e)
                                             {
@@ -238,7 +238,7 @@ public class StateSync : IDisposable
                         });
 
                     _relaySession.Authorizable = AlwaysAuthorized.Instance;
-                    await _relaySession.StartAsInitiatorAsync(RelayPublicKey, null, _cancellationTokenSource.Token);
+                    await _relaySession.StartAsInitiatorAsync(RelayPublicKey, APP_ID, null, _cancellationTokenSource.Token);
 
                     Logger.i<StateSync>("Started relay session.");
                 }
@@ -536,7 +536,7 @@ public class StateSync : IDisposable
         return _nameStorage.GetValue(publicKey, null);
     }
 
-    private bool IsHandshakeAllowed(LinkType linkType, SyncSocketSession syncSocketSession, string publicKey, string? pairingCode)
+    private bool IsHandshakeAllowed(LinkType linkType, SyncSocketSession syncSocketSession, string publicKey, string? pairingCode, uint appId)
     {
         Logger.v<StateSync>($"Check if handshake allowed from '{publicKey}'.");
 
@@ -708,7 +708,7 @@ public class StateSync : IDisposable
                 onStatusUpdate?.Invoke(null, "Connecting via relay...");
                 if (onStatusUpdate != null)
                     _remotePendingStatusUpdate[deviceInfo.PublicKey] = onStatusUpdate;
-                await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, deviceInfo.PairingCode, cancellationToken);
+                await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, APP_ID, deviceInfo.PairingCode, cancellationToken);
             }
             else
             {
@@ -726,7 +726,7 @@ public class StateSync : IDisposable
         if (onStatusUpdate != null)
             _remotePendingStatusUpdate[remotePublicKey] = onStatusUpdate;
         onStatusUpdate?.Invoke(null, "Handshaking...");
-        await session.StartAsInitiatorAsync(remotePublicKey, pairingCode, cancellationToken);
+        await session.StartAsInitiatorAsync(remotePublicKey, APP_ID, pairingCode, cancellationToken);
         return session;
     }
 
@@ -790,6 +790,7 @@ public class StateSync : IDisposable
     }
 
     private const int PORT = 12315;
+    private const uint APP_ID = 0x534A5247; //GRayJaySync (GRJS)
 
     private static StateSync? _instance;
     public static StateSync Instance => _instance ?? (_instance = new StateSync());
