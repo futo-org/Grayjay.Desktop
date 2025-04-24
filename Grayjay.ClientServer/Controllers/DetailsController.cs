@@ -1015,12 +1015,13 @@ namespace Grayjay.ClientServer.Controllers
                     long delta = position - state._lastWatchPosition;
                     if (delta < 0)
                         return false;
+                    state._lastWatchPosition = position;
                     state._lastWatchPositionChange = DateTime.Now;
 
                     Logger.v(nameof(DetailsController), $"Progress {url} - {position} - {delta} (PlaybackTracker: " + (state.VideoPlaybackTracker != null).ToString() + ")");
 
                     StateHistory.UpdateHistory(video, history, position / 1000, delta);
-                    if (state.VideoSubscription != null)
+                    if (state.VideoSubscription != null && GrayjaySettings.Instance.Subscriptions.AllowPlaytimeTracking)
                         state.VideoSubscription.UpdateWatchTime((int)(delta / 1000));
                     return true;
                 }

@@ -27,8 +27,8 @@ namespace Grayjay.ClientServer.Settings
         public HomeSettings Home { get; set; } = new HomeSettings();
         public class HomeSettings
         {
-            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should auto-preview when scrolling over them", 6)]
-            public bool PreviewFeedItems { get; set; } = true;
+            //[SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should auto-preview when scrolling over them", 6)]
+            //public bool PreviewFeedItems { get; set; } = true;
 
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 7)]
             public bool ProgressBar { get; set; } = true;
@@ -43,8 +43,8 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Search history", SettingsField.TOGGLE, "May require restart", 3)]
             public bool SearchHistory { get; set; } = true;
 
-            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview.", 5)]
-            public bool PreviewFeedItems { get; set; } = true;
+            //[SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview.", 5)]
+            //public bool PreviewFeedItems { get; set; } = true;
 
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 6)]
             public bool ProgressBar { get; set; } = true;
@@ -68,17 +68,17 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Use Subscriptions Exchange (Experimental)", SettingsField.TOGGLE, "Uses a centralized crowd-sourced server to significantly reduce the required requests, in exchange you submit your subscriptions to the server", 6)]
             public bool UseSubscriptionExchange { get; set; } = false;
 
-            [SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview", 6)]
-            public bool PreviewFeedItems { get; set; } = true;
+            //[SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview", 6)]
+            //public bool PreviewFeedItems { get; set; } = true;
 
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 7)]
             public bool ProgressBar { get; set; } = true;
 
-            [SettingsField("Fetch on app boot", SettingsField.TOGGLE, "Shortly after opening the app, start fetching subscriptions", 8)]
-            public bool FetchOnAppBoot { get; set; } = true;
+            //[SettingsField("Fetch on app boot", SettingsField.TOGGLE, "Shortly after opening the app, start fetching subscriptions", 8)]
+            //public bool FetchOnAppBoot { get; set; } = true;
 
-            [SettingsField("Fetch on tab open", SettingsField.TOGGLE, "Fetch new results when the tab is opened (if no results are present)", 9)]
-            public bool FetchOnTabOpen { get; set; } = true;
+            //[SettingsField("Fetch on tab open", SettingsField.TOGGLE, "Fetch new results when the tab is opened (if no results are present)", 9)]
+            //public bool FetchOnTabOpen { get; set; } = true;
 
 
             /*
@@ -116,8 +116,8 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Track Playtime Locally", SettingsField.TOGGLE, "Locally track playtime of subscriptions, used for subscriptions.", 13)]
             public bool AllowPlaytimeTracking { get; set; } = true;
 
-            [SettingsField("Always Reload From Cache", SettingsField.TOGGLE, "This is not recommended, but possible workaround for subscription issues", 14)]
-            public bool AlwaysReloadFromCache { get; set; } = false;
+            //[SettingsField("Always Reload From Cache", SettingsField.TOGGLE, "This is not recommended, but possible workaround for subscription issues", 14)]
+            //public bool AlwaysReloadFromCache { get; set; } = false;
 
 
             [SettingsField("Peek Channel Contents", SettingsField.TOGGLE, "Peek channel contents if supported by plugin of rate-limited calls, may increase subscription reload time", 16)]
@@ -259,13 +259,14 @@ namespace Grayjay.ClientServer.Settings
             }
         }
 
+        /*
         [SettingsField("Browsing", "group", "Configure browsing behavior", 8)]
         public BrowsingSettings Browsing { get; set; } = new BrowsingSettings();
         public class BrowsingSettings
         {
             [SettingsField("Enable Video Cache", SettingsField.TOGGLE, "Cache to quickly load previously fetched videos", 0)]
             public bool VideoCache { get; set; } = true;
-        }
+        }*/
 
         [SettingsField("Casting", "group", "Configure casting", 9)]
         public CastingSettings Casting { get; set; } = new CastingSettings();

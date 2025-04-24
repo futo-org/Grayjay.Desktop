@@ -126,6 +126,26 @@ export function toHumanNumber(value?: number): string | undefined {
   return `${value}`;
 }
 
+export function toHumanSignificantDuration(sec?: number): string {
+  if (!sec) {
+    return "00:00";
+  }
+
+  let seconds = sec;
+  let hours = Math.floor(seconds / (60 * 60));
+  seconds = seconds % (60 * 60);
+  let minutes = Math.floor(seconds / 60);
+  seconds = seconds % 60;
+  const parts = [];
+  if(hours)
+    return hours + ((hours > 1) ? "hrs" : "hr");
+  if(minutes)
+    return minutes + ((minutes > 1) ? "mins" : "min");
+  if(seconds)
+    return seconds + ((seconds > 1) ? "secs" : "sec");
+  return "";
+}
+
 export function toHumanTime(sec?: number): string {
   if (!sec) {
     return "00:00";

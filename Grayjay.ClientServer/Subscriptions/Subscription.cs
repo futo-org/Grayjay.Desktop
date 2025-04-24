@@ -25,6 +25,10 @@ namespace Grayjay.ClientServer.Subscriptions
         public bool DoFetchVideos { get; set; } = true;
         public bool DoFetchPosts { get; set; } = false;
 
+        public DateTime LastChannelDate { get; set; } = DateTime.MinValue;
+        public DateTime LastChannelAttempt { get; set; } = DateTime.MinValue;
+        public DateTime LastChannelUpdate => (LastChannelDate > LastChannelAttempt) ? LastChannelDate : LastChannelAttempt;
+
         //Last found content
         public DateTime LastVideo { get; set; } = DateTime.MaxValue;
         public DateTime LastLiveStream { get; set; } = DateTime.MaxValue;
@@ -55,6 +59,17 @@ namespace Grayjay.ClientServer.Subscriptions
             Channel = channel;
         }
 
+        public void UpdateChannelObject(PlatformChannel channel)
+        {
+            Channel = channel;
+            LastChannelDate = DateTime.Now;
+            SaveAsync();
+        }
+        public void UpdateChannelAttemptDate()
+        {
+            LastChannelAttempt = DateTime.Now;
+            SaveAsync();
+        }
 
         public bool isChannel(string url)
         {
