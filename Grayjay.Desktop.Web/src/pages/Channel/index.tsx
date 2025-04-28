@@ -1,7 +1,7 @@
 import { createResource, type Component, Show, createMemo, createSignal, Switch, Match, createEffect, untrack } from 'solid-js';
 import { createResourceDefault, toHumanNumber } from '../../utility';
 import { ChannelBackend } from '../../backend/ChannelBackend';
-import { useLocation, useSearchParams } from '@solidjs/router';
+import { useLocation, useParams, useSearchParams } from '@solidjs/router';
 import { Event1 } from "../../utility/Event";
 import ContentGrid from '../../components/containers/ContentGrid';
 import LoaderContainer from '../../components/basics/loaders/LoaderContainer';
@@ -136,6 +136,9 @@ const ChannelPage: Component = () => {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
 
+  console.log(location)
+  console.log(params);
+
   const [error$, setError] = createSignal<any>(undefined);
 
 
@@ -169,7 +172,7 @@ const ChannelPage: Component = () => {
   
   const [query$, setQuery] = createSignal<string>("");
   
-  const [channel$, channelResource] = createResourceDefault(params.url, async (u) => {
+  const [channel$, channelResource] = createResourceDefault(()=>params.url, async (u) => {
     console.log("get channel", params.url);
 
     if (!u) {

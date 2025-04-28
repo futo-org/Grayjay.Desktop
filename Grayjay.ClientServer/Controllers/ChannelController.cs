@@ -52,8 +52,7 @@ namespace Grayjay.ClientServer.Controllers
                 var sub = StateSubscriptions.GetSubscription(url);
                 if (sub != null)
                 {
-                    sub.Channel = channel;
-                    sub.SaveAsync();
+                    sub.UpdateChannelObject(channel);
                 }
             }
 

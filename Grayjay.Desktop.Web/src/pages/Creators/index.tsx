@@ -146,7 +146,7 @@ const CreatorsPage: Component = () => {
 
           <VirtualGrid outerContainerRef={scrollContainerRef}
             items={filteredSubs()}
-            itemHeight={276}
+            itemHeight={290}
             itemWidth={200}
             autosizeWidth={true}
             notifyEndOnLast={5}
@@ -171,6 +171,7 @@ const CreatorsPage: Component = () => {
                 onSettingsClick={(el) => {
                   showSubscriptionSettings(el, item());
                 }}
+                subscription={item()}
                 isSubscribedInitialState={true} />
             } />
         </ScrollContainer>

@@ -84,9 +84,26 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<IActionResult> CachePassthrough(string url)
         {
-            string path = await StateImages.StoreImageUrlOrKeepPassthrough(url);
-            Logger.i(nameof(ImagesController), $"Loading image from cache for [{url}]");
-            return PhysicalFile(path, "image/png");
+            try
+            {
+                string path = await StateImages.StoreImageUrlOrKeepPassthrough(url);
+                Logger.i(nameof(ImagesController), $"Loading image from cache for [{url}]");
+                return PhysicalFile(path, "image/png");
+            }
+            catch(HttpRequestException ex)
+            {
+                switch (ex.StatusCode)
+                {
+                    case System.Net.HttpStatusCode.NotFound:
+                        return NotFound();
+                    case System.Net.HttpStatusCode.Unauthorized:
+                        return Unauthorized();
+                    case System.Net.HttpStatusCode.Forbidden:
+                        return Forbid();
+                    default:
+                        throw;
+                }
+            }
         }
     }
 }

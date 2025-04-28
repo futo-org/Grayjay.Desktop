@@ -941,12 +941,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectVideoUrlSource(VideoUrlSource sourceVideo, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            //var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
-            //var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
+            var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
+            var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
 
             var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {   
-                RequestModifier = null,//modifier?.ToProxyFunc(),
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
             })) : sourceVideo.Url;
             return new SourceDescriptor(videoUrl, sourceVideo.Container)
@@ -957,12 +957,12 @@ namespace Grayjay.ClientServer.Controllers
         }
         private static SourceDescriptor DirectAudioUrlSource(AudioUrlSource sourceAudio, int index, bool isLocal, ProxySettings? proxySettings = null)
         {
-            //var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
-            //var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
+            var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
+            var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
 
             var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {
-                RequestModifier = null,//modifier?.ToProxyFunc(),
+                RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
             })) : sourceAudio.Url;
             return new SourceDescriptor(audioUrl, sourceAudio.Container)
@@ -1029,12 +1029,13 @@ namespace Grayjay.ClientServer.Controllers
                     long delta = position - state._lastWatchPosition;
                     if (delta < 0)
                         return false;
+                    state._lastWatchPosition = position;
                     state._lastWatchPositionChange = DateTime.Now;
 
                     Logger.v(nameof(DetailsController), $"Progress {url} - {position} - {delta} (PlaybackTracker: " + (state.VideoPlaybackTracker != null).ToString() + ")");
 
                     StateHistory.UpdateHistory(video, history, position / 1000, delta);
-                    if (state.VideoSubscription != null)
+                    if (state.VideoSubscription != null && GrayjaySettings.Instance.Subscriptions.AllowPlaytimeTracking)
                         state.VideoSubscription.UpdateWatchTime((int)(delta / 1000));
                     return true;
                 }

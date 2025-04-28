@@ -169,6 +169,28 @@ namespace Grayjay.ClientServer.States
             {
                 StateTelemetry.Upload();
             });
+            new Thread(() =>
+            {
+                var now = DateTime.Now;
+                var subscriptions = StateSubscriptions.GetSubscriptions().Where(x=>now.Subtract(x.LastChannelUpdate).TotalMinutes > 120).OrderBy(x => x.LastChannelUpdate).ToList();
+                foreach(var subscription in subscriptions)
+                {
+                    if (StateApp.AppCancellationToken.IsCancellationRequested)
+                        return;
+                    try
+                    {
+                        Logger.i(nameof(StateApp), $"Updating subscription data for [{subscription.Channel.Name}]");
+                        var channel = StatePlatform.GetChannel(subscription.Channel.Url);
+                        subscription.UpdateChannelObject(channel);
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.w(nameof(StateApp), "Failed to update subscription channel object due to: " + ex.Message, ex);
+                        subscription.UpdateChannelAttemptDate();
+                    }
+                    Thread.Sleep(2000 + Random.Shared.Next(0, 1000));
+                }
+            }).Start();
 
             if (false)
                 new Thread(() =>

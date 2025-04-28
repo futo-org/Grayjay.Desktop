@@ -9,6 +9,9 @@ interface ISubscription {
     doFetchStreams: boolean;
     doFetchVideos: boolean;
     doFetchPosts: boolean;
+
+    playbackSeconds: number;
+    playbackViews: number;
 }
 
 interface ISubscriptionSettings {
