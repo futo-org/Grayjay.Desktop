@@ -50,6 +50,7 @@ import { IPlaylist } from '../../backend/models/IPlaylist';
 import { IPlatformContent } from '../../backend/models/content/IPlatformContent';
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
+import Button from '../../components/buttons/Button';
 
 const DownloadsPage: Component = () => {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const DownloadsPage: Component = () => {
   const [storageInfo$, storageInfoResource] = createResourceDefault(async () => [], async () => await DownloadBackend.getStorageInfo());
   const [downloading$, downloadingResource] = createResourceDefault(async () => [], 
   
-  async () => /*([1,2,3,4,5,6,7, 8,9].map(x=>
+  /*async () => ([1,2,3,4,5,6,7, 8,9].map(x=>
       { return {
         video: getDummyVideo(),
         videoDetails: getDummyVideo(),
@@ -489,6 +490,10 @@ const DownloadsPage: Component = () => {
     )
   }
 
+  const downloadingErrorOnly$ = createMemo(()=>{
+    return downloading$() && (downloading$()?.length ?? 0) > 0 && !!downloading$()?.find(x=>x.state == 7) && !downloading$()?.find(x=>x.state != 7)
+  });
+
   const video = useVideo();
   let scrollContainerRef: HTMLDivElement | undefined;
   return (
@@ -545,8 +550,13 @@ const DownloadsPage: Component = () => {
         </div>
         </Show>
         <Show when={downloading$() && downloading$()!.length > 0}>
-          <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; white-space: nowrap; overflow-y: hidden; min-height: 300px;">
+          <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; white-space: nowrap; overflow-y: hidden; min-height: 300px; position: relative;">
             <h2>Downloading</h2>
+            <Show when={downloadingErrorOnly$()}>
+              <div style="position: absolute; right: 16px; top: 16px">
+                <Button text='Retry' style={{"height": "42px", "padding-top": "10px"}} onClick={()=>{DownloadBackend.downloadCycle()}} />
+              </div>
+            </Show>
             <div>
               <For each={downloading$()}>{ downloading =>
                 <DownloadingView downloading={downloading} />

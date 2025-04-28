@@ -312,6 +312,10 @@ namespace Grayjay.ClientServer.Controllers
                 return null;
 
             var window = StatePlatform.GetLiveChatWindow(video.Url);
+            if(window == null || string.IsNullOrEmpty(window.Url) || !string.IsNullOrEmpty(window.Error))
+            {
+                return window;
+            }
             var httpProxy = HttpProxy.Get(true);
             var liveChatProxyEntry = new HttpProxyRegistryEntry()
             {

@@ -206,6 +206,19 @@ namespace Grayjay.Desktop.POC.Port.States
             var baseClient = GetContentClientOrNull(url);
             if (baseClient == null)
                 return null;
+
+            //TODO: Remove when compatibility is solved.
+            if (GrayjaySettings.Instance.Playback.HideBrokenLivechats)
+            {
+                switch (baseClient.ID)
+                {
+                    case "4a78c2ff-c20f-43ac-8f75-34515df1d320":
+                    case "cf8ea74d-ad9b-489e-a083-539b6aa8648c":
+                        return new LiveChatWindowDescriptor("This plugin's livechat is currently not yet supported on Desktop.");
+                    default:
+                        break;
+                }
+            }
             return baseClient.GetLiveChatWindow(url);
         }
 

@@ -139,13 +139,16 @@ namespace Grayjay.ClientServer.States
 
         public static void RemoveDownloading(PlatformID id)
         {
-            if (_downloading.Delete(GetDownloadingVideo(id)))
-                OnDownloadsChanged?.Invoke();
+            var vid = GetDownloadingVideo(id);
+            RemoveDownloading(vid);
         }
         public static void RemoveDownloading(VideoDownload download)
         {
             if (_downloading.Delete(download))
+            {
+                download.IsCancelled = true;
                 OnDownloadsChanged?.Invoke();
+            }
         }
 
         public static void RemoveDownloadingPlaylist(string playlistId)

@@ -82,6 +82,14 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
+        public IActionResult DownloadCycle()
+        {
+            StateDownloads.StartDownloadCycle();
+
+            return Ok(true);
+        }
+
+        [HttpGet]
         public IActionResult Download(string id, int videoIndex, int audioIndex, int subtitleIndex, int manifestIndex = -1)
         {
             (var details, var sources) = GetLoadedSources(id);

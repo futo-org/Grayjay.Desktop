@@ -402,6 +402,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                                 break;
                         }
                     }
+                    DownloadSpeedVideo = 0;
                 }));
             }
             if(AudioSourceToUse != null)
@@ -461,6 +462,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                                 break;
                         }
                     }
+                    DownloadSpeedAudio = 0;
                 }));
             }
             if(SubtitleSourcetoUse != null)
@@ -571,11 +573,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             DateTime lastProgressNotify = DateTime.Now;
             int progressNotifyInterval = 500;
 
-            int progressRate = 4096 * 128;
-            int lastProgressCount = 0;
-            int speedRate = 4096 * 25;
-            long readSinceLastSpeedTest = 0;
-            DateTime timeSinceLastSpeedTest = DateTime.Now;
+            SpeedMonitor speedMonitor = new SpeedMonitor(TimeSpan.FromSeconds(5));
 
             long lastSpeed = 0;
 
@@ -601,21 +599,12 @@ namespace Grayjay.ClientServer.Models.Downloads
 
 
                     totalRead += read;
-                    readSinceLastSpeedTest += read;
+                    speedMonitor.Activity(read);
                     if (DateTime.Now.Subtract(lastProgressNotify).TotalMilliseconds > progressNotifyInterval)
                     {
                         lastProgressNotify = DateTime.Now;
+                        lastSpeed = speedMonitor.GetCurrentSpeed();
                         onProgress?.Invoke(sourceLength, totalRead, lastSpeed);
-                        lastProgressCount++;
-                    }
-                    if(readSinceLastSpeedTest > speedRate)
-                    {
-                        var lastSpeedTime = timeSinceLastSpeedTest;
-                        timeSinceLastSpeedTest = DateTime.Now;
-                        var timeSince = timeSinceLastSpeedTest - lastSpeedTime;
-                        if (timeSince.TotalSeconds > 1)
-                            lastSpeed = (long)(readSinceLastSpeedTest / (timeSince.TotalSeconds));
-                        readSinceLastSpeedTest = 0;
                     }
 
                     if (IsCancelled)
@@ -624,7 +613,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 while (read > 0);
 
                 lastSpeed = 0;
-                onProgress?.Invoke(sourceLength, totalRead, (long)(readSinceLastSpeedTest / ((DateTime.Now - timeSinceLastSpeedTest).TotalSeconds)));
+                onProgress?.Invoke(sourceLength, totalRead, speedMonitor.GetCurrentSpeed());
             }
             return sourceLength;
         }
@@ -649,7 +638,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 reqCount++;
 
                 Logger.i(nameof(VideoDownload), $"Download {Video.Name} Batch #{reqCount} [{concurrency}] ({lastSpeed.ToHumanBytesSpeed()})");
-                var byteRangeResults = await RequestByteRangeParallel(client, url, sourceLength, concurrency, totalRead, rangeSize, 1024 * 4, cancel);
+                var byteRangeResults = await RequestByteRangeParallel(client, url, sourceLength, concurrency, totalRead, rangeSize, 1024 * 512, cancel);
                 foreach(var byteRange in byteRangeResults)
                 {
                     var read = ((byteRange.end - byteRange.start) + 1);
@@ -706,14 +695,26 @@ namespace Grayjay.ClientServer.Models.Downloads
         {
             var toRead = rangeEnd - rangeStart;
             ManagedHttpClient.Response req = null;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i <= 5; i++)
             {
                 req = client.GET(url, new Dictionary<string, string>() { { "range", $"bytes={rangeStart}-{rangeEnd}" } });
                 if (!req.IsOk)
                 {
-                    if (i < 2)
+                    if (i < 4)
                     {
                         Logger.w(nameof(VideoDownload), $"Range request failed code [{req.Code}] retrying");
+                        switch (i)
+                        {
+                            case 2:
+                                Thread.Sleep(2000 + (int)(Random.Shared.NextDouble() * 300));
+                                break;
+                            case 3:
+                                Thread.Sleep(3000 + (int)(Random.Shared.NextDouble() * 300));
+                                break;
+                            default:
+                                Thread.Sleep(1000 + (int)(Random.Shared.NextDouble() * 300));
+                                break;
+                        }
                         continue;
                     }
                     else
@@ -726,6 +727,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             if (read < toRead)
                 throw new InvalidDataException($"Byte-Range request attempted to provide less ({read} < {toRead})");
 
+            Thread.Sleep(300);
             return (req.Body.AsBytes(), rangeStart, rangeEnd);
         }
 

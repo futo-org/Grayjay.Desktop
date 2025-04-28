@@ -1471,12 +1471,19 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             </Show>
 
                             <Show when={shouldHideSideBar() && videoLoadedIsValid$() && liveChatWindow$()}>
-                                <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
-                                    'margin-top': '30px',
-                                    "width": "calc(100% - 80px)",
-                                    "margin-right": "40px",
-                                    "margin-left": "40px"
-                                }} />
+                                <Show when={liveChatWindow$()?.error}>
+                                    <div class={styles.liveChatError}>
+                                        {liveChatWindow$()?.error}
+                                    </div>
+                                </Show>
+                                <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
+                                    <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
+                                        'margin-top': '30px',
+                                        "width": "calc(100% - 80px)",
+                                        "margin-right": "40px",
+                                        "margin-left": "40px"
+                                    }} />
+                                </Show>
                             </Show>
 
                             <Show when={shouldHideSideBar() && recommendationsVisible$()}>
@@ -1617,11 +1624,18 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 </Show>
                                     
                                 <Show when={videoLoadedIsValid$() && liveChatWindow$()}>
-                                    <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
-                                        'height': '640px',
-                                        "margin-right": "40px",
-                                        "width": "calc(100% - 40px)"
-                                    }} />
+                                    <Show when={liveChatWindow$()?.error}>
+                                        <div class={styles.liveChatError}>
+                                            {liveChatWindow$()?.error}
+                                        </div>
+                                    </Show>
+                                    <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
+                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
+                                            'height': '640px',
+                                            "margin-right": "40px",
+                                            "width": "calc(100% - 40px)"
+                                        }} />
+                                    </Show>
                                 </Show>
 
                                 <Show when={videoLoadedIsValid$() && recommendationsVisible$()}>

@@ -213,6 +213,9 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Live Chat Webview", SettingsField.TOGGLE, "Use the live chat web window when available over the native window", 9)]
             public bool UseLiveChatWindow { get; set; } = true;
             */
+
+            [SettingsField("Hide Known Broken Livechats", SettingsField.TOGGLE, "Some live chats are known to have compatibility issues with desktop, this setting disables those (Recommended)", 7)]
+            public bool HideBrokenLivechats { get; set; } = true;
         }
 
         /*

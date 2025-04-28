@@ -12,6 +12,7 @@ import StateWebsocket from '../../../state/StateWebsocket';
 import iconDownloadOngoing from '../../../assets/icons/icon_download_ongoing.svg'
 import iconDownloadQueued from '../../../assets/icons/icon_download_queued.svg'
 import iconDownloadError from '../../../assets/icons/icon_error.svg'
+import iconClose from '../../../assets/icons/icon24_close.svg'
 import UIOverlay from '../../../state/UIOverlay';
 import { DialogButton, DialogDescriptor } from '../../../overlays/OverlayDialog';
 import { DownloadBackend } from '../../../backend/DownloadBackend';
@@ -61,6 +62,28 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
     return parts.join(" • ");
   }
 
+  function cancel() {
+    UIOverlay.dialog({
+      title: "Would you like to cancel this download?",
+      description: "[" + downloading$().video.name + "]?",
+      buttons: [
+        {
+          title: "Nevermind",
+          onClick() {
+            
+          }
+        } as DialogButton,
+        {
+          title: "Cancel",
+          style: "accent",
+          onClick() {
+            DownloadBackend.deleteDownload(downloading$().video.id);
+          }
+        } as DialogButton
+      ]
+    } as DialogDescriptor)
+  }
+
   function clicked() {
     if(downloading$().state == 7 && downloading$().error) {
       UIOverlay.dialog({
@@ -106,6 +129,11 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
             </Switch>
             {statusString(downloading$())}
           </div>
+
+          <div class={styles.buttonCancel} onClick={cancel}>
+            <img src={iconClose} />
+          </div>
+
           <Show when={downloading$().videoFileSize || downloading$().audioFileSize}>
             <div class={styles.badgeSize}>
               {toHumanBytesSize(downloading$().videoFileSize + downloading$().audioFileSize)}

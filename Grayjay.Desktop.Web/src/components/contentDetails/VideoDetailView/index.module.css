@@ -347,3 +347,16 @@
 .sideBarHidden {
     transform: translateX(-100%);
 }
+
+.liveChatError {
+    width: 70%;
+    text-align: center;
+    background-color: #111;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 10px;
+    color: #DD7777;
+}
