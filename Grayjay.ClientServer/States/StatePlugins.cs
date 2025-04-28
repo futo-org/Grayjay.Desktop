@@ -404,52 +404,58 @@ namespace Grayjay.Desktop.POC.Port.States
                             .ToList();
 
                         var foundHeaders = request.Headers.Where(requestHeader => headersToFind.Any(x => x.Item1.Equals(requestHeader.Key, StringComparison.OrdinalIgnoreCase))
-                            && (!requestHeader.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) || requestHeader.Value != "undefined"))
+                            && (!requestHeader.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) || requestHeader.Value.FirstOrDefault() != "undefined"))
                             .ToList();
 
                         foreach (var header in foundHeaders)
                         {
+                            if (header.Value.Count < 1)
+                                continue;
+
                             foreach (var headerDomain in headersToFind.Where(x => x.Item1.Equals(header.Key, StringComparison.OrdinalIgnoreCase)))
                             {
                                 if (!headersFoundMap.ContainsKey(headerDomain.Item2))
                                     headersFoundMap[headerDomain.Item2] = new Dictionary<string, string>();
-                                headersFoundMap[headerDomain.Item2][header.Key.ToLower()] = header.Value;
+                                headersFoundMap[headerDomain.Item2][header.Key.ToLower()] = header.Value.First();
                             }
                         }
                     }
 
                     //COOKIES
-                    var cookieString = request.Headers.FirstOrDefault(x => x.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)).Value;
-                    if (cookieString != null)
+                    if (request.Headers.TryGetValue("cookie", out var cookieHeader))
                     {
-                        var domainParts = domain.Split(".");
-                        var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
-                        if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
+                        var cookieString = cookieHeader.FirstOrDefault();
+                        if (cookieString != null)
                         {
-                            authConfig.CookiesToFind?.ForEach(cookiesToFind =>
+                            var domainParts = domain.Split(".");
+                            var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
+                            if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
                             {
-                                var cookies = cookieString.Split(";");
-                                foreach (var cookieStr in cookies)
+                                authConfig.CookiesToFind?.ForEach(cookiesToFind =>
                                 {
-                                    var cookieSplitIndex = cookieStr.IndexOf("=");
-                                    if (cookieSplitIndex <= 0) continue;
-                                    var cookieKey = cookieStr.Substring(0, cookieSplitIndex).Trim();
-                                    var cookieVal = cookieStr.Substring(cookieSplitIndex + 1).Trim();
+                                    var cookies = cookieString.Split(";");
+                                    foreach (var cookieStr in cookies)
+                                    {
+                                        var cookieSplitIndex = cookieStr.IndexOf("=");
+                                        if (cookieSplitIndex <= 0) continue;
+                                        var cookieKey = cookieStr.Substring(0, cookieSplitIndex).Trim();
+                                        var cookieVal = cookieStr.Substring(cookieSplitIndex + 1).Trim();
 
-                                    if (authConfig.CookiesExclOthers && !cookiesToFind.Contains(cookieKey))
-                                        continue;
+                                        if (authConfig.CookiesExclOthers && !cookiesToFind.Contains(cookieKey))
+                                            continue;
 
-                                    if (cookiesFoundMap.ContainsKey(cookieDomain))
-                                        cookiesFoundMap[cookieDomain][cookieKey] = cookieVal;
-                                    else
-                                        cookiesFoundMap[cookieDomain] = new Dictionary<string, string>() { { cookieKey, cookieVal } };
-                                }
-                            });
+                                        if (cookiesFoundMap.ContainsKey(cookieDomain))
+                                            cookiesFoundMap[cookieDomain][cookieKey] = cookieVal;
+                                        else
+                                            cookiesFoundMap[cookieDomain] = new Dictionary<string, string>() { { cookieKey, cookieVal } };
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    if (_didLogIn())
-                        _loggedIn();
+                        if (_didLogIn())
+                            _loggedIn();
+                    }
                 }
                 catch (Exception ex)
                 {

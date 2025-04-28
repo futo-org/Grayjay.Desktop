@@ -85,7 +85,7 @@ namespace Grayjay.Desktop.CEF
                         if (header.Key.ToLower().StartsWith("sec-"))
                             req.Headers.Remove(header.Key);
                     }
-                    req.Headers.Add("Sec-GPC", "1");
+                    req.Headers.Add("Sec-GPC", [ "1" ]);
                     if(req.Url.Contains("batch"))
                     {
                         string isBatch = "";
