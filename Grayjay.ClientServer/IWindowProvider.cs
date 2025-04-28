@@ -23,20 +23,20 @@ namespace Grayjay.ClientServer
     {
         public string Url { get; set; }
         public string Method { get; set; }
-        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, List<string>> Headers { get; set; } = new Dictionary<string, List<string>>(StringComparer.InvariantCultureIgnoreCase);
     }
 
     public class WindowRequest
     {
         public required string Method { get; set; }
         public required string Url { get; set; }
-        public required Dictionary<string, string> Headers { get; set; }
+        public required Dictionary<string, List<string>> Headers { get; set; } = new Dictionary<string, List<string>>(StringComparer.InvariantCultureIgnoreCase);
     }
     public class WindowResponse
     {
         public required int StatusCode { get; init; }
         public required string StatusText { get; init; }
-        public required Dictionary<string, string> Headers { get; init; }
+        public required Dictionary<string, List<string>> Headers { get; init; } = new Dictionary<string, List<string>>(StringComparer.InvariantCultureIgnoreCase);
         public required Stream? BodyStream { get; init; }
     }
 }

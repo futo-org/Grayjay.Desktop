@@ -358,19 +358,33 @@ namespace Grayjay.ClientServer.Controllers
                             client.DefaultRequestHeaders.Add(header.Key, header.Value);
                         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
 
-                        var resp = await client.GetAsync(window.Url, HttpCompletionOption.ResponseContentRead);
-                        var resultHeaders = new Dictionary<string, string>(resp.Headers.ToDictionary(x => x.Key, y => string.Join(";", y.Value)), StringComparer.OrdinalIgnoreCase);
+                        var request = new HttpRequestMessage(HttpMethod.Get, window.Url);
+                        request.Version = HttpVersion.Version11;
+                        request.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                        var resp = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                        var resultHeaders = resp.Headers.ToDictionary(x => x.Key, y => y.Value.ToList(), StringComparer.OrdinalIgnoreCase);
+                        if (resp.Content != null)
+                        {
+                            foreach (var pair in resp.Content.Headers)
+                            {
+                                if (resultHeaders.TryGetValue(pair.Key, out var v))
+                                    v.AddRange(pair.Value);
+                                else
+                                    resultHeaders[pair.Key] = pair.Value.ToList();
+                            }
+                        }
                         if (resultHeaders.ContainsKey("x-frame-options"))
-                            resultHeaders["x-frame-options"] = "ALLOWALL";
+                            resultHeaders["x-frame-options"] = new List<string>(["ALLOWALL"]);
                         else
-                            resultHeaders.Add("x-frame-options", "ALLOWALL");
+                            resultHeaders.Add("x-frame-options", new List<string>(["ALLOWALL"]));
 
-                        string data = await resp.Content.ReadAsStringAsync();
+
+                        string data = await resp.Content!.ReadAsStringAsync();
                         data = ModifyLiveChatResponse(window, data);
 
                         var bytes = Encoding.UTF8.GetBytes(data);
-                        resultHeaders["Content-Length"] = bytes.Length.ToString();
-                        resultHeaders["Content-Type"] = "text/html";
+                        resultHeaders["Content-Length"] = new List<string>([bytes.Length.ToString()]);
+                        resultHeaders["Content-Type"] = new List<string>(["text/html"]);
 
                         return new WindowResponse()
                         {

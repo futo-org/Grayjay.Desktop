@@ -372,37 +372,40 @@ namespace Grayjay.ClientServer.Controllers
                     }
 
                     //COOKIES
-                    var cookieString = request.Headers.FirstOrDefault(x => x.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)).Value;
-                    if (cookieString != null)
+                    if (request.Headers.TryGetValue("cookie", out var cookieHeader))
                     {
-                        var domainParts = domain.Split(".");
-                        var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
-                        if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
+                        var cookieString = cookieHeader.FirstOrDefault();
+                        if (cookieString != null)
                         {
-                            authConfig.CookiesToFind?.ForEach(cookiesToFind =>
+                            var domainParts = domain.Split(".");
+                            var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
+                            if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
                             {
-                                var cookies = cookieString.Split(";");
-                                foreach (var cookieStr in cookies)
+                                authConfig.CookiesToFind?.ForEach(cookiesToFind =>
                                 {
-                                    var cookieSplitIndex = cookieStr.IndexOf("=");
-                                    if (cookieSplitIndex <= 0) continue;
-                                    var cookieKey = cookieStr.Substring(0, cookieSplitIndex).Trim();
-                                    var cookieVal = cookieStr.Substring(cookieSplitIndex + 1).Trim();
+                                    var cookies = cookieString.Split(";");
+                                    foreach (var cookieStr in cookies)
+                                    {
+                                        var cookieSplitIndex = cookieStr.IndexOf("=");
+                                        if (cookieSplitIndex <= 0) continue;
+                                        var cookieKey = cookieStr.Substring(0, cookieSplitIndex).Trim();
+                                        var cookieVal = cookieStr.Substring(cookieSplitIndex + 1).Trim();
 
-                                    if (authConfig.CookiesExclOthers && !cookiesToFind.Contains(cookieKey))
-                                        continue;
+                                        if (authConfig.CookiesExclOthers && !cookiesToFind.Contains(cookieKey))
+                                            continue;
 
-                                    if (cookiesFoundMap.ContainsKey(cookieDomain))
-                                        cookiesFoundMap[cookieDomain][cookieKey] = cookieVal;
-                                    else
-                                        cookiesFoundMap[cookieDomain] = new Dictionary<string, string>() { { cookieKey, cookieVal } };
-                                }
-                            });
+                                        if (cookiesFoundMap.ContainsKey(cookieDomain))
+                                            cookiesFoundMap[cookieDomain][cookieKey] = cookieVal;
+                                        else
+                                            cookiesFoundMap[cookieDomain] = new Dictionary<string, string>() { { cookieKey, cookieVal } };
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    if (_didLogIn())
-                        _loggedIn();
+                        if (_didLogIn())
+                            _loggedIn();
+                    }
                 }
                 catch (Exception ex)
                 {
