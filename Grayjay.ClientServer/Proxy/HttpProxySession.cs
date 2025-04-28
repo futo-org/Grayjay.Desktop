@@ -155,9 +155,9 @@ namespace Grayjay.ClientServer.Proxy
                                     incomingRequest.Headers[r.Key] = r.Value;
                             }
 
-                        if (registryEntry.RequestModifier != null && false)
-                        {   //BROKEN FOR NOW
-                            //TODO: Figure out why this causes streams to break, despite correct headers
+                        Dictionary<string, string> initialHeaders = new Dictionary<string, string>(incomingRequest.Headers, StringComparer.OrdinalIgnoreCase);
+                        if (registryEntry.RequestModifier != null)
+                        {
                             (var newUrl, incomingRequest) = registryEntry.RequestModifier(url, incomingRequest);
                             parsedUrl = Utilities.ParseUrl(newUrl);
                             incomingRequest.Path = parsedUrl.Path;
@@ -181,15 +181,6 @@ namespace Grayjay.ClientServer.Proxy
                         using var destinationClient = c;
                         using var destinationStream = new HttpProxyStream(s);
 
-                        /*
-                        incomingRequest.Headers = incomingRequest.Headers.Where(x =>
-                            x.Key.Equals("Referer", StringComparison.OrdinalIgnoreCase) ||
-                            x.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase) ||
-                            x.Key.Equals("Accept-Encoding", StringComparison.OrdinalIgnoreCase) ||
-                            x.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
-                            x.Key.Equals("Range", StringComparison.OrdinalIgnoreCase)).ToDictionary(x => x.Key, y => y.Value);
-                        */
-
                         await destinationStream.WriteRequestAsync(incomingRequest, _cancellationTokenSource.Token);
                         if (incomingRequest.Headers.TryGetValue("transfer-encoding", out var te) && te == "chunked")
                         {
@@ -210,6 +201,13 @@ namespace Grayjay.ClientServer.Proxy
 
                         returnedResponse = await destinationStream.ReadResponseHeadersAsync(_cancellationTokenSource.Token);
                         
+                        if(registryEntry.RequestModifier != null && initialHeaders.ContainsKey("range") && !incomingRequest.Headers.ContainsKey("range"))
+                        {
+                            returnedResponse.StatusCode = 206;
+                            var rangeParts = initialHeaders["range"].Substring("bytes=".Length).Split("-");
+                            returnedResponse.Headers.Add("content-range", $"bytes {rangeParts[0]}-{rangeParts[1]}/*");
+                        }
+
                         var shouldFollowRedirect = _redirectStatusCodes.Contains(returnedResponse.StatusCode) && registryEntry.FollowRedirects && returnedResponse.Headers.ContainsKey("location");
                         if (!shouldFollowRedirect)
                         {

@@ -234,7 +234,9 @@ namespace Grayjay.ClientServer
                     else
                         req.Headers.Add(header.Key, header.Value);
                 }*/
-                req.Headers = modReq.Headers ?? req.Headers;
+                if(modReq.Headers != null)
+                    req.Headers = new Dictionary<string, string>(modReq.Headers, StringComparer.OrdinalIgnoreCase);
+
                 if (string.IsNullOrEmpty(modReq.Url))
                     modReq.Url = url;
                 return (modReq.Url, req);
