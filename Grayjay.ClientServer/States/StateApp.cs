@@ -188,7 +188,7 @@ namespace Grayjay.ClientServer.States
                         Logger.w(nameof(StateApp), "Failed to update subscription channel object due to: " + ex.Message, ex);
                         subscription.UpdateChannelAttemptDate();
                     }
-                    Thread.Sleep(2000 + Random.Shared.Next(0, 1000));
+                    Thread.Sleep(3500 + Random.Shared.Next(0, 1000));
                 }
             }).Start();
 

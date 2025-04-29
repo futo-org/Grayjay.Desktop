@@ -18,6 +18,7 @@ import OverlaySyncStatusDialog from '../OverlaySyncStatusDialog';
 import OverlaySyncConfirmDialog from '../OverlaySyncConfirmDialog';
 import { OverlayRequest } from '../OverlayModals';
 import OverlayImportPlaylistsDialog from '../OverlayImportPlaylistsDialog';
+import OverlayToasts from '../OverlayToasts';
 
 
 export interface OverlayContext {
@@ -27,7 +28,8 @@ export interface ToastDescriptor {
   icon?: string,
   title?: string,
   text: string,
-  long?: boolean
+  long?: boolean,
+  id?: string
 }
 export interface DialogDescriptorRemote {
   icon?: string,
@@ -63,15 +65,7 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
 
     let overlayCurrent: ToastDescriptor | undefined = undefined;
     const overlayQueue: ToastDescriptor[] = [];
-
-    StateWebsocket.registerHandlerNew("Toast", (packet)=>{
-      try {
-        const toast = packet.payload as ToastDescriptor;
-        if(toast)
-          UIOverlay.overlay({toast: toast});
-      }
-      catch{}
-    }, "toasts");
+    
     StateWebsocket.registerHandlerNew("Dialog", async (packet)=>{
       try {
         const dialog = packet.payload as DialogDescriptorRemote;
@@ -172,22 +166,6 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
       catch{}
     }, "customDialogs");
 
-    UIOverlay.onOverlay.registerOne("toast", (req)=>{
-      if(req.toast) {
-        req.id = (Math.random() + 1).toString(36).substring(7);
-        overlayQueue.push(req.toast);
-
-        if(!isActive$())
-          loadNextRequest();
-      }
-    });
-    UIOverlay.onDismiss.registerOne("toast", ()=>{
-      
-      if(overlayCurrent == undefined && overlayQueue.length == 0)
-        return;
-      loadNextRequest();
-    });
-
     function loadNextRequest() {
       const nextRequest = overlayQueue.shift();
       if(nextRequest) {
@@ -208,6 +186,7 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
     }
 
     return (
+      <div>
       <Show when={isActive$()}>
         <div class={styles.root}>
           <Show when={toast$()}>
@@ -222,8 +201,11 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
               </div>
             </div>
           </Show>
+          <OverlayToasts />
         </div>
       </Show>
+      <OverlayToasts />
+      </div>
     );
   };
   
