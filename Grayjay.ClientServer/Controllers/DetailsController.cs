@@ -588,8 +588,8 @@ namespace Grayjay.ClientServer.Controllers
             }
             else if (proxySettings != null && proxySettings.Value.ShouldProxy)
             {
-                var modifier = (sourceVideo is JSSource jsS) ? jsS.GetRequestModifier() : null;
-                var executor = (sourceVideo is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
+                var modifier = (sourceAudio is JSSource jsS) ? jsS.GetRequestModifier() : null;
+                var executor = (sourceAudio is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
                 audioUrl = sourceAudio != null ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
                 {
                     RequestModifier = modifier?.ToProxyFunc(),
