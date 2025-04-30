@@ -126,3 +126,50 @@
     flex-direction: row;
     align-items: center;
 }
+
+
+.aboutTab {
+    width: 600px; 
+    padding: 20px; 
+    margin-top: 30px; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #111; 
+    border-radius: 5px;
+}
+
+.aboutLogo {
+    border-radius: 100px; 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    width: 100px; 
+    height: 100px;
+}
+
+.aboutTextContainer {
+    padding-left: 140px; 
+    height: 140px
+}
+
+.aboutTitle {
+    padding-top: 35px;
+    font-size: 25px; 
+    font-weight: bold;
+}
+.aboutMeta {
+    color: #8C8C8C;
+    font-family: Inter; 
+    font-size: 15px; 
+    font-style: normal; 
+    font-weight: 400;
+}
+
+
+.aboutDescription {
+    margin-left: 10px; 
+    margin-right: 10px; 
+    margin-bottom: 10px; 
+    font-family: 'Inter'; 
+    font-size: 16px;
+}

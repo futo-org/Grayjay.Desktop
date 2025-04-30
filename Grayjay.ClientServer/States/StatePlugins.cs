@@ -40,10 +40,18 @@ namespace Grayjay.Desktop.POC.Port.States
             descriptor.OnCaptchaChanged += () => OnPluginCaptchaChanged?.Invoke(descriptor);
         }
 
-        public static bool CheckForUpdate(PluginConfig plugin)
+        public static bool CheckForUpdate(PluginConfig plugin, bool alwaysUpdate = true)
         {
             try
             {
+                if(!alwaysUpdate)
+                {
+                    lock (_hasUpdates)
+                    {
+                        if (_hasUpdates.ContainsKey(plugin.ID))
+                            return _hasUpdates[plugin.ID];
+                    }
+                }
                 var config = PluginConfig.FromUrl(plugin.SourceUrl);
                 if (config.Version > plugin.Version) {
                     Logger.i(nameof(StatePlugins), $"New update found for [{config.Name}] ({plugin.Version}=>{config.Version})");
@@ -265,6 +273,7 @@ namespace Grayjay.Desktop.POC.Port.States
                     _plugins.Save(plugin);
                     OnPluginSettingsChanged?.Invoke(plugin, doReload);
                     GrayjayServer.Instance.WebSocket.Broadcast(id, "PluginUpdated", id);
+                    StateWebsocket.PluginChanged(id);
                     return plugin;
                 }
             }

@@ -189,19 +189,6 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
       <div>
       <Show when={isActive$()}>
         <div class={styles.root}>
-          <Show when={toast$()}>
-            <div class={styles.toast}>
-              <Show when={toast$()?.title}>
-                <div class={styles.toastTitle}>
-                  {toast$()?.title}
-                </div>
-              </Show>
-              <div class={styles.toastText}>
-                  {toast$()?.text}
-              </div>
-            </div>
-          </Show>
-          <OverlayToasts />
         </div>
       </Show>
       <OverlayToasts />

@@ -207,6 +207,19 @@ namespace Grayjay.ClientServer.States
                     }
                 }).Start();
 
+            ThreadPool.Run(() =>
+            {
+                try
+                {
+                    StateDownloads.CleanupFiles();
+                }
+                catch(Exception ex)
+                {
+
+                }
+            });
+
+
             //Temporary workaround for youtube
             ThreadPool.Run(() =>
             {

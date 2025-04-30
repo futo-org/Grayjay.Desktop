@@ -8,4 +8,5 @@ interface ISerializedChannel {
     url: string; //?
     links: any; //?
     urlAlternatives: string[]; //
+    description?: string;
 }

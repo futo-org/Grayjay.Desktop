@@ -694,8 +694,8 @@ namespace Grayjay.ClientServer.Models.Downloads
         private (byte[] data, long start, long end) RequestByteRange(ManagedHttpClient client, string url, long rangeStart, long rangeEnd)
         {
             var toRead = rangeEnd - rangeStart;
-            ManagedHttpClient.Response req = null; 
-            
+            ManagedHttpClient.Response req = null;
+
             for (int i = 0; i <= 5; i++)
             {
                 req = client.GET(url, new Dictionary<string, string>() { { "range", $"bytes={rangeStart}-{rangeEnd}" } });

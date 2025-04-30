@@ -281,7 +281,26 @@ const ChannelPage: Component = () => {
                 </Show>
               </Match>
               <Match when={activeTab$() === "About"}>
-                  About
+                <div class={styles.aboutTab}>
+                  <div style="position: relative">
+                    <img class={styles.aboutLogo} src={channel$()?.thumbnail} />
+                    <div class={styles.aboutTextContainer}>
+                      <div class={styles.aboutTitle}>
+                        {channel$()?.name}
+                      </div>
+                      <Show when={channel$()?.subscribers && channel$()!.subscribers > 0}>
+                        <div class={styles.aboutMeta}>
+                          {toHumanNumber(channel$()?.subscribers)} subscribers
+                        </div>
+                      </Show>
+                    </div>
+                  </div>
+                  <Show when={channel$()?.description}>
+                    <div class={styles.aboutDescription}>
+                      {channel$()?.description}
+                    </div>
+                  </Show>
+                </div>
               </Match>
             </Switch>
           </ScrollContainer>

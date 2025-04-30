@@ -30,6 +30,13 @@ public class StateWebsocket
         });
     }
 
+    public static void PluginChanged(string id)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(id, "PluginUpdated", id);
+        });
+    }
 
     public static void WatchLaterChanged()
     {

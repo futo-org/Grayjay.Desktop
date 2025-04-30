@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Sources;
+using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -65,6 +66,13 @@ namespace Grayjay.ClientServer.Controllers
             try
             {
                 await StatePlatform.EnableClient(id, true);
+
+                var config = StatePlugins.GetPlugin(id);
+                if (config != null && StatePlugins.CheckForUpdate(config?.Config, false))
+                {
+                    StateUI.Toast($"Update available for [{config.Config.Name}]");
+                    StateWebsocket.PluginChanged(config.Config.ID);
+                }
             }
             catch( Exception ex)
             {
