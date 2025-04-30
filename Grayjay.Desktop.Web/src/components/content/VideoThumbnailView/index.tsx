@@ -3,11 +3,12 @@ import { Component, JSX, Show, createMemo } from 'solid-js'
 import styles from './index.module.css';
 import IconButton from '../../buttons/IconButton';
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
-import { dateFromAny, proxyImage, toHumanNowDiffString, toHumanNumber, toHumanTime } from '../../../utility';
+import { dateFromAny, toHumanNowDiffString, toHumanNumber, toHumanTime } from '../../../utility';
 import { DateTime } from 'luxon';
 import { useNavigate } from '@solidjs/router';
 import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
+import AnimatedImage from '../../basics/AnimatedImage';
 
 interface VideoProps {
   video?: IPlatformVideo;
@@ -60,7 +61,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
           draggable={true}
           onDragStart={startDrag}
           onClick={onClicked}>
-            <img class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
+            <AnimatedImage class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
 
           <Show when={pluginIconUrl()}>
             <img src={pluginIconUrl()} class={styles.sourceIcon} />
