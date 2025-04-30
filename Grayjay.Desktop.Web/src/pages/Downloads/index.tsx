@@ -70,7 +70,15 @@ const DownloadsPage: Component = () => {
         audioFileSize: 27300
       } as IVideoDownload})
     ));*/
-    async () => (await DownloadBackend.getDownloading()).sort((a,b)=>b.state - a.state));
+    async () => {
+      let result = (await DownloadBackend.getDownloading()).sort((a,b)=>b.state - a.state);
+
+      const wasRetryable = isDownloadingRetryable$();
+      const isRetryable = result && (result?.length ?? 0) > 0 && !!result?.find(x=>x.state == 7) && !result?.find(x=>x.state != 7);
+      if(wasRetryable != isRetryable)
+        setIsDownloadingRetryable(isRetryable);
+      return result;
+    });
   const [downloadingPlaylists$, downloadingPlaylistsResource] = createResourceDefault(async ()=> [], async () => await DownloadBackend.getDownloadingPlaylists());
 
   
@@ -112,6 +120,15 @@ const DownloadsPage: Component = () => {
   StateWebsocket.registerHandlerNew("DownloadsChanged", (packet)=>{
     downloadingResource.refetch();
     downloadedResource.refetch();
+  }, "downloads");
+  StateWebsocket.registerHandlerNew("DownloadChanged", (packet)=>{
+    const download = packet.payload as IVideoDownload;
+    if(download.state == 7 || download.state == 6 ) {
+      downloadingResource.refetch();
+    }
+    else if(isDownloadingRetryable$()) {
+      downloadingResource.refetch();
+    }
   }, "downloads");
 
   onCleanup(()=>{
@@ -490,9 +507,7 @@ const DownloadsPage: Component = () => {
     )
   }
 
-  const downloadingErrorOnly$ = createMemo(()=>{
-    return downloading$() && (downloading$()?.length ?? 0) > 0 && !!downloading$()?.find(x=>x.state == 7) && !downloading$()?.find(x=>x.state != 7)
-  });
+  const [isDownloadingRetryable$, setIsDownloadingRetryable] = createSignal(false);
 
   const video = useVideo();
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -552,7 +567,7 @@ const DownloadsPage: Component = () => {
         <Show when={downloading$() && downloading$()!.length > 0}>
           <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; white-space: nowrap; overflow-y: hidden; min-height: 300px; position: relative;">
             <h2>Downloading</h2>
-            <Show when={downloadingErrorOnly$()}>
+            <Show when={isDownloadingRetryable$()}>
               <div style="position: absolute; right: 16px; top: 16px">
                 <Button text='Retry' style={{"height": "42px", "padding-top": "10px"}} onClick={()=>{DownloadBackend.downloadCycle()}} />
               </div>
