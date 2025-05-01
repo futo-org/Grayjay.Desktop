@@ -39,27 +39,33 @@ const AnimatedImage: Component<AnimatedImageProps> = (props) => {
 
   return (
     <>
-      <div
-        class={`${styles.visual} ${className || ''}`}
-        style={style}
-      >
-        {errorContent || (
-          <span class={`${styles.errorText} ${styles.transitionanim} ${
-            isLoaded() && hasError() ? styles.visible : styles.hidden
-          }`}>{alt || 'Image unavailable'}</span>
-        )}
-      </div>
-      <img
-        class={`${styles.visual} ${styles.transitionanim} ${
-          isLoaded() && !hasError() ? styles.visible : styles.hidden
-        } ${className || ''}`}
-        style={style}
-        alt={alt}
-        onLoad={handleLoad}
-        onError={handleError}
-        {...imgProps}
-        src={currentSrc()}
-      />
+      <Show when={isLoaded() && hasError()}>
+        <div
+          class={`${styles.visual} ${className || ''}`}
+          style={style}
+        >
+          {errorContent || (
+            <span class={`${styles.errorText} ${styles.transitionanim} ${
+              isLoaded() && hasError() ? styles.visible : styles.hidden
+            }`}>{alt || 'Image unavailable'}</span>
+          )}
+        </div>
+      </Show>
+      <Show when={!isLoaded() || !hasError()}>
+        <img
+          class={`${styles.visual} ${styles.transitionanim} ${
+            isLoaded() && !hasError() ? styles.visible : styles.hidden
+          } ${
+            !isLoaded() ? styles.hidden : ''
+          } ${className || ''}`}
+          style={style}
+          alt={alt}
+          onLoad={handleLoad}
+          onError={handleError}
+          {...imgProps}
+          src={currentSrc()}
+        />
+      </Show>
     </>
   );
 };
