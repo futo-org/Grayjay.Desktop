@@ -91,6 +91,7 @@ namespace Grayjay.ClientServer.States
         {
             UpdateHistoryPosition(video, index, true, position);
 
+            Desktop.POC.Logger.Info(nameof(StateHistory), $"SyncHistory sent update video '{video.Name}' (url: {video.Url}) at timestamp {position}");
             await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncHistory, new List<HistoryVideo>()
             {
                 index.Object

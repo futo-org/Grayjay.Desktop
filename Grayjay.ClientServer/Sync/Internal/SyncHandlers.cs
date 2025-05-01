@@ -105,7 +105,10 @@ namespace Grayjay.ClientServer.Sync.Internal
             }
             catch(Exception ex)
             {
-                Logger.Error<SyncHandlers>($"Sync conversion failed for type {targetType.Name}\nDATA:\n" + Encoding.UTF8.GetString(data), ex);
+                if (Logger.WillLog(Desktop.POC.LogLevel.Verbose))
+                    Logger.Error<SyncHandlers>($"Sync conversion failed for type {targetType.Name}\nDATA:\n" + Encoding.UTF8.GetString(data), ex);
+                else
+                    Logger.Error<SyncHandlers>($"Sync conversion failed for type {targetType.Name}", ex);                
                 throw;
             }
         }

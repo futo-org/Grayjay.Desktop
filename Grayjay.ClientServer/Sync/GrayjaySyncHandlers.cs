@@ -218,7 +218,7 @@ namespace Grayjay.ClientServer.Sync
                 if (watchLater != null && creation < removalTime)
                     StateWatchLater.Instance.Remove(watchLater.Url);
             }
-            DateTimeOffset packReorderTime = DateTimeOffset.FromUnixTimeSeconds(pack.ReorderTime);
+            DateTimeOffset packReorderTime = pack.ReorderTime < 0 ? DateTimeOffset.MinValue : DateTimeOffset.FromUnixTimeSeconds(pack.ReorderTime);
             if (StateWatchLater.Instance.GetWatchLaterLastReorderTime() < packReorderTime && pack.Ordering != null)
                 StateWatchLater.Instance.UpdateWatchLaterOrder(pack.Ordering, packReorderTime);
         }
