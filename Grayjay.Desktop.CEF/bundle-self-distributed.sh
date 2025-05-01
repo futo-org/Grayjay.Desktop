@@ -26,7 +26,7 @@ build_sign_notarize() {
     # Build backend
     rm -rf bin/ obj/
     dotnet publish -r $ARCH -c Release -p:AssemblyVersion=1.$VERSION.0.0
-    PUBLISH_PATH="bin/Release/net8.0/$ARCH/publish"
+    PUBLISH_PATH="bin/Release/net9.0/$ARCH/publish"
     mkdir -p "$PUBLISH_PATH/wwwroot"
     cp -r ../Grayjay.Desktop.Web/dist "$PUBLISH_PATH/wwwroot/web"
 
