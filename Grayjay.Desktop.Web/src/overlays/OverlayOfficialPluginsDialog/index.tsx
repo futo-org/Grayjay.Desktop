@@ -24,6 +24,7 @@ import { SourcesBackend } from '../../backend/SourcesBackend';
 import { ISourceConfig } from '../../backend/models/plugin/ISourceConfigState';
 import Checkbox from '../../components/basics/inputs/Checkbox';
 import { DialogButton, DialogDescriptor, DialogInputText, IDialogOutput } from '../OverlayDialog';
+import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 
 export interface OverlayOfficialPluginsDialogProps {
   
@@ -39,9 +40,10 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
 
     async function install() {
       setInstalling(true);
+      await new Promise(resolve => setTimeout(resolve, 50000));
+
       try {
         const result = await SourcesBackend.installOfficialSources(selected$());
-
         if(result.exceptions && result.exceptions.length > 0) {
           setErrors(result.exceptions);
           sourcesResource.refetch();
@@ -163,7 +165,7 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
             </div>
           </div>
           <div>
-            <Loader style={{"margin-left": "auto", "margin-right": "auto", "margin-top": "10px"}} />
+            <CenteredLoader style={{"margin-top": "40px", "margin-bottom": "40px"}} />
           </div>
         </Show>
       </div>

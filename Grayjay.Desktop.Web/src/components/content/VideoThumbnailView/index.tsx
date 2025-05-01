@@ -84,7 +84,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
         <div class={styles.title} onClick={props.onClick} onDragStart={startDrag} draggable={true}>{props.video?.name}</div>
         <div class={styles.bottomRow}>
             <Show when={showAuthorThumbnail$()}>
-              <img src={props.video?.author.thumbnail} class={styles.authorThumbnail} alt="author thumbnail" onClick={onClickAuthor} referrerPolicy='no-referrer' />
+              <AnimatedImage src={props.video?.author.thumbnail} class={styles.authorThumbnail} alt="author thumbnail" onClick={onClickAuthor} referrerPolicy='no-referrer' />
             </Show>
             <div class={styles.authorColumn} style={{
               "margin-left": showAuthorThumbnail$() ? "8px" : undefined
