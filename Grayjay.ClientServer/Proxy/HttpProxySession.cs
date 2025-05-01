@@ -110,6 +110,8 @@ namespace Grayjay.ClientServer.Proxy
                     string url = registryEntry.Url;
                     string? previousUrl = null;
                     HttpProxyResponse? returnedResponse = null;
+                    bool isRedirected = false;
+                    Dictionary<string, string> initialHeaders = null;
                     while (true)
                     {
                         var parsedUrl = Utilities.ParseUrl(url);
@@ -121,6 +123,7 @@ namespace Grayjay.ClientServer.Proxy
 
                         incomingRequest.Path = parsedUrl.Path;
 
+
                         if (registryEntry.RequestHeaderOptions.InjectHost)
                             incomingRequest.Headers["host"] = parsedUrl.Host;
                         else if (registryEntry.RequestHeaderOptions.ReplaceHost && incomingRequest.Headers.ContainsKey("host"))
@@ -131,23 +134,25 @@ namespace Grayjay.ClientServer.Proxy
                         else if (registryEntry.RequestHeaderOptions.ReplaceOrigin && incomingRequest.Headers.ContainsKey("origin"))
                             incomingRequest.Headers["origin"] = parsedUrl.Scheme + "://" + parsedUrl.Host;
 
-                        if (registryEntry.RequestHeaderOptions.InjectReferer)
+                        if (!isRedirected)
                         {
-                            //TODO: This is not entirely correct, referer should have something related to the previous request
-                            if (isRelativeProxy)
-                                incomingRequest.Headers["referer"] = registryEntry.Url;
-                            else
-                                incomingRequest.Headers["referer"] = url;
-                        }
-                        else if (registryEntry.RequestHeaderOptions.ReplaceOrigin && incomingRequest.Headers.ContainsKey("referer"))
-                        {
-                            if (isRelativeProxy)
-                                incomingRequest.Headers["referer"] = registryEntry.Url;
-                            else
-                                incomingRequest.Headers["referer"] = url;
-                        }
+                            if (registryEntry.RequestHeaderOptions.InjectReferer)
+                            {
+                                //TODO: This is not entirely correct, referer should have something related to the previous request
+                                if (isRelativeProxy)
+                                    incomingRequest.Headers["referer"] = registryEntry.Url;
+                                else
+                                    incomingRequest.Headers["referer"] = url;
+                            }
+                            else if (registryEntry.RequestHeaderOptions.ReplaceOrigin && incomingRequest.Headers.ContainsKey("referer"))
+                            {
+                                if (isRelativeProxy)
+                                    incomingRequest.Headers["referer"] = registryEntry.Url;
+                                else
+                                    incomingRequest.Headers["referer"] = url;
+                            }
 
-                        foreach (var r in registryEntry.RequestHeaderOptions.HeadersToInject)
+                            foreach (var r in registryEntry.RequestHeaderOptions.HeadersToInject)
                             {
                                 if (r.Value == null)
                                     incomingRequest.Headers.Remove(r.Key);
@@ -155,13 +160,20 @@ namespace Grayjay.ClientServer.Proxy
                                     incomingRequest.Headers[r.Key] = r.Value;
                             }
 
-                        Dictionary<string, string> initialHeaders = new Dictionary<string, string>(incomingRequest.Headers, StringComparer.OrdinalIgnoreCase);
-                        if (registryEntry.RequestModifier != null)
-                        {
-                            (var newUrl, incomingRequest) = registryEntry.RequestModifier(url, incomingRequest);
-                            parsedUrl = Utilities.ParseUrl(newUrl);
-                            incomingRequest.Path = parsedUrl.Path;
+                            initialHeaders = new Dictionary<string, string>(incomingRequest.Headers, StringComparer.OrdinalIgnoreCase);
+                            if (registryEntry.RequestModifier != null)
+                            {
+                                (var newUrl, incomingRequest) = registryEntry.RequestModifier(url, incomingRequest);
+                                parsedUrl = Utilities.ParseUrl(newUrl);
+                                incomingRequest.Path = parsedUrl.Path;
+                            }
                         }
+                        else
+                        {
+                            if(previousUrl != null)
+                                incomingRequest.Headers["referer"] = previousUrl;
+                        }
+
 
                         if (registryEntry.RequestExecutor != null)
                         {
@@ -201,7 +213,7 @@ namespace Grayjay.ClientServer.Proxy
 
                         returnedResponse = await destinationStream.ReadResponseHeadersAsync(_cancellationTokenSource.Token);
                         
-                        if(registryEntry.RequestModifier != null && initialHeaders.ContainsKey("range") && !incomingRequest.Headers.ContainsKey("range"))
+                        if(returnedResponse.StatusCode == 200 && registryEntry.RequestModifier != null && initialHeaders.ContainsKey("range") && !incomingRequest.Headers.ContainsKey("range"))
                         {
                             returnedResponse.StatusCode = 206;
                             var rangeParts = initialHeaders["range"].Substring("bytes=".Length).Split("-");
@@ -321,10 +333,13 @@ namespace Grayjay.ClientServer.Proxy
                             break;
                         }
 
+                        //TODO: Method transitions (303 -> GET, 307, 308 -> unchanged, 301, 302 POST -> GET)
+
                         var location = returnedResponse.Headers["location"];
-                        //Logger.v(nameof(HttpProxySession), $"Redirected ({returnedResponse.StatusCode}) to location: {location}");
+                        Logger.w(nameof(HttpProxySession), $"Redirected ({returnedResponse.StatusCode}) to location: {location}");
                         previousUrl = url;
                         url = location;
+                        isRedirected = true;
                     }
                 }
 

@@ -112,7 +112,7 @@ namespace Grayjay.Desktop.POC
                     ConsoleColor originalColor = Console.ForegroundColor;
                     Console.ForegroundColor = level switch
                     {
-                        LogLevel.Verbose => ConsoleColor.Gray,
+                        LogLevel.Verbose => ConsoleColor.DarkGray,
                         LogLevel.Debug => ConsoleColor.DarkGray,
                         LogLevel.Info => ConsoleColor.White,
                         LogLevel.Warning => ConsoleColor.Yellow,
