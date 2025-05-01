@@ -61,10 +61,10 @@ do
     cd ..
 
     # Copy wwwroot
-    mkdir -p Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish/wwwroot
-    cp -r Grayjay.Desktop.Web/dist Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish/wwwroot/web
+    mkdir -p Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish/wwwroot
+    cp -r Grayjay.Desktop.Web/dist Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish/wwwroot/web
     
-    cd Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish	
+    cd Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish	
 	
 	if [ "$runtime" = "win-x64" ]; then
 	   wine64 "../../../../../../rcedit-x64.exe" "cef/dotcefnative.exe" --set-icon "../../../../../logo.ico"
@@ -121,7 +121,7 @@ do
 	
 	echo "Deploying for $runtime"
 
-	cd Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish
+	cd Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish
 	printf "Deploying from $PWD\n"
 	
 	printf "Generating ZIP\n"

@@ -66,7 +66,6 @@ namespace Grayjay.Desktop.POC.Port.States
             _refPagers.TryAdd(refPager.ID, new WeakReference<RefPager<PlatformContent>>(refPager));
         }
 
-
         static StatePlatform()
         {
             Logger.w(nameof(StatePlatform), "StatePlatform Initialize");
@@ -639,7 +638,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             return ClientsLock(() =>
             {
-                return _enabledClients.ToList();
+                return _enabledClients.OrderBy(x=>_enabledClientsPersistent.IndexOf(x.ID)).ToList();
             });
         }
         public static List<GrayjayPlugin> GetDisabledClients()
@@ -668,7 +667,7 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             return ClientsLock(() =>
             {
-                return _enabledClients.FirstOrDefault(x => x.Config.ID == id);
+                return _enabledClients.OrderBy(x => _enabledClientsPersistent.IndexOf(x.ID)).FirstOrDefault(x => x.Config.ID == id);
             });
         }
 
@@ -734,8 +733,9 @@ namespace Grayjay.Desktop.POC.Port.States
             {
                 if (IsEnabled(id))
                 {
-                    await DisableClient(id);
-                    await EnableClient(id);
+                    var clientsOriginal = GetEnabledClients();
+                    await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
+                    await SelectClients(clientsOriginal.Select(x => x.Config.ID).ToArray());
                 }
             }
         }
@@ -750,13 +750,17 @@ namespace Grayjay.Desktop.POC.Port.States
             if (ex != null)
                 throw ex;
         }
+        public static async Task DisableClient(string id)
+        {
+            await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
+        }
         public static async Task EnableClients(string[] ids)
         {
             await SelectClients(GetEnabledClients().Select(x => x.ID).Concat(ids).Distinct().ToArray());
         }
-        public static async Task DisableClient(string id)
+        public static void ReorderClients(string[] ids)
         {
-            await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x=>x != id).Distinct().ToArray());
+            _enabledClientsPersistent.Save(_enabledClientsPersistent.GetCopy().OrderBy(x => Array.IndexOf(ids, x)).ToArray());
         }
         public static Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {

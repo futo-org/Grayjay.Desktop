@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using PlatformID = Grayjay.Engine.Models.General.PlatformID;
 
 using Logger = Grayjay.Desktop.POC.Logger;
+using System.Collections.Generic;
 
 namespace Grayjay.ClientServer.States
 {
@@ -342,6 +343,32 @@ namespace Grayjay.ClientServer.States
 
             StateDownloads.RemoveDownloading(download);
             NotifyDownload(download);
+        }
+
+        public static void CleanupFiles()
+        {
+            var dirPath = GetDownloadsDirectory();
+            DirectoryInfo dir = new DirectoryInfo(dirPath);
+            var knownFiles = new HashSet<string>(GetDownloaded().SelectMany(x => x.VideoSources.Select(y => Path.GetFileName(y.FilePath)).Concat(x.AudioSources.Select(z => Path.GetFileName(z.FilePath)))));
+            List<FileInfo> toDelete = new List<FileInfo>();
+            foreach(var file in dir.GetFiles())
+            {
+                if (!knownFiles.Contains(file.Name))
+                    toDelete.Add(file);
+            }
+            Logger.w("StateDownloads", $"Found {toDelete.Count} redundant downloaded files, deleting");
+            foreach (var del in toDelete)
+            {
+                try
+                {
+                    Logger.w("StateDownloads", $"Deleting redundant download file [{del.Name}]");
+                    del.Delete();
+                }
+                catch (Exception ex)
+                {
+                    Logger.w("StateDownloads", $"Failed to delete unknown downloads file [{del.Name}]");
+                }
+            }
         }
 
         public static void NotifyDownload(VideoDownload download)
