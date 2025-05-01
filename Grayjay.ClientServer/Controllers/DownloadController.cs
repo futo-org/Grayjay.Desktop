@@ -333,31 +333,86 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     //throw DialogException.FromException("Merge not implemented yet", new NotImplementedException());
 
+                    FileInfo subtitleFile = null;
+                    var subtitle = download.SubtitleSources?.FirstOrDefault();
+                    if (subtitle != null)
+                    {
+                        if (false)//subtitle is SubtitleRawSource subRaw && !string.IsNullOrEmpty(subRaw._Subtitles))
+                        {
+                            switch (subtitle.Format)
+                            {
+                                case "text/vtt":
+                                    subtitleFile = StateApp.GetTemporaryFile(".vtt", "sub");
+                                    //System.IO.File.WriteAllText(subtitleFile.FullName, subRaw._Subtitles);
+                                    break;
+                                case "application/x-subrip":
+                                    subtitleFile = StateApp.GetTemporaryFile(".srt", "sub");
+                                    //System.IO.File.WriteAllText(subtitleFile.FullName, subRaw._Subtitles);
+                                    break;
+                            }
+                        }
+                        else if(string.IsNullOrEmpty(subtitle.FilePath))
+                        {
+                            subtitleFile = new FileInfo(subtitle.FilePath);
+                        }
+                    }
+
+
+
                     StringBuilder ffmpegQuery = new StringBuilder();
                     ffmpegQuery.Append($" -i \"{videoSource.FilePath}\"");
                     ffmpegQuery.Append($" -i \"{audioSource.FilePath}\"");
+                    if(subtitle != null)
+                        ffmpegQuery.Append($" -i \"{subtitle.FilePath}\"");
                     ffmpegQuery.Append(" -map 0:v");
                     ffmpegQuery.Append(" -map 1:a");
+                    if (subtitle != null)
+                        ffmpegQuery.Append($" -map 2:s");
                     ffmpegQuery.Append(" -c:v copy");
                     ffmpegQuery.Append(" -c:a copy");
+                    if (subtitle != null)
+                        ffmpegQuery.Append(" -c:s mov_text");
                     ffmpegQuery.Append(" -y");
                     ffmpegQuery.Append($" \"{outputFile}\"");
 
                     string query = ffmpegQuery.ToString();
-                    string[] args = new string[]
+                    List<string> args = new List<string>();
+                    args.AddRange(new string[]
                     {
                         "-i", videoSource.FilePath,
                         "-i", audioSource.FilePath,
+                    });
+                    if (subtitle != null)
+                        args.AddRange(new string[]
+                        {
+                            "-i", subtitle.FilePath
+                        });
+                    args.AddRange(new string[]
+                    {
                         "-map", "0:v",
                         "-map", "1:a",
+                    });
+                    if (subtitle != null)
+                        args.AddRange(new string[]
+                        {
+                            "-map", "2:s"
+                        });
+                    args.AddRange(new string[]
+                    {
                         "-c:v", "copy",
                         "-c:a", "copy",
-                        "-y",
-                        outputFile
-                    };
+                    });
+                    if(subtitle != null)
+                        args.AddRange(new string[]
+                        {
+                            "-c:s", "mov_text"
+                        });
+                    args.Add("-y");
+                    args.Add(outputFile);
+
 
                     Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + query);
-                    if (FFMPEG.ExecuteSafe(args) == 0)
+                    if (FFMPEG.ExecuteSafe(args.ToArray()) == 0)
                         return ExportFinished(download, outputFile);
                     else
                         throw DialogException.FromException("Failed to transcode export files", new InvalidDataException());
