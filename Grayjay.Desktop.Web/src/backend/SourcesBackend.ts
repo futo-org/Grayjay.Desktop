@@ -51,6 +51,9 @@ export abstract class SourcesBackend {
         return await Backend.GET("/sources/SourceDelete?id=" + encodeURIComponent(id));
     }
 
+    static async sourcesReorder(ids: string[]): Promise<any> {
+        return await Backend.POST("/sources/SourcesReorder", JSON.stringify(ids), "application/json") as any;
+    }
 
     static async enabledSources(): Promise<ISourceConfig[]> {
         return await Backend.GET("/sources/SourcesEnabled") as ISourceConfig[];

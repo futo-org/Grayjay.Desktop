@@ -93,6 +93,13 @@ namespace Grayjay.ClientServer.Controllers
             return true;
         }
 
+        [HttpPost]
+        public async Task<bool> SourcesReorder([FromBody] string[] ids)
+        {
+            StatePlatform.ReorderClients(ids);
+            return true;
+        }
+
         [HttpGet]
         public async Task<bool> SourceLogin(string id)
         {
