@@ -349,7 +349,11 @@ namespace Grayjay.ClientServer.States
         {
             var dirPath = GetDownloadsDirectory();
             DirectoryInfo dir = new DirectoryInfo(dirPath);
-            var knownFiles = new HashSet<string>(GetDownloaded().SelectMany(x => x.VideoSources.Select(y => Path.GetFileName(y.FilePath)).Concat(x.AudioSources.Select(z => Path.GetFileName(z.FilePath)))));
+            var knownFiles = new HashSet<string>(GetDownloaded()
+                .SelectMany(x => x.VideoSources.Select(y => Path.GetFileName(y.FilePath))
+                .Concat(x.AudioSources.Select(z => Path.GetFileName(z.FilePath)))
+                .Concat(x.SubtitleSources.Select(z => Path.GetFileName(z.FilePath)))
+            ));
             List<FileInfo> toDelete = new List<FileInfo>();
             foreach(var file in dir.GetFiles())
             {
