@@ -1,4 +1,4 @@
-import { For, type Component, createResource, createSignal, createEffect, Show } from 'solid-js';
+import { For, type Component, createResource, createSignal, createEffect, Show, createMemo } from 'solid-js';
 import styles from './index.module.css';
 import { SourcesBackend } from '../../backend/SourcesBackend';
 import { Backend } from '../../backend/Backend';
@@ -25,7 +25,8 @@ import StateWebsocket from '../../state/StateWebsocket';
 import { ISourceConfig } from '../../backend/models/plugin/ISourceConfigState';
 import EmptyContentView from '../../components/EmptyContentView';
 import ScrollContainer from '../../components/containers/ScrollContainer';
-import { createResourceDefault } from '../../utility';
+import { createResourceDefault, swap } from '../../utility';
+import VirtualDragDropList from '../../components/containers/VirtualDragDropList';
 
 const SourcesPage: Component = () => {
   const nav = useNavigate();
@@ -104,6 +105,8 @@ const SourcesPage: Component = () => {
       setSelectedSignal(source.id);
   }
 
+  let scrollContainerRef: HTMLDivElement | undefined;
+
   return (
     <div style="height: 100%; overflow: hidden; display: flex; flex-direction: column;">
       <Show when={enabledSources$() && disabledSources$() && (enabledSources$()!.length + disabledSources$()!.length > 0)}>
@@ -112,27 +115,42 @@ const SourcesPage: Component = () => {
         </div>
         <div style="flex-grow: 1; position: relative; display: flex; overflow: hidden;">
           <div class={styles.panelLeft}>
-            <ScrollContainer>
+            <ScrollContainer ref={scrollContainerRef}>
               <div>
-                <For each={enabledSources$()}>
-                  {(source, i) =>
-                    <div class={styles.source} classList={{[styles.enabled]: source.id == selectedSignal$()}} onClick={()=>selectSource(source)}>
-                      <div class={styles.thumb}>
-                        <img src={iconThumb} />
-                      </div>
-                      <div class={styles.image}>
-                        <img src={StateGlobal.getSourceConfig(source.id)?.absoluteIconUrl} />
-                      </div>
-                      <div class={styles.name}>
-                        {source.name}
-                      </div>
-                      <div class={styles.actions}>
-                        <Toggle onToggle={() => disableSource(source)} value={true} />
-                        <img class={styles.chev} src={iconChevRight} />
-                      </div>
-                    </div>
-                  }
-                </For>
+                <VirtualDragDropList items={enabledSources$()}
+                  itemHeight={88}
+                  onSwap={(index1, index2) => {
+                    swap(enabledSources$()!, index1, index2);
+                    SourcesBackend.sourcesReorder(enabledSources$()?.map(v => v.id) ?? [])
+                  }}
+                  builder={(index, item, containerRef, startDrag) => {
+                      const source = createMemo(() => item() as ISourceConfig | undefined);
+                      return (
+                        <Show when={source()}>
+                          <div class={styles.source} classList={{[styles.enabled]: source()!.id == selectedSignal$()}} onClick={()=>selectSource(source()!)}>
+                            <div class={styles.thumb}  onMouseDown={(e) => {
+                              startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}>
+                              <img src={iconThumb} />
+                            </div>
+                            <div class={styles.image}>
+                              <img src={StateGlobal.getSourceConfig(source()!.id)?.absoluteIconUrl} />
+                            </div>
+                            <div class={styles.name}>
+                              {source()!.name}
+                            </div>
+                            <div class={styles.actions}>
+                              <Toggle onToggle={() => disableSource(source()!)} value={true} />
+                              <img class={styles.chev} src={iconChevRight} />
+                            </div>
+                          </div>
+                        </Show>
+
+                      );
+                  }}
+                  outerContainerRef={scrollContainerRef} />
               </div>
               <div>
               <Show when={(disabledSources$()?.length ?? 0) > 0}>
