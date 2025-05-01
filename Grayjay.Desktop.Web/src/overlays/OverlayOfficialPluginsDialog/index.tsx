@@ -40,8 +40,7 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
 
     async function install() {
       setInstalling(true);
-      await new Promise(resolve => setTimeout(resolve, 50000));
-
+      
       try {
         const result = await SourcesBackend.installOfficialSources(selected$());
         if(result.exceptions && result.exceptions.length > 0) {
