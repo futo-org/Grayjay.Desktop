@@ -27,15 +27,15 @@ namespace Grayjay.ClientServer
         {
             if (OperatingSystem.IsWindows())
             {
-                Process.Start("explorer", file);
+                Process.Start("explorer", new string[] { file });
             }
             else if (OperatingSystem.IsLinux())
             {
-                Process.Start("xdg-open", file);
+                Process.Start("xdg-open", new string[] { file });
             }
             else if (OperatingSystem.IsMacOS())
             {
-                Process.Start("open", file);
+                Process.Start("open", new string[] { file });
             }
         }
 
