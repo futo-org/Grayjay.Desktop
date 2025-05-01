@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer.Models;
+﻿using Futo.PlatformPlayer.States;
+using Grayjay.ClientServer.Models;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -290,7 +291,7 @@ namespace Grayjay.ClientServer.Controllers
             if (GrayjayServer.Instance?.WindowProvider == null)
                 throw new NotImplementedException("Running headless, captcha only supported in UI application mode");
 
-            var descriptor = StatePlugins.GetPlugin(config.ID);
+            var descriptor = (config.ID == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(config.ID);
             var pluginConfig = descriptor.Config;
             var authConfig = pluginConfig.Captcha;
 
@@ -330,12 +331,14 @@ namespace Grayjay.ClientServer.Controllers
                 //Finished
                 if (_didLogIn())
                 {
-                    var plugin = StatePlugins.GetPlugin(config.ID);
+                    var plugin = (config.ID == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(config.ID);
                     plugin.SetCaptchaData(new Engine.SourceCaptcha()
                     {
                         CookieMap = cookiesFoundMap
                     });
-                    StatePlugins.UpdatePlugin(config.ID, true);
+
+                    if (plugin.Config.ID != StateDeveloper.DEV_ID)
+                        StatePlugins.UpdatePlugin(config.ID, true);
                     onCompleted?.Invoke(true);
                 }
                 else
