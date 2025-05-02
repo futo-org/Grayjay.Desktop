@@ -3,6 +3,7 @@ import { Component, JSX, Show, createMemo } from 'solid-js'
 import styles from './index.module.css';
 import IconButton from '../../buttons/IconButton';
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
+import addToQueueIcon from '../../../assets/icons/icon_add_to_queue.svg';
 import { dateFromAny, toHumanNowDiffString, toHumanNumber, toHumanTime } from '../../../utility';
 import { DateTime } from 'luxon';
 import { useNavigate } from '@solidjs/router';
@@ -14,6 +15,7 @@ interface VideoProps {
   video?: IPlatformVideo;
   onClick: () => void;
   onSettings?: (element: HTMLDivElement, content: IPlatformVideo) => void;
+  onAddtoQueue?: (element: HTMLDivElement, content: IPlatformVideo) => void;
   style?: JSX.CSSProperties;
   imageStyle?: JSX.CSSProperties;
   useCache?: boolean;
@@ -42,6 +44,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
   });
 
   let refMoreButton: HTMLDivElement | undefined;
+  let refAddToQueueButton: HTMLDivElement | undefined;
 
   function startDrag(ev: any){
     ev.dataTransfer?.setData("text/uri-list", props.video?.url ?? ""); 
@@ -94,6 +97,15 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
                     <div class={styles.metadata}><Show when={(props.video?.viewCount ?? 0) > 0}>{toHumanNumber(props.video?.viewCount)} views • </Show>{toHumanNowDiffString(props.video?.dateTime)}</div>
                 </Show>
             </div>
+            
+
+            <Show when={props.onAddtoQueue}>
+              <IconButton icon={addToQueueIcon} 
+                style={{"margin-right": "7px", "margin-top": "4px"}}
+                iconPadding='3px'
+                height={"22px"} width={"22px"} ref={refAddToQueueButton} onClick={() => props.onAddtoQueue?.(refAddToQueueButton!, props.video!)} />
+            </Show>
+            
             <Show when={props.onSettings}>
               <IconButton icon={more} ref={refMoreButton} onClick={() => props.onSettings?.(refMoreButton!, props.video!)} />
             </Show>
