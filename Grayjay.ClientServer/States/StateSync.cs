@@ -245,12 +245,12 @@ public class StateSync : IDisposable
                 catch (Exception e)
                 {
                     Logger.e<StateSync>("Relay session failed.", e);
-                    await Task.Delay(5000);
                 }
                 finally
                 {
                     _relaySession?.Dispose();
                     _relaySession = null;
+                    await Task.Delay(5000);
                 }
             }
         });

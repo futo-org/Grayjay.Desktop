@@ -244,7 +244,9 @@ public class SyncSession : IDisposable, IAuthorizable
             }
             catch (Exception e)
             {
-                Logger.w<SyncSession>($"Packet failed to send (opcode = {opcode}, subOpcode = {subOpcode}) due to no connected sockets", e);
+                Logger.w<SyncSession>($"Packet failed to send (opcode = {opcode}, subOpcode = {subOpcode}) due to no connected sockets, closing channel", e);
+                channel.Dispose();
+                RemoveChannel(channel);
             }            
         }
 
