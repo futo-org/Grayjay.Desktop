@@ -286,7 +286,7 @@ namespace Grayjay.ClientServer.Settings
         {
             [SettingsField("Log Level", SettingsField.DROPDOWN, "", 0)]
             [SettingsDropdownOptions("None", "Error", "Warning", "Information", "Verbose", "Debug")]
-            public int LogLevel { get; set; } = 0;
+            public int LogLevel { get; set; } = 2;
 
         }
 
