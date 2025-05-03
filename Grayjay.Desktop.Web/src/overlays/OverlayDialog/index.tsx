@@ -10,6 +10,7 @@ import icon_add from '../../assets/icons/icon24_add.svg';
 import icon_close from '../../assets/icons/icon24_close.svg';
 import icon_copy from '../../assets/icons/copy.svg';
 import Tooltip from '../../components/tooltip';
+import ScrollContainer from '../../components/containers/ScrollContainer';
 
 export interface DialogDescriptor {
   icon?: string,
@@ -141,52 +142,54 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         <div class={styles.title} style="padding-right: 25px;">
           {props.dialog!.title}
         </div>
-        <div class={styles.description}>
-          {props.dialog!.description}
-        </div>
-        <Show when={props.dialog?.code}>
-          <div class={styles.code}>
-            <Tooltip text="Copy all">
-              <img src={icon_copy} style="width: 16px; height: 16px; margin-right: 6px; user-select: none;" onClick={async () => {
-                await navigator.clipboard.writeText(props.dialog!.code!);
-                UIOverlay.toast("Text has been copied");
-              }} />
-            </Tooltip>
-            {props.dialog!.code}
+        <ScrollContainer style={{height: "calc(100% - 70px)", width: "100%", "margin-left": "-32px", "margin-right": "-32px", "padding-left": "32px", "padding-right": "32px", "margin-bottom": "-32px" }}>
+          <div class={styles.description}>
+            {props.dialog!.description}
           </div>
-        </Show>
-        <Show when={props.dialog?.input}>
-          <div class={styles.input}>
-            <Switch>
-              <Match when={props.dialog?.input?.type == "inputText"}>
-                <InputText
-                  placeholder={(props.dialog?.input as DialogInputText).placeholder}
-                  value={""}
-                  onTextChanged={(newVal) => { output.text = newVal }} />
-              </Match>
-              <Match when={props.dialog?.input?.type == "dropdown"}>
-                <Dropdown
-                  options={(props.dialog?.input as DialogDropdown).options}
-                  value={output.index}
-                  onSelectedChanged={(newVal) => output.index = newVal} />
-              </Match>
-              <Match when={props.dialog?.input?.type == "checkboxList"}>
-                {renderInputCheckboxList(props.dialog?.input as DialogInputCheckboxList, output)}
-              </Match>
-            </Switch>
-          </div>
-        </Show>
-        <div class={styles.buttons}>
-          <For each={props.dialog!.buttons}>{button =>
-            <div class={styles.button} classList={{
-              [styles.primary]: button.style == "primary",
-              [styles.accent]: button.style == "accent",
-              [styles.none]: button.style == "none" || !button.style
-            }} onClick={(e) => { output.button = (props.dialog?.buttons.indexOf(button) ?? -1); UIOverlay.dismiss(); button.onClick(output); e.preventDefault(); e.stopPropagation() }}>
-              {button.title}
+          <Show when={props.dialog?.code}>
+            <div class={styles.code}>
+              <Tooltip text="Copy all">
+                <img src={icon_copy} style="width: 16px; height: 16px; margin-right: 6px; user-select: none;" onClick={async () => {
+                  await navigator.clipboard.writeText(props.dialog!.code!);
+                  UIOverlay.toast("Text has been copied");
+                }} />
+              </Tooltip>
+              {props.dialog!.code}
             </div>
-          }</For>
-        </div>
+          </Show>
+          <Show when={props.dialog?.input}>
+            <div class={styles.input}>
+              <Switch>
+                <Match when={props.dialog?.input?.type == "inputText"}>
+                  <InputText
+                    placeholder={(props.dialog?.input as DialogInputText).placeholder}
+                    value={""}
+                    onTextChanged={(newVal) => { output.text = newVal }} />
+                </Match>
+                <Match when={props.dialog?.input?.type == "dropdown"}>
+                  <Dropdown
+                    options={(props.dialog?.input as DialogDropdown).options}
+                    value={output.index}
+                    onSelectedChanged={(newVal) => output.index = newVal} />
+                </Match>
+                <Match when={props.dialog?.input?.type == "checkboxList"}>
+                  {renderInputCheckboxList(props.dialog?.input as DialogInputCheckboxList, output)}
+                </Match>
+              </Switch>
+            </div>
+          </Show>
+          <div class={styles.buttons}>
+            <For each={props.dialog!.buttons}>{button =>
+              <div class={styles.button} classList={{
+                [styles.primary]: button.style == "primary",
+                [styles.accent]: button.style == "accent",
+                [styles.none]: button.style == "none" || !button.style
+              }} onClick={(e) => { output.button = (props.dialog?.buttons.indexOf(button) ?? -1); UIOverlay.dismiss(); button.onClick(output); e.preventDefault(); e.stopPropagation() }}>
+                {button.title}
+              </div>
+            }</For>
+          </div>
+        </ScrollContainer>
       </div>
     </Show>
   );

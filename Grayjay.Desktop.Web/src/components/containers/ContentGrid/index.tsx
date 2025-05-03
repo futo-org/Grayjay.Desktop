@@ -190,9 +190,9 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                 name={playlist.name}
                 thumbnail={playlist.thumbnail}
                 platformIconUrl={pluginIconUrl$()}
-                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))}
-                onSettings={(e) => onSettingsClicked(e, playlist)} />
+                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))} />
         );
+        //onSettings={(e) => onSettingsClicked(e, playlist)}
     };
     
     let containerRef: HTMLDivElement | undefined;
