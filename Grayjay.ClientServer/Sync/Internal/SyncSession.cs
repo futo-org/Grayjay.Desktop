@@ -217,7 +217,7 @@ public class SyncSession : IDisposable, IAuthorizable
     }
 
     //TODO: local connections should be used before udp and udp before relayed
-    public async Task SendAsync(Opcode opcode, byte subOpcode, byte[]? data = null, int offset = 0, int count = -1, CancellationToken cancellationToken = default)
+    public async Task SendAsync(Opcode opcode, byte subOpcode, byte[]? data = null, int offset = 0, int count = -1, ContentEncoding contentEncoding = ContentEncoding.Raw, CancellationToken cancellationToken = default)
     {
         int c = count;
         if (c == -1)
@@ -242,7 +242,7 @@ public class SyncSession : IDisposable, IAuthorizable
         {
             try
             {
-                await channel.SendAsync(opcode, subOpcode, data, offset, count, cancellationToken: cancellationToken);
+                await channel.SendAsync(opcode, subOpcode, data, offset, count, contentEncoding: contentEncoding, cancellationToken: cancellationToken);
                 sent = true;
                 break;
             }
@@ -258,7 +258,7 @@ public class SyncSession : IDisposable, IAuthorizable
             throw new Exception($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to send errors and no remaining candidates");
     }
 
-    public Task SendAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken: cancellationToken);
+    public Task SendAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), contentEncoding: ContentEncoding.Gzip, cancellationToken: cancellationToken);
     public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync(Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), cancellationToken: cancellationToken);
 
     public void Dispose()
