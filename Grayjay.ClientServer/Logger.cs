@@ -199,7 +199,7 @@ namespace Grayjay.Desktop.POC
             LogFilePath = Path.Combine(Directories.Base, "log.txt"),
             FileLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
 #if DEBUG
-            ConsoleLogLevel = LogLevel.Debug,
+            ConsoleLogLevel = LogLevel.Verbose,
 #else
             ConsoleLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
 #endif

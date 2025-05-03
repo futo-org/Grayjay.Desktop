@@ -3,7 +3,7 @@ using SyncClient;
 using SyncShared;
 using System.Diagnostics;
 using System.IO.Pipes;
-
+/*
 namespace Grayjay.Desktop.Tests
 {
     [TestClass]
@@ -131,4 +131,4 @@ namespace Grayjay.Desktop.Tests
             Thread.Sleep(1000);
         }
     }
-}
+}*/

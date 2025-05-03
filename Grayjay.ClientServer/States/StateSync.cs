@@ -112,7 +112,7 @@ public class StateSync : IDisposable
 
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    var clientSocket = await _serverSocket.AcceptTcpClientAsync();
+                    var clientSocket = await _serverSocket.AcceptSocketAsync();
                     var session = CreateSocketSession(clientSocket, true);
                     await session.StartAsResponderAsync();
                 }
@@ -133,10 +133,9 @@ public class StateSync : IDisposable
                 {
                     Logger.i<StateSync>("Starting relay session...");
 
-                    var socket = new TcpClient("relay.grayjay.app", 9000);
-                    _relaySession = new SyncSocketSession((socket.Client.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
-                        socket.GetStream(),
-                        socket.GetStream(),
+                    var socket = Utilities.OpenTcpSocket(RelayServer, 9000);
+                    _relaySession = new SyncSocketSession((socket.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
+                        socket,
                         isHandshakeAllowed: IsHandshakeAllowed,
                         onNewChannel: (s, c) =>
                         {
@@ -186,7 +185,7 @@ public class StateSync : IDisposable
                                         var targetKey = connectionInfoPair.Key;
                                         var connectionInfo = connectionInfoPair.Value;
                                         var potentialLocalAddresses = connectionInfo.Ipv4Addresses.Concat(connectionInfo.Ipv6Addresses).Where(l => l != connectionInfo.RemoteIp).ToList();
-                                        if (connectionInfo.AllowLocalDirect)
+                                        if (connectionInfo.AllowLocalDirect && GrayjaySettings.Instance.Synchronization.ConnectLocalDirectThroughRelay)
                                         {
                                             _ = Task.Run(async () =>
                                             {
@@ -392,7 +391,19 @@ public class StateSync : IDisposable
                 m?.Invoke(false, "Connection closed");
         }, dataHandler: (sess, opcode, subOpcode, data) =>
         {
-            _handlers.Handle(sess, opcode, subOpcode, data);
+            var dataCopy = data.ToArray();
+            StateApp.ThreadPool.Run(() =>
+            {
+                try
+                {
+                    _handlers.Handle(sess, opcode, subOpcode, dataCopy);
+                }
+                catch (Exception e)
+                {
+                    Logger.e<StateSync>("Failed to handle data packet, closing connection.", e);
+                    sess.Dispose();
+                }
+            });
         }, remoteDeviceName);
     }
     public SyncDeviceInfo GetSyncDeviceInfo()
@@ -560,13 +571,12 @@ public class StateSync : IDisposable
         return _pairingCode == pairingCode;
     }
 
-    private SyncSocketSession CreateSocketSession(TcpClient socket, bool isResponder)
+    private SyncSocketSession CreateSocketSession(Socket socket, bool isResponder)
     {
         SyncSession? session = null;
         ChannelSocket? channelSocket = null;
-        return new SyncSocketSession((socket.Client.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
-            socket.GetStream(),
-            socket.GetStream(),
+        return new SyncSocketSession((socket.RemoteEndPoint as IPEndPoint)!.Address.ToString(), _keyPair!,
+            socket,
             onClose: s =>
             {
                 if (session != null && channelSocket != null)
@@ -721,7 +731,7 @@ public class StateSync : IDisposable
     {
         onStatusUpdate?.Invoke(null, "Connecting directly...");
 
-        var socket = new TcpClient(addresses[0], port);
+        var socket = Utilities.OpenTcpSocket(addresses[0], port);
         var session = CreateSocketSession(socket, false);
         if (onStatusUpdate != null)
             _remotePendingStatusUpdate[remotePublicKey] = onStatusUpdate;

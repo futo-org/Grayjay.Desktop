@@ -257,6 +257,8 @@ namespace Grayjay.Desktop
             Engine.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
             DotCef.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
             DotCef.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
+            SyncShared.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
+            SyncShared.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
 
             GrayjayDevSettings.Instance.DeveloperMode = File.Exists("DEV");
 

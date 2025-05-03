@@ -314,6 +314,9 @@ namespace Grayjay.ClientServer.Settings
 
             [SettingsField("Connection through relay", SettingsField.TOGGLE, "Allow devices to be connected to through the relay", 4)]
             public bool ConnectThroughRelay { get; set; } = true;
+
+            [SettingsField("Connect direct through relay", SettingsField.TOGGLE, "Allow devices to be directly locally connected to through information discovered from the relay", 4)]
+            public bool ConnectLocalDirectThroughRelay { get; set; } = true;
         }
 
         [SettingsField("Notifications", "group", "Configure update notifications", 11)]

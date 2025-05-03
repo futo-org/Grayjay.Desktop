@@ -219,6 +219,10 @@ public class SyncSession : IDisposable, IAuthorizable
     //TODO: local connections should be used before udp and udp before relayed
     public async Task SendAsync(Opcode opcode, byte subOpcode, byte[]? data = null, int offset = 0, int count = -1, CancellationToken cancellationToken = default)
     {
+        int c = count;
+        if (c == -1)
+            c = data?.Length ?? 0;
+
         //TODO: Make this more efficient
         //TODO: Prefer local over remote, etc
         List<IChannel> channels;

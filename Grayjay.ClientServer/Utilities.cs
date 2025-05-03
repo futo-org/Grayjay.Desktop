@@ -19,6 +19,34 @@ public class UrlParseResult
 
 public static class Utilities
 {
+    public static Socket OpenTcpSocket(string host, int port)
+    {
+        IPHostEntry hostEntry = Dns.GetHostEntry(host);
+        var addresses = hostEntry.AddressList.OrderBy(a => a.AddressFamily == AddressFamily.InterNetwork ? 0 : 1).ToArray();
+
+        foreach (IPAddress address in addresses)
+        {
+            try
+            {
+                Socket socket = new Socket(
+                    address.AddressFamily,
+                    SocketType.Stream,
+                    ProtocolType.Tcp
+                );
+
+                socket.Connect(new IPEndPoint(address, port));
+                Console.WriteLine($"Connected to {host}:{port} using {address.AddressFamily}");
+                return socket;
+            }
+            catch
+            {
+                //Ignored
+            }
+        }
+
+        throw new Exception($"Could not connect to {host}:{port}");
+    }
+
     public static UrlParseResult ParseUrl(string url)
     {
         string urlRemainder;
