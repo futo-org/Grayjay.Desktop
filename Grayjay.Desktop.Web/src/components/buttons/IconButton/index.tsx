@@ -6,6 +6,7 @@ interface IconButtonProps {
     icon: string;
     width?: string;
     height?: string;
+    iconPadding?: string;
     alt?: string;
     onClick?: (event: MouseEvent) => void;
     ref?: HTMLDivElement | undefined;
@@ -24,6 +25,7 @@ const IconButton: Component<IconButtonProps> = (props) => {
             ... props.style,
             width: props.width || '32px',
             height: props.height || '32px',
+            padding: props.iconPadding || "0px"
         }} onClick={handleClick}>
             <img
                 class={styles.icon}

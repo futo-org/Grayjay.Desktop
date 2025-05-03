@@ -234,6 +234,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                 <VideoThumbnailView video={item() as IPlatformVideo}
                                     useCache={!!props?.useCache}
                                     onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                    onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
                                     onClick={() => {
                                         const url = item().backendUrl ?? item().url;
                                         if (url)
