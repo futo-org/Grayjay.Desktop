@@ -213,7 +213,7 @@ public static class Utilities
                 }
             }
         if (newIndex < 0)
-            return originalArr.Count;
+            return newArray.Count;
         else
             return newIndex;
     }
