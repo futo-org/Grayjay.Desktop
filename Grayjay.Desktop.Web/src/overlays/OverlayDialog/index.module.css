@@ -4,7 +4,7 @@
     min-width: 542px;
     width: calc(100% - 300px);
     max-width: 1200px;
-    max-height: 100vh;
+    max-height: 95vh;
     padding: 32px 32px 32px 32px;
     flex-direction: column;
     justify-content: center;
