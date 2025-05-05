@@ -107,8 +107,8 @@ public static class HLS
             else if (currentSegment != null && line.StartsWith("#EXT-X-BYTERANGE:") && line.Contains("@"))
             {
                 string[] parts = line.Substring("#EXT-X-BYTERANGE:".Length).Split("@");
-                currentSegment.BytesStart = int.Parse(parts[1]);
-                currentSegment.BytesLength = int.Parse(parts[0]);
+                currentSegment.BytesStart = long.Parse(parts[1]);
+                currentSegment.BytesLength = long.Parse(parts[0]);
             }
             else if(currentSegment != null && line.StartsWith("#"))
                 currentSegment.Unhandled.Add(line);
@@ -643,8 +643,8 @@ public static class HLS
     {
         public double Duration;
         public string Uri = "";
-        public int BytesStart;
-        public int BytesLength;
+        public long BytesStart;
+        public long BytesLength;
 
         public List<string> Unhandled = new List<string>();
 
