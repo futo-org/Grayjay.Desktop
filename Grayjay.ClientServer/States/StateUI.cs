@@ -381,8 +381,13 @@ namespace Grayjay.ClientServer.Controllers
                         if (cookieString != null)
                         {
                             var domainParts = domain.Split(".");
-                            var cookieDomain = "." + string.Join(".", domainParts.Skip(domainParts.Length - 2));
-                            if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || x.ToLower().MatchesDomain(cookieDomain)))
+                            var cookieDomain = (domainParts.Length > 2) ?
+                                "." + string.Join(".", domainParts.Skip(1)) :
+                                "." + string.Join(".", domainParts);
+                            if (domainParts.Length > 2 && cookieDomain.IsSLD())
+                                cookieDomain = "." + string.Join(".", domainParts);
+
+                            if (pluginConfig == null || pluginConfig.AllowUrls.Any(x => x == "everywhere" || domain.MatchesDomain(x)))
                             {
                                 authConfig.CookiesToFind?.ForEach(cookiesToFind =>
                                 {

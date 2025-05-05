@@ -1,0 +1,41 @@
+Features:
+ - Remote Sync Support
+ - Upgraded Sync protocol (Requires update of all devices)
+ - Experimental SubsExchange now available opt-in on desktop
+ - Add to Queue quick button on content feeds (Home/Subs/etc)
+ - Subtitles are now exported for download unmuxed streams (eg. Youtube)
+ - About page implemented
+ - Watchtime metrics setting now implemented (can be enabled in settings)
+ - Subscriptions channel details are now slowly updated in background, this may fix outdated images, names, and such overtime.
+ - Player now shows a thumbnail when playing audio-only media
+ - Playlist view now has filtering
+ - Playlists page now has filtering/sorting
+ - Setting to prioritise original audio now available in desktop
+
+Improvements:
+ - Improved download stability
+ - Improved toast system, showing multiple at the same time
+ - Improved plugin compatibility for request modifiers (fixes some plugins)
+ - Improved threading
+ - Improved subscription group image handling
+ - Improved image loading
+ - Plugins are now checked for updates on enable if they weren't already
+ - Downloads are now cleaned up on startup (delete unused files)
+ - Plugin order is now properly enforced, and can now be changed by dragging on sources page
+ - Hiding unused settings
+ - Sidebar more responsive
+ - Improved ability to find required files for startup.
+ - Subscriptions page is now loaded more lazily to improve responsiveness api
+ - Casting disconnect now shows a reconnection dialog
+ - FCast disconnects now if the device stops responding to pings (make sure your receivers are updated) 
+ - Upgraded to .NET 9
+
+Fixes:
+ - Serialization fixes for sync
+ - Fix export open issue for exports with spaces (properly escape args)
+ - Fix plugin compatibility regarding content types that broke some plugins
+ - Fix issue where subs cache not shown while loading
+ - Playback tracking fix (wrong magnitude)
+ - Fixes to live chat, disabled livechat for some platforms (as it requires a bit more work, eg. Kick).
+ - Download page layout fixes
+ - Fix issue where plugin default settings were not properly being applied
