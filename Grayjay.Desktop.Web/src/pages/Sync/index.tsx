@@ -1,4 +1,4 @@
-import { createResource, createSignal, For, onCleanup, onMount, Show, type Component } from 'solid-js';
+import { createMemo, createResource, createSignal, For, onCleanup, onMount, Show, untrack, type Component } from 'solid-js';
 import { SyncBackend } from '../../backend/SyncBackend';
 import QRCode from 'qrcode';
 import styles from './index.module.css';
@@ -16,6 +16,8 @@ import StateWebsocket from '../../state/StateWebsocket';
 import NavigationBar from '../../components/topbars/NavigationBar';
 import { createResourceDefault } from '../../utility';
 import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
+import { SettingsBackend } from '../../backend/SettingsBackend';
+import StateGlobal from '../../state/StateGlobal';
 
 const SyncPage: Component = () => {
   const [devices$, devicesActions] = createResourceDefault(async () => {
@@ -39,7 +41,7 @@ const SyncPage: Component = () => {
         break;
     }
   
-    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center;">
+    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center; width: calc(100% - 48px);">
       <img src={iconDevice} style="width: 44px;" />
       <div style="display: flex; flex-direction: column; flex-grow: 1; align-items: flex-start; justify-content: center;">
           <div style="overflow: hidden; color: white; text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{title}</div>
@@ -63,14 +65,38 @@ const SyncPage: Component = () => {
 
     return await QRCode.toDataURL(pairingUrl);
   });
+
+  const renderEnableSyncPrompt = () => {
+    return (
+      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div class={styles.container} style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
+            <div class={styles.headerText}  style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+              Please enable sync to use this feature
+              <ButtonFlex style={{ width: "170px", "margin-top": "20px" }} small={true} text="Enable" color="#019BE7" onClick={ async () => {
+                const s = StateGlobal.settings$();
+                if (s == null) {
+                  return;
+                }
+                s.object.synchronization.enabled = true;
+                await SettingsBackend.settingsSave(s.object);
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  };
   
   const renderQrCodeOverlay = () => {
     return (
       <ScrollContainer style={{
         "display": "flex",
         "justify-content": "center",
-        "flex-grow": 1,
-        "align-items": "flex-start"
+        "flex-grow": 1, 
+        "width": "100%",
+        "height": "100%",
+        "align-items": "center"
       }}>
         <div class={styles.container}>
           <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
@@ -111,47 +137,73 @@ const SyncPage: Component = () => {
       StateWebsocket.unregisterHandler("activeDeviceChanged", this);
   });
 
+  const synchronizationEnabled = createMemo(() => {
+    return StateGlobal.settings$()?.object?.synchronization?.enabled;
+  });
+
+  const [serverSocketFailedToStart$] = createResourceDefault(() => [], async () => await SyncBackend.serverSocketFailedToStart());
+
   return (
     <Show when={!devices$.loading} fallback={ <CenteredLoader /> }>
       <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
         <NavigationBar isRoot={true} style={{"flex-shrink": 0}} />
-        <Show when={(devices$()?.length ?? 0) > 0} fallback={
-          renderQrCodeOverlay()
-        }>
-          <div class={styles.header}>
-            <div style="display: flex; flex-direction: column; flex-grow: 1;">
-              <div class={styles.headerText}>
-                Sync devices
-              </div>
-              <div class={styles.headerSubText}>
-                Sync your subscriptions, history, playlists, watch later, as well as other functionality across all devices. Keep your data up to date automatically with Grayjay.
-              </div>
-            </div>
-            <ButtonFlex text={"Show QR"}
-              icon={iconQr}
-              onClick={() => {
-                setIsQrVisible(true);
-              }}
-              style={{cursor: "pointer", "flex-shrink": 0, "margin-right": "8px"}} 
-              small={true} />
-            <ButtonFlex text={"Add device"}
-              icon={iconAdd}
-              onClick={() => {
-                UIOverlay.overlayNewDeviceSync();
-              }}
-              style={{cursor: "pointer", "flex-shrink": 0}} 
-              small={true}
-              color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
-          </div>
-          <div style="margin-left: 24px; margin-top: 24px;">
-            My devices
-          </div>
-          <ScrollContainer style={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column"}}>
-            <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
-          </ScrollContainer>
+        <Show when={serverSocketFailedToStart$()}>
+          <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 20px; margin-bottom: 20px; color: red;">Failed to start server socket.</div>
         </Show>
-        <Show when={isQrVisible$()}>
-          <div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
+        <Show when={synchronizationEnabled()} fallback={
+          renderEnableSyncPrompt()
+        }>
+          <>
+            <Show when={(devices$()?.length ?? 0) > 0} fallback={
+              <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;">
+                <ButtonFlex text={"Add device"}
+                  icon={iconAdd}
+                  onClick={() => {
+                    UIOverlay.overlayNewDeviceSync();
+                  }}
+                  style={{cursor: "pointer", "flex-shrink": 0, "margin-right": "20px"}} 
+                  small={true}
+                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+
+                {renderQrCodeOverlay()}
+              </div>
+            }>
+              <div class={styles.header}>
+                <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                  <div class={styles.headerText}>
+                    Sync devices
+                  </div>
+                  <div class={styles.headerSubText}>
+                    Sync your subscriptions, history, playlists, watch later, as well as other functionality across all devices. Keep your data up to date automatically with Grayjay.
+                  </div>
+                </div>
+                <ButtonFlex text={"Show QR"}
+                  icon={iconQr}
+                  onClick={() => {
+                    setIsQrVisible(true);
+                  }}
+                  style={{cursor: "pointer", "flex-shrink": 0, "margin-right": "8px"}} 
+                  small={true} />
+                <ButtonFlex text={"Add device"}
+                  icon={iconAdd}
+                  onClick={() => {
+                    UIOverlay.overlayNewDeviceSync();
+                  }}
+                  style={{cursor: "pointer", "flex-shrink": 0}} 
+                  small={true}
+                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+              </div>
+              <div style="margin-left: 24px; margin-top: 24px;">
+                My devices
+              </div>
+              <ScrollContainer style={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column", "justify-content": "flex-start", "align-items": "center"}}>
+                <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
+              </ScrollContainer>
+            </Show>
+            <Show when={isQrVisible$()}>
+              <div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
+            </Show>
+          </>
         </Show>
       </div>
     </Show>

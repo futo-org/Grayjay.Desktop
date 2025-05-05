@@ -18,7 +18,7 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
       <Switch>
       <Match when={props.dialog.data$().Status == 'pairing'}>
           <div style="text-align: center;">
-            <div>
+            <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <LoaderSmall />
             </div>
             <h2>{props.dialog.data$().Message}</h2>
@@ -29,10 +29,10 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
         </Match>
         <Match when={props.dialog.data$().Status == 'success'}>
           <div style="text-align: center;">
-            <div>
+            <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <img src={iconSuccess} style="width: 100px" />
             </div>
-            <h2>{props.dialog.data$().Message}</h2>
+            <h2>Success!</h2>
             <div>
               <Button text='Close' onClick={() => UIOverlay.dismiss()}></Button>
             </div>
@@ -40,7 +40,7 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
         </Match>
         <Match when={props.dialog.data$().Status == 'error'}>
           <div style="text-align: center;">
-            <div>
+            <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <img src={iconError} style="width: 100px" />
             </div>
             <h2>{props.dialog.data$().Message}</h2>

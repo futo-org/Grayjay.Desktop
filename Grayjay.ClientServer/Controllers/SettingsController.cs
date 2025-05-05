@@ -43,8 +43,10 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (settings == null)
                 return false;
+
             settings.Replace();
             Logger.i(nameof(SettingsController), "Saved settings");
+            StateApp.SettingsChanged(GrayjaySettings.Instance);
             StateWebsocket.SettingsChanged(GrayjaySettings.Instance);
             return true;
         }

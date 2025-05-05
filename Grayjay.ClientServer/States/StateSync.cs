@@ -49,6 +49,8 @@ public class StateSync : IDisposable
     public string? _pairingCode = Utilities.GenerateReadablePassword(8); //TODO: Set to null whenever pairing is not desired
 
     private static readonly SyncHandlers _handlers = new GrayjaySyncHandlers();
+    public bool ServerSocketFailedToStart { get; private set; } = false;
+
     public StateSync()
     {
         _serviceDiscoverer = new FUTO.MDNS.ServiceDiscoverer(["_gsync._tcp.local"]);
@@ -75,7 +77,7 @@ public class StateSync : IDisposable
         try
         {
             var syncKeyPair = JsonSerializer.Deserialize<SyncKeyPair>(EncryptionProvider.Instance.Decrypt(_syncKeyPair.Value));
-            _keyPair = new KeyPair(Convert.FromBase64String(syncKeyPair!.PrivateKey), Convert.FromBase64String(syncKeyPair!.PublicKey));
+            _keyPair = new KeyPair(syncKeyPair!.PrivateKey.DecodeBase64(), syncKeyPair!.PublicKey.DecodeBase64());
         }
         catch (Exception ex)
         {
@@ -102,26 +104,31 @@ public class StateSync : IDisposable
 
         Logger.i<StateSync>($"Sync key pair initialized (public key = {PublicKey})");
 
-        _ = Task.Run(async () =>
+        ServerSocketFailedToStart = false;
+        if (GrayjaySettings.Instance.Synchronization.LocalConnections)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                _serverSocket = new TcpListener(IPAddress.Any, PORT);
-                _serverSocket.Start();
-                Logger.i<StateSync>($"Running on port {PORT} (TCP)");
-
-                while (!_cancellationTokenSource.IsCancellationRequested)
+                try
                 {
-                    var clientSocket = await _serverSocket.AcceptSocketAsync();
-                    var session = CreateSocketSession(clientSocket, true);
-                    await session.StartAsResponderAsync();
+                    _serverSocket = new TcpListener(IPAddress.Any, PORT);
+                    _serverSocket.Start();
+                    Logger.i<StateSync>($"Running on port {PORT} (TCP)");
+
+                    while (!_cancellationTokenSource.IsCancellationRequested)
+                    {
+                        var clientSocket = await _serverSocket.AcceptSocketAsync();
+                        var session = CreateSocketSession(clientSocket, true);
+                        await session.StartAsResponderAsync();
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                Logger.e<StateSync>("StateSync server socket had an unexpected error.", e);
-            }
-        });
+                catch (Exception e)
+                {
+                    Logger.e<StateSync>("StateSync server socket had an unexpected error.", e);
+                    ServerSocketFailedToStart = true;
+                }
+            });
+        }
 
         _ = Task.Run(async () =>
         {
@@ -162,11 +169,17 @@ public class StateSync : IDisposable
                             }
 
                             c.SetDataHandler((_, channel, opcode, subOpcode, data) => session.HandlePacket(opcode, subOpcode, data));
-                            c.SetCloseHandler((channel) => session.RemoveChannel(channel));
+                            c.SetCloseHandler((channel) =>
+                            {
+                                session.RemoveChannel(channel);
+                                var remotePublicKey = channel.RemotePublicKey;
+                                if (remotePublicKey != null && _remotePendingStatusUpdate.TryRemove(remotePublicKey, out var c))
+                                    c?.Invoke(false, "Channel closed");
+                            });
                         }, 
                         onChannelEstablished: async (_, channel, isResponder) =>
                         {
-                            await HandleAuthorizationAsync(channel, isResponder);
+                            await HandleAuthorizationAsync(channel, isResponder, _cancellationTokenSource.Token);
                         },
                         onHandshakeComplete: async (relaySession) =>
                         {
@@ -239,7 +252,7 @@ public class StateSync : IDisposable
                     _relaySession.Authorizable = AlwaysAuthorized.Instance;
                     await _relaySession.StartAsInitiatorAsync(RelayPublicKey, APP_ID, null, _cancellationTokenSource.Token);
 
-                    Logger.i<StateSync>("Started relay session.");
+                    Logger.i<StateSync>("Relay session finished.");
                 }
                 catch (Exception e)
                 {
@@ -249,7 +262,7 @@ public class StateSync : IDisposable
                 {
                     _relaySession?.Dispose();
                     _relaySession = null;
-                    await Task.Delay(5000);
+                    await Task.Delay(5000, _cancellationTokenSource.Token);
                 }
             }
         });
@@ -308,22 +321,13 @@ public class StateSync : IDisposable
         }
     }
 
-    private void OnAuthorized(string remotePublicKey)
-    {
-        if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
-            m?.Invoke(true, "Authorized");
-    }
-
-    private void OnUnauthorized(string remotePublicKey)
-    {
-        if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
-            m?.Invoke(false, "Unauthorized");
-    }
-
     private SyncSession CreateNewSyncSession(string remotePublicKey, string? remoteDeviceName)
     {
         return new SyncSession(remotePublicKey, onAuthorized: async (sess, isNewlyAuthorized, isNewSession) =>
         {
+            if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
+                m?.Invoke(true, "Authorized");
+
             if (!isNewSession)
             {
                 return;
@@ -333,7 +337,6 @@ public class StateSync : IDisposable
             if (rdn != null)
                 _nameStorage.SetAndSave(remotePublicKey, rdn);
 
-            OnAuthorized(remotePublicKey);
             lock (_authorizedDevices)
             {
                 if (!_authorizedDevices.Value.Contains(remotePublicKey))
@@ -345,7 +348,8 @@ public class StateSync : IDisposable
 
             await CheckForSyncAsync(sess);
         }, onUnauthorized: sess => {
-            OnUnauthorized(remotePublicKey);
+            if (_remotePendingStatusUpdate.TryRemove(remotePublicKey, out var m) && m != null)
+                m?.Invoke(false, "Unauthorized");
 
             StateUI.Dialog(new StateUI.DialogDescriptor()
             {
@@ -493,13 +497,7 @@ public class StateSync : IDisposable
 
                 if (string.IsNullOrEmpty(urlSafePkey)) continue;
 
-                string base64 = urlSafePkey.Replace('-', '+').Replace('_', '/');
-
-                int padding = 4 - (base64.Length % 4);
-                if (padding < 4)
-                    base64 += new string('=', padding);
-                var pkey = Convert.ToBase64String(Convert.FromBase64String(base64));
-
+                var pkey = urlSafePkey.DecodeBase64Url().EncodeBase64();
                 var authorized = IsAuthorized(pkey);
                 if (authorized && !IsConnected(pkey))
                 {
@@ -571,7 +569,7 @@ public class StateSync : IDisposable
         return _pairingCode == pairingCode;
     }
 
-    private SyncSocketSession CreateSocketSession(Socket socket, bool isResponder)
+    private SyncSocketSession CreateSocketSession(Socket socket, bool isResponder, Action<SyncSocketSession>? onClose = null)
     {
         SyncSession? session = null;
         ChannelSocket? channelSocket = null;
@@ -581,6 +579,7 @@ public class StateSync : IDisposable
             {
                 if (session != null && channelSocket != null)
                     session.RemoveChannel(channelSocket);
+                onClose?.Invoke(s);
             },
             isHandshakeAllowed: IsHandshakeAllowed,
             onHandshakeComplete: async s =>
@@ -692,6 +691,8 @@ public class StateSync : IDisposable
         _cancellationTokenSource = null;
         _serviceDiscoverer.Dispose();
 
+        _relaySession?.Dispose();
+        _relaySession = null;
         _serverSocket?.Stop();
         _serverSocket = null;
 
@@ -705,19 +706,47 @@ public class StateSync : IDisposable
 
     public async Task ConnectAsync(SyncDeviceInfo deviceInfo, Action<bool?, string>? onStatusUpdate = null, CancellationToken cancellationToken = default)
     {
+        bool relayRequestStarted = false;
         try
         {
-            await ConnectAsync(deviceInfo.Addresses, deviceInfo.Port, deviceInfo.PublicKey, deviceInfo.PairingCode, onStatusUpdate, cancellationToken);
+            await ConnectAsync(deviceInfo.Addresses, deviceInfo.Port, deviceInfo.PublicKey, deviceInfo.PairingCode, async (completed, message) =>
+            {
+                try
+                {
+                    if (completed.HasValue)
+                    {
+                        var relaySession = _relaySession;
+                        if (completed.Value)
+                            onStatusUpdate?.Invoke(completed, message);
+                        else if (!relayRequestStarted && relaySession != null && GrayjaySettings.Instance.Synchronization.PairThroughRelay)
+                        {
+                            relayRequestStarted = true;
+                            onStatusUpdate?.Invoke(null, "Connecting via relay...");
+                            if (onStatusUpdate != null)
+                                _remotePendingStatusUpdate[deviceInfo.PublicKey.DecodeBase64().EncodeBase64()] = onStatusUpdate;
+                            await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, APP_ID, deviceInfo.PairingCode, cancellationToken);
+                        }
+                    }
+                    else
+                        onStatusUpdate?.Invoke(completed, message);
+                }
+                catch (Exception e)
+                {
+                    Logger.e<StateSync>("Failed to connect.", e);
+                    onStatusUpdate?.Invoke(false, e.Message);
+                }
+            }, cancellationToken);
         }
         catch (Exception e)
         {
             Logger.e<StateSync>("Failed to connect directly.", e);
             var relaySession = _relaySession;
-            if (relaySession != null && GrayjaySettings.Instance.Synchronization.PairThroughRelay)
+            if (!relayRequestStarted && relaySession != null && GrayjaySettings.Instance.Synchronization.PairThroughRelay)
             {
+                relayRequestStarted = true;
                 onStatusUpdate?.Invoke(null, "Connecting via relay...");
                 if (onStatusUpdate != null)
-                    _remotePendingStatusUpdate[deviceInfo.PublicKey] = onStatusUpdate;
+                    _remotePendingStatusUpdate[deviceInfo.PublicKey.DecodeBase64().EncodeBase64()] = onStatusUpdate;
                 await relaySession.StartRelayedChannelAsync(deviceInfo.PublicKey, APP_ID, deviceInfo.PairingCode, cancellationToken);
             }
             else
@@ -732,9 +761,13 @@ public class StateSync : IDisposable
         onStatusUpdate?.Invoke(null, "Connecting directly...");
 
         var socket = Utilities.OpenTcpSocket(addresses[0], port);
-        var session = CreateSocketSession(socket, false);
+        var session = CreateSocketSession(socket, false, (s) =>
+        {
+            onStatusUpdate?.Invoke(false, "Disconnected.");
+        });
+
         if (onStatusUpdate != null)
-            _remotePendingStatusUpdate[remotePublicKey] = onStatusUpdate;
+            _remotePendingStatusUpdate[remotePublicKey.DecodeBase64().EncodeBase64()] = onStatusUpdate;
         onStatusUpdate?.Invoke(null, "Handshaking...");
         await session.StartAsInitiatorAsync(remotePublicKey, APP_ID, pairingCode, cancellationToken);
         return session;

@@ -14,10 +14,10 @@
             await base.Show();
         }
 
-        public void SetMessage(string message)
+        public void SetPairing(string message)
         {
             Message = message;
-            Status = "success";
+            Status = "pairing";
             Update();
         }
 

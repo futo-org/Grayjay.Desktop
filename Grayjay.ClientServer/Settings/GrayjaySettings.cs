@@ -295,7 +295,7 @@ namespace Grayjay.ClientServer.Settings
         public class SynchronizationSettings
         {
             [SettingsField("Enabled", SettingsField.TOGGLE, "Enable synchronization", 0)]
-            public bool Enabled { get; set; } = true;
+            public bool Enabled { get; set; } = false;
 
             [SettingsField("Broadcast", SettingsField.TOGGLE, "Allow device to broadcast presence", 1)]
             public bool Broadcast { get; set; } = true;
@@ -317,6 +317,9 @@ namespace Grayjay.ClientServer.Settings
 
             [SettingsField("Connect direct through relay", SettingsField.TOGGLE, "Allow devices to be directly locally connected to through information discovered from the relay", 4)]
             public bool ConnectLocalDirectThroughRelay { get; set; } = true;
+
+            [SettingsField("Local connections", SettingsField.TOGGLE, "Allow device to be directly locally connected", 4)]
+            public bool LocalConnections { get; set; } = true;
         }
 
         [SettingsField("Notifications", "group", "Configure update notifications", 11)]

@@ -1,6 +1,9 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
 using Grayjay.ClientServer.Dialogs;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Internal;
@@ -53,31 +56,127 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
+        public ActionResult ServerSocketFailedToStart()
+        {
+            return Ok(StateSync.Instance.ServerSocketFailedToStart);
+        }
+
+        [HttpGet]
         public ActionResult<bool> HasAtLeastOneDevice()
         {
             return Ok(StateSync.Instance.HasAtLeastOneDevice());
         }
 
-        [HttpGet]
-        public ActionResult ValidateSyncDeviceInfoFormat([FromBody] SyncDeviceInfo syncDeviceInfo)
+        public class ValidateSyncDeviceInfoFormatRequest
         {
-            return Ok();
+            public required string Url { get; init; }
         }
 
-        [HttpGet]
-        public async Task<ActionResult> AddDevice([FromBody] SyncDeviceInfo syncDeviceInfo)
+        public class ValidateSyncDeviceInfoFormatResponse
+        {
+            public bool Valid { get; init; }
+            public string? Message { get; init; }
+        }
+
+        [HttpPost]
+        public ActionResult<ValidateSyncDeviceInfoFormatResponse> ValidateSyncDeviceInfoFormat([FromBody] ValidateSyncDeviceInfoFormatRequest f)
+        {
+            var url = f.Url;
+            if (string.IsNullOrEmpty(url))
+            {
+                return Ok(new ValidateSyncDeviceInfoFormatResponse
+                {
+                    Valid = false,
+                    Message = "URL must not be null or empty."
+                });
+            }
+
+            url = url.Trim();
+            if (!url.StartsWith("grayjay://sync/"))
+            {
+                return Ok(new ValidateSyncDeviceInfoFormatResponse
+                {
+                    Valid = false,
+                    Message = "URL should start with 'grayjay://sync/'."
+                });
+            }
+
+            byte[] deviceFormatBytes;
+            try
+            {
+                deviceFormatBytes = url.Substring("grayjay://sync/".Length).DecodeBase64Url();
+            }
+            catch (Exception e)
+            {
+                return Ok(new ValidateSyncDeviceInfoFormatResponse
+                {
+                    Valid = false,
+                    Message = "Not a valid base64."
+                });
+            }
+
+            try
+            {
+                var jsonString = Encoding.UTF8.GetString(deviceFormatBytes);
+                var syncDeviceInfo = JsonSerializer.Deserialize<SyncDeviceInfo>(jsonString);
+            }
+            catch
+            {
+                return Ok(new ValidateSyncDeviceInfoFormatResponse
+                {
+                    Valid = false,
+                    Message = "Not a valid JSON."
+                });
+            }
+
+            return Ok(new ValidateSyncDeviceInfoFormatResponse
+            {
+                Valid = true,
+                Message = null
+            });
+        }
+
+        public class AddDeviceRequest
+        {
+            public required string Url { get; init; }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> AddDevice([FromBody] AddDeviceRequest r)
         {
             var dialog = new SyncStatusDialog();
             await dialog.Show();
 
             try
             {
+                var url = r.Url;
+                if (string.IsNullOrEmpty(url))
+                    throw new Exception("URL must not be null or empty.");
+
+                url = url.Trim();
+                if (!url.StartsWith("grayjay://sync/"))
+                    throw new Exception("URL should start with 'grayjay://sync/'.");
+
+                byte[] deviceFormatBytes = url.Substring("grayjay://sync/".Length).DecodeBase64Url();
+                var jsonString = Encoding.UTF8.GetString(deviceFormatBytes);
+                var syncDeviceInfo = JsonSerializer.Deserialize<SyncDeviceInfo>(jsonString)!;
                 await StateSync.Instance.ConnectAsync(syncDeviceInfo, (complete, message) => 
                 {
-                    if (complete.GetValueOrDefault(false))
-                        dialog.SetSuccess();
+                    if (complete.HasValue)
+                    {
+                        if (complete.Value)
+                        {
+                            dialog.SetSuccess();
+                        }
+                        else
+                        {
+                            dialog.SetError(message);
+                        }
+                    }
                     else
-                        dialog.SetMessage(message);
+                    {
+                        dialog.SetPairing(message);
+                    }
                 });
             }
             catch (Exception e)

@@ -14,21 +14,26 @@ export interface OverlaySyncNewDeviceDialogProps {
 const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (props: OverlaySyncNewDeviceDialogProps) => {
   const [deviceInfo$, setDeviceInfo] = createSignal<string>();
 
-  const [isDeviceInfoValid$, _] = createResourceDefault(deviceInfo$(), (v) => {
+  const [isDeviceInfoValid$, _] = createResourceDefault(deviceInfo$, async (v) => {
     if (!v || v.length < 1) {
-      return false;
+      return {
+        valid: false,
+        message: "Length must be larger than 0."
+      };
     }
 
     try {
-      SyncBackend.validateSyncDeviceInfoFormat(JSON.stringify(v));
-      return true;
+      return await SyncBackend.validateSyncDeviceInfoFormat(v);
     } catch {
-      return false;
+      return {
+        valid: false,
+        message: "Failed to make request."
+      };
     }
   });
 
   const errorMessage$ = createMemo(() => {
-    return deviceInfo$() && deviceInfo$()?.length && !isDeviceInfoValid$() ? "Device information is not valid" : undefined;
+    return deviceInfo$() && deviceInfo$()?.length && !isDeviceInfoValid$()?.valid ? (isDeviceInfoValid$()?.message ?? "Device information is not valid") : undefined;
   });
   
   return (
@@ -55,13 +60,15 @@ const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (
           style={{"margin-left": "auto", cursor: ("pointer")}}  />
         <Button text={"Link device"}
           onClick={async () => {
-            if (deviceInfo$() && deviceInfo$()?.length && isDeviceInfoValid$()) {
-              UIOverlay.dismiss();
-              await SyncBackend.addDevice(deviceInfo$());
+            if (!(isDeviceInfoValid$()?.valid === true)) {
+              return;
             }
+
+            UIOverlay.dismiss();
+            await SyncBackend.addDevice(deviceInfo$());
           }}
           style={{"margin-left": "10px", cursor: ("pointer")}} 
-          color={deviceInfo$() && deviceInfo$()?.length && isDeviceInfoValid$() ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : undefined} />
+          color={isDeviceInfoValid$()?.valid === true ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : undefined} />
       </div>
     </div>
   );

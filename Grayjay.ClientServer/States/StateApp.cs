@@ -87,6 +87,35 @@ namespace Grayjay.ClientServer.States
             File.WriteAllText(path, text);
         }
 
+        public static void SettingsChanged(GrayjaySettings settings)
+        {
+            //TODO: Pass previous settings to this? so this isn't executed when unchanged
+            if (settings.Synchronization.Enabled)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await StateSync.Instance.StartAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.i(nameof(StateApp), "Failed to start StateSync", e);
+                    }
+                });
+            }
+            else
+            {
+                try
+                {
+                    StateSync.Instance.Stop();
+                }
+                catch (Exception e)
+                {
+                    Logger.i(nameof(StateApp), "Failed to stop StateSync", e);
+                }
+            }
+        }
 
         public static async Task Startup()
         {

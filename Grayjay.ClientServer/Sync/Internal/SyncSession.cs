@@ -65,7 +65,7 @@ public class SyncSession : IDisposable, IAuthorizable
     public SyncSession(string remotePublicKey, Action<SyncSession, bool, bool> onAuthorized, Action<SyncSession> onUnauthorized,
         Action<SyncSession, bool> onConnectedChanged, Action<SyncSession> onClose, Action<SyncSession, Opcode, byte, ReadOnlySpan<byte>> dataHandler, string? remoteDeviceName)
     {
-        RemotePublicKey = remotePublicKey;
+        RemotePublicKey = remotePublicKey.DecodeBase64().EncodeBase64();
         RemoteDeviceName = remoteDeviceName;
         _onAuthorized = onAuthorized;
         _onUnauthorized = onUnauthorized;

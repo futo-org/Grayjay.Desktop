@@ -10,7 +10,7 @@ namespace Grayjay.ClientServer.Payment
 
         public LicenseValidator(string publicKey)
         {
-            byte[] keyBytes = Convert.FromBase64String(publicKey);
+            byte[] keyBytes = publicKey.DecodeBase64();
             _publicPaymentKey = RSA.Create();
 
             try
@@ -26,23 +26,8 @@ namespace Grayjay.ClientServer.Payment
         public bool Validate(string licenseKey, string activationKey)
         {
             byte[] data = Encoding.UTF8.GetBytes(licenseKey);
-            byte[] signature = DecodeUrlSafeBase64(activationKey);
+            byte[] signature = activationKey.DecodeBase64();
             return _publicPaymentKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
-
-        private static byte[] DecodeUrlSafeBase64(string urlSafeBase64)
-        {
-            string base64 = urlSafeBase64
-                .Replace('-', '+')
-                .Replace('_', '/');
-
-            switch (base64.Length % 4)
-            {
-                case 2: base64 += "=="; break;
-                case 3: base64 += "="; break;
-            }
-
-            return Convert.FromBase64String(base64);
         }
     }
 }

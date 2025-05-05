@@ -53,6 +53,44 @@ namespace Grayjay.ClientServer
             };
         }
 
+        public static byte[] DecodeBase64(this string base64)
+        {
+            if (base64.Length == 0)
+                return new byte[0];
+            int padding = 4 - (base64.Length % 4);
+            if (padding < 4)
+                base64 += new string('=', padding);
+            return Convert.FromBase64String(base64);
+        }
+
+        public static byte[] DecodeBase64Url(this string base64)
+        {
+            if (base64.Length == 0)
+                return new byte[0];
+            base64 = base64.Replace('-', '+').Replace('_', '/');
+            int padding = 4 - (base64.Length % 4);
+            if (padding < 4)
+                base64 += new string('=', padding);
+            return Convert.FromBase64String(base64);
+        }
+
+        public static string EncodeBase64(this byte[] bytes)
+        {
+            return Convert.ToBase64String(bytes);
+        }
+
+        public static string EncodeBase64NoPadding(this byte[] bytes)
+        {
+            return Convert.ToBase64String(bytes).Replace("=", "");
+        }
+
+        public static string EncodeBase64Url(this byte[] bytes)
+        {
+            string base64 = Convert.ToBase64String(bytes);
+            base64 = base64.Replace('+', '-').Replace('/', '_');
+            return base64.TrimEnd('=');
+        }
+
         public static TimeSpan NowDiff(this DateTime current)
         {
             return DateTime.Now.Subtract(current);
@@ -168,15 +206,30 @@ namespace Grayjay.ClientServer
             return Path.Combine(dirName, fileName);
         }
 
-
         public static string ToUrlAddress(this IPAddress address)
         {
             if (address.AddressFamily == AddressFamily.InterNetwork)
                 return address.ToString();
-            else if (address.AddressFamily == AddressFamily.InterNetworkV6 && address.IsIPv4MappedToIPv6)
-                return address.MapToIPv4().ToString();
+            else if (address.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+                if (address.IsIPv4MappedToIPv6)
+                    return address.MapToIPv4().ToString();
+                else
+                {
+                    string hostAddr = address.ToString();
+                    int index = hostAddr.IndexOf('%');
+                    if (index != -1)
+                    {
+                        string addrPart = hostAddr.Substring(0, index);
+                        string scopeId = hostAddr.Substring(index + 1);
+                        return $"[{addrPart}%25{scopeId}]";
+                    }
+                    else
+                        return $"[{hostAddr}]";
+                }
+            }
             else
-                return $"[{address}]";
+                throw new ArgumentException("Invalid address type", nameof(address));
         }
 
         public static string EnsureAbsoluteUrl(this string path, Uri baseUri)
