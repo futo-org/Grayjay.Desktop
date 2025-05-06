@@ -425,8 +425,9 @@ namespace Grayjay.Desktop
                 await window.LoadUrlAsync($"{server.BaseUrl}/web/index.html");
             else if (!isServer)
                 OSHelper.OpenUrl($"{server.BaseUrl}/web/index.html");
-
-            StateApp.SetMainWindow(new CEFWindowProvider.Window(window));
+            
+            if (window != null)
+                StateApp.SetMainWindow(new CEFWindowProvider.Window(window));
 
             watch.Stop();
 
