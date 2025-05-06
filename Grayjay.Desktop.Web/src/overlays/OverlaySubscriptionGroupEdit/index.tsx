@@ -27,9 +27,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
     const selected: string[] = [];
     const [selected$, setSelected] = createSignal<string[]>([]);
 
-    const [stateImage$, setStateImage] = createSignal<boolean>(false);
-    const [stateSubscriptions$, setStateSubscriptions] = createSignal<boolean>(false);
-    const [stateConfirmDelete$, setConfirmDelete] = createSignal<boolean>(false);
+    const [stateView$, setStateView] = createSignal(0);
 
     function select(sub: ISubscription) {
       const index = selected.indexOf(sub.channel.url);
@@ -55,38 +53,43 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
       SubscriptionsBackend.subscriptionGroupSave(props.subscriptionGroup)
     }
 
+    function changeView(val: number){
+      console.log("SubscriptionGroupOverlay view changed to", val);
+      setStateView(val);
+    }
+
     function selectNewImage(img: IImageVariable) {
       if(!img)
         return;
       props.subscriptionGroup.image = img;
-      setStateImage(false);
+      changeView(0);
     }
 
     function onlyUnique(value: any, index: any, array: any) {
       return array.indexOf(value) === index;
     }
     function addSubscriptions(arr: string[]) {
-      setStateSubscriptions(false);
+      changeView(0);
       props.subscriptionGroup.urls = props.subscriptionGroup.urls.concat(arr).filter(onlyUnique);
       subscriptionsResource.refetch();
     }
 
     return (
-      <Switch>
-        <Match when={stateImage$()}>
+      <>
+        <Show when={stateView$() == 1}>
           <OverlayImageSelector title='Subscription group image' description='Select Image for subscription group' channels={props.subscriptionGroup.urls}
             noDismiss={true}
             onResult={selectNewImage} />
-        </Match>
-        <Match when={stateSubscriptions$()}>
+        </Show>
+        <Show when={stateView$() == 2}>
           <OverlaySubscriptionsSelector 
             preventDismiss={true}
             title='Subscription Group Subscriptions' 
             description='Select the subscriptions to add to your subscription groups'
             ignore={props.subscriptionGroup.urls ?? []}
             onResult={(selected) => addSubscriptions(selected)} />
-        </Match>
-        <Match when={stateConfirmDelete$()}>
+        </Show>
+        <Show when={stateView$() == 3}>
           <div class={styles.container}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
@@ -99,7 +102,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
             <div style="height: 1px; background-color: rgba(255, 255, 255, 0.09); margin-top: 10px; margin-bottom: 10px;"></div>
             <div style="text-align: right">
                 <Button text={"Cancel"}
-                  onClick={()=>setConfirmDelete(false)}
+                  onClick={()=>changeView(0)}
                   style={{"margin-left": "auto", cursor: ("pointer")}}  />
                 <Button text={"Delete"}
                   onClick={()=>deleteGroup()}
@@ -107,8 +110,8 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                   color={"red"} />
             </div>
           </div>
-        </Match>
-        <Match when={!stateImage$()}>
+        </Show>
+        <Show when={stateView$() == 0}>
           <div class={styles.container}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
@@ -126,7 +129,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <div class={styles.sectionTitle}>Image</div>
                 <div class={styles.sectionDescription}>Edit which image is used as background for your group</div>
                 <div>
-                    <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(props.subscriptionGroup.image) + ")"}} onClick={()=>setStateImage(true)}>
+                    <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(props.subscriptionGroup.image) + ")"}} onClick={()=>changeView(1)}>
                       <div class={styles.text}>
                         <img src={iconEdit} />
                       </div>
@@ -168,11 +171,11 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                       color={"rgba(249, 112, 102, 0.08)"} />
                   </Show>
                 <Button text={"Add Subscriptions"}
-                  onClick={()=>setStateSubscriptions(true)}
+                  onClick={()=>changeView(2)}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
                   color={"#222"} />
                 <Button text={"Delete Group"}
-                  onClick={()=>setConfirmDelete(true)}
+                  onClick={()=>changeView(3)}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
                   color={"red"} />
                 <Button text={"Save"}
@@ -181,8 +184,8 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                   color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
             </div>
           </div>
-        </Match>
-      </Switch>
+        </Show>
+      </>
     );
   };
   
