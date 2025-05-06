@@ -539,7 +539,12 @@ namespace Grayjay.ClientServer.Controllers
             (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
 
             if (sourceVideo is DashManifestRawSource videoRawSource && sourceAudio is DashManifestRawAudioSource audioRawSource)
-                return GenerateSourceDashRaw(state, videoRawSource, audioRawSource, proxySettings?.IsLoopback ?? true);
+            {
+                if(sourceSubtitle != null)
+                    sourceSubtitle = SubtitleToProxied(state, sourceSubtitle, subtitleIsLocal, subtitleIndex, proxySettings);
+                return GenerateSourceDashRaw(state, videoRawSource, audioRawSource, sourceSubtitle, proxySettings?.IsLoopback ?? true);
+            }
+
 
             if (sourceVideo != null && !(sourceVideo is VideoUrlSource || sourceVideo is LocalVideoSource))
                 throw new NotImplementedException();
@@ -650,9 +655,70 @@ namespace Grayjay.ClientServer.Controllers
             return DashBuilder.GenerateOnDemandDash(sourceVideo, videoUrl, sourceAudio, audioUrl, sourceSubtitle, subtitleUrl);
         }
 
-        public static string GenerateSourceDashRaw(WindowState state, DashManifestRawSource videoSource, DashManifestRawAudioSource audioSource, bool loopback)
+        private static ISubtitleSource SubtitleToProxied(WindowState state, ISubtitleSource sourceSubtitle, bool subtitleIsLocal, int subtitleIndex, ProxySettings? proxySettings)
         {
-            var merging = new DashManifestMergingRawSource(videoSource, audioSource);
+            if (sourceSubtitle == null)
+                return null;
+
+            string? subtitleUrl;
+            if (sourceSubtitle != null)
+            {
+                if (subtitleIsLocal)
+                {
+                    if (proxySettings != null && proxySettings.Value.ExposeLocalAsAny && proxySettings.Value.ProxyAddress != null && sourceSubtitle != null)
+                        subtitleUrl = $"http://{proxySettings.Value.ProxyAddress.ToUrlAddress()}:{GrayjayCastingServer.Instance.BaseUri!.Port}/Details/StreamLocalSubtitleSource?index={subtitleIndex}&windowId={state.WindowID}";
+                    else
+                        subtitleUrl = $"{GrayjayServer.Instance.BaseUrl}/Details/StreamLocalSubtitleSource?index={subtitleIndex}&windowId={state.WindowID}";
+                }
+                else
+                {
+                    var uri = sourceSubtitle.GetSubtitlesUri()!;
+                    if (uri.Scheme == "file")
+                    {
+                        if (proxySettings != null && proxySettings.Value.ExposeLocalAsAny && proxySettings.Value.ProxyAddress != null)
+                        {
+                            subtitleUrl = sourceSubtitle != null
+                                ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry() { Url = $"http://{proxySettings.Value.ProxyAddress.ToUrlAddress()}:{GrayjayCastingServer.Instance.BaseUri!.Port}/Details/StreamSubtitleFile?index={subtitleIndex}&windowId={state.WindowID}" }, proxySettings?.ProxyAddress))
+                                : null;
+                        }
+                        else
+                            subtitleUrl = $"{GrayjayServer.Instance.BaseUrl}/Details/StreamSubtitleFile?index={subtitleIndex}&windowId={state.WindowID}";
+                    }
+                    else
+                    {
+                        if (proxySettings != null && proxySettings.Value.ShouldProxy)
+                        {
+                            subtitleUrl = sourceSubtitle != null
+                                ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry() { Url = uri.ToString() }, proxySettings?.ProxyAddress))
+                                : null;
+                        }
+                        else
+                        {
+                            subtitleUrl = sourceSubtitle != null
+                                ? sourceSubtitle.Url
+                                : null;
+                        }
+                    }
+                }
+            }
+            else
+                subtitleUrl = null;
+
+            if (subtitleUrl == null)
+                return null;
+
+            return new SubtitleSource()
+            {
+                Name = "Proxied",
+                HasFetch = false,
+                Format = sourceSubtitle.Format,
+                Url = subtitleUrl
+            };
+        }
+
+        public static string GenerateSourceDashRaw(WindowState state, DashManifestRawSource videoSource, DashManifestRawAudioSource audioSource, ISubtitleSource subtitleSource, bool loopback)
+        {
+            var merging = new DashManifestMergingRawSource(videoSource, audioSource, subtitleSource);
             var dash = merging.Generate();
 
             var oldVReqEx = state.DetailsState._videoRequestExecutor;
