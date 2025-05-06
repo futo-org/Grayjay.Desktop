@@ -1374,7 +1374,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                         <PillButton icon={ic_sync} text="Send To Device" onClick={() => { UIOverlay.overlaySelectOnlineSyncDevice("Send to Device", "Select a device to send the video to.", (dev) => sendToDevice(dev)) }} />
                                     </Show>
                                     <PillButton icon={share} text="Share" onClick={() => { UIOverlay.overlayShare(shareUrl$()) }} />
-                                    <PillButton icon={iconDownload} text="Download" onClick={() => { download() }} />
+                                    <Show when={!videoLoaded$.loading && !(videoLoaded$()?.isLive === true)}>
+                                        <PillButton icon={iconDownload} text="Download" onClick={() => { download() }} />
+                                    </Show>
                                     <PillButton icon={add} text="Add to" onClick={() => { UIOverlay.overlayAddToPlaylist(videoLoaded$()!, ()=>{}) }} />
                                 </div>
                             </div>
