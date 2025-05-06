@@ -250,6 +250,7 @@ namespace Grayjay.Desktop
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Temporary Directory: {Directories.Temporary}"));
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log Level: {(LogLevel)GrayjaySettings.Instance.Logging.LogLevel}"));
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log file path: {Directories.Base}/log.txt"));
+            Logger.LoadFromSettings();
 
             FUTO.MDNS.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
             FUTO.MDNS.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);

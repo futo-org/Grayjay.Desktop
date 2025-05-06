@@ -194,47 +194,72 @@ namespace Grayjay.Desktop.POC
 
     public static class Logger
     {
-        private static Log.Config _staticConfig = new Log.Config()
+        private static Log _staticLogger = new Log(new Log.Config()
         {
-            LogFilePath = Path.Combine(Directories.Base, "log.txt"),
-            FileLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
-#if DEBUG
+            LogFilePath = "log.txt",
+            FileLogLevel = (LogLevel)LogLevel.Verbose,
             ConsoleLogLevel = LogLevel.Verbose,
-#else
-            ConsoleLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
-#endif
 #if DEBUG
-            DebugLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+            DebugLogLevel = (LogLevel)LogLevel.Verbose,
 #else
             DebugLogLevel = LogLevel.None
 #endif
-        };
+        });
 
-        private static readonly Lazy<Log> _staticLogger = new Lazy<Log>(() => new Log(_staticConfig));
-        public static void Debug<T>(string message, Exception? ex = null) => _staticLogger.Value.Verbose<T>(message, ex);
-        public static void Verbose<T>(string message, Exception? ex = null) => _staticLogger.Value.Verbose<T>(message, ex);
-        public static void Info<T>(string message, Exception? ex = null) => _staticLogger.Value.Info<T>(message, ex);
-        public static void Warning<T>(string message, Exception? ex = null) => _staticLogger.Value.Warning<T>(message, ex);
-        public static void Error<T>(string message, Exception? ex = null) => _staticLogger.Value.Error<T>(message, ex);
-        public static void Log<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.Value.l(level, nameof(T), message, ex);
-        public static void v<T>(string message, Exception? ex = null) => _staticLogger.Value.v<T>(message, ex);
-        public static void i<T>(string message, Exception? ex = null) => _staticLogger.Value.i<T>(message, ex);
-        public static void w<T>(string message, Exception? ex = null) => _staticLogger.Value.w<T>(message, ex);
-        public static void e<T>(string message, Exception? ex = null) => _staticLogger.Value.e<T>(message, ex);
-        public static void l<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.Value.l(level, nameof(T), message, ex);
-        public static void Debug(string tag, string message, Exception? ex = null) => _staticLogger.Value.Verbose(tag, message, ex);
-        public static void Verbose(string tag, string message, Exception? ex = null) => _staticLogger.Value.Verbose(tag, message, ex);
-        public static void Info(string tag, string message, Exception? ex = null) => _staticLogger.Value.Info(tag, message, ex);
-        public static void Warning(string tag, string message, Exception? ex = null) => _staticLogger.Value.Warning(tag, message, ex);
-        public static void Error(string tag, string message, Exception? ex = null) => _staticLogger.Value.Error(tag, message, ex);
-        public static void Log(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.Value.l(level, tag, message, ex);
-        public static void d(string tag, string message, Exception? ex = null) => _staticLogger.Value.v(tag, message, ex);
-        public static void v(string tag, string message, Exception? ex = null) => _staticLogger.Value.v(tag, message, ex);
-        public static void i(string tag, string message, Exception? ex = null) => _staticLogger.Value.i(tag, message, ex);
-        public static void w(string tag, string message, Exception? ex = null) => _staticLogger.Value.w(tag, message, ex);
-        public static void e(string tag, string message, Exception? ex = null) => _staticLogger.Value.e(tag, message, ex);
-        public static void l(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.Value.l(level, tag, message, ex);
-        public static bool WillLog(LogLevel level) => _staticLogger.Value.WillLog(level);
+        public static void LoadFromSettings()
+        {
+            try
+            {
+                var newLogger = new Log(new Log.Config()
+                {
+                    LogFilePath = Path.Combine(Directories.Base, "log.txt"),
+                    FileLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#if DEBUG
+                    ConsoleLogLevel = LogLevel.Verbose,
+#else
+                    ConsoleLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#endif
+#if DEBUG
+                    DebugLogLevel = (LogLevel)GrayjaySettings.Instance.Logging.LogLevel,
+#else
+                    DebugLogLevel = LogLevel.None
+#endif
+                });
+
+                var oldLogger = _staticLogger;
+                _staticLogger = newLogger;
+                oldLogger.Dispose();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to update Logger:\n" + e.Message);
+            }
+        }
+
+        public static void Debug<T>(string message, Exception? ex = null) => _staticLogger.Verbose<T>(message, ex);
+        public static void Verbose<T>(string message, Exception? ex = null) => _staticLogger.Verbose<T>(message, ex);
+        public static void Info<T>(string message, Exception? ex = null) => _staticLogger.Info<T>(message, ex);
+        public static void Warning<T>(string message, Exception? ex = null) => _staticLogger.Warning<T>(message, ex);
+        public static void Error<T>(string message, Exception? ex = null) => _staticLogger.Error<T>(message, ex);
+        public static void Log<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.l(level, nameof(T), message, ex);
+        public static void v<T>(string message, Exception? ex = null) => _staticLogger.v<T>(message, ex);
+        public static void i<T>(string message, Exception? ex = null) => _staticLogger.i<T>(message, ex);
+        public static void w<T>(string message, Exception? ex = null) => _staticLogger.w<T>(message, ex);
+        public static void e<T>(string message, Exception? ex = null) => _staticLogger.e<T>(message, ex);
+        public static void l<T>(LogLevel level, string message, Exception? ex = null) => _staticLogger.l(level, nameof(T), message, ex);
+        public static void Debug(string tag, string message, Exception? ex = null) => _staticLogger.Verbose(tag, message, ex);
+        public static void Verbose(string tag, string message, Exception? ex = null) => _staticLogger.Verbose(tag, message, ex);
+        public static void Info(string tag, string message, Exception? ex = null) => _staticLogger.Info(tag, message, ex);
+        public static void Warning(string tag, string message, Exception? ex = null) => _staticLogger.Warning(tag, message, ex);
+        public static void Error(string tag, string message, Exception? ex = null) => _staticLogger.Error(tag, message, ex);
+        public static void Log(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.l(level, tag, message, ex);
+        public static void d(string tag, string message, Exception? ex = null) => _staticLogger.v(tag, message, ex);
+        public static void v(string tag, string message, Exception? ex = null) => _staticLogger.v(tag, message, ex);
+        public static void i(string tag, string message, Exception? ex = null) => _staticLogger.i(tag, message, ex);
+        public static void w(string tag, string message, Exception? ex = null) => _staticLogger.w(tag, message, ex);
+        public static void e(string tag, string message, Exception? ex = null) => _staticLogger.e(tag, message, ex);
+        public static void l(LogLevel level, string tag, string message, Exception? ex = null) => _staticLogger.l(level, tag, message, ex);
+        public static bool WillLog(LogLevel level) => _staticLogger.WillLog(level);
 
         public static string FormatLogMessage(LogLevel level, string tag, string message, Exception? ex = null)
         {
@@ -248,8 +273,7 @@ namespace Grayjay.Desktop.POC
 
         public static void DisposeStaticLogger()
         {
-            if (_staticLogger.IsValueCreated)
-                _staticLogger.Value.Dispose();
+            _staticLogger.Dispose();
         }
     }
 }
