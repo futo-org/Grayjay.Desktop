@@ -4,7 +4,7 @@ namespace Grayjay.ClientServer.Constants;
 
 public static class Directories
 {
-    private static readonly Lazy<string> _baseDirectory = new Lazy<string>(() =>
+    private static string ComputeBaseDirectory()
     {
         string? assemblyFile = Assembly.GetEntryAssembly()?.Location;
         string dir;
@@ -73,20 +73,67 @@ public static class Directories
 
         EnsureDirectoryExists(dir);
         return dir;
-    });
+    }
 
-    private static readonly Lazy<string> _temporaryDirectory = new Lazy<string>(() =>
+    private static string ComputeTemporaryDirectory()
     {
         string dir = Path.Combine(Base, "temp_files");
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
+
+        try
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+        catch
+        {
+            //Ignored
+        }
+
         EnsureDirectoryExists(dir);
         return dir;
-    });
+    }
 
-    public static string Base => _baseDirectory.Value;
+    private static string? _baseDirectory;
+    public static string Base
+    {
+        get
+        {
+            if (_baseDirectory == null)
+            {
+                try
+                {
+                    _baseDirectory = ComputeBaseDirectory();
+                }
+                catch
+                {
+                    _baseDirectory = Environment.CurrentDirectory;
+                }
+            }
 
-    public static string Temporary => _temporaryDirectory.Value;
+            return _baseDirectory!;
+        }
+    }
+
+    private static string? _temporaryDirectory;
+    public static string Temporary
+    {
+        get
+        {
+            if (_temporaryDirectory == null)
+            {
+                try
+                {
+                    _temporaryDirectory = ComputeTemporaryDirectory();
+                }
+                catch
+                {
+                    _temporaryDirectory = Environment.CurrentDirectory;
+                }
+            }
+
+            return _temporaryDirectory!;
+        }
+    }
 
     private static void EnsureDirectoryExists(string path)
     {
