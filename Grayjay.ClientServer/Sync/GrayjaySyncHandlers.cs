@@ -198,8 +198,8 @@ namespace Grayjay.ClientServer.Sync
                 var existing = allExisting.FirstOrDefault(x => x.Url == video.Url);
 
                 var time = (pack.VideoAdds != null && pack.VideoAdds.ContainsKey(video.Url)) ? DateTimeOffset.FromUnixTimeSeconds(pack.VideoAdds[video.Url]) : DateTimeOffset.MinValue;
-
-                if (existing == null)
+                var removalTime = StateWatchLater.Instance.GetWatchLaterRemovalTime(video.Url);
+                if (existing == null && time > removalTime)
                 {
                     StateWatchLater.Instance.Add(video);
                     if(time > DateTimeOffset.MinValue.AddDays(1))
