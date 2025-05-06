@@ -1,0 +1,21 @@
+Improvements:
+ - Improved sync UI and feedback
+ - Improved base64 robustness solving several encryption related issues
+ - Sync is now disabled by default and users are prompted to enable it on the sync page
+ - Show a warning when the sync server socket failed to start
+ - Improved HLS byte range parsing to be able to work with larger numbers
+ - Added UI to indicate when the public key is corrupt in the pairing UI
+ - More robust Directories and Logger initialization
+ - Subtitles for merged dash sources
+
+Fixes:
+ - Fixed login for some edge cases
+ - Fixed issue for casting to a IPv6 device with a scope id
+ - Fixed flow to connect pair sync from desktop
+ - Hide download button on live content
+ - Implemented backoff for sync server connection
+ - Fixed send as Gzip
+ - Fix race condition causing watch later to be re-added when removed when using sync
+ - Fixed Headless mode not working
+ - Hide bitrate when bitrate is unknown
+ - Fixed subscription group edit overlay buttons not working
