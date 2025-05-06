@@ -21,7 +21,7 @@ import PillButton from "../../buttons/PillButton";
 import IconButton from "../../buttons/IconButton";
 import CustomButton from "../../buttons/CustomButton";
 import CommentView from "../../CommentView";
-import { catchDialogExceptions, createResourceDefault, getBestThumbnail, preventDragDrop, proxyImage, sanitzeHtml, toHumanNowDiffString, toHumanNowDiffStringMinDay, toHumanNumber } from "../../../utility";
+import { catchDialogExceptions, createResourceDefault, getBestThumbnail, preventDragDrop, proxyImage, sanitzeHtml, toHumanNowDiffString, toHumanNowDiffStringMinDay, toHumanNumber, formatAudioSourceName } from "../../../utility";
 import { DetailsBackend } from "../../../backend/DetailsBackend";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import SubscribeButton from "../../buttons/SubscribeButton";
@@ -911,7 +911,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                         title: "Audio sources",
                         items: audioSources$().map(x => {
                             return {
-                                name: x.name + ` (${[x.bitrate, x.language === "Unknown" ? undefined : x.language].filter(x => x).join(", ")})`,
+                                name: formatAudioSourceName(x),
                                 value: x,
                                 type: "option",
                                 onSelected: (val: any) => {

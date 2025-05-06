@@ -171,7 +171,7 @@ export function toHumanTime(sec?: number): string {
 
 
 export function toHumanBitrate(value?: number): string | undefined {
-  if(!value)
+  if(!value || value <= 0)
     return undefined;
 
     if(value >= countInGbit)
@@ -551,3 +551,20 @@ export function updateDataArray<T>(
     }
   }
 }
+
+
+export function formatAudioSourceName(audioSource: any): string {
+  const { name, bitrate, language } = audioSource;
+  
+  const additionalInfo = [
+    bitrate,
+    language === "Unknown" ? undefined : language
+  ].filter(item => item);
+  
+  // Format the additional info if it exists
+  const additionalInfoText = additionalInfo.length > 0 
+    ? ` (${additionalInfo.join(", ")})` 
+    : '';
+  
+  return name + additionalInfoText;
+};
