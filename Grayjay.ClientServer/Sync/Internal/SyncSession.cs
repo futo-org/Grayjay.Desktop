@@ -258,8 +258,7 @@ public class SyncSession : IDisposable, IAuthorizable
             throw new Exception($"Packet was not sent (opcode = {opcode}, subOpcode = {subOpcode}) due to send errors and no remaining candidates");
     }
 
-    public Task SendAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => SendAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), contentEncoding: ContentEncoding.Gzip, cancellationToken: cancellationToken);
-    public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync(Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), cancellationToken: cancellationToken);
+    public Task SendJsonDataAsync(byte subOpcode, object data, CancellationToken cancellationToken = default) => SendAsync(Opcode.DATA, subOpcode, Encoding.UTF8.GetBytes(GJsonSerializer.AndroidCompatible.SerializeObj(data)), contentEncoding: ContentEncoding.Gzip, cancellationToken: cancellationToken);
 
     public void Dispose()
     {

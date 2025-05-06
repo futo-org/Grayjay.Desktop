@@ -132,6 +132,9 @@ public class StateSync : IDisposable
 
         _ = Task.Run(async () =>
         {
+            int[] backoffs = [1000, 5000, 10000, 20000];
+            int backoffIndex = 0;
+
             while (!_cancellationTokenSource.IsCancellationRequested)
             {
                 const string RelayPublicKey = "xGbHRzDOvE6plRbQaFgSen82eijF+gxS0yeUaeEErkw=";
@@ -183,6 +186,8 @@ public class StateSync : IDisposable
                         },
                         onHandshakeComplete: async (relaySession) =>
                         {
+                            backoffIndex = 0;
+
                             try
                             {
                                 while (!_cancellationTokenSource.IsCancellationRequested)
@@ -262,7 +267,7 @@ public class StateSync : IDisposable
                 {
                     _relaySession?.Dispose();
                     _relaySession = null;
-                    await Task.Delay(5000, _cancellationTokenSource.Token);
+                    await Task.Delay(backoffs[Math.Min(backoffs.Length - 1, backoffIndex++)], _cancellationTokenSource.Token);
                 }
             }
         });
