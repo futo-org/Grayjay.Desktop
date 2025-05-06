@@ -87,14 +87,17 @@ public class StateSync : IDisposable
             var publicKey = p.PublicKey;
             var privateKey = p.PrivateKey;
 
-            var syncKeyPair = new SyncKeyPair(1, Convert.ToBase64String(publicKey), Convert.ToBase64String(privateKey));
+            var syncKeyPair = new SyncKeyPair(1, publicKey.EncodeBase64(), privateKey.EncodeBase64());
             _syncKeyPair.Save(EncryptionProvider.Instance.Encrypt(JsonSerializer.Serialize(syncKeyPair)));
 
             Logger.e<StateSync>("Failed to load existing key pair", ex);
             _keyPair = p;
         }
 
-        PublicKey = Convert.ToBase64String(_keyPair.PublicKey);
+        if (_keyPair.PrivateKey.Length != 32 || _keyPair.PublicKey.Length != 32)
+            Logger.e<StateSync>($"KeyPair is invalid, remove the file 'syncKeyPair' from the app directory ({StateApp.GetAppDirectory()}) and restart the app to use sync.");
+
+        PublicKey = _keyPair.PublicKey.EncodeBase64();
 
         if (GrayjaySettings.Instance.Synchronization.Broadcast)
         {
@@ -417,8 +420,11 @@ public class StateSync : IDisposable
     }
     public SyncDeviceInfo GetSyncDeviceInfo()
     {
+        if (PublicKey == null)
+            throw new Exception("StateSync was not started, make sure Sync is enabled in the settings.");
+
         return new SyncDeviceInfo(
-            publicKey: PublicKey!, 
+            publicKey: PublicKey, 
             addresses: Utilities.GetIPs().Select(x => x.ToString()).ToArray(),
             port: PORT,
             pairingCode: _pairingCode);

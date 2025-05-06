@@ -110,17 +110,22 @@ const SyncPage: Component = () => {
           <div>
             <img src={qrCode$()} style="width: 100%" />
           </div>
-          <div class={styles.pairingUrl} onClick={async () => {
-            const pairingUrl = pairingUrl$();
-            if (!pairingUrl || pairingUrl.length < 1) {
-              return;
-            }
+          {JSON.stringify(pairingUrl$)}
+          <Show when={pairingUrl$() && pairingUrl$()?.length} fallback={
+            <div style="color: red">An error has occurred while trying to fetch the pairing URL. Please make sure Sync is enabled.</div>
+          }>
+            <div class={styles.pairingUrl} onClick={async () => {
+              const pairingUrl = pairingUrl$();
+              if (!pairingUrl || pairingUrl.length < 1) {
+                return;
+              }
 
-            await navigator.clipboard.writeText(pairingUrl);
-            UIOverlay.toast("Text copied to clipboard!");
-          }}>
-            {pairingUrl$()}
-          </div>
+              await navigator.clipboard.writeText(pairingUrl);
+              UIOverlay.toast("Text copied to clipboard!");
+            }}>
+              {pairingUrl$()}
+            </div>
+          </Show>
         </div>
       </ScrollContainer>
     );
