@@ -78,8 +78,17 @@ public static class Directories
     private static string ComputeTemporaryDirectory()
     {
         string dir = Path.Combine(Base, "temp_files");
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
+
+        try
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+        }
+        catch
+        {
+            //Ignored
+        }
+
         EnsureDirectoryExists(dir);
         return dir;
     }
