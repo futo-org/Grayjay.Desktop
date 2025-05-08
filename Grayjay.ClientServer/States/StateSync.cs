@@ -270,7 +270,9 @@ public class StateSync : IDisposable
                 {
                     _relaySession?.Dispose();
                     _relaySession = null;
-                    await Task.Delay(backoffs[Math.Min(backoffs.Length - 1, backoffIndex++)], _cancellationTokenSource.Token);
+                    var cancellationTokenSource = _cancellationTokenSource;
+                    if (cancellationTokenSource != null)
+                        await Task.Delay(backoffs[Math.Min(backoffs.Length - 1, backoffIndex++)], cancellationTokenSource.Token);
                 }
             }
         });
