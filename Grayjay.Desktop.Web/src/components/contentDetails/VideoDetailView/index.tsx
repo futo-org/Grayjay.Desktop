@@ -525,7 +525,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
     const isMinimized = createMemo(() => {
         const res = video?.state() === VideoState.Minimized && !isFullscreen();
-        console.log("isMinimized", res);
         return res;
     });
 
@@ -594,10 +593,18 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         repositionMinimize();
     };
 
-    onMount(() => {
+    const [params, setParams] = useSearchParams();
+    onMount(async () => {
         resizeObserver.observe(scrollContainerRef!);
         window.addEventListener('resize', handleWindowResize);
         setDimensions({ width: scrollContainerRef!.clientWidth, height: scrollContainerRef!.clientHeight });
+        if(location.pathname==="/web/video"){
+            const url=params.url;
+            const result = (!url) ? null : (await DetailsBackend.videoLoad(url));
+            if(result){
+                video?.actions.openVideo(result?.video);
+            }
+        }
     });
 
     onCleanup(() => {
@@ -1382,18 +1389,20 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             </div>
                             <div class={styles.authorContainer}>
                                 <Show when={isThumbnailValid$()}>
-                                    <img src={author$()?.thumbnail} class={styles.author} alt="author" onClick={onClickAuthor} referrerPolicy='no-referrer' />
+                                    <a href={"/web/channel?url=" + encodeURIComponent(author$()?.url??"")}><img src={author$()?.thumbnail} class={styles.author} alt="author" onClick={onClickAuthor} referrerPolicy='no-referrer' /></a>
                                 </Show>
-                                <div class={styles.authorDescription} style={{
-                                    "margin-left": isThumbnailValid$() ? undefined : "40px"
-                                }}>
-                                    <div class={styles.authorName} onClick={onClickAuthor}>{author$()?.name}</div>
-                                    <div style="flex-grow:1;"></div>
-                                    <Show when={(author$()?.subscribers ?? 0) > 0}>
-                                        <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(author$()?.subscribers)} subscribers</div>
+                                <a href={"/web/channel?url=" + encodeURIComponent(author$()?.url??"")}>
+                                    <div class={styles.authorDescription} style={{
+                                        "margin-left": isThumbnailValid$() ? undefined : "40px"
+                                    }}>
+                                        <div class={styles.authorName} onClick={onClickAuthor}>{author$()?.name}</div>
                                         <div style="flex-grow:1;"></div>
-                                    </Show>
-                                </div>
+                                        <Show when={(author$()?.subscribers ?? 0) > 0}>
+                                            <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(author$()?.subscribers)} subscribers</div>
+                                            <div style="flex-grow:1;"></div>
+                                        </Show>
+                                    </div>
+                                </a>
 
                                 <SubscribeButton author={author$()?.url} style={{"margin-top": "29px"}} />
 
