@@ -297,28 +297,28 @@ namespace Grayjay.ClientServer.Settings
             [SettingsField("Enabled", SettingsField.TOGGLE, "Enable synchronization", 0)]
             public bool Enabled { get; set; } = false;
 
-            [SettingsField("Broadcast", SettingsField.TOGGLE, "Allow device to broadcast presence", 1)]
+            [SettingsField("mDNS Broadcast", SettingsField.TOGGLE, "Allow device to broadcast presence using mDNS", 1)]
             public bool Broadcast { get; set; } = true;
 
-            [SettingsField("Connect Discovered", SettingsField.TOGGLE, "Allow device to search for and initiate connection with known paired devices", 2)]
+            [SettingsField("mDNS Connect", SettingsField.TOGGLE, "Allow device to search for and initiate connection with known paired devices using mDNS", 2)]
             public bool ConnectDiscovered { get; set; } = true;
 
-            [SettingsField("Connect Last", SettingsField.TOGGLE, "Allow device to automatically connect to last known", 3)]
+            [SettingsField("Connect Last Known", SettingsField.TOGGLE, "Allow device to automatically connect to last known endpoints", 3)]
             public bool ConnectLast { get; set; } = true;
 
-            [SettingsField("Discover through relay", SettingsField.TOGGLE, "Allow paired devices to be discovered and connected to through the relay", 4)]
+            [SettingsField("Relay Enable", SettingsField.TOGGLE, "Allow device to use a relay for discovery/relaying connection", 4)]
             public bool DiscoverThroughRelay { get; set; } = true;
 
-            [SettingsField("Pair through relay", SettingsField.TOGGLE, "Allow devices to be paired through the relay", 4)]
+            [SettingsField("Relay Pairing", SettingsField.TOGGLE, "Allow device to be paired through the relay", 4)]
             public bool PairThroughRelay { get; set; } = true;
 
-            [SettingsField("Connection through relay", SettingsField.TOGGLE, "Allow devices to be connected to through the relay", 4)]
+            [SettingsField("Relay Connect Relayed", SettingsField.TOGGLE, "Allow device to be connected to using a relayed connection", 4)]
             public bool ConnectThroughRelay { get; set; } = true;
 
-            [SettingsField("Connect direct through relay", SettingsField.TOGGLE, "Allow devices to be directly locally connected to through information discovered from the relay", 4)]
+            [SettingsField("Relay Connect Direct", SettingsField.TOGGLE, "Allow device to be directly connected to using relay published information", 4)]
             public bool ConnectLocalDirectThroughRelay { get; set; } = true;
 
-            [SettingsField("Local connections", SettingsField.TOGGLE, "Allow device to be directly locally connected", 4)]
+            [SettingsField("Bind Listener", SettingsField.TOGGLE, "Allow device to be directly connected to", 4)]
             public bool LocalConnections { get; set; } = true;
         }
 

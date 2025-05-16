@@ -199,11 +199,11 @@ namespace Grayjay.Desktop.POC
             LogFilePath = "log.txt",
             FileLogLevel = (LogLevel)LogLevel.Verbose,
             ConsoleLogLevel = LogLevel.Verbose,
-#if DEBUG
-            DebugLogLevel = (LogLevel)LogLevel.Verbose,
-#else
+//#if DEBUG
+//            DebugLogLevel = (LogLevel)LogLevel.Verbose,
+//#else
             DebugLogLevel = LogLevel.None
-#endif
+//#endif
         });
 
         public static void LoadFromSettings()

@@ -9,6 +9,7 @@ using Grayjay.ClientServer.Sync.Models;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine.Models.Feed;
+using SyncClient;
 using static Grayjay.ClientServer.States.StateBackup;
 
 namespace Grayjay.ClientServer.Sync
