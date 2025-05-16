@@ -19,7 +19,7 @@
 }
 
 .text {
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -35,7 +35,7 @@
 }
 
 .text > a {
-    color: #019BE7;
+    color: var(--blue-color-1);
     text-decoration: none;
 }
 
@@ -71,7 +71,7 @@
 }
 
 .authorName {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -82,7 +82,7 @@
 }
 
 .metadata {
-    color: #888;
+    color: var(--grey-color-4);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -100,9 +100,9 @@
     align-items: center; 
     gap: 4px; 
     border-radius: 99px; 
-    border: 1px solid #454545; 
+    border: 1px solid var(--grey-color-7); 
     overflow: hidden; 
-    color: #FFF; 
+    color: var(--white-color); 
     text-align: center; 
     font-family: Inter; 
     font-size: 14px; 

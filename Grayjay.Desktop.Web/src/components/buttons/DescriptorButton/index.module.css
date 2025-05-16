@@ -11,7 +11,7 @@
     padding-bottom: 15px;
     display: inline-block;
     background: linear-gradient(90deg, transparent, #3b3b3b4f);
-    border: 1.5px solid #2E2E2E;
+    border: 1.5px solid var(--grey-color-6);
     position: relative;
     height: 90px;
     display: grid;
@@ -53,7 +53,7 @@
     width: 100%;
 }
 .text .title{ 
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 18px;
     font-style: normal;
@@ -63,7 +63,7 @@
     text-overflow: ellipsis;
 }
 .text .description{
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -75,8 +75,8 @@
 }
 /*
 .container {
-    background-color: #ffffff0a;
     border-radius: 6px;
+    background-color: rgb(from var(--white-color)  r g b / 0.04);
     padding-left: 40px;
     padding-right: 40px;
     font-weight: 600;

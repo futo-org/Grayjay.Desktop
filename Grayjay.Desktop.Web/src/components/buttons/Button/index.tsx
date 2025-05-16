@@ -19,7 +19,7 @@ const Button: Component<ButtonProps> = (props) => {
     };
 
     return (
-        <div class={styles.container} classList={{[styles.small]: props.small}} onClick={handleClick} style={{... props.style, "background": props.color ?? "#212122", width: (props.style?.width ?? "fit-content")}}>
+        <div class={styles.container} classList={{[styles.small]: props.small}} onClick={handleClick} style={{... props.style, "background": props.color ?? "var(--grey-color-8)", width: (props.style?.width ?? "fit-content")}}>
             <Show when={props.icon}>
                 <img src={props.icon} class={styles.icon} alt={props.text} />
             </Show>

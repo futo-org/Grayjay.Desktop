@@ -22,7 +22,7 @@ const LoadingButton: Component<LoadingButtonProps> = (props) => {
     };
 
     return (
-        <div class={styles.container} onClick={handleClick} style={{... props.style, "background-color": props.color ?? "#212122", width: props.style?.width ?? "fit-content"}} classList={{[styles.small]: props.small}}>
+        <div class={styles.container} onClick={handleClick} style={{... props.style, "background-color": props.color ?? "var(--grey-color-8)", width: props.style?.width ?? "fit-content"}} classList={{[styles.small]: props.small}}>
             <CircleLoader style={{height: "30px", width: "30px" }} />
         </div>
     );

@@ -136,7 +136,7 @@ const CreatorsPage: Component = () => {
               showClearButton={true}
               inputContainerStyle={{
                 "height": "70px", 
-                "background": "#141414"
+                "background": "var(--black-color-1)"
               }}
               onTextChanged={(v) => {
                 setFilterText(v);
@@ -190,7 +190,7 @@ const CreatorsPage: Component = () => {
               {
                 icon: iconSearch,
                 title: "Search Creators",
-                color: "#019BE7",
+                color: "var(--blue-color-1)",
                 action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
               }
             ]} />

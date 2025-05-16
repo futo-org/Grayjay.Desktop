@@ -14,7 +14,7 @@
 
 .text {
     margin-left: 4px;
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -23,7 +23,7 @@
 }
 
 .text.active {
-    color: #019BE7;
+    color: var(--blue-color-1);
 }
 
 .text.editable {

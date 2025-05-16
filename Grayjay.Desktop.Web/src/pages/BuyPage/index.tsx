@@ -89,7 +89,7 @@ const BuyPage: Component = () => {
         License keys are shared between Android and Desktop.
       </p>
       <Button text='Enter License' color='primary' onClick={()=>enterLicense()} style={{margin: '10px'}} />
-      <Button text='Buy a License' color="#019BE7" onClick={()=>buy()} style={{margin: '10px'}} />
+      <Button text='Buy a License' color="var(--blue-color-1)" onClick={()=>buy()} style={{margin: '10px'}} />
     </div>
   );
 };

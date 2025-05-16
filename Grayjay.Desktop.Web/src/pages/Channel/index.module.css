@@ -46,7 +46,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: linear-gradient(to bottom, #141414DB, #141414 100%);
+    background-image: linear-gradient(to bottom, var(--black-color-1)DB, var(--black-color-1) 100%);
 }
 
 .containerActions {
@@ -79,7 +79,7 @@
 }
 
 .creatorName {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 28px;
     font-style: normal;
@@ -89,7 +89,7 @@
 }
 
 .creatorMetadata {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -99,7 +99,7 @@
 }
 
 .creatorDescription {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -134,7 +134,7 @@
     margin-top: 30px; 
     margin-left: auto; 
     margin-right: auto; 
-    background-color: #111; 
+    background-color: var(--black-color-1); 
     border-radius: 5px;
 }
 
@@ -158,7 +158,7 @@
     font-weight: bold;
 }
 .aboutMeta {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter; 
     font-size: 15px; 
     font-style: normal; 

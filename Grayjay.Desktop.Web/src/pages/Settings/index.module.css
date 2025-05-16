@@ -15,7 +15,7 @@
     flex-direction: column;
 }
 .settingsMenuItem {
-    color: rgba(255, 255, 255, 0.60);
+    color: rgb(from var(--white-color)  r g b / 0.60);
     height: 46px;
     border-radius: 6px;
     font-family: Inter;
@@ -33,7 +33,7 @@
 
 
 .settingsMenuItem:hover {
-    color: rgba(255, 255, 255, 0.60);
+    color: rgb(from var(--white-color)  r g b / 0.60);
     height: 46px;
     border-radius: 6px;
     font-family: Inter;
@@ -50,8 +50,8 @@
 
 
 .settingsMenuItem.active {
-    color: #FFF;
-    background: rgba(255, 255, 255, 0.105);
+    color: var(--white-color);
+    background: rgb(from var(--white-color)  r g b / 0.105);
     padding-left: 16px;
     height: 46px;
     font-family: Inter;

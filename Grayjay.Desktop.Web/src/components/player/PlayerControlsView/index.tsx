@@ -285,7 +285,9 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 return;
             }
         }
-
+        if(ev.ctrlKey){
+            return;
+        }
         switch (ev.key) {
             case " ":
             case "k":

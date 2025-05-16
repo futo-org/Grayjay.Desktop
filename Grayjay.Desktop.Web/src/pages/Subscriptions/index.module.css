@@ -33,7 +33,7 @@
     overflow-y: none;
     white-space: nowrap;
     scrollbar-width: thin;
-    scrollbar-color: #555 #333;
+    scrollbar-color: var(--grey-color-5) var(--grey-color-6);
 }
 
 .channel {
@@ -46,16 +46,16 @@
     vertical-align: top;    
     padding: 12px 8px;
     border-radius: 8px;
-    background: #1B1B1B;
+    background: var(--black-color-2);
     text-align: center;
     border: 1px solid transparent;
 }
 .channel.active {
     border: 1px solid #4D4D4D;
-    background: #1B1B1B;
+    background: var(--black-color-2);
 }
 .channel.active .channelText {
-    color: white;
+    color: var(--white-color);
 }
 .channelImg {
     width: 60px;
@@ -65,7 +65,7 @@
     margin-top: 3px;
 }
 .channelText {
-    color: #989898;
+    color: var(--grey-color-2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -92,7 +92,7 @@
     right: 20px;
     height: 20px;
     width: 20px;
-    background-color: white;
+    background-color: var(--white-color);
     border-radius: 20px;
     
 }
@@ -124,7 +124,7 @@
     border-radius: 5px;
     width: 80px;
     height: 80px;
-    background-color: #222;
+    background-color: var(--grey-color-8);
     cursor: pointer;
 }
 .subGroupExpand img {
@@ -138,7 +138,7 @@
     border-radius: 6px;
     border: 1px solid rgba(173, 32, 220, 0.13);
 
-    background: #1B1B1B;
+    background: var(--black-color-2);
     width: 170px;
     height: 80px;
     overflow: hidden;
@@ -185,7 +185,7 @@
     bottom: 10px;
     left: 18px;
     overflow: hidden;
-    color: #FFF;
+    color: var(--white-color);
     
     leading-trim: both;
     
@@ -208,10 +208,8 @@
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    color: #FFF;
-    
+    color: var(--white-color);
     leading-trim: both;
-    
     text-edge: cap;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -233,17 +231,17 @@
     width: 56px;
     padding: 8px 24px;
     border-radius: 6px;
-    border: 1px solid #454545;
+    border: 1px solid var(--grey-color-7);
     margin-right: 8px;
 
-    background: #1B1B1B;
+    background: var(--black-color-2);
 }
 .filter.active {
-    border: 1px solid #454545;
-    background: #2E2E2E;
+    border: 1px solid var(--grey-color-7);
+    background: var(--grey-color-6);
 }
 .filter .name {
-    color: #555555;
+    color: var(--grey-color-5)555;
     text-align: center;
     leading-trim: both;
 
@@ -256,7 +254,7 @@
     line-height: 140%; /* 19.6px */
 }
 .filter.active .name {
-    color: white !important;
+    color: var(--white-color) !important;
 }
 
 .subgroupBanner {
@@ -282,7 +280,7 @@
     flex-grow: 1;
 }
 .subgroupBanner .bannerTitle {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 24px;
     font-style: normal;
@@ -291,7 +289,7 @@
     padding-bottom: 12px;
 }
 .subgroupBanner .bannerDescription {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgb(from var(--white-color)  r g b / 0.6);
     font-family: Inter;
     font-size: 16px;
     font-style: normal;
@@ -313,7 +311,7 @@
 }
 .noSubs .title {
     margin-top: 10px;
-    color: #FFF;
+    color: var(--white-color);
 
     text-align: center;
     font-family: Inter;
@@ -324,7 +322,7 @@
 }
 .noSubs .description {
     margin-top: 10px;
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     text-align: center;
     font-family: Inter;
     font-size: 20px;

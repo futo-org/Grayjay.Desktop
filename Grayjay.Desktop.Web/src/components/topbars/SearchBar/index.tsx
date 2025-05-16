@@ -32,7 +32,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
 
   const buttonStyle: JSX.CSSProperties = {
     "border-radius": "6px",
-    "border": "1px solid #454545",
+    "border": "1px solid var(--grey-color-7)",
     "height": "37px",
     "padding-left": "16px",
     "padding-right": "16px",
@@ -162,11 +162,11 @@ const SearchBar: Component<SearchBarProps> = (props) => {
           }} style={props.overlayStyle}>
             <div>Choose content type to search</div>
             <div style="display: flex; flex-direction: row; gap: 4px; margin-top: 16px;">
-              <CustomButton icon={iconVideos} text='Media' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.MEDIA ? "#2E2E2E" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.MEDIA)} />
-              <CustomButton icon={iconCreators} text='Creators' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.CHANNEL ? "#2E2E2E" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.CHANNEL)} />
-              <CustomButton icon={iconPlaylist} text='Playlists' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.PLAYLIST ? "#2E2E2E" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.PLAYLIST)} />
+              <CustomButton icon={iconVideos} text='Media' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.MEDIA ? "var(--grey-color-6)" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.MEDIA)} />
+              <CustomButton icon={iconCreators} text='Creators' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.CHANNEL ? "var(--grey-color-6)" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.CHANNEL)} />
+              <CustomButton icon={iconPlaylist} text='Playlists' style={{ ... buttonStyle, "background-color": searchType$() === ContentType.PLAYLIST ? "var(--grey-color-6)" : undefined }} iconStyle={buttonIconStyle} onMouseDown={(e) => changeSearchType(e, ContentType.PLAYLIST)} />
             </div>
-            <div style="width: 100%; background-color: #2E2E2E; height: 1px; margin-top: 20px; margin-bottom: 20px;"></div>
+            <div style="width: 100%; background-color: var(--grey-color-6); height: 1px; margin-top: 20px; margin-bottom: 20px;"></div>
             <Show when={historical$()}>
               <div style="display: flex; flex-direction: row; margin-bottom: 12px; width: 100%;">
                 <div>Your previous searches</div>

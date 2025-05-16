@@ -1,14 +1,14 @@
 
 .container {
     width: 100%;
-    border-top: 1px solid #363636;
-    border-bottom: 1px solid #363636;
+    border-top: 1px solid var(--grey-color-6);
+    border-bottom: 1px solid var(--grey-color-6);
     padding-top: 24px;
     padding-bottom: 8px;
 }
 
 .header {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 20px;
     font-style: normal;
@@ -16,7 +16,7 @@
     line-height: 24px; /* 109.091% */
 }
 .description {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;

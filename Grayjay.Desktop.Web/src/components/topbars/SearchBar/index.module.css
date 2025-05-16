@@ -10,15 +10,15 @@
     justify-content: center;
     align-items: flex-start;
     border-radius: 10px;
-    border: 1px solid #2E2E2E;
-    background: #212121;
-    box-shadow: 0px 100px 80px 0px rgba(0, 0, 0, 0.16), 0px 64.815px 46.852px 0px rgba(0, 0, 0, 0.12), 0px 38.519px 25.481px 0px rgba(0, 0, 0, 0.10), 0px 20px 13px 0px rgba(0, 0, 0, 0.08), 0px 8.148px 6.519px 0px rgba(0, 0, 0, 0.06), 0px 1.852px 3.148px 0px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--grey-color-6);
+    background: var(--grey-color-8);
+    box-shadow: 0px 100px 80px 0px rgb(from var(--black-color-3)  r g b / 0.16), 0px 64.815px 46.852px 0px rgb(from var(--black-color-3)  r g b / 0.12), 0px 38.519px 25.481px 0px rgb(from var(--black-color-3)  r g b / 0.10), 0px 20px 13px 0px rgb(from var(--black-color-3)  r g b / 0.08), 0px 8.148px 6.519px 0px rgb(from var(--black-color-3)  r g b / 0.06), 0px 1.852px 3.148px 0px rgb(from var(--black-color-3)  r g b / 0.04);
     box-sizing: border-box;
 
     position: absolute;
     z-index: 1;
 
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;

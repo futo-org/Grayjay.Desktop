@@ -17,8 +17,8 @@
 .toast {
     padding: 10px;
     margin-right: 25px;
-    background-color: #111;
-    border: 1.5px solid #333;
+    background-color: var(--black-color-1);
+    border: 1.5px solid var(--grey-color-6);
     margin-top: 15px;
     margin-bottom: 15px;
     border-radius: 5px;
