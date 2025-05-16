@@ -29,6 +29,7 @@ import GlobalContextMenu from './components/GlobalContextMenu';
 import BuyPage from './pages/BuyPage';
 import UIOverlay from './state/UIOverlay';
 import ExceptionModel from './backend/exceptions/ExceptionModel';
+import { SettingsBackend } from './backend/SettingsBackend';
 
 const HomePage = lazy(() => import('./pages/Home'));
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'));
@@ -147,11 +148,14 @@ const App: Component<RouteSectionProps> = (props) => {
   </>
 };
 
+const DefaultPage=(await SettingsBackend.settings())?.object?.home?.recommendationsHomepage? HomePage: SubscriptionsPage;
+
 render(() => (
   <Router root={App}>
-    <Route path="/web/index.html" component={HomePage} />
-    <Route path="/web" component={HomePage} />
-    <Route path="/web/home" component={HomePage} />
+    <Route path="/web/index.html" component={DefaultPage} />
+    <Route path="/web" component={DefaultPage} />
+    <Route path="/web/home" component={DefaultPage} />
+    <Route path="/web/recommended" component={HomePage} />
     <Route path="/web/search" component={SearchPage} />
     <Route path="/web/subscriptions" component={SubscriptionsPage} />
     <Route path="/web/creators" component={CreatorsPage} />
