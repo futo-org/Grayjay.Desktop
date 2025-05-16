@@ -159,22 +159,37 @@ namespace Grayjay.ClientServer.Settings
             public bool PreferOriginalAudio { get; set; } = true;
 
             [SettingsField("Default Playback Speed", SettingsField.DROPDOWN, "", 1)]
-            [SettingsDropdownOptions("0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25")]
-            public int DefaultPlaybackSpeed { get; set; } = 3;
+            [SettingsDropdownOptions("0.05","0.1","0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.33", "2.66", "3", "3.5", "4", "5","6","8","10","12","15","20","30","60")]
+            public int DefaultPlaybackSpeed { get; set; } = 5;
 
             public float GetDefaultPlaybackSpeed()
             {
                 return DefaultPlaybackSpeed switch
                 {
-                    0 => 0.25f,
-                    1 => 0.5f,
-                    2 => 0.75f,
-                    3 => 1.0f,
-                    4 => 1.25f,
-                    5 => 1.5f,
-                    6 => 1.75f,
-                    7 => 2.0f,
-                    8 => 2.25f,
+                    0 => 0.05f,
+                    1 => 0.1f,
+                    2 => 0.25f,
+                    3 => 0.5f,
+                    4 => 0.75f,
+                    5 => 1.0f,
+                    6 => 1.25f,
+                    7 => 1.5f,
+                    8 => 1.75f,
+                    9 => 2.0f,
+                    10 => 2.33f,
+                    11 => 2.66f,
+                    12 => 3f,
+                    13 => 3.5f,
+                    14 => 4f,
+                    15 => 5f,
+                    16 => 6f,
+                    17 => 8f,
+                    18 => 10f,
+                    19 => 12f,
+                    20 => 15f,
+                    21 => 20f,
+                    22 => 30f,
+                    23 => 60f,
                     _ => 1.0f
                 };
             }

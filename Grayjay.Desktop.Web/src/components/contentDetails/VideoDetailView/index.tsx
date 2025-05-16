@@ -321,15 +321,30 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     async function getDefaultPlaybackSpeed() {
         const value = (await SettingsBackend.settings())?.object?.playback?.defaultPlaybackSpeed;
         switch (value) {
-            case 0: return 0.25;
-            case 1: return 0.5;
-            case 2: return 0.75;
-            case 3: return 1.0;
-            case 4: return 1.25;
-            case 5: return 1.5;
-            case 6: return 1.75;
-            case 7: return 2.0;
-            case 8: return 2.25;
+            case 0: return 0.05;
+            case 1: return 0.1;
+            case 2: return 0.25;
+            case 3: return  0.5;
+            case 4: return  0.75;
+            case 5: return  1.0;
+            case 6: return  1.25;
+            case 7: return  1.5;
+            case 8: return  1.75;
+            case 9: return  2.0;
+            case 10: return  2.33;
+            case 11: return 2.66;
+            case 12: return 3;
+            case 13: return 3.5;
+            case 14: return 4;
+            case 15: return 5;
+            case 16: return 6;
+            case 17: return 8;
+            case 18: return 10;
+            case 19: return 12;
+            case 20: return 15;
+            case 21: return 20;
+            case 22: return 30;
+            case 23: return 60;
             default: return 1.0;
         }
     }
@@ -997,7 +1012,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                     type: "group",
                     subMenu: {
                         title: "Playback Speed",
-                        items: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25].map(s => {
+                        items: [0.05,0.1,0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.33,2.66,3,3.5,4,5,6,8,10,12,15,20,30,60].map(s => {
                             return {
                                 name: `${s.toFixed(2)}x`,
                                 value: s,
