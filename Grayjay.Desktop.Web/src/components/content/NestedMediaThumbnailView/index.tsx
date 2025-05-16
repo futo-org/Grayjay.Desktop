@@ -72,7 +72,7 @@ const NestedMediaThumbnailView: Component<NestedMediaProps> = (props) => {
             }}>
                 <div class={styles.authorName} onClick={onClickAuthor}>{props.video?.author.name}</div>
                 <Show when={props.video}>
-                    <div class={styles.metadata}>{toHumanNowDiffString(props.video?.dateTime)}</div>
+                    <div class={styles.metadata} title={props.video?.dateTime}>{toHumanNowDiffString(props.video?.dateTime)}</div>
                 </Show>
             </div>
             <Show when={props.onSettings}>

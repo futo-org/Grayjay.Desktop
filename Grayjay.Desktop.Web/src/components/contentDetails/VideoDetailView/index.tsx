@@ -1211,8 +1211,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                 <img src={bestThumbnail()?.url} style="border-radius: 3px; height: 112px; width: 200px; cursor: pointer;" referrerPolicy='no-referrer' />
                 <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; cursor: pointer; margin-left: 10px;">
                     <div class={styles.recommendationItemTitle}>{item()?.name}</div>
-                    <div class={styles.recommendationItemAuthor} style="margin-top: 6px">{item()?.author?.name}</div>
-                    <div class={styles.recommendationItemAuthor} style="margin-top: 6px"><Show when={(item()?.viewCount ?? 0) > 0}>{toHumanNumber(item()?.viewCount)} views • </Show>{toHumanNowDiffString(item()?.dateTime)}</div>
+                    <div class={styles.recommendationItemAuthor} style="margin-top: 4px">{item()?.author?.name}</div>
+                    <div class={styles.recommendationItemAuthor} style="margin-top: 4px" title={DateTime.fromSeconds(Number(item()?.dateTime)).toISO()}><Show when={(item()?.viewCount ?? 0) > 0}>{toHumanNumber(item()?.viewCount)} views • </Show>{toHumanNowDiffString(item()?.dateTime)}</div>
                 </div>
             </div>
         );
@@ -1364,7 +1364,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             <div class={styles.headerContainer}>
                                 <div class={styles.containerTitle}>
                                     <div class={styles.title} ondragstart={(ev)=>preventDragDrop(ev)}>{name$()}</div>
-                                    <div class={styles.metadata}>{metadata$()}</div>
+                                    <div class={styles.metadata} title={DateTime.fromSeconds(Number(dateTime$())).toISO()}>{metadata$()}</div>
                                 </div>
                                 <div class={styles.buttonList}>
                                     <div style="margin: 7px;;">
