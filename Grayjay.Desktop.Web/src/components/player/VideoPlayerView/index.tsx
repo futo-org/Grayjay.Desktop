@@ -1007,7 +1007,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             document.exitFullscreen();
             setIsFullscreen(false);
         } else {
-            containerRef?.requestFullscreen();
+            containerRef?.requestFullscreen().then(() => containerRef?.focus());
             setIsFullscreen(true);
         }
     };
@@ -1058,8 +1058,10 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             }} 
             style={{ 
                 ... props.style,
-                cursor: areControlsVisible() ? undefined : "none"
+                cursor: areControlsVisible() ? undefined : "none",
+                outline: 0
             }} 
+            tabindex="-1"
             onMouseMove={handleMouseMove}
             onMouseLeave={hideControls}
             onDblClick={handleDblClick}>
@@ -1083,6 +1085,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 <PlayerControlsView
                     chapters={props.chapters}
+                    controlEventContainer={containerRef}
                     video={props.video}
                     duration={duration()}
                     position={position()}
