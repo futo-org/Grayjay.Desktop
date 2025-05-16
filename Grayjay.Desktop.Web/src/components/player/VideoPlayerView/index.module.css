@@ -28,12 +28,12 @@
     transform: translateX(-50%);
     display: flex;
     background-color: rgba(0,0,0,.7);
-    border: 1px solid rgba(255,255,255,.15);
     padding: 6px 12px;
+    border: 1px solid rgb(from var(--white-color)  r g b /.15);
     border-radius: 30px;
     font-size: 16px;
     cursor: pointer;
-    color: white;
+    color: var(--white-color);
 }
 
 .loader {

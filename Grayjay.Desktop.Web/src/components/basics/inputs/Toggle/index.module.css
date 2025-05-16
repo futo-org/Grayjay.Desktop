@@ -2,7 +2,7 @@
     border-radius: 30px;
     width: 52px;
     height: 32px;
-    background-color: #ffffff22;
+    background-color: rgb(from var(--white-color)  r g b / .13);
     display: inline-block;
     transition: background-color 0.5s;
     cursor: pointer;
@@ -12,7 +12,7 @@
     height: 22px;
     margin-top: 5px;
     margin-left: 5px;
-    background-color: #FFF;
+    background-color: var(--white-color);
     border-radius: 25px;
     transition: margin-left 0.5s;
 }
@@ -22,5 +22,5 @@
 }
 
 .toggle.enabled {
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
 }

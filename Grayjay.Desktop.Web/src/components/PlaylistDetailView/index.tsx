@@ -143,7 +143,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             text="Shuffle"
             icon={iconShuffle}
             style={{
-              border: "1px solid #2E2E2E",
+              border: "1px solid var(--grey-color-6)",
               "margin-left": "16px",
               "margin-right": "16px",
               "flex-shrink": 0
@@ -157,7 +157,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               showClearButton={true}
               inputContainerStyle={{
                 "height": "70px", 
-                "background": "#141414"
+                "background": "var(--black-color-1)"
               }}
               onTextChanged={(v) => {
                 setFilterText(v);

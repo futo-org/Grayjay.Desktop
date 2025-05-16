@@ -99,7 +99,7 @@
 }
 
 .authorName {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;

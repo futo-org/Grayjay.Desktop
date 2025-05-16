@@ -26,15 +26,15 @@
     padding-left: 24px;
     padding-right: 24px;
     align-items: center;
-    color: #FFF;
+    color: var(--white-color);
     gap: 4px;
 
     border-radius: 6px;
-    border: 1px solid #454545;
+    border: 1px solid var(--grey-color-7);
     box-sizing: border-box;
 }
 
 .containerButton.active {
-    background: #2E2E2E;
-    border: 1px solid #2E2E2E;
+    background: var(--grey-color-6);
+    border: 1px solid var(--grey-color-6);
 }

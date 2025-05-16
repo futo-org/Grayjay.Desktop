@@ -6,7 +6,7 @@
 }
 
 .header {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 29px;
     font-style: normal;

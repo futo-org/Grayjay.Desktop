@@ -40,13 +40,13 @@
 
 .duration {
     border-radius: 4px;
-    background: #000000EE;
+    background: rgb(from var(--black-color-3)  r g b / 0.93);
     position: absolute;
     right: 12px;
     bottom: 12px;
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     padding: 6px 8px;
-    color: #FFF;
+    color: var(--white-color);
 
     /*leading-trim: both; -NOT SUPPORTED YET BY BROWSERS*/
     
@@ -64,13 +64,13 @@
     position: absolute;
     right: 12px;
     bottom: 12px;
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     padding: 6px 8px;
 
     padding: 5px 8px;
 
 
-    color: #FFF;
+    color: var(--white-color);
 
 
     
@@ -82,7 +82,7 @@
     line-height: normal;
 
 
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -91,13 +91,13 @@
 }
 .isPlanned {
     border-radius: 3px;
-    background: #222;
+    background: var(--grey-color-8);
     position: absolute;
     right: 12px;
     bottom: 12px;
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     padding: 6px 8px;
-    color: #FFF;
+    color: var(--white-color);
 
 
     
@@ -128,7 +128,7 @@
     flex-direction: row;
     margin-top: 6px;
     font-size: 15px;
-    color: #979797;
+    color: var(--grey-color-2);
     align-items: center;
     overflow: hidden;
 }
@@ -176,5 +176,5 @@
 }
 .progressBarProgress {
     height: 3px;
-    background-color: #3333FFAA;
+    background-color: var(--grey-color-6)3FFAA;
 }

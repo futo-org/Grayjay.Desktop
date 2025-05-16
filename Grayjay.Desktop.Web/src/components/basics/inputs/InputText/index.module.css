@@ -1,8 +1,8 @@
 
 .containerInputText {
     border-radius: 6px;
-    border: 1px solid #2E2E2E;
-    background: #1B1B1B;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-2);
     padding-top: 16px;
     padding-bottom: 16px;
     padding-left: 12px;
@@ -45,8 +45,8 @@
 }
 
 .containerInputText.disabled {
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
 }
 
 .containerInputText.disabled::placeholder {
@@ -75,7 +75,7 @@
     flex-grow: 1;
     border: none;
     background: transparent;
-    color: white;
+    color: var(--white-color);
     font-weight: 400;
     font-size: 16px;
     line-height: 22px;
@@ -86,12 +86,12 @@
 }
 
 .searchInput::placeholder {
-    color: #494949;
+    color: var(--grey-color-7);
 }
 
 .labelText {
     overflow: hidden;
-    color: #595959;
+    color: var(--grey-color-5);
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: Inter;

@@ -1,7 +1,7 @@
 .container {
     height: 100%;
     width: 100%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(to top, rgb(from var(--black-color-3)  r g b / 0.8) 0%, rgb(from var(--black-color-3)  r g b / 0) 100%);
     background-size: 100% 300px;
     background-repeat: no-repeat;
     background-position: bottom;
@@ -12,7 +12,7 @@
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(0,0,0,.7);
+    background-color: rgb(from var(--black-color-3)  r g b /.7);
     padding: 14px 25px;
     border-radius: 30px;
     font-size: 18px;
@@ -51,75 +51,75 @@
 }
 .progressBarChapter {
     position: absolute;
-    border-left: 2px solid rgba(0,0,0,.3);
-    border-right: 2px solid rgba(0,0,0,.3);
+    border-left: 2px solid rgb(from var(--black-color-3)  r g b /.3);
+    border-right: 2px solid rgb(from var(--black-color-3)  r g b /.3);
     border-radius: 4px;
     height: 8px;
     margin-top: 1px
 }
 .progressBarChapter:hover {
-    border-left: 0px solid rgba(20,20,20,.8);
-    border-right: 0px solid rgba(20,20,20,.8);
+    border-left: 0px solid rgb(from var(--black-color-1)  r g b / .8);
+    border-right: 0px solid rgb(from var(--black-color-1)  r g b / .8);
     margin-left: 2px;
     border-radius: 2px;
     height: 15px;
     padding-bottom: 0px;
     padding-top: 0px;
     margin-top: -2px;
-    background-color: #999999;
+    background-color: var(--black-color-3);
 }
 /*
 .progressBarChapter.hover {
-    border-left: 0px solid rgba(20,20,20,.8);
-    border-right: 0px solid rgba(20,20,20,.8);
+    border-left: 0px solid rgb(from var(--black-color-1)  r g b / .8);
+    border-right: 0px solid rgb(from var(--black-color-1)  r g b / .8);
     margin-left: 2px;
     border-radius: 2px;
     height: 11px;
     padding-bottom: 0px;
     padding-top: 0px;
     margin-top: 0px;
-    background-color: #999999;
+    background-color: var(--black-color-3);
 }*/
 .progressBarChapter .hoverBar {
-    border-left: 0px solid rgba(20,20,20,.8);
-    border-right: 0px solid rgba(20,20,20,.8);
+    border-left: 0px solid rgb(from var(--black-color-1)  r g b / .8);
+    border-right: 0px solid rgb(from var(--black-color-1)  r g b / .8);
     margin-left: 0px;
     border-radius: 2px;
     height: 10px;
     padding-bottom: 0px;
     padding-top: 0px;
     margin-top: -0.5px;
-    background-color: #999999;
+    background-color: var(--black-color-3);
 }
 .progressBarChapter .hoverBar.partial {
-    border-left: 0px solid rgba(20,20,20,.8);
-    border-right: 0px solid rgba(20,20,20,.8);
+    border-left: 0px solid rgb(from var(--black-color-1)  r g b / .8);
+    border-right: 0px solid rgb(from var(--black-color-1)  r g b / .8);
     margin-left: 0px;
     border-radius: 2px;
     height: 8px;
     padding-bottom: 0px;
     padding-top: 0px;
     margin-top: 0px;
-    background-color: #999999;
+    background-color: var(--black-color-3) ;
 }
 .progressBarChapter .hoverBarPartial {
     position: absolute;
     top: 0px;
-    border-left: 0px solid rgba(20,20,20,.8);
-    border-right: 0px solid rgba(20,20,20,.8);
+    border-left: 0px solid rgb(from var(--black-color-1)  r g b / .8);
+    border-right: 0px solid rgb(from var(--black-color-1)  r g b / .8);
     margin-left: 0px;
     border-radius: 2px;
     height: 10px;
     padding-bottom: 0px;
     padding-top: 0px;
     margin-top: -0.5px;
-    background-color: #999999;
+    background-color: var(--black-color-3);
 }
 .progressBarChapter .hoverBar.pastProgress {
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
 }
 .progressBarChapter.hover.pastProgress {
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
 }
 .progressBarChapter .label {
     font-size: 11px;
@@ -142,7 +142,7 @@
     position: absolute;
     overflow: hidden;
     text-overflow: ellipsis;
-    background-color: rgba(0,0,0,.8);
+    background-color: rgb(from var(--black-color-3)  r g b /.8);
     border-radius: 5px;
     padding: 10px;
     top: -50px;
@@ -159,7 +159,7 @@
     position: absolute;
     overflow: hidden;
     text-overflow: ellipsis;
-    background-color: rgba(0,0,0,.8);
+    background-color: rgb(from var(--black-color-3)  r g b /.8);
     border-radius: 5px;
     padding: 10px;
     top: -50px;
@@ -175,7 +175,7 @@
     top: 10px;
     height: 4px;
     width: 72px;
-    background-color: #999999;
+    background-color: var(--black-color-3);
     border-radius: 3px;
     pointer-events: none;
 }
@@ -194,8 +194,8 @@
     top: 4px;
     width: 16px;
     height: 16px;
-    background-color: #ffffff;
-    box-shadow: 0px 32px 64px 0px rgba(0, 0, 0, 0.56), 0px 2px 21px 0px rgba(0, 0, 0, 0.55); 
+    background-color: var(--white-color);
+    box-shadow: 0px 32px 64px 0px rgb(from var(--black-color-3)  r g b / 0.56), 0px 2px 21px 0px rgb(from var(--black-color-3)  r g b / 0.55); 
     border-radius: 50%;
     pointer-events: none;
     z-index: 10;
@@ -206,7 +206,7 @@
     left: 12px;
     top: 10px;
     height: 4px;
-    background-color: #ffffff;
+    background-color: var(--white-color);
     border-radius: 3px;
     pointer-events: none;
 }
@@ -217,7 +217,7 @@
     left: 24px;
     right: 24px;
     height: 4px;
-    background-color: #99999945;
+    background-color: rgb(from var(--grey-color-2)  r g b / 0.27);
     border-radius: 3px;
     pointer-events: none;
 }
@@ -227,7 +227,7 @@
     bottom: 70px;
     left: 24px;
     height: 4px;
-    background-color: #D9D9D945;
+    background-color:rgb(from var(--black-color-3)  r g b / 0.18);
     border-radius: 3px;
     pointer-events: none;
 }
@@ -237,7 +237,7 @@
     bottom: 70px;
     left: 24px;
     height: 4px;
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
     border-radius: 3px;
     pointer-events: none;
 }
@@ -249,7 +249,7 @@
     height: 20px;
     margin-left: -8px;
     margin-bottom: -8px;
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
     border-radius: 50%;
     pointer-events: none;
     z-index: 10;
@@ -289,7 +289,7 @@
     margin-left: 10px;
 }
 .plannedBadge {
-    background-color: #222;
+    background-color: var(--grey-color-8);
     padding: 5px 5px;
     border-radius: 4px;
     margin-left: 10px;

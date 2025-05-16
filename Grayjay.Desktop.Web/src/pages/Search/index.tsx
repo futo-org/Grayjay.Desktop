@@ -163,7 +163,7 @@ const SearchPage: Component = () => {
               performSearch(v, sortBy$(), filterValues$(), enabledSources$());
             }} />
             <Show when={searchType$() === ContentType.MEDIA}>
-              <CustomButton text='Filters' icon={iconFilters} border='1px solid #2E2E2E' style={{"height": "44px" }} onClick={() => setFiltersDialogVisible(true)} />
+              <CustomButton text='Filters' icon={iconFilters} border='1px solid var(--grey-color-6)' style={{"height": "44px" }} onClick={() => setFiltersDialogVisible(true)} />
             </Show>
           </div>
           <Show when={searchPager.state == 'ready'}>
