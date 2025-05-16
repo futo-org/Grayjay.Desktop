@@ -149,9 +149,11 @@ const App: Component<RouteSectionProps> = (props) => {
 
 render(() => (
   <Router root={App}>
-    <Route path="/web/index.html" component={HomePage} />
-    <Route path="/web" component={HomePage} />
-    <Route path="/web/home" component={HomePage} />
+    <Route path="/web/video" component={BuyPage} />
+    <Route path="/web/index.html" component={DefaultPage} />
+    <Route path="/web" component={DefaultPage} />
+    <Route path="/web/home" component={DefaultPage} />
+    <Route path="/web/recommended" component={HomePage} />
     <Route path="/web/search" component={SearchPage} />
     <Route path="/web/subscriptions" component={SubscriptionsPage} />
     <Route path="/web/creators" component={CreatorsPage} />

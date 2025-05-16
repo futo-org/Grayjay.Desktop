@@ -57,3 +57,8 @@ code {
 img {
   -webkit-user-drag: none;
 }
+
+a {
+  color: inherit; 
+  text-decoration: inherit
+}

@@ -150,6 +150,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       icon: iconSettings,
       name: 'Settings',
       action: () => UIOverlay.overlaySettings(),
+      path: '/web/settings',
       selected: location.pathname === '/web/settings'
     });
   
@@ -257,14 +258,14 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           </Show>
         </div>
         {topButtons$().slice(0, visibleTopButtonCount$()).map(btn => (
-          <SideBarButton
+          <a href={btn.path} style="width: 100%;"><SideBarButton
             collapsed={collapsed()}
             icon={btn.icon}
             name={btn.name}
             selected={btn.selected}
             onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
             onRightClick={btn.onRightClick}
-          />
+          /></a>
         ))}
         <Show when={moreTopButtonCount$() > 0}>
           <SideBarButton
@@ -295,6 +296,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
                     <FlexibleArrayList outerContainerRef={scrollContainerRef} 
                       items={subscriptions$()}
                       builder={(_, item$) => 
+                        <a href={"/web/channel?url=" + encodeURIComponent(item$()?.channel!.url)}>
                         <SideBarCreator onClick={() => {
                           const author = item$()?.channel;
                           if (!author) {
@@ -302,6 +304,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
                           }
                           navigate("/web/channel?url=" + encodeURIComponent(author!.url), { state: { author } });
                         }} icon={item$()?.channel?.thumbnail} name={item$()?.channel?.name} selected={false} />
+                        </a>
                       } />
                   </ScrollContainer>
                 </Match>
@@ -312,13 +315,13 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       </Show>
       <div class={styles.buttonListBottom}>
         {bottomButtons$().map(btn => (
-          <SideBarButton
+          <a href={btn.path} style="width: 100%;"><SideBarButton
             collapsed={collapsed()}
             icon={btn.icon}
             name={btn.name}
             selected={btn.selected}
             onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-          />
+          /></a>
         ))}
       </div>
       <Portal>
@@ -335,14 +338,14 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
     flex-direction: column; align-items: center; gap: 6px;">
               {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (
-                  <SideBarButton
+                  <a href={btn.path}><SideBarButton
                     collapsed={false}
                     icon={btn.icon}
                     name={btn.name}
                     selected={btn.selected}
                     onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
                     onRightClick={btn.onRightClick}
-                  />
+                  /></a>
                 ))}
             </div>
           </div>

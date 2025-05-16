@@ -169,13 +169,13 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
 
     const renderCreator = (creator: IPlatformAuthorLink) => {
         return (
-            <CreatorView id={creator.id}
+            <a href={"/web/channel?url=" + encodeURIComponent(creator.url)}><CreatorView id={creator.id}
                 name={creator.name}
                 onClick={() => navigate("/web/channel?url=" + encodeURIComponent(creator.url), { state: { author: creator
                  } })}
                 thumbnail={creator.thumbnail}
                 metadata={((creator.subscribers && creator.subscribers > 0) ? (toHumanNumber(creator.subscribers) + " subscribers") : "")}
-                url={creator.url} />
+                url={creator.url} /></a>
         );
     };
 
@@ -186,11 +186,11 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
         });
         
         return (
-            <PlaylistView itemCount={playlist.videoCount}
+            <a href={("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))}><PlaylistView itemCount={playlist.videoCount}
                 name={playlist.name}
                 thumbnail={playlist.thumbnail}
                 platformIconUrl={pluginIconUrl$()}
-                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))} />
+                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))} /></a>
         );
         //onSettings={(e) => onSettingsClicked(e, playlist)}
     };
@@ -231,24 +231,25 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     builder={(index, item) =>
                         <Switch>
                             <Match when={item()?.contentType == ContentType.MEDIA}>
-                                <VideoThumbnailView video={item() as IPlatformVideo}
-                                    useCache={!!props?.useCache}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content)}
-                                    onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
-                                    onClick={() => {
-                                        const url = item().backendUrl ?? item().url;
-                                        if (url)
-                                            video?.actions.openVideo(item() as IPlatformVideo);
-                                        }} />
+                                <a href={"/web/video?url="+(item().backendUrl ?? item().url)}>
+                                    <VideoThumbnailView video={item() as IPlatformVideo}
+                                        useCache={!!props?.useCache}
+                                        onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                        onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
+                                        onClick={() => {
+                                            const url = item().backendUrl ?? item().url;
+                                            if (url)
+                                                video?.actions.openVideo(item() as IPlatformVideo);
+                                            }} />                                </a>
                             </Match>
                             <Match when={item()?.contentType == ContentType.POST}>
-                                <PostThumbnailView post={item() as IPlatformPost}
+                                <a href={"/web/details/post?url=" + encodeURIComponent(item().backendUrl ?? item().url)}><PostThumbnailView post={item() as IPlatformPost}
                                     onSettings={(e, content)=> onSettingsClicked(e, content)}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().url;
                                         if(url)
                                             navigate("/web/details/post?url=" + encodeURIComponent(url));
-                                    }} />
+                                    }} /></a>
                             </Match>
                             <Match when={item()?.contentType == ContentType.NESTED_VIDEO}>
                                 <NestedMediaThumbnailView video={item() as IPlatformNestedMedia}

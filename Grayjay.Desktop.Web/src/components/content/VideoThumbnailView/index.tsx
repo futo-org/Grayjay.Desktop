@@ -87,12 +87,16 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
         <div class={styles.title} onClick={props.onClick} onDragStart={startDrag} draggable={true}>{props.video?.name}</div>
         <div class={styles.bottomRow}>
             <Show when={showAuthorThumbnail$()}>
-              <AnimatedImage src={props.video?.author.thumbnail} class={styles.authorThumbnail} alt="author thumbnail" onClick={onClickAuthor} referrerPolicy='no-referrer' />
+              <a href={props.video?.author.url? "/web/channel?url=" + encodeURIComponent(props.video?.author.url):undefined}>
+                <AnimatedImage src={props.video?.author.thumbnail} class={styles.authorThumbnail} alt="author thumbnail" onClick={onClickAuthor} referrerPolicy='no-referrer' />
+              </a>
             </Show>
             <div class={styles.authorColumn} style={{
               "margin-left": showAuthorThumbnail$() ? "8px" : undefined
             }}>
-                <div class={styles.authorName} onClick={onClickAuthor}>{props.video?.author?.name ?? "Unknown"}</div>
+                <a href={props.video?.author.url? "/web/channel?url=" + encodeURIComponent(props.video?.author.url):undefined}>
+                  <div class={styles.authorName} onClick={onClickAuthor}>{props.video?.author?.name ?? "Unknown"}</div>
+                </a>
                 <Show when={props.video}>
                     <div class={styles.metadata}><Show when={(props.video?.viewCount ?? 0) > 0}>{toHumanNumber(props.video?.viewCount)} views • </Show>{toHumanNowDiffString(props.video?.dateTime)}</div>
                 </Show>
@@ -100,14 +104,18 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
             
 
             <Show when={props.onAddtoQueue}>
+              <a href="javascript:void(0)">
               <IconButton icon={addToQueueIcon} 
                 style={{"margin-right": "7px", "margin-top": "4px"}}
                 iconPadding='3px'
-                height={"22px"} width={"22px"} ref={refAddToQueueButton} onClick={() => props.onAddtoQueue?.(refAddToQueueButton!, props.video!)} />
+                height={"22px"} width={"22px"} ref={refAddToQueueButton} onClick={() => {props.onAddtoQueue?.(refAddToQueueButton!, props.video!); return false;}} />
+              </a>
             </Show>
             
             <Show when={props.onSettings}>
-              <IconButton icon={more} ref={refMoreButton} onClick={() => props.onSettings?.(refMoreButton!, props.video!)} />
+            <a href="javascript:void(0)">
+              <IconButton icon={more} ref={refMoreButton} onClick={() => {console.log(1111.1); props.onSettings?.(refMoreButton!, props.video!); return false;}} />
+            </a>
             </Show>
         </div>
     </div>
