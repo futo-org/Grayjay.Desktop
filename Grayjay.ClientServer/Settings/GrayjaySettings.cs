@@ -30,6 +30,12 @@ namespace Grayjay.ClientServer.Settings
             //[SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should auto-preview when scrolling over them", 6)]
             //public bool PreviewFeedItems { get; set; } = true;
 
+            [SettingsField("Recommendations on home", SettingsField.TOGGLE, "Show recommendations on home page", 1)]
+            public bool RecommendationsHomepage { get; set; } = true;
+
+            [SettingsField("Recommendations on videos", SettingsField.TOGGLE, "Show recommendations beside videos", 1)]
+            public bool ShowRecommendations { get; set; } = true;
+
             [SettingsField("Progress Bar", SettingsField.TOGGLE, "If a historical progress bar should be shown", 7)]
             public bool ProgressBar { get; set; } = true;
 
