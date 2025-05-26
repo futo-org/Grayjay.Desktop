@@ -175,7 +175,7 @@ namespace Grayjay.ClientServer.Sync
 
                 if (existing == null)
                     StatePlaylists.CreateOrUpdate(playlist, false);
-                else if (existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
+                else if (existing.DateUpdate < playlist.DateUpdate)
                     StatePlaylists.CreateOrUpdate(playlist, false);
             }
             foreach (var removal in pack.PlaylistRemovals)
