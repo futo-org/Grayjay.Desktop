@@ -2,8 +2,8 @@
 Version=1.0
 Type=Application
 
-Name=GrayJay Desktop
-Comment=Multi-platform video feed aggregator
+Name=Grayjay
+Comment=Universal media aggregator
 Categories=AudioVideo;Player;
 
 Icon=app.grayjay.Grayjay

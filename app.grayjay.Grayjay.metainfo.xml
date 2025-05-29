@@ -3,11 +3,11 @@
   <id>app.grayjay.Grayjay</id>
   <url type="bugtracker">https://github.com/futo-org/Grayjay.Desktop/issues</url>
   <url type="homepage">https://grayjay.app/</url>
-  <name>GrayJay Desktop</name>
-  <summary>Multi-platform video feed aggregator</summary>
+  <name>Grayjay</name>
+  <summary>Universal media aggregator</summary>
 
   <metadata_license>CC-BY-SA-4.0</metadata_license>
-  <project_license>LicenseRef-proprietary=https://github.com/futo-org/Grayjay.Desktop/blob/master/LICENSE.md</project_license>
+  <project_license>LicenseRef-Source-First-1.1=https://github.com/futo-org/Grayjay.Desktop/blob/master/LICENSE.md</project_license>
   <developer id="org.futo">
     <name>FUTO</name>
   </developer>
@@ -50,6 +50,12 @@
   </content_rating>
   <releases>
     <!-- TODO: add to this section when future versions are released -->
+    <release version="7" date="2025-05-06">
+      <url type="details">https://github.com/futo-org/Grayjay.Desktop/releases/tag/7</url>
+    </release>
+    <release version="6" date="2025-05-03">
+      <url type="details">https://github.com/futo-org/Grayjay.Desktop/releases/tag/6</url>
+    </release>
     <release version="5" date="2025-01-09">
       <url type="details">https://github.com/futo-org/Grayjay.Desktop/releases/tag/5</url>
     </release>
@@ -57,7 +63,28 @@
   <launchable type="desktop-id">app.grayjay.Grayjay.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://grayjay.app/desktop/images/feed-main-img-hover.png</image>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/home.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/channel.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/detail1.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/detail2.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/download.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/sources.PNG</image>
     </screenshot>
   </screenshots>
 </component>
