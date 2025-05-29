@@ -35,7 +35,7 @@ namespace Grayjay.Desktop.CEF
                 preferredWidth: preferredWidth,
                 preferredHeight: preferredHeight,
                 title: title, 
-                iconPath: Path.GetFullPath("grayjay.png")
+                iconPath: Utilities.FindFile("grayjay.png")
             );
 
             await window.SetDevelopmentToolsEnabledAsync(true);
@@ -74,7 +74,7 @@ namespace Grayjay.Desktop.CEF
                 preferredWidth: 385, 
                 preferredHeight: 833, 
                 title: title, 
-                iconPath: Path.GetFullPath("grayjay.png"), 
+                iconPath: Utilities.FindFile("grayjay.png"), 
                 developerToolsEnabled: true, 
                 modifyRequests: true,
                 resizable: false,

@@ -358,7 +358,7 @@ namespace Grayjay.Desktop
                     preferredWidth: 1300,
                     preferredHeight: 950,
                     title: "Grayjay",
-                    iconPath: Path.GetFullPath("grayjay.png"),
+                    iconPath: Utilities.FindFile("grayjay.png"),
                     appId: "com.futo.grayjay.desktop"
                 );
                 await window.SetDevelopmentToolsEnabledAsync(true);
