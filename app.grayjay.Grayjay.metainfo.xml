@@ -63,7 +63,28 @@
   <launchable type="desktop-id">app.grayjay.Grayjay.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://grayjay.app/desktop/images/feed-main-img-hover.png</image>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/home.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/channel.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/detail1.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/detail2.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/download.PNG</image>
+    </screenshot>
+    <screenshot>
+      <image>
+        https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/raw/b2d0cb4507bee98eb976c2894b9d3005c775441c/imgs/sources.PNG</image>
     </screenshot>
   </screenshots>
 </component>
