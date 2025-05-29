@@ -154,13 +154,13 @@ const SyncPage: Component = () => {
         <NavigationBar isRoot={true} style={{"flex-shrink": 0}} />
         <div style="display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; margin-left: 24px; margin-right: 24px; gap: 12px">
           <Show when={status$()?.serverSocketFailedToStart === true}>
-            <div class={styles.errorCard}>Failed to start server socket.</div>
+            <div class={styles.errorCard}>Failed to start server socket, is the port in use?</div>
           </Show>
           <Show when={status$()?.serverSocketStarted === false}>
-            <div class={styles.warningCard}>Listener not started, local connections will not work.</div>
+            <div class={styles.warningCard}>Listener not started, local connections will not work</div>
           </Show>
           <Show when={status$()?.relayConnected === false}>
-            <div class={styles.warningCard}>Not connected to relay, remote connections will work.</div>
+            <div class={styles.warningCard}>Not connected to relay, remote connections will work</div>
           </Show>
         </div>
         <Show when={synchronizationEnabled()} fallback={
