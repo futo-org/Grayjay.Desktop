@@ -55,10 +55,22 @@ namespace Grayjay.ClientServer.Controllers
             }).Where(x=>x != null).ToList());
         }
 
-        [HttpGet]
-        public ActionResult ServerSocketFailedToStart()
+        public class StatusResponse
         {
-            return Ok(StateSync.Instance.SyncService?.ServerSocketFailedToStart ?? false);
+            public bool ServerSocketStarted { get; init; }
+            public bool RelayConnected { get; init; }
+            public bool ServerSocketFailedToStart { get; init; }
+        }
+
+        [HttpGet]
+        public ActionResult<StatusResponse> Status()
+        {
+            return Ok(new StatusResponse
+            {
+                RelayConnected = StateSync.Instance.SyncService?.RelayConnected ?? false,
+                ServerSocketStarted = StateSync.Instance.SyncService?.ServerSocketStarted ?? false,
+                ServerSocketFailedToStart = StateSync.Instance.SyncService?.ServerSocketFailedToStart ?? false
+            });
         }
 
         [HttpGet]

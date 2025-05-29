@@ -146,15 +146,23 @@ const SyncPage: Component = () => {
     return StateGlobal.settings$()?.object?.synchronization?.enabled;
   });
 
-  const [serverSocketFailedToStart$] = createResourceDefault(() => [], async () => await SyncBackend.serverSocketFailedToStart());
+  const [status$] = createResourceDefault(() => [], async () => await SyncBackend.status());
 
   return (
     <Show when={!devices$.loading} fallback={ <CenteredLoader /> }>
       <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
         <NavigationBar isRoot={true} style={{"flex-shrink": 0}} />
-        <Show when={serverSocketFailedToStart$()}>
-          <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 20px; margin-bottom: 20px; color: red;">Failed to start server socket.</div>
-        </Show>
+        <div style="display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; margin-left: 24px; margin-right: 24px; gap: 12px">
+          <Show when={status$()?.serverSocketFailedToStart === true}>
+            <div class={styles.errorCard}>Failed to start server socket.</div>
+          </Show>
+          <Show when={status$()?.serverSocketStarted === false}>
+            <div class={styles.warningCard}>Listener not started, local connections will not work.</div>
+          </Show>
+          <Show when={status$()?.relayConnected === false}>
+            <div class={styles.warningCard}>Not connected to relay, remote connections will work.</div>
+          </Show>
+        </div>
         <Show when={synchronizationEnabled()} fallback={
           renderEnableSyncPrompt()
         }>
