@@ -4,7 +4,7 @@
     position: relative;
 
     scrollbar-width: 8px;
-    scrollbar-color: #555 #333;
+    scrollbar-color: var(--grey-color-5) var(--grey-color-6);
 }
 
 

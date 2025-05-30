@@ -1,3 +1,59 @@
+:root{
+  /*
+  --white-color: white;
+  --grey-color-0: hsl(0, 0%, 94%);
+  --grey-color-3: hsl(0, 0%, 85%);
+  --grey-color-1: hsl(0, 0%, 75%);
+  --grey-color-2: hsl(0, 0%, 59%);
+  --grey-color-4: hsl(0, 0%, 53%);
+  --grey-color-5: hsl(0, 0%, 33%);
+  --grey-color-7: hsl(0, 0%, 27%);
+  --grey-color-6: hsl(0, 0%, 18%);
+  --grey-color-8: hsl(0, 0%, 13%);
+  --grey-color-9: hsl(0, 0%, 9%);
+  --black-color-1: hsl(0, 0%, 8%);
+  --black-color-2: hsl(0, 0%, 11%);
+  --black-color-3: hsl(0, 0%, 0%); 
+  --blue-color-1: yellow; #019BE7;
+  --red-color-1: #550000;
+  */
+  --white-color: hsl(0, 0%, 100%);
+  --grey-color-0: hsl(0, 0%, 94%);
+  --grey-color-3: hsl(0, 0%, 85%);
+  --grey-color-1: hsl(0, 0%, 75%);
+  --grey-color-2: hsl(0, 0%, 55%);
+  --grey-color-4: hsl(0, 0%, 55%);
+  --grey-color-5: hsl(0, 0%, 30%);
+  --grey-color-7: hsl(0, 0%, 30%);
+  --grey-color-6: hsl(0, 0%, 18%);
+  --grey-color-8: hsl(0, 0%, 10%);
+  --grey-color-9: hsl(0, 0%, 10%);
+  --black-color-1: hsl(0, 0%, 10%);
+  --black-color-2: hsl(0, 0%, 10%);
+  --black-color-3: hsl(0, 0%, 0%);
+  --blue-color-1: hsl(200, 99%, 45%);
+  --red-color-1: #550000;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --white-color: hsl(0, 0%, 0%);
+    --grey-color-0: hsl(0, 0%, 5%);
+    --grey-color-3: hsl(0, 0%, 15%);
+    --grey-color-1: hsl(0, 0%, 25%);
+    --grey-color-2: hsl(0, 0%, 45%);
+    --grey-color-4: hsl(0, 0%, 45%);
+    --grey-color-5: hsl(0, 0%, 70%);
+    --grey-color-7: hsl(0, 0%, 70%);
+    --grey-color-6: hsl(0, 0%, 80%);
+    --grey-color-8: hsl(0, 0%, 80%);
+    --grey-color-9: hsl(0, 0%, 80%);
+    --black-color-1: hsl(0, 0%, 100%);
+    --black-color-2: hsl(0, 0%, 90%);
+    --black-color-3: hsl(0, 0%, 100%);
+    --blue-color-1: hsl(200, 99%, 45%);
+    --red-color-1: #550000;
+  }
+}
 body {
   font-family: Inter;
   font-size: 16px;
@@ -7,9 +63,9 @@ body {
   margin: 0;
   height: 100vh;
   width: 100vw;
-  background-color: #141414;
-  color: white;
-  user-select: none;
+  background-color: var(--black-color-1);
+  color: var(--white-color);
+  /* user-select: none; */
   overflow: hidden;
 }
 
@@ -47,11 +103,11 @@ code {
   flex-grow: 1;
   max-height: 100vh;
   overflow: hidden;
-  background-color: #141414;
+  background-color: var(--black-color-1);
 }
 
 .icon {
-  color: white;
+  color: var(--white-color);
 }
 
 img {

@@ -10,7 +10,7 @@
 .header .icon{
     height: 80px;
     width: 80px;
-    background-color: #1d1d1d;
+    background-color: var(--grey-color-9);
     border-radius: 14px;
     position: relative;
     flex-shrink: 0;
@@ -29,7 +29,7 @@
 }
 
 .header .descriptor .title{
-    color: #FFF;
+    color: var(--white-color);
     font-family: "Inter";
     leading-trim: both;
     text-edge: cap;
@@ -41,7 +41,7 @@
     margin-bottom: 2px;
 }
 .header .descriptor .description {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: "Inter";
     leading-trim: both;
     text-edge: cap;
@@ -53,7 +53,7 @@
     margin-bottom: 10px;
 }
 .header .descriptor .meta {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -63,7 +63,7 @@
     line-height: normal;
 }
 .header .descriptor .meta > a {
-    color: #019BE7;
+    color: var(--blue-color-1);
     text-decoration: none;
 }
 
