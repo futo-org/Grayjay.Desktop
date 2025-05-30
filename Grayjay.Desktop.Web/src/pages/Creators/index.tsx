@@ -161,6 +161,7 @@ const CreatorsPage: Component = () => {
               "margin-top": "7px"*/
             }}
             builder={(index, item) =>
+              <a href={"/web/channel?url=" + encodeURIComponent(item()?.channel?.url)}>
               <CreatorView {... item()?.channel} 
                 metadata={((item()?.channel?.subscribers && item()?.channel?.subscribers > 0) ? (toHumanNumber(item()?.channel?.subscribers) + " subscribers") : "")}
                 onClick={() => {
@@ -172,7 +173,7 @@ const CreatorsPage: Component = () => {
                   showSubscriptionSettings(el, item());
                 }}
                 subscription={item()}
-                isSubscribedInitialState={true} />
+                isSubscribedInitialState={true} /></a>
             } />
         </ScrollContainer>
       </Show>
