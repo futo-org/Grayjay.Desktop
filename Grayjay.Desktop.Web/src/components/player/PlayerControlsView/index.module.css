@@ -151,23 +151,6 @@
     text-align: center;
     transform: translateX(-50%);
 }
-.progressBarChapter.hover .label {
-    display: block;
-    font-size: 11px;
-    text-wrap: nowrap;
-    white-space: nowrap;
-    position: absolute;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background-color: rgba(0,0,0,.8);
-    border-radius: 5px;
-    padding: 10px;
-    top: -50px;
-    left: 50%;
-    width: auto;
-    text-align: center;
-    transform: translateX(-50%);
-}
 
 .volumeBar {
     position: absolute;
