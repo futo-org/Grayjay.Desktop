@@ -83,7 +83,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       action?: () => void,
       onRightClick?: () => void
     }> = [
-      { icon: home,          name: 'Home',          path: '/web/home',          selected: location.pathname === '/web/home' || location.pathname === '/web/index.html' },
+      { icon: home,          name: 'Home',           path: '/web/home',          selected: location.pathname === '/web/home' || location.pathname === '/web/index.html' },
+      { icon: home,          name: 'Recommended',    path: '/web/recommended',   selected: location.pathname === '/web/recommended'},
       { icon: subscriptions, name: 'Subscriptions',  path: '/web/subscriptions', selected: location.pathname === '/web/subscriptions' },
       { icon: creators,      name: 'Creators',       path: '/web/creators',      selected: location.pathname === '/web/creators' },
       { icon: playlists,     name: 'Playlists',      path: '/web/playlists',     selected: location.pathname === '/web/playlists' },
