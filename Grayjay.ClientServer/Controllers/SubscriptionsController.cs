@@ -306,7 +306,7 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public SubscriptionGroup SubscriptionGroupDelete(string id)
         {
-            var result = StateSubscriptions.DeleteGroup(id);
+            var result = StateSubscriptions.DeleteGroup(id, true);
             StateWebsocket.SubscriptionGroupsChanged();
             return result;
         }
