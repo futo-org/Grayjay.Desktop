@@ -27,7 +27,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             return Ok(StateSync.Instance.GetAllDevices().Select(pk => 
             {
-                var session = StateSync.Instance.GetSession(pk);
+                var session = StateSync.Instance.SyncService?.GetSession(pk) ?? null;
                 return new SyncDevice
                 {
                     PublicKey = pk, 
@@ -42,7 +42,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             return Ok(StateSync.Instance.GetAllDevices().Select(pk =>
             {
-                var session = StateSync.Instance.GetSession(pk);
+                var session = StateSync.Instance.SyncService?.GetSession(pk);
                 if (session?.Connected != true)
                     return null;
                 return new SyncDevice
@@ -55,10 +55,22 @@ namespace Grayjay.ClientServer.Controllers
             }).Where(x=>x != null).ToList());
         }
 
-        [HttpGet]
-        public ActionResult ServerSocketFailedToStart()
+        public class StatusResponse
         {
-            return Ok(StateSync.Instance.ServerSocketFailedToStart);
+            public bool ServerSocketStarted { get; init; }
+            public bool RelayConnected { get; init; }
+            public bool ServerSocketFailedToStart { get; init; }
+        }
+
+        [HttpGet]
+        public ActionResult<StatusResponse> Status()
+        {
+            return Ok(new StatusResponse
+            {
+                RelayConnected = StateSync.Instance.SyncService?.RelayConnected ?? false,
+                ServerSocketStarted = StateSync.Instance.SyncService?.ServerSocketStarted ?? false,
+                ServerSocketFailedToStart = StateSync.Instance.SyncService?.ServerSocketFailedToStart ?? false
+            });
         }
 
         [HttpGet]
@@ -144,6 +156,10 @@ namespace Grayjay.ClientServer.Controllers
         [HttpPost]
         public async Task<ActionResult> AddDevice([FromBody] AddDeviceRequest r)
         {
+            var syncManager = StateSync.Instance.SyncService;
+            if (syncManager == null)
+                throw new Exception("SyncManager must be started first.");
+
             var dialog = new SyncStatusDialog();
             await dialog.Show();
 
@@ -160,7 +176,7 @@ namespace Grayjay.ClientServer.Controllers
                 byte[] deviceFormatBytes = url.Substring("grayjay://sync/".Length).DecodeBase64Url();
                 var jsonString = Encoding.UTF8.GetString(deviceFormatBytes);
                 var syncDeviceInfo = JsonSerializer.Deserialize<SyncDeviceInfo>(jsonString)!;
-                await StateSync.Instance.ConnectAsync(syncDeviceInfo, (complete, message) => 
+                await syncManager.ConnectAsync(syncDeviceInfo, (complete, message) => 
                 {
                     if (complete.HasValue)
                     {
@@ -200,8 +216,7 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<IActionResult> SendToDevice(string device, string url, int position = 0)
         {
-            var session = StateSync.Instance.GetSession(device);
-
+            var session = StateSync.Instance.SyncService?.GetSession(device);
             if (session == null)
             {
                 return Ok(new

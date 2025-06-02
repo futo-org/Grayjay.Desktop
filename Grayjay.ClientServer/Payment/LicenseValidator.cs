@@ -26,7 +26,7 @@ namespace Grayjay.ClientServer.Payment
         public bool Validate(string licenseKey, string activationKey)
         {
             byte[] data = Encoding.UTF8.GetBytes(licenseKey);
-            byte[] signature = activationKey.DecodeBase64();
+            byte[] signature = activationKey.DecodeBase64Url();
             return _publicPaymentKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         }
     }

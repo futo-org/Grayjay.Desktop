@@ -8,45 +8,25 @@ namespace Grayjay.ClientServer.Dialogs
     public class SyncConfirmDialog : RemoteDialog
     {
         public string PublicKey { get; init; }
+        private readonly Action<bool> _callback;
 
-        public SyncConfirmDialog(string publicKey): base("syncConfirm")
+        public SyncConfirmDialog(string publicKey, Action<bool> callback): base("syncConfirm")
         {
             PublicKey = publicKey;
+            _callback = callback;
         }
 
         [DialogMethod("cancel")]
-        public async void Dialog_Cancel(CustomDialog dialog, JsonElement parameter)
+        public void Dialog_Cancel(CustomDialog dialog, JsonElement parameter)
         {
-            var session = StateSync.Instance.GetSession(PublicKey);
-
-            try
-            {
-                if (session != null)
-                    await session.UnauthorizeAsync();
-            }
-            catch (Exception e)
-            {
-                Logger.i<SyncConfirmDialog>("Failed to send Unauthorize", e);
-            }
-            
+            _callback(false);
             Close();
         }
 
         [DialogMethod("confirm")]
-        public async void Dialog_Confirm(CustomDialog dialog, JsonElement parameter)
+        public void Dialog_Confirm(CustomDialog dialog, JsonElement parameter)
         {
-            var session = StateSync.Instance.GetSession(PublicKey);
-
-            try
-            {
-                if (session != null)
-                    await session.AuthorizeAsync();
-            }
-            catch (Exception e)
-            {
-                Logger.i<SyncConfirmDialog>("Failed to send Authorize", e);
-            }
-
+            _callback(true);
             Close();
         }
     }

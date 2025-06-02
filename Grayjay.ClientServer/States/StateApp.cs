@@ -108,7 +108,7 @@ namespace Grayjay.ClientServer.States
             {
                 try
                 {
-                    StateSync.Instance.Stop();
+                    StateSync.Instance.Dispose();
                 }
                 catch (Exception e)
                 {

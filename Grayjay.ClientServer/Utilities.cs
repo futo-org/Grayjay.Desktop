@@ -233,7 +233,6 @@ public static class Utilities
 
     public static string? FindDirectory(string directoryName)
     {
-        // 1. Check next to the executable
         string? executablePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
         if (executablePath != null)
         {
@@ -244,7 +243,6 @@ public static class Utilities
             }
         }
 
-        // 2. Check in Resources directory (macOS-specific, e.g., for bundled apps)
         if (OperatingSystem.IsMacOS() && executablePath != null)
         {
             string resourcesDirPath = Path.Combine(executablePath, "../Resources", directoryName);
@@ -254,20 +252,73 @@ public static class Utilities
             }
         }
 
-        // 3. Check in the current working directory
         string workingDirPath = Path.Combine(Directory.GetCurrentDirectory(), directoryName);
         if (Directory.Exists(workingDirPath))
         {
             return Path.GetFullPath(workingDirPath);
         }
 
-        // 4. Check in the application base directory (AppContext.BaseDirectory)
         string baseDirPath = Path.Combine(AppContext.BaseDirectory, directoryName);
         if (Directory.Exists(baseDirPath))
         {
             return Path.GetFullPath(baseDirPath);
         }
 
+        if (OperatingSystem.IsLinux() && executablePath != null)
+        {
+            string resourcesFilePath = Path.Combine(executablePath, "../grayjay", directoryName);
+            if (Directory.Exists(resourcesFilePath))
+            {
+                return Path.GetFullPath(resourcesFilePath);
+            }
+        }
+
         return null;
     }
+
+    public static string? FindFile(string fileName)
+    {
+        string? executablePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
+        if (executablePath != null)
+        {
+            string exeFilePath = Path.Combine(executablePath, fileName);
+            if (File.Exists(exeFilePath))
+            {
+                return Path.GetFullPath(exeFilePath);
+            }
+        }
+
+        if (OperatingSystem.IsMacOS() && executablePath != null)
+        {
+            string resourcesFilePath = Path.Combine(executablePath, "../Resources", fileName);
+            if (File.Exists(resourcesFilePath))
+            {
+                return Path.GetFullPath(resourcesFilePath);
+            }
+        }
+
+        string workingDirFilePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+        if (File.Exists(workingDirFilePath))
+        {
+            return Path.GetFullPath(workingDirFilePath);
+        }
+
+        string baseDirFilePath = Path.Combine(AppContext.BaseDirectory, fileName);
+        if (File.Exists(baseDirFilePath))
+        {
+            return Path.GetFullPath(baseDirFilePath);
+        }
+
+        if (OperatingSystem.IsLinux() && executablePath != null)
+        {
+            string resourcesFilePath = Path.Combine(executablePath, "../grayjay", fileName);
+            if (File.Exists(resourcesFilePath))
+            {
+                return Path.GetFullPath(resourcesFilePath);
+            }
+        }
+
+        return null;
+    }
+
 }

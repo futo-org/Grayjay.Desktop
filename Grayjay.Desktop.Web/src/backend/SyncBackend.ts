@@ -6,6 +6,12 @@ export interface ValidateSyncDeviceInfoFormatResponse {
     message?: string
 }
 
+export interface StatusResponse {
+    serverSocketStarted: boolean,
+    relayConnected: boolean,
+    serverSocketFailedToStart: boolean
+}
+
 export abstract class SyncBackend {
     static async getDevices(): Promise<SyncDevice[]> {
         return await Backend.GET("/sync/GetDevices");
@@ -35,8 +41,8 @@ export abstract class SyncBackend {
         await Backend.GET("/sync/RemoveDevice?publicKey=" + encodeURIComponent(publicKey));
     }
 
-    static async serverSocketFailedToStart(): Promise<Boolean> {
-        return await Backend.GET("/sync/ServerSocketFailedToStart");
+    static async status(): Promise<StatusResponse> {
+        return await Backend.GET("/sync/Status");
     }
 
     static async sendToDevice(publicKey: string, url: string, position: number = 0): Promise<void> {

@@ -221,7 +221,7 @@ namespace Grayjay.Desktop
             }
             catch (Exception e)
             {
-                Logger.i<Program>($"Unhandled exception occurred: {e}");
+                Logger.e<Program>($"Unhandled exception occurred: {e}");
             }
         }
 
@@ -249,7 +249,7 @@ namespace Grayjay.Desktop
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Base Directory: {Directories.Base}"));
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Temporary Directory: {Directories.Temporary}"));
             Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log Level: {(LogLevel)GrayjaySettings.Instance.Logging.LogLevel}"));
-            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log file path: {Directories.Base}/log.txt"));
+            Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), $"Log file path: {Path.Combine(Directories.Base, "log.txt")}"));
             Logger.LoadFromSettings();
 
             FUTO.MDNS.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
@@ -358,7 +358,7 @@ namespace Grayjay.Desktop
                     preferredWidth: 1300,
                     preferredHeight: 950,
                     title: "Grayjay",
-                    iconPath: Path.GetFullPath("grayjay.png"),
+                    iconPath: Utilities.FindFile("grayjay.png"),
                     appId: "com.futo.grayjay.desktop"
                 );
                 await window.SetDevelopmentToolsEnabledAsync(true);

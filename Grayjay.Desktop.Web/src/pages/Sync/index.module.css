@@ -151,3 +151,41 @@
 .pairingUrl:hover {
     border: 1px solid #7a7a7a;
 }
+
+.errorCard {
+    border-radius: 6px;
+    background: rgba(249, 112, 102, 0.10);
+    display: flex;
+    height: 36px;
+    padding: 10px 12px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #F97066;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+
+.warningCard {
+    border-radius: 6px;
+    background: rgba(244, 162, 97, 0.10);
+    display: flex;
+    height: 36px;
+    padding: 10px 12px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #F4A261;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: Inter;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
