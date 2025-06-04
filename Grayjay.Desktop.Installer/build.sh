@@ -1,0 +1,1 @@
+wix build -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext Grayjay.wxs -out Result/Grayjay.msi
