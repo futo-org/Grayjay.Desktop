@@ -8,8 +8,8 @@
     padding-right: 20px;
     padding-bottom: 20px;
     border-radius: 12px;
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
     box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
 }
 
@@ -38,7 +38,7 @@
     width: 40px;
     height: 40px;
     border-radius: 48px;
-    background: #2E2E2E;
+    background: var(--grey-color-6);
     cursor: pointer;
 }
 .closeButton img {
@@ -64,7 +64,7 @@
     margin: 5px;
 }
 .subscription.enabled {
-    background-color: #212121;
+    background-color: var(--grey-color-8);
 }
 .subscription .check {
     width: 18px;
@@ -73,13 +73,13 @@
     top: 10px;
     right: 5px;
     border-radius: 72.727px;
-    border: 2px solid #454545;
+    border: 2px solid var(--grey-color-7);
 }
 .subscription .check img {
     display: none;
 }
 .subscription.enabled .check {
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
 }
 .subscription.enabled .check img {
     display: block;
@@ -94,7 +94,7 @@
     display: inline-block;
 }
 .subscription .name {
-    color: #FFF;
+    color: var(--white-color);
 
     text-align: center;
     

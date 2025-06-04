@@ -23,13 +23,13 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     gap: 12px;
     padding-left: 24px;
     padding-right: 24px;
 }
 
 .containerButton.active {
-    background: rgba(255, 255, 255, 0.06);
-    color: #FFF;
+    background: rgb(from var(--white-color)  r g b / 0.06);
+    color: var(--white-color);
 }

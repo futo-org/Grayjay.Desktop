@@ -16,7 +16,7 @@
     margin-left: 20px;
 }
 .descriptor .title {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -31,7 +31,7 @@
     margin-bottom: 8px;
 }
 .descriptor .description {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;

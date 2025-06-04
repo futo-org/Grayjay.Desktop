@@ -83,7 +83,7 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
                                     "align-items": "center",
                                     "overflow": "hidden",
                                     "gap": "8px",
-                                    "background-color": index() == props.index ? "#2E2E2E" : undefined,
+                                    "background-color": index() == props.index ? "var(--grey-color-6)" : undefined,
                                     "border-radius": "8px"
                                 }} onClick={() => {
                                     const v = video();

@@ -15,9 +15,9 @@
     padding: 0px 8px;
     gap: 4px;
     border-radius: 99px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgb(from var(--white-color)  r g b / 0.07);
     background: rgba(99, 101, 240, 0.00);
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-feature-settings: 'clig' off, 'liga' off;
     font-family: Inter;
     font-size: 16px;
@@ -31,6 +31,6 @@
 }
 
 .containerButton.active {
-    background: rgba(255, 255, 255, 0.06);
-    color: #FFF;
+    background: rgb(from var(--white-color)  r g b / 0.06);
+    color: var(--white-color);
 }

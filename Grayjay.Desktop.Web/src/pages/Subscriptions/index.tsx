@@ -343,7 +343,7 @@ const SubscriptionsPage: Component = () => {
                   </div>
                 }</For>
                 <div class={styles.subgroup} style="cursor: pointer" onClick={()=>newSubscriptionGroup()}>
-                  <div class={styles.image} style={{"background": "#222"}} />
+                  <div class={styles.image} style={{"background": "var(--grey-color-8)"}} />
                   <div class={styles.centerText}>
                     New Group
                   </div>
@@ -395,7 +395,7 @@ const SubscriptionsPage: Component = () => {
             {
               icon: iconSearch,
               title: "Search Creators",
-              color: "#019BE7",
+              color: "var(--blue-color-1)",
               action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
             }
           ]} />

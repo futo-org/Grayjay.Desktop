@@ -175,11 +175,11 @@ const SourcesPage: Component = () => {
               </div>
               <div style="margin-top:24px; margin-bottom: 24px;">
                   <button onClick={[(installSource), null]} 
-                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; width: calc(100% - 40px);">
+                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: var(--blue-color-1); color: var(--white-color); font-size: 20px; margin-left: 24px; width: calc(100% - 40px);">
                     Install Source
                   </button>
                   <button onClick={[()=>{UIOverlay.overlayOfficialPlugins()}, null]} 
-                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; margin-top: 10px; width: calc(100% - 40px);">
+                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: var(--blue-color-1); color: var(--white-color); font-size: 20px; margin-left: 24px; margin-top: 10px; width: calc(100% - 40px);">
                     Install Official Sources
                   </button>
               </div>
