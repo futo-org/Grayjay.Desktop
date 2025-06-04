@@ -49,6 +49,10 @@ public class StatePlaylists
 
 
     public static Playlist? Get(string id) => _playlists.FindObject(p => p.Id == id);
+    public static DateTimeOffset GetPlaylistRemoval(string id)
+    {
+        return DateTimeOffset.FromUnixTimeSeconds(Math.Max(_playlistRemoved.GetValue(id, 0), 0));
+    }
     public static Dictionary<string, long> GetPlaylistRemovals()
     {
         return _playlistRemoved.All();
@@ -146,6 +150,8 @@ public class StatePlaylists
         if (isUserInteraction)
         {
             _playlistRemoved.SetAndSave(id.ToString(), DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+            BroadcastSyncPlaylists(null, _playlistRemoved.All());
         }
     }
 

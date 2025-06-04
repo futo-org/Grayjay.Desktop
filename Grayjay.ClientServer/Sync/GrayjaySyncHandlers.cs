@@ -141,14 +141,18 @@ namespace Grayjay.ClientServer.Sync
             foreach (SubscriptionGroup group in pack.Groups)
             {
                 var existing = StateSubscriptions.GetGroup(group.ID);
+                var removalTime = StateSubscriptions.GetSubscriptionGroupRemovalTime(group.ID);
+
+                if (removalTime > group.LastChange)
+                    continue;
 
                 if (existing == null)
                     StateSubscriptions.SaveGroup(group, false);
-                else if (existing.LastChange < group.LastChange)
+                else if (existing.LastChange.ToUniversalTime() < group.LastChange)
                 {
                     existing.Urls = group.Urls;
                     existing.Name = group.Name;
-                    existing.LastChange = group.LastChange;
+                    existing.LastChange = group.LastChange.ToLocalTime();
                     existing.CreationTime = group.CreationTime;
                     existing.Priority = group.Priority;
                     existing.Image = group.Image;
@@ -161,6 +165,9 @@ namespace Grayjay.ClientServer.Sync
                 var removalTime = DateTimeOffset.FromUnixTimeSeconds(removal.Value);
                 if (creation != null && creation.CreationTime < removalTime)
                     StateSubscriptions.DeleteGroup(removal.Key);
+                var existingRemoval = StateSubscriptions.GetSubscriptionGroupRemovalTime(removal.Key);
+                if(existingRemoval < removalTime)
+                    StateSubscriptions.SetSubscriptionGroupRemovalTime(removal.Key, removal.Value);
             }
         }
 
@@ -172,10 +179,11 @@ namespace Grayjay.ClientServer.Sync
             foreach (Playlist playlist in pack.Playlists)
             {
                 var existing = StatePlaylists.Get(playlist.Id);
+                var removalTime = StatePlaylists.GetPlaylistRemoval(playlist.Id);
 
-                if (existing == null)
-                    StatePlaylists.CreateOrUpdate(playlist, false);
-                else if (existing.DateUpdate < playlist.DateUpdate)
+                if (removalTime > playlist.DateUpdate)
+                    continue;
+                else if (existing == null || existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
                     StatePlaylists.CreateOrUpdate(playlist, false);
             }
             foreach (var removal in pack.PlaylistRemovals)

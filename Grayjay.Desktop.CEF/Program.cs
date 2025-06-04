@@ -323,9 +323,25 @@ namespace Grayjay.Desktop
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 Process p = Process.GetCurrentProcess();
-                File.WriteAllText("launch", Path.GetFileName(p.MainModule!.FileName));
+                try
+                {
+                    File.WriteAllText("launch", Path.GetFileName(p.MainModule!.FileName));
+                }
+                catch(Exception ex)
+                {
+                    Logger.w(nameof(Program), "Failed to create launch file in executable directory");
+                }
                 if (Directory.Exists("cef"))
-                    File.WriteAllText("cef/launch", "../" + Path.GetFileName(p.MainModule!.FileName));
+                {
+                    try
+                    {
+                        File.WriteAllText("cef/launch", "../" + Path.GetFileName(p.MainModule!.FileName));
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.w(nameof(Program), "Failed to create launch file in cef directory");
+                    }
+                }
             }
 
             using var cef = !isServer ? new DotCefProcess() : null;

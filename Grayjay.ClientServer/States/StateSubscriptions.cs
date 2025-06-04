@@ -1,6 +1,7 @@
 ﻿
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Crypto;
+using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Subscriptions;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
@@ -337,6 +338,14 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             return _groupsRemoved.All();
         }
+        public static DateTime GetSubscriptionGroupRemovalTime(string id)
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(Math.Max(0, _groupsRemoved.GetValue(id, 0))).DateTime;
+        }
+        public static void SetSubscriptionGroupRemovalTime(string id, long val)
+        {
+            _groupsRemoved.SetAndSave(id, Math.Max(0, val));
+        }
 
         public static Subscription GetSubscription(string channelUrl)
         {
@@ -504,14 +513,39 @@ namespace Grayjay.Desktop.POC.Port.States
 
             return group;
         }
-        public static SubscriptionGroup DeleteGroup(string id)
+        public static SubscriptionGroup DeleteGroup(string id, bool isUserInteraction = false)
         {
             SubscriptionGroup group = GetGroup(id);
             if(group != null)
             {
                 _subscriptionGroups.Delete(group);
+                if(isUserInteraction)
+                {
+                    _groupsRemoved.SetAndSave(id, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                    BroadcastSyncSubscriptionGroups(null, _groupsRemoved.All());
+                }
             }
+
             return group;
+        }
+
+        private static void BroadcastSyncSubscriptionGroups(List<SubscriptionGroup> groups, Dictionary<string, long> removals = null)
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await StateSync.Instance.BroadcastJsonAsync(GJSyncOpcodes.SyncSubscriptionGroups, new SyncSubscriptionGroupsPackage()
+                    {
+                        Groups = groups,
+                        GroupRemovals = removals
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Logger.w(nameof(StateSubscriptions), "Failed to send subgroups changes to sync clients", ex);
+                }
+            });
         }
 
         public static void SyncSubscriptions(SyncSubscriptionsPackage subs)

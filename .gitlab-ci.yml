@@ -7,6 +7,7 @@ stages:
   - buildAndDeployUnstableLinux
   - buildAndDeployStableWindows
   - buildAndDeployStableLinux
+  - buildAndDeployStableWindowsInstaller
 
 
 buildAndDeployUnstableWindows:
@@ -82,5 +83,23 @@ buildAndDeployStableLinux:
       - /builds/videostreaming/Grayjay.Desktop/Grayjay.Desktop.CEF/bin/Release/net8.0/win-x64/Grayjay.Desktop-win-x64-v$CI_COMMIT_TAG.zip
       - /builds/videostreaming/Grayjay.Desktop/Grayjay.Desktop.CEF/bin/Release/net8.0/osx-arm64/Grayjay.Desktop-osx-arm64-v$CI_COMMIT_TAG.zip
       - /builds/videostreaming/Grayjay.Desktop/Grayjay.Desktop.CEF/bin/Release/net8.0/osx-arm64/Grayjay.Desktop-osx-x64-v$CI_COMMIT_TAG.zip
+    expire_in: 1d
+  when: manual
+  
+buildAndDeployStableWindowsInstaller:
+  stage: buildAndDeployStableWindowsInstaller
+  tags:
+    - WindowsBuilder
+  only:
+    - tags
+  except:
+    - ^(dev)
+  script:
+    - dir
+    - Write-Host $CI_COMMIT_TAG
+    - bash deploy_windows_installer.sh $CI_COMMIT_TAG $UPDATER_SERVER Grayjay.Desktop
+  artifacts:
+    paths:
+      - Grayjay.Desktop.Installer/Results/Grayjay.msi
     expire_in: 1d
   when: manual
