@@ -98,21 +98,25 @@ namespace Grayjay.ClientServer.Sync
             }
         }
 
+        private static object _lockSubscriptions = new object();
         [SyncHandler(GJSyncOpcodes.SyncSubscriptions)]
         public async Task HandleSyncSubscriptions(SyncSession session, SyncSubscriptionsPackage subscriptions)
         {
             Logger.Info(nameof(GrayjaySyncHandlers), $"SyncSubscriptions received {subscriptions.Subscriptions.Count} subs");
 
             List<Subscription> added = new List<Subscription>();
-            foreach(var sub in subscriptions.Subscriptions)
+            lock (_lockSubscriptions)
             {
-                if (!StateSubscriptions.IsSubscribed(sub.Channel))
+                foreach (var sub in subscriptions.Subscriptions)
                 {
-                    var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
-                    if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
+                    if (!StateSubscriptions.IsSubscribed(sub.Channel))
                     {
-                        await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
-                        added.Add(sub);
+                        var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
+                        if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
+                        {
+                            await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
+                            added.Add(sub);
+                        }
                     }
                 }
             }
@@ -133,30 +137,34 @@ namespace Grayjay.ClientServer.Sync
             }
         }
 
+        private static object _lockSubscriptionGroups = new object();
         [SyncHandler(GJSyncOpcodes.SyncSubscriptionGroups)]
         public void HandleSyncSubscriptionGroups(SyncSession session, SyncSubscriptionGroupsPackage pack)
         {
             Logger.Info(nameof(GrayjaySyncHandlers), $"SyncSubscriptionGroups received {pack.Groups.Count} groups");
 
-            foreach (SubscriptionGroup group in pack.Groups)
+            lock (_lockSubscriptionGroups)
             {
-                var existing = StateSubscriptions.GetGroup(group.ID);
-                var removalTime = StateSubscriptions.GetSubscriptionGroupRemovalTime(group.ID);
-
-                if (removalTime > group.LastChange)
-                    continue;
-
-                if (existing == null)
-                    StateSubscriptions.SaveGroup(group, false);
-                else if (existing.LastChange.ToUniversalTime() < group.LastChange)
+                foreach (SubscriptionGroup group in pack.Groups)
                 {
-                    existing.Urls = group.Urls;
-                    existing.Name = group.Name;
-                    existing.LastChange = group.LastChange.ToLocalTime();
-                    existing.CreationTime = group.CreationTime;
-                    existing.Priority = group.Priority;
-                    existing.Image = group.Image;
-                    StateSubscriptions.SaveGroup(existing, false);
+                    var existing = StateSubscriptions.GetGroup(group.ID);
+                    var removalTime = StateSubscriptions.GetSubscriptionGroupRemovalTime(group.ID);
+
+                    if (removalTime > group.LastChange)
+                        continue;
+
+                    if (existing == null)
+                        StateSubscriptions.SaveGroup(group, false);
+                    else if (existing.LastChange.ToUniversalTime() < group.LastChange)
+                    {
+                        existing.Urls = group.Urls;
+                        existing.Name = group.Name;
+                        existing.LastChange = group.LastChange.ToLocalTime();
+                        existing.CreationTime = group.CreationTime;
+                        existing.Priority = group.Priority;
+                        existing.Image = group.Image;
+                        StateSubscriptions.SaveGroup(existing, false);
+                    }
                 }
             }
             foreach(var removal in pack.GroupRemovals)
@@ -171,20 +179,24 @@ namespace Grayjay.ClientServer.Sync
             }
         }
 
+        private static object _lockPlaylists = new object();
         [SyncHandler(GJSyncOpcodes.SyncPlaylists)]
         public void HandleSyncPlaylists(SyncSession session, SyncPlaylistsPackage pack)
         {
             Logger.Info(nameof(GrayjaySyncHandlers), $"SyncPlaylists received {pack.Playlists.Count} playlists");
 
-            foreach (Playlist playlist in pack.Playlists)
+            lock (_lockPlaylists)
             {
-                var existing = StatePlaylists.Get(playlist.Id);
-                var removalTime = StatePlaylists.GetPlaylistRemoval(playlist.Id);
+                foreach (Playlist playlist in pack.Playlists)
+                {
+                    var existing = StatePlaylists.Get(playlist.Id);
+                    var removalTime = StatePlaylists.GetPlaylistRemoval(playlist.Id);
 
-                if (removalTime > playlist.DateUpdate)
-                    continue;
-                else if (existing == null || existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
-                    StatePlaylists.CreateOrUpdate(playlist, false);
+                    if (removalTime > playlist.DateUpdate)
+                        continue;
+                    else if (existing == null || existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
+                        StatePlaylists.CreateOrUpdate(playlist, false);
+                }
             }
             foreach (var removal in pack.PlaylistRemovals)
             {
@@ -195,6 +207,7 @@ namespace Grayjay.ClientServer.Sync
             }
         }
 
+        private static object _lockWatchlater = new object();
         [SyncHandler(GJSyncOpcodes.SyncWatchLater)]
         public void HandleSyncWatchLater(SyncSession session, SyncWatchLaterPackage pack)
         {
@@ -202,20 +215,23 @@ namespace Grayjay.ClientServer.Sync
 
             var allExisting = StateWatchLater.Instance.GetWatchLater();
             List<string> originalOrder = allExisting.Select(x => x.Url).ToList();
-            foreach (PlatformVideo video in pack.Videos)
+            lock (_lockWatchlater)
             {
-                var existing = allExisting.FirstOrDefault(x => x.Url == video.Url);
-
-                var time = (pack.VideoAdds != null && pack.VideoAdds.ContainsKey(video.Url)) ? DateTimeOffset.FromUnixTimeSeconds(pack.VideoAdds[video.Url]) : DateTimeOffset.MinValue;
-                var removalTime = StateWatchLater.Instance.GetWatchLaterRemovalTime(video.Url);
-                if (existing == null && time > removalTime)
+                foreach (PlatformVideo video in pack.Videos)
                 {
-                    StateWatchLater.Instance.Add(video);
-                    if(time > DateTimeOffset.MinValue.AddDays(1))
-                        StateWatchLater.Instance.SetWatchLaterAddTime(video.Url, time);
+                    var existing = allExisting.FirstOrDefault(x => x.Url == video.Url);
+
+                    var time = (pack.VideoAdds != null && pack.VideoAdds.ContainsKey(video.Url)) ? DateTimeOffset.FromUnixTimeSeconds(pack.VideoAdds[video.Url]) : DateTimeOffset.MinValue;
+                    var removalTime = StateWatchLater.Instance.GetWatchLaterRemovalTime(video.Url);
+                    if (existing == null && time > removalTime)
+                    {
+                        StateWatchLater.Instance.Add(video);
+                        if (time > DateTimeOffset.MinValue.AddDays(1))
+                            StateWatchLater.Instance.SetWatchLaterAddTime(video.Url, time);
+                    }
+                    //else if (existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
+                    //    StatePlaylists.CreateOrUpdate(playlist, false);
                 }
-                //else if (existing.DateUpdate < playlist.DateUpdate.ToLocalTime())
-                //    StatePlaylists.CreateOrUpdate(playlist, false);
             }
             foreach (var removal in pack.VideoRemovals)
             {

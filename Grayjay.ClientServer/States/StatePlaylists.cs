@@ -179,7 +179,7 @@ public class StatePlaylists
         public override string ToReconstruction(Playlist obj)
         {
             var items = new List<string>();
-            items.Add(obj.Name);
+            items.Add(obj.Name + ":::" + obj.Id);
             items.AddRange(obj.Videos.Select(x => x.Url));
             return string.Join("\n", items.Select(x => x.Replace("\n", "")));
         }
@@ -190,6 +190,14 @@ public class StatePlaylists
                 throw new InvalidDataException($"Cannot reconstruct playlist {id}");
 
             var name = items[0];
+            if(name.Contains(":::"))
+            {
+                int splitIndex = name.IndexOf(":::");
+                string foundId = name.Substring(splitIndex + 3);
+                if (!string.IsNullOrEmpty(foundId))
+                    id = foundId;
+                name = name.Substring(0, splitIndex);
+            }
             var videos = items.Skip(1).Where(x => !string.IsNullOrEmpty(x)).Select(videoUrl =>
             {
                 try
