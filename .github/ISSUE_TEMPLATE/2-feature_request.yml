@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a new feature or other enhancement.
-labels: ["Enhancement"]
+labels: ["Enhancement", "Desktop"]
 title: "Feature request: "
 type: feature
 projects: ["futo-org/19"]
