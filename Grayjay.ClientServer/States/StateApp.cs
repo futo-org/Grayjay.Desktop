@@ -92,27 +92,33 @@ namespace Grayjay.ClientServer.States
             //TODO: Pass previous settings to this? so this isn't executed when unchanged
             if (settings.Synchronization.Enabled)
             {
-                _ = Task.Run(async () =>
+                if (StateSync.Instance.SyncService == null)
                 {
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        await StateSync.Instance.StartAsync();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.i(nameof(StateApp), "Failed to start StateSync", e);
-                    }
-                });
+                        try
+                        {
+                            await StateSync.Instance.StartAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.i(nameof(StateApp), "Failed to start StateSync", e);
+                        }
+                    });
+                }
             }
             else
             {
-                try
+                if (StateSync.Instance.SyncService != null)
                 {
-                    StateSync.Instance.Dispose();
-                }
-                catch (Exception e)
-                {
-                    Logger.i(nameof(StateApp), "Failed to stop StateSync", e);
+                    try
+                    {
+                        StateSync.Instance.Dispose();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.i(nameof(StateApp), "Failed to stop StateSync", e);
+                    }
                 }
             }
         }

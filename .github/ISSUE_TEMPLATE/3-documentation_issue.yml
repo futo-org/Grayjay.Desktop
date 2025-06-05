@@ -1,6 +1,10 @@
 name: Documentation Issue
 description: Report an issue or suggest a change in the documentation.
-labels: ["Documentation", "new"]
+labels: ["Documentation"]
+title: "Documentation: "
+type: task
+projects: ["futo-org/19"]
+
 body:
   - type: markdown
     attributes:
