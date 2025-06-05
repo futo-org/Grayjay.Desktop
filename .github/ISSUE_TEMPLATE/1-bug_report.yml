@@ -67,19 +67,23 @@ body:
       multiple: true
       options:
         - "All"
-        - "Youtube"
-        - "Odysee"
-        - "Rumble"
-        - "Kick"
-        - "Twitch"
-        - "PeerTube"
-        - "Patreon"
-        - "Nebula"
+        - "Apple Podcasts"
         - "BiliBili (CN)"
         - "Bitchute"
-        - "SoundCloud"
+        - "Crunchyroll"
+        - "CuriosityStream"
         - "Dailymotion"
-        - "Apple Podcasts"
+        - "Kick"
+        - "Nebula"
+        - "Odysee"
+        - "Patreon"
+        - "PeerTube"
+        - "Rumble"
+        - "SoundCloud"
+        - "Spotify"
+        - "TedTalks"
+        - "Twitch"
+        - "Youtube"
         - "Other"
     validations:
       required: true
@@ -132,13 +136,6 @@ body:
       required: true
 
   - type: textarea
-    id: logs
-    attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      render: shell
-
-  - type: textarea
     id: grayjay-references
     attributes:
       label: References
@@ -151,6 +148,13 @@ body:
       value:
     validations:
       required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
 
   - type: markdown
     attributes:

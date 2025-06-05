@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a new feature or other enhancement.
-labels: ["Enhancement"]
+labels: ["Enhancement", "Desktop"]
 title: "Feature request: "
 type: feature
 projects: ["futo-org/19"]
@@ -10,7 +10,7 @@ body:
       value: |
         # Thank you for opening a feature request.
 
-        The [Grayjay.Desktop](https://github.com/futo-org/Grayjay.Desktop) issue tracker is reserved for issues and feature request relating to the Grayjay Desktop Application
+        The [Grayjay.Desktop](https://github.com/futo-org/Grayjay.Desktop) issue tracker is reserved for issues and feature requests relating to the Grayjay Desktop Application
 
         For discussions related to enhancements, please see: [The FUTO Grayjay Zulip Channel](https://chat.futo.org/#narrow/stream/46-Grayjay)
 
