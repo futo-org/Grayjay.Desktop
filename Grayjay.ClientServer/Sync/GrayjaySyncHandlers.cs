@@ -105,18 +105,15 @@ namespace Grayjay.ClientServer.Sync
             Logger.Info(nameof(GrayjaySyncHandlers), $"SyncSubscriptions received {subscriptions.Subscriptions.Count} subs");
 
             List<Subscription> added = new List<Subscription>();
-            lock (_lockSubscriptions)
+            foreach (var sub in subscriptions.Subscriptions)
             {
-                foreach (var sub in subscriptions.Subscriptions)
+                if (!StateSubscriptions.IsSubscribed(sub.Channel))
                 {
-                    if (!StateSubscriptions.IsSubscribed(sub.Channel))
+                    var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
+                    if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
                     {
-                        var removalTime = StateSubscriptions.GetSubscriptionRemovalTime(sub.Channel.Url);
-                        if (removalTime.Year < 2000 || sub.CreationTime.ToUniversalTime() > removalTime)
-                        {
-                            await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
-                            added.Add(sub);
-                        }
+                        await StateSubscriptions.AddSubscription(sub.Channel, sub.CreationTime);
+                        added.Add(sub);
                     }
                 }
             }
