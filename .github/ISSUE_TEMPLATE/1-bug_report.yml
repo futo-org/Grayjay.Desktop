@@ -97,7 +97,6 @@ body:
       label: Which operating system are you using?
       multiple: true
       options:
-        - "Flatpak (linux)"
         - "Linux"
         - "MacOS"
         - "Windows"
