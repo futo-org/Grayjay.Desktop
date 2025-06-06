@@ -108,7 +108,9 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
     };
     const addToQueue = (video: IPlatformVideo) => { 
         if (index() === undefined) {
-            openVideo(video);
+            setIndex(0);
+            setQueue([ video ]);
+            setState(VideoState.Minimized);
             return;
         }
 
