@@ -294,7 +294,8 @@ const PlaylistsPage: Component = () => {
                   });
 
                   return (
-                    <PlaylistView name={item()?.name}
+                    <a href={"/web/playlist?id=" + item()?.id}>
+                      <PlaylistView name={item()?.name}
                       itemCount={item()?.videos.length}
                       thumbnail={bestThumbnail$()?.url}
                       onClick={() => {
@@ -309,6 +310,7 @@ const PlaylistsPage: Component = () => {
                           onSettingsClicked(e, playlist);
                         }
                       }} />
+                    </a>
                   );
                 }} />
             </Show>
