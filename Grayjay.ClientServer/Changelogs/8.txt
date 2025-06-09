@@ -1,8 +1,15 @@
 Improvements:
  - Playlist imports now support embedded ids (new exports from mobile)
  - Additional messaging if the sync listener failed to start
+ - Overlay menus now flip vertically if out of bound
+ - Overlay menus now close when you scroll (in most views)
 
 
 Fixes:
  - Fix licenses not being accepted
  - Some Sync activity not being propogated.
+ - Fix issue where DEV plugins cannot be enabled
+ - Fix issue where offline videos cannot be loaded without a client enabled
+ - Fix failed comments not showing a proper error
+ - Fix sync error on enabling on initial install
+ - Fix downloads ui overflow

@@ -28,9 +28,11 @@ export enum AnchorFlags {
 
 export default class Anchor {
     element: HTMLElement | null;
+    anchorType: AnchorStyle;
 
     bounding$: Accessor<DOMRect>;
     style$: Accessor<JSX.CSSProperties>;
+    styleFlipped$: Accessor<JSX.CSSProperties>;
 
     condition$?: Accessor<Boolean>;
 
@@ -39,11 +41,58 @@ export default class Anchor {
 
     constructor(element: HTMLElement | null, condition: Accessor<boolean> | undefined = undefined, anchorStyle: AnchorStyle = AnchorStyle.BottomLeft, anchorFlags: AnchorFlags[] = []) {
         this.element = element;
+        this.anchorType = anchorStyle;
         const [bounding$, setBounding] = createSignal<DOMRect>(element?.getBoundingClientRect() ?? new DOMRect());
         this.bounding$ = bounding$;
+        this.styleFlipped$ = createMemo<JSX.CSSProperties>(()=>{
+            const bounds = this.bounding$();
+            let style: JSX.CSSProperties;
+
+            switch(anchorStyle) {
+                case AnchorStyle.TopLeft: style = {
+                    top: bounds.top + bounds.height + "px",
+                    left: bounds.left + "px"
+                };
+                break;
+                case AnchorStyle.TopRight: style = {
+                    top: bounds.top + bounds.height + "px",
+                    right: (window.innerWidth - bounds.right) + "px"
+                }
+                break;
+                case AnchorStyle.BottomLeft: style = {
+                    bottom: (window.innerHeight - bounds.top) + "px",
+                    left:  bounds.left + "px",
+                }
+                break;
+                case AnchorStyle.BottomRight: style = {
+                    bottom: (window.innerHeight - bounds.top) + "px",
+                    right:  (window.innerWidth - bounds.right) + "px",
+                }
+                break;
+            }
+            for(let flag of anchorFlags) {
+                switch(flag) {
+                    case AnchorFlags.AnchorWidth:
+                        style.width = bounds.width + "px";
+                        break;
+                    case AnchorFlags.AnchorMinWidth:
+                        style["min-width"] = bounds.width + "px";
+                        break;
+                    case AnchorFlags.AnchorHeight:
+                        style.height = bounds.height + "px";
+                        break;
+                    case AnchorFlags.AnchorMinHeight:
+                        style["min-height"] = bounds.height + "px";
+                        break;
+                }
+            }
+
+            return style;
+        });
         this.style$ = createMemo<JSX.CSSProperties>(()=>{
             const bounds = this.bounding$();
             let style: JSX.CSSProperties;
+
             switch(anchorStyle) {
                 case AnchorStyle.TopLeft: style = {
                     bottom: (window.innerHeight - bounds.top) + "px",

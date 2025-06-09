@@ -194,7 +194,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
         );
         //onSettings={(e) => onSettingsClicked(e, playlist)}
     };
-    
+
     let containerRef: HTMLDivElement | undefined;
     return (
         <div class={styles.container} ref={containerRef}>
@@ -219,6 +219,11 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     }}
                     autosizeWidth={true}
                     notifyEndOnLast={5}
+                    onScroll={()=>{
+                        if(show$()) {
+                            onSettingsHidden();
+                        }
+                    }}
                     onEnd={onScrollEnd}
                     style={{
                         /*"margin-left": "15px",*/

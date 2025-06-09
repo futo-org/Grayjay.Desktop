@@ -332,7 +332,6 @@ const DownloadsPage: Component = () => {
               autosizeWidth={true}
               notifyEndOnLast={5}
               style={{
-                  "margin-left": "15px",
                   "margin-top": "15px",
                   "margin-bottom": "10px"
               }}
