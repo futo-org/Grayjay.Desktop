@@ -67,11 +67,14 @@ namespace Grayjay.ClientServer.Controllers
             {
                 await StatePlatform.EnableClient(id, true);
 
-                var config = StatePlugins.GetPlugin(id);
-                if (config != null && StatePlugins.CheckForUpdate(config?.Config, false))
+                if (id != "DEV")
                 {
-                    StateUI.Toast($"Update available for [{config.Config.Name}]");
-                    StateWebsocket.PluginChanged(config.Config.ID);
+                    var config = StatePlugins.GetPlugin(id);
+                    if (config != null && StatePlugins.CheckForUpdate(config?.Config, false))
+                    {
+                        StateUI.Toast($"Update available for [{config.Config.Name}]");
+                        StateWebsocket.PluginChanged(config.Config.ID);
+                    }
                 }
             }
             catch( Exception ex)

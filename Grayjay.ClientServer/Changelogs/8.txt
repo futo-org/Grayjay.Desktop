@@ -1,0 +1,8 @@
+Improvements:
+ - Playlist imports now support embedded ids (new exports from mobile)
+ - Additional messaging if the sync listener failed to start
+
+
+Fixes:
+ - Fix licenses not being accepted
+ - Some Sync activity not being propogated.
