@@ -5,7 +5,7 @@ import chevron_right from '../../../../assets/icons/icon_chevron_right.svg';
 import StateGlobal from '../../../../state/StateGlobal';
 import { Event1 } from '../../../../utility/Event';
 import Toggle from '../../../basics/inputs/Toggle';
-import Anchor from '../../../../utility/Anchor';
+import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
 import Checkbox from '../../../basics/inputs/Checkbox';
 import CheckboxFlex from '../../../basics/inputs/CheckboxFlex';
 
@@ -283,10 +283,67 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
         </div>
       );
     };
+
+    const estimatedHeight$ = createMemo(()=>{
+      let height = 0;
+      const items = menu$()?.items;
+      if(!items)
+        return 0;
+
+      for(let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if(!item?.type)
+          continue;
+        switch(item.type) {
+            case "seperator":
+              height += 7;
+            break;
+            case "group":
+              height += 40;
+            break;
+            case "toggle":
+              height += 64;
+              break;
+            case "checkbox":
+              height += 64;
+              break;
+              case "header":
+              height += 56;
+              if((item as MenuItemHeader).description)
+                height += 16;
+              break;
+              case "button":
+              height += 50;
+              break;
+              case "option":
+              height += 40;
+              break;
+        }
+      }
+      return height + 44;
+    });
+
+
+    const anchorStyle$ = createMemo(()=>{
+      const height = estimatedHeight$();
+      const style = props.anchor?.style$();
+      if(style?.top) {
+        const topVal = parseInt(style?.top.substring(0, style?.top.length - 2));
+        if(topVal + height > window.innerHeight)
+          return props.anchor?.styleFlipped$();
+      }
+      if(style?.bottom) {
+        const bottomVal = parseInt(style?.bottom.substring(0, style?.bottom.length - 2));
+        if(bottomVal - height < 0)
+          return props.anchor?.styleFlipped$();
+      }
+
+      return props.anchor?.style$();
+    });
   
     return (
       <Show when={props.show}>
-      <div class={styles.menu}  ref={containerRef} style={{ ...(props.anchor?.style$() ?? {}), ...props.style }}>
+      <div class={styles.menu}  ref={containerRef} style={{ ...(anchorStyle$() ?? {}), ...props.style }}>
         <Show when={menu$()?.title}>
           <div class={styles.title}>
             {menu$()?.title}

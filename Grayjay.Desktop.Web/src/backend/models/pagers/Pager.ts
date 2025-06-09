@@ -35,6 +35,8 @@ export abstract class Pager<T> {
         this.error = undefined;
         try {
             result = await this.fetchLoad();
+            if(result.exception)
+                this.error = result.exception;
         }
         catch(ex) {
             this.error = ex;
@@ -44,7 +46,7 @@ export abstract class Pager<T> {
                 pagerID: undefined,
                 results: [],
                 hasMore: false,
-                error: ex
+                exception: ex
             } as PagerResult<T>;
         }
         this.hasMore = result!.hasMore;

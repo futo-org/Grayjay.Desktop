@@ -9,6 +9,7 @@ export interface VirtualGridProps {
     outerContainerRef: HTMLDivElement | undefined;
     overscan?: number;
     notifyEndOnLast?: number;
+    onScroll?: () => void;
     onEnd?: () => void;
     autosizeWidth?: boolean;
     calculateHeight?: (width: number) => number;
@@ -250,7 +251,10 @@ const VirtualGrid: Component<VirtualGridProps> = (props) => {
         //TODO debounce?
         resizeObserver.observe(props.outerContainerRef!);
         //window.addEventListener('resize', onUIEvent);
-        props.outerContainerRef?.addEventListener('scroll', onUIEvent);
+        props.outerContainerRef?.addEventListener('scroll', () => {
+            props?.onScroll?.();
+            onUIEvent();
+        });
     });
 
     onCleanup(() => {

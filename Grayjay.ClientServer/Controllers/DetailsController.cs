@@ -71,6 +71,7 @@ namespace Grayjay.ClientServer.Controllers
         private void ChangeVideo(PlatformVideoDetails video, VideoLocal videoLocal)
         {
             var state = this.State().DetailsState;
+            video = video ?? videoLocal;
             state.VideoLoaded = video;
             state.VideoLocal = videoLocal;
             state.VideoSubscription = StateSubscriptions.GetSubscription(video?.Author?.Url ?? videoLocal?.Author?.Url);
@@ -271,11 +272,21 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public PagerResult<RefItem<PlatformComment>> CommentsLoad(string url)
         {
-            var state = this.State().DetailsState;
-            var pager = StatePlatform.GetComments(EnsureVideo(this.State()));
-            state.CommentPager = new RefPager<PlatformComment>(pager);
-            state.RepliesPagers = new ConcurrentDictionary<string, RefPager<PlatformComment>>();
-            return state.CommentPager.AsPagerResult();
+            try
+            {
+                var state = this.State().DetailsState;
+                var pager = StatePlatform.GetComments(EnsureVideo(this.State()));
+                state.CommentPager = new RefPager<PlatformComment>(pager);
+                state.RepliesPagers = new ConcurrentDictionary<string, RefPager<PlatformComment>>();
+                return state.CommentPager.AsPagerResult();
+            }
+            catch(Exception ex)
+            {
+                return new PagerResult<RefItem<PlatformComment>>()
+                {
+                    Exception = ex.Message
+                };
+            }
         }
         [HttpGet]
         public PagerResult<RefItem<PlatformComment>> CommentsNextPage()

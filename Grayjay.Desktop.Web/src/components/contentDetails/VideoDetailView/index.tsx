@@ -1574,8 +1574,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                                 /*overscan={10}*/ />
                                         </Show>
                                         <Show when={commentsPager$()?.error}>
-                                            <div style="margin: 40px; text-align: center;">
-                                                {commentsPager$()?.error.title}
+                                            <div style="margin: 40px; text-align: center; color: #AA5555;">
+                                                {(typeof commentsPager$()?.error == 'string') ? commentsPager$()?.error : commentsPager$()?.error.title}
                                             </div>
                                         </Show>
                                     </>
