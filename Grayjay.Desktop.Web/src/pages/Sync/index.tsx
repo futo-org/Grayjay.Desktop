@@ -1,4 +1,4 @@
-import { createMemo, createResource, createSignal, For, onCleanup, onMount, Show, untrack, type Component } from 'solid-js';
+import { createEffect, createMemo, createResource, createSignal, For, on, onCleanup, onMount, Show, untrack, type Component } from 'solid-js';
 import { SyncBackend } from '../../backend/SyncBackend';
 import QRCode from 'qrcode';
 import styles from './index.module.css';
@@ -56,8 +56,25 @@ const SyncPage: Component = () => {
     </div>);
   };
 
+  const [status$, statusResourceActions] = createResourceDefault(() => [], async () => await SyncBackend.status());
+  const fetchPairingUrlWithRetry = async (timeout = 5000, interval = 500) => {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try {
+        const url = await SyncBackend.getPairingUrl();
+        console.info('getPairingUrl', url);
+        statusResourceActions.refetch();
+        if (url && url.length > 0) return url;
+      } catch (e) {
+        console.warn('getPairingUrl failed, retrying...', e);
+      }
+      await new Promise((r) => setTimeout(r, interval));
+    }
+    throw new Error('Timed out fetching pairing URL');
+  };
+
   const [isQrVisible$, setIsQrVisible] = createSignal(false);
-  const [pairingUrl$] = createResourceDefault(SyncBackend.getPairingUrl);
+  const [pairingUrl$, pairingUrlResourceActions] = createResourceDefault(() => fetchPairingUrlWithRetry());
   const [qrCode$] = createResourceDefault(pairingUrl$, async (pairingUrl) => {
     if (!pairingUrl || pairingUrl.length < 1) {
       return undefined;
@@ -107,24 +124,23 @@ const SyncPage: Component = () => {
               Link your device by scanning the QR code or copying the text below
             </div>
           </div>
-          <div>
-            <img src={qrCode$()} style="width: 100%" />
-          </div>
-          {JSON.stringify(pairingUrl$)}
-          <Show when={pairingUrl$() && pairingUrl$()?.length} fallback={
-            <div style="color: red">An error has occurred while trying to fetch the pairing URL. Please make sure Sync is enabled.</div>
-          }>
-            <div class={styles.pairingUrl} onClick={async () => {
-              const pairingUrl = pairingUrl$();
-              if (!pairingUrl || pairingUrl.length < 1) {
-                return;
-              }
-
-              await navigator.clipboard.writeText(pairingUrl);
-              UIOverlay.toast("Text copied to clipboard!");
-            }}>
-              {pairingUrl$()}
+          <Show when={!pairingUrl$.loading && !qrCode$.loading} fallback={<CenteredLoader />}>
+            <div>
+              <img src={qrCode$()} style="width: 100%" />
             </div>
+            <Show when={pairingUrl$() && (pairingUrl$()?.length ?? 0) > 0} fallback={
+              <div style="color: red">
+                An error has occurred while trying to fetch the pairing URL. <br/>
+                Please make sure Sync is enabled.
+              </div>
+            }>
+              <div class={styles.pairingUrl} onClick={async () => {
+                await navigator.clipboard.writeText(pairingUrl$()!);
+                UIOverlay.toast('Text copied to clipboard!');
+              }}>
+                {pairingUrl$()}
+              </div>
+            </Show>
           </Show>
         </div>
       </ScrollContainer>
@@ -146,7 +162,14 @@ const SyncPage: Component = () => {
     return StateGlobal.settings$()?.object?.synchronization?.enabled;
   });
 
-  const [status$] = createResourceDefault(() => [], async () => await SyncBackend.status());
+  createEffect(on(() => synchronizationEnabled(), (enabled, prev) => 
+  {
+    if (enabled && !prev) {
+      console.info("Refetching resources because sync was enabled.");
+      pairingUrlResourceActions.refetch();
+    }
+    statusResourceActions.refetch();
+  }, { defer: true }));
 
   return (
     <Show when={!devices$.loading} fallback={ <CenteredLoader /> }>
