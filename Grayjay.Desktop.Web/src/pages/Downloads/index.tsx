@@ -332,8 +332,8 @@ const DownloadsPage: Component = () => {
               autosizeWidth={true}
               notifyEndOnLast={5}
               style={{
-                  "margin-left": "15px",
-                  "margin-top": "15px",
+                  "margin-left": "20px",
+                  "margin-top": "20px",
                   "margin-bottom": "10px"
               }}
               builder={(index, item) =>
@@ -453,57 +453,59 @@ const DownloadsPage: Component = () => {
       }
     ]
     return (
-      <Switch>
-          <Match when={videoType$() != "playlist"}>
-            <DataTable selectable={true}
-              onSelectionChanged={(selected)=>{setSelected(selected)}} 
-              columnInfo={columns} 
-              data={data!} 
-              style={{"margin-top": "20px"}} />
-          </Match>
-          <Match when={videoType$() == "playlist"}>
-            <DataTable selectable={true}
+      <div style="margin-left: 30px; margin-right: 30px">
+        <Switch>
+            <Match when={videoType$() != "playlist"}>
+              <DataTable selectable={true}
                 onSelectionChanged={(selected)=>{setSelected(selected)}} 
-                columnInfo={[
-                  {
-                    name: "",
-                    resolve: (row:any)=> getPlaylistThumbnail(row.playlist),
-                    type: "image",
-                    onClick(row: any){ openPlaylist(row.playlist); }
-                  },
-                  {
-                    name: "Name",
-                    resolve: (row:any)=> row.playlist.name,
-                    onClick(row:any){ openPlaylist(row.playlist); }
-                  },
-                  {
-                    name: "Resolution",
-                    resolve: (row:any)=> row.targetPixelCount,
-                    style: {
-                      color: "#8C8C8C"
-                    },
-                    onClick(video: IVideoLocal){ openVideo(video); }
-                  },
-                  {
-                    name: "",
-                    resolve: (row: any) =>{
-                      return (
-                        <div style="text-align: right; text-wrap: nowrap">
-                          <button class={styles.selectedButton} onClick={()=>{exportDownloads(row?.playlist?.videos?.map(x=>x.id) ?? [])}}>
-                            Export
-                          </button>
-                          <button class={styles.selectedButton} onClick={()=>{deleteDownloadPlaylist(row?.playlist?.id)}} style="color: #F97066; margin-right: 20px;">
-                            Delete
-                          </button>
-                        </div>
-                      )
-                    }
-                  }
-                ]} 
-                data={downloadingPlaylists$()} 
+                columnInfo={columns} 
+                data={data!} 
                 style={{"margin-top": "20px"}} />
-          </Match>
-      </Switch>
+            </Match>
+            <Match when={videoType$() == "playlist"}>
+              <DataTable selectable={true}
+                  onSelectionChanged={(selected)=>{setSelected(selected)}} 
+                  columnInfo={[
+                    {
+                      name: "",
+                      resolve: (row:any)=> getPlaylistThumbnail(row.playlist),
+                      type: "image",
+                      onClick(row: any){ openPlaylist(row.playlist); }
+                    },
+                    {
+                      name: "Name",
+                      resolve: (row:any)=> row.playlist.name,
+                      onClick(row:any){ openPlaylist(row.playlist); }
+                    },
+                    {
+                      name: "Resolution",
+                      resolve: (row:any)=> row.targetPixelCount,
+                      style: {
+                        color: "#8C8C8C"
+                      },
+                      onClick(video: IVideoLocal){ openVideo(video); }
+                    },
+                    {
+                      name: "",
+                      resolve: (row: any) =>{
+                        return (
+                          <div style="text-align: right; text-wrap: nowrap">
+                            <button class={styles.selectedButton} onClick={()=>{exportDownloads(row?.playlist?.videos?.map(x=>x.id) ?? [])}}>
+                              Export
+                            </button>
+                            <button class={styles.selectedButton} onClick={()=>{deleteDownloadPlaylist(row?.playlist?.id)}} style="color: #F97066; margin-right: 20px;">
+                              Delete
+                            </button>
+                          </div>
+                        )
+                      }
+                    }
+                  ]} 
+                  data={downloadingPlaylists$()} 
+                  style={{"margin-top": "20px"}} />
+            </Match>
+        </Switch>
+      </div>
     )
   }
 
@@ -620,15 +622,15 @@ const DownloadsPage: Component = () => {
                 <ViewTypeToggles value={viewType$()} onToggle={(val)=>{setViewType(val)}} />
               </div>
             </div>
-            <Switch>
-              <Match when={viewType$() == "grid"}>
-                {gridUI(scrollContainerRef)}
-              </Match>
-              <Match when={viewType$() == "list"}>
-                {listUI()}
-              </Match>
-            </Switch>
           </div>
+          <Switch>
+            <Match when={viewType$() == "grid"}>
+              {gridUI(scrollContainerRef)}
+            </Match>
+            <Match when={viewType$() == "list"}>
+              {listUI()}
+            </Match>
+          </Switch>
         </Show>
         <Show when={!(downloaded$() && downloaded$()!.length > 0)}>
           <EmptyContentView 
