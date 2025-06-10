@@ -37,7 +37,7 @@ const BuyPage: Component = () => {
                   description: "Thanks for purchasing Grayjay, your application has been activated.",
                   buttons: [
                     {
-                      title: "No Problem!",
+                      title: "You're welcome!",
                       style: "none",
                       onClick() {
                                   
