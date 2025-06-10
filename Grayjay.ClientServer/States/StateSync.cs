@@ -196,8 +196,12 @@ public class StateSync : IDisposable
     public Task BroadcastAsync(Opcode opcode, byte subOpcode, string data, CancellationToken cancellationToken = default) => BroadcastAsync(opcode, subOpcode, Encoding.UTF8.GetBytes(data), cancellationToken);
     public async Task BroadcastAsync(Opcode opcode, byte subOpcode, byte[] data, CancellationToken cancellationToken = default)
     {
+        var sessions = SyncService?.GetSessions();
+        if (sessions == null)
+            return;
+
         //TODO: Should be done in parallel
-        foreach(var session in SyncService!.GetSessions())
+        foreach (var session in sessions)
         {
             try
             {
