@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -215,6 +215,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       }
     });
   };
+  createEffect(on(topButtons$, () => handleResize()));
+  createEffect(on(bottomButtons$, () => handleResize()));
 
   onMount(() => {
     window.addEventListener('resize', handleResize);
