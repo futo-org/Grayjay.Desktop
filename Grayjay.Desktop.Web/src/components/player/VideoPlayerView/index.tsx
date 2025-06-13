@@ -78,6 +78,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const [isLoading, setIsLoading] = createSignal(true);
     const [resumePositionVisible, setResumePositionVisible] = createSignal(false);
     const [endControlsVisible$, setEndControlsVisible] = createSignal(false);
+    const [showCaptions,setCaptionVisibility]=createSignal(true);
     let currentUrl: string | undefined;
     let castingEndedEmitted = false;
 
@@ -1113,6 +1114,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     handleTheatre={props.handleTheatre}
                     handleEscape={handleEscape}
                     handleMinimize={handleMinimize}
+                    toggleCaptions={()=>{setCaptionVisibility(!showCaptions());}}
                     eventMoved={props.eventMoved}
                     buttons={props.buttons}
                     leftButtonContainerStyle={props.leftButtonContainerStyle}
@@ -1120,8 +1122,10 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     {props.children}
                 </PlayerControlsView>
             </div>
-
-            <div ref={videoCaptionsRef} class={styles.captionsContainer} style={{"bottom": controlsVisible$() ? "100px" : "18px"}}></div>
+            
+            <Show when={showCaptions()}>
+                <div ref={videoCaptionsRef} class={styles.captionsContainer} style={{"bottom": controlsVisible$() ? "100px" : "18px"}}></div>
+            </Show>
 
             <Show when={isLoading() && !isCasting()}>
                 <div class={styles.loader}>
