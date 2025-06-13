@@ -1,7 +1,7 @@
 
 
 .pageTitle {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -39,14 +39,14 @@
     position: relative;
     width: calc(100% - 40px);
     height: 80px;
-    background-color: #111;
+    background-color: var(--black-color-1);
     overflow: hidden;
     margin-left: 24px;
     border-radius: 8px;
-    border-bottom: 1px solid #1B1B1B;
+    border-bottom: 1px solid var(--black-color-2);
 }
 .source.enabled {
-    background-color: #222;
+    background-color: var(--grey-color-8);
 }
 
 .source .thumb {
@@ -65,7 +65,7 @@
     font-family: "Inter";
     line-height: 24px;
     overflow: hidden;
-    color: white;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     text-overflow: ellipsis;
@@ -99,7 +99,7 @@
     height: 30px;
     text-align:center;
     background-color: #444;
-    color: white;
+    color: var(--white-color);
     border: 0px;
     border-radius: 20px;
 }

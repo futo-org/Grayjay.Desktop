@@ -66,7 +66,7 @@ const RemotePlaylistDetailView: Component<RemotePlaylistDetailViewProps> = (prop
             text="Shuffle"
             icon={iconShuffle}
             style={{
-              border: "1px solid #2E2E2E",
+              border: "1px solid var(--grey-color-6)",
               "margin-left": "16px",
               "margin-right": "16px",
               "flex-shrink": 0

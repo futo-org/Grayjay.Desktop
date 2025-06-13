@@ -76,7 +76,7 @@ const OverlaySubscriptionsSelector: Component<OverlaySubscsriptionsSelectorDialo
             }</For>
           </div>
         </div>
-        <div style="height: 1px; background-color: rgba(255, 255, 255, 0.09); margin-top: 10px; margin-bottom: 10px;"></div>
+        <div style="height: 1px; background-color: rgb(from var(--white-color)  r g b / 0.09); margin-top: 10px; margin-bottom: 10px;"></div>
         <div style="text-align: right">
             <Button text={"Select " + selected$().length + " creators"}
               onClick={()=>submit()}
