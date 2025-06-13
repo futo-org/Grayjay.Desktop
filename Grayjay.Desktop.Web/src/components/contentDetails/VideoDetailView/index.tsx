@@ -153,6 +153,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const [recomPager$] = createResource<Pager<IPlatformContent>>(() => videoLoaded$(), async (videoLoaded: any) => {
         if(!videoLoaded)
             return undefined;
+        showRecommendations=(await SettingsBackend.settings())?.object?.home?.showRecommendations;
         const result =  await DetailsBackend.recommendationsPager(videoLoaded.url);
         console.log("Recommendation Results:", result);
         return result;
@@ -535,7 +536,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     });
 
     const videoLoadedIsValid$ = createMemo(() => videoLoaded$()?.url === currentVideo$()?.url);
-    const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);
+    let showRecommendations=false;
+    const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length && showRecommendations);
     const shouldHideSideBar = createMemo(() => {
         //TODO: Expand these conditions
         const sideBarVisible = shouldShowQueue() || liveChatWindow$() || recommendationsVisible$();
