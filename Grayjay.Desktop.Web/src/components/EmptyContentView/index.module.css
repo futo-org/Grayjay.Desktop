@@ -7,7 +7,7 @@
 }
 .noSubs .title {
     margin-top: 16px;
-    color: #FFF;
+    color: var(--white-color);
 
     text-align: center;
     font-family: Inter;
@@ -18,7 +18,7 @@
 }
 .noSubs .description {
     margin-top: 8px;
-    color: #575757;
+    color: var(--grey-color-5);
     text-align: center;
     font-family: Inter;
     font-size: 18px;

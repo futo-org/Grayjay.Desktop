@@ -187,7 +187,7 @@ const HistoryPage: Component = () => {
               style={{
                 "width": "300px",
               }} inputContainerStyle={{
-                "background-color": "#212121"
+                "background-color": "var(--grey-color-8)"
               }}
               onTextChanged={(newVal) => setQuery(newVal)}
               icon={ic_search}

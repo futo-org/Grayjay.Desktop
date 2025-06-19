@@ -167,7 +167,7 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
   )
   /*
   return (
-    <div style="background-color: #111; padding: 30px; margin-bottom: 20px; margin-left: 30px; margin-right: 30px; position: relative;">
+    <div style="background-color: var(--black-color-1); padding: 30px; margin-bottom: 20px; margin-left: 30px; margin-right: 30px; position: relative;">
       <div>
         <img src={proxyImage(getBestThumbnail(downloading$().video.thumbnails)?.url)} style="position: absolute; left: 20px; top: 40px; width: 70px; height: 40px;"/>
         <div style="margin-left: 80px; margin-bottom: 20px;">

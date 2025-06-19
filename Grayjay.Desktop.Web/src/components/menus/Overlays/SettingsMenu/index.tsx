@@ -354,7 +354,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
             <div></div>
           }>
             <Match when={item.type == "seperator"}>
-              <div style="width: calc(100%); height: 1px; background: #2E2E2E; margin-top: 3px; margin-bottom: 3px;"></div>
+              <div style="width: calc(100%); height: 1px; background: var(--grey-color-6); margin-top: 3px; margin-bottom: 3px;"></div>
             </Match>
             <Match when={item.type == "group"}>
               <div class={styles.menuItem} onClick={()=>openGroup(item as IMenuItemGroup)} classList={{[styles.isGroup]: true}}>
@@ -373,7 +373,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
               <div class={styles.menuItem} classList={{[styles.option]: true}} onClick={()=>selectOption(item as IMenuItemOption)}>
                 <div class={styles.name} style={{
                   "font-weight": ((item as IMenuItemOption).isSelected) ? "bold" : "regular", 
-                  color: ((item as IMenuItemOption).isSelected) ? "#FFFFFF" : "#AAAAAA"
+                  color: ((item as IMenuItemOption).isSelected) ? "var(--white-color)" : "var(--grey-color-1)"
                 }}>
                   {(item as IMenuItemOption).name}
                 </div>

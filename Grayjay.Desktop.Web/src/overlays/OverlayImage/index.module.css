@@ -5,8 +5,8 @@
     overflow:hidden;
     border-radius: 12px;
     padding:0.5px;
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
     max-width: 90%;
     max-height: 90%;
     margin-left: auto;
@@ -49,7 +49,7 @@
     width: 40px;
     height: 40px;
     border-radius: 48px;
-    background: #2E2E2E;
+    background: var(--grey-color-6);
     cursor: pointer;
     box-shadow: 0px 0px 3px black;
 }
@@ -76,7 +76,7 @@
     margin: 5px;
 }
 .subscription.enabled {
-    background-color: #212121;
+    background-color: var(--grey-color-8);
 }
 .subscription .check {
     width: 18px;
@@ -85,13 +85,13 @@
     top: 10px;
     right: 5px;
     border-radius: 72.727px;
-    border: 2px solid #454545;
+    border: 2px solid var(--grey-color-7);
 }
 .subscription .check img {
     display: none;
 }
 .subscription.enabled .check {
-    background-color: #019BE7;
+    background-color: var(--blue-color-1);
 }
 .subscription.enabled .check img {
     display: block;
@@ -106,7 +106,7 @@
     display: inline-block;
 }
 .subscription .name {
-    color: #FFF;
+    color: var(--white-color);
 
     text-align: center;
     
@@ -146,7 +146,7 @@
     width: 100%;
     text-wrap: nowrap;
     scrollbar-width: thin;
-    scrollbar-color: #555 #333;
+    scrollbar-color: var(--grey-color-5) var(--grey-color-6);
 }
 .horizontalList::-webkit-scrollbar {
     background-color: transparent;

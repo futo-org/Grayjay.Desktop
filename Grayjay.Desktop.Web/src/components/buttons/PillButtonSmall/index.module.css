@@ -6,7 +6,7 @@
     gap: 6px;
 
     border-radius: 22px;
-    background-color: #212122;
+    background-color: var(--grey-color-8);
     padding-left: 20px;
     padding-right: 20px;
 }
@@ -21,7 +21,7 @@
 }
 
 .text {
-    color: #FFF;
+    color: var(--white-color);
     font-family: "Inter";
     font-size: 16px;
     font-weight: 500;

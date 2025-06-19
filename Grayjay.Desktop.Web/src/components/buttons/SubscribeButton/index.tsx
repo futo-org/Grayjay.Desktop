@@ -43,21 +43,21 @@ const SubscribeButton: Component<SubscribeButtonProps> = (props) => {
     return (
         <Switch>
             <Match when={!isSubscribing$() && (isSubscribed$() === true || (isSubscribed$() === undefined && props.isSubscribedInitialState === true))}>
-                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Unsubscribe" color="#2E2E2E" onClick={ () => {
+                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Unsubscribe" color="var(--grey-color-6)" onClick={ () => {
                     const url = props.author;
                     if (url)
                         unsubscribe(url);
                 }} />
             </Match>
             <Match when={!isSubscribing$() && (isSubscribed$() === false || (isSubscribed$() === undefined && props.isSubscribedInitialState === false))}>
-                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Subscribe" color="#019BE7" onClick={ () => {
+                <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Subscribe" color="var(--blue-color-1)" onClick={ () => {
                     const url = props.author;
                     if (url)
                         subscribe(url);
                 }} />
             </Match>
             <Match when={isSubscribing$()}>
-                <LoadingButton style={{ width: "170px", ... props.style }} small={props.small} text="" color="#019BE7" onClick={ () => {
+                <LoadingButton style={{ width: "170px", ... props.style }} small={props.small} text="" color="var(--blue-color-1)" onClick={ () => {
                     
                 }} />
             </Match>

@@ -22,7 +22,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #FFF;
+    color: var(--white-color);
     gap: 4px;
     padding: 10px;
     flex-direction: column;
@@ -32,9 +32,9 @@
 
     border-radius: 6px;
     box-sizing: border-box;
-    background: #1B1B1B;
+    background: var(--black-color-2);
 }
 
 .containerButton.active {
-    background: #2E2E2E;
+    background: var(--grey-color-6);
 }

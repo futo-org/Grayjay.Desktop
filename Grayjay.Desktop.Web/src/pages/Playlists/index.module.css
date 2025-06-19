@@ -6,7 +6,7 @@
 }
 
 .textHeader {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -49,7 +49,7 @@
     padding-bottom: 16px;
     cursor: pointer;
 
-    color: #FFF;
+    color: var(--white-color);
     text-align: center;
     leading-trim: both;
     text-edge: cap;
@@ -61,7 +61,7 @@
     line-height: 140%; /* 19.6px */
 
     border-radius: 6px;
-    border: 1px solid #2E2E2E;
+    border: 1px solid var(--grey-color-6);
 }
 
 .containerPlaylists {

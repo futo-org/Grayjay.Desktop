@@ -4,7 +4,7 @@
   height: 100%; /* Adjust to your container’s height */
   position: relative;
   overflow: hidden;
-  background: #1b1b1b; /* Solid base color */
+  background: var(--black-color-2); /* Solid base color */
 }
 
 .skeletonBox::before {
@@ -17,9 +17,9 @@
   background: linear-gradient(
       90deg,
       transparent 0%,          /* Invisible start */
-      rgba(255,255,255,0.05) 30%, /* Gradual increase */
-      rgba(255,255,255,0.2) 50%,  /* Softer peak */
-      rgba(255,255,255,0.05) 70%, /* Gradual decrease */
+      rgb(from var(--white-color)  r g b /0.05) 30%, /* Gradual increase */
+      rgb(from var(--white-color)  r g b /0.2) 50%,  /* Softer peak */
+      rgb(from var(--white-color)  r g b /0.05) 70%, /* Gradual decrease */
       transparent 100%          /* Invisible end */
   );
   animation: shimmer 2.2s infinite ease-in-out;
