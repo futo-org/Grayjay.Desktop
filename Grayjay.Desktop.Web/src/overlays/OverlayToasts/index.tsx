@@ -48,7 +48,7 @@ const OverlayToasts: Component<OverlayToastsProps> = (props: OverlayToastsProps)
 
     //TODO: Improve animations
     return (
-      <div style="position: absolute; top: 65px; right: 0px; text-align: right; pointer-events: none;">
+      <div style="position: absolute; top: 65px; right: 0px; text-align: right; pointer-events: none; z-index: 3">
         <For each={toasts$()}>{(item, i) =>
           <div class={styles.toast} classList={{[styles.expired]: !!toastStates[item.id ?? ""]?.expired$(), [styles.showing]: !toastStates[item.id ?? ""]?.expired$()}}>
             <div class={styles.toastTitle}>
