@@ -284,7 +284,7 @@ const HistoryPage: Component = () => {
                         "width": historyVideo() ? `${(getVideoProgressPercentage(historyVideo()?.position, historyVideo()?.video?.duration))}%` : undefined
                       }} />
                     </div>
-                    <div style="display: flex; flex-direction: column; height: 100%; margin-left: 20px; width: 100%;">
+                    <a href={"/web/video?url="+historyVideo()?.video.url}><div style="display: flex; flex-direction: column; height: 100%; margin-left: 20px; width: 100%;">
                       <div class={styles.videoTitle} onClick={openVideo}>{historyVideo()?.video.name}</div>
                       <div style="flex-grow: 1"></div>
                       <div style="display: flex; flex-direction: row; align-items: center;">
@@ -294,7 +294,7 @@ const HistoryPage: Component = () => {
                           <div class={styles.authorMetadata} onClick={openAuthor}>{metadata()}</div>
                         </div>
                       </div>
-                    </div>
+                    </div></a>
                     <div style="flex-grow: 1"></div>
                     <IconButton icon={ic_more}
                       style={{"flex-shrink": 0}}

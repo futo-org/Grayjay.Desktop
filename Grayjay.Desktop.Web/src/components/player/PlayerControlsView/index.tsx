@@ -285,7 +285,6 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 return;
             }
         }
-
         switch (ev.key) {
             case " ":
             case "k":
