@@ -7,10 +7,10 @@
 
 .select {
   border-radius: 8px;
-  border: 1px solid #2E2E2E;
-  background: #141414;
+  border: 1px solid var(--grey-color-6);
+  background: var(--black-color-1);
   padding: 14px;
-  color: white;
+  color: var(--white-color);
   cursor: pointer;
   min-width: 128px;
 
@@ -40,11 +40,11 @@
   position: absolute;
   right: 0px;
   border-radius: 10px;
-  border: 1px solid #2E2E2E;
-  background: #141414;
+  border: 1px solid var(--grey-color-6);
+  background: var(--black-color-1);
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #555 #333;
+  scrollbar-color: var(--grey-color-5) var(--grey-color-6);
   z-index: 999;
 }
 
@@ -52,14 +52,14 @@
   width: 10px;
 }
 .optionsContainer::-webkit-scrollbar-thumb {
-  background-color: #555;
+  background-color: var(--grey-color-5);
   border-radius: 5px;
 }
 .optionsContainer::-webkit-scrollbar-thumb:hover {
-  background-color: #888;
+  background-color: var(--grey-color-4);
 }
 .optionsContainer::-webkit-scrollbar-track {
-  background-color: #333;
+  background-color: var(--grey-color-6);
 }
 .optionsContainer::-webkit-scrollbar-corner {
   background-color: transparent;
@@ -72,7 +72,7 @@
   padding-right: 16px;
   padding-bottom: 16px;
   padding-top: 16px;
-  color: #FFF;
+  color: var(--white-color);
   font-family: Inter;
   font-size: 16px;
   font-style: normal;
@@ -86,11 +86,11 @@
 }
 
 .option.hover {
-  color: #FFF;
+  color: var(--white-color);
   
 }
 .option.selected {
-  background: #1B1B1B;
+  background: var(--black-color-2);
   border-radius: 5px;
 }
 
@@ -105,7 +105,7 @@
 
 .labelText {
   overflow: hidden;
-  color: #595959;
+  color: var(--grey-color-5);
   text-overflow: ellipsis;
   font-family: Inter;
   font-size: 12px;

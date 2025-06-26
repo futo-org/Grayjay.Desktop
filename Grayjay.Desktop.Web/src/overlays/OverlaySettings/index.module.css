@@ -9,8 +9,8 @@
     text-align: center;
     
     border-radius: 12px;
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
     box-shadow: 0px 1.167px 3.148px 0px rgba(0, 0, 0, 0.07), 0px 5.133px 6.519px 0px rgba(0, 0, 0, 0.12), 0px 12.6px 13px 0px rgba(0, 0, 0, 0.16), 0px 24.267px 25.481px 0px rgba(0, 0, 0, 0.19), 0px 40.833px 46.852px 0px rgba(0, 0, 0, 0.24), 0px 63px 80px 0px rgba(0, 0, 0, 0.31);
 }
 
@@ -28,10 +28,10 @@
     border-radius: 6px;
 }
 .button.none {
-    color: #019BE7;
+    color: var(--blue-color-1);
 }
 .button.primary {
-    background: #019BE7;
+    background: var(--blue-color-1);
 }
 .button.accent {
     background: #F97066;
@@ -65,7 +65,7 @@
     top: 20px;
     height: 100px;
     width: 100px;
-    background-color: #1B1B1B;
+    background-color: var(--black-color-2);
     border-radius: 20px;
     display: grid;
     align-items: center;
@@ -82,7 +82,7 @@
     width: 100%;
 }
 .header .descriptor .title{
-    color: #FFF;
+    color: var(--white-color);
     font-family: "Inter";
     font-family: Inter;
     font-size: 28px;
@@ -93,7 +93,7 @@
     text-align: left;
 }
 .header .descriptor .description {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: "Inter";
     font-family: Inter;
     font-size: 16px;
@@ -105,7 +105,7 @@
     margin-top: 10px;
 }
 .header .descriptor .meta {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -128,7 +128,7 @@
     flex: 1;
     flex-basis: 1000px;
     border-radius: 8px;
-    border: 1px solid #2E2E2E;
+    border: 1px solid var(--grey-color-6);
     padding: 16px 18px;
     align-items: center;
     gap: 8px;
@@ -144,7 +144,7 @@
 }
 .linkContainer .linkTitle {
     overflow: hidden;
-    color: #FFF;
+    color: var(--white-color);
     
     leading-trim: both;
     
@@ -159,7 +159,7 @@
 }
 .linkContainer .linkUrl {
     overflow: hidden;
-    color: #019BE7;
+    color: var(--blue-color-1);
 
     leading-trim: both;
 
@@ -179,7 +179,7 @@
 
 }
 .permissionContainer .headerTitle {
-    color: #FFF;
+    color: var(--white-color);
 
     leading-trim: both;
 
@@ -191,7 +191,7 @@
     line-height: 24px; /* 109.091% */
 }
 .permissionContainer .headerDescription {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
 
     leading-trim: both;
 
@@ -222,7 +222,7 @@
     width: calc(100% - 50px)
 }
 .permission .permissionTitle {
-    color: #FFF;
+    color: var(--white-color);
 
     leading-trim: both;
 
@@ -234,7 +234,7 @@
     line-height: 24px; /* 150% */
 }
 .permission .permissionDescription {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
 
     leading-trim: both;
     
@@ -285,7 +285,7 @@
     line-height: 24px; /* 120% */
 }
 .warning .warningDescription {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
 
     leading-trim: both;
     
@@ -300,7 +300,7 @@
 .tag {
     display: inline-block;
     margin-right: 4px;
-    color: #019BE7;
+    color: var(--blue-color-1);
 
     leading-trim: both;
 
@@ -311,7 +311,7 @@
     font-weight: 300;
     line-height: 26px; /* 185.714% */
     border-radius: 4px;
-    background: #1B1B1B;
+    background: var(--black-color-2);
     padding-left: 12px;
     padding-right: 12px;
     padding-top: 4px;
@@ -331,7 +331,7 @@
     display: grid;
     align-items: center;
     justify-content: center;
-    background: #019BE7;
+    background: var(--blue-color-1);
     margin-left: auto;
     cursor: pointer;
 }

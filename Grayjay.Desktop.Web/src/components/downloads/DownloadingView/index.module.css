@@ -5,7 +5,7 @@
     justify-content: center;
     align-items: center;
     border-radius: 8px;
-    background: #1B1B1B;
+    background: var(--black-color-2);
     margin-right: 12px;
     margin-bottom: 12px;
     padding: 12px;
@@ -19,7 +19,7 @@
 
 .name {
     overflow: hidden;
-    color: #F0F0F0;
+    color: var(--grey-color-0);
     text-align: center;
     text-wrap: nowrap;
     text-overflow: ellipsis;
@@ -33,7 +33,7 @@
 }
 
 .metadata {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     text-align: center;
     font-feature-settings: 'clig' off, 'liga' off;
     font-family: Inter;
@@ -53,7 +53,7 @@
 }
 .downloadingCard .title {
     overflow: hidden;
-    color: #F0F0F0;
+    color: var(--grey-color-0);
 
     leading-trim: both;
 
@@ -70,7 +70,7 @@
     text-wrap: nowrap;
 }
 .downloadingCard .author {
-    color: #F0F0F0;
+    color: var(--grey-color-0);
 
     leading-trim: both;
 
@@ -86,7 +86,7 @@
     text-overflow: ellipsis;
 }
 .downloadingCard .meta {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -118,7 +118,7 @@
     position: absolute;
     right: 10px;
     bottom: 10px;
-    color: #D9D9D9;
+    color: var(--grey-color-3);
     border-radius:99px;
 
     
@@ -131,7 +131,7 @@
     padding: 8px;
 }
 .downloadingCard .badgeSize {
-    color: #FFF;
+    color: var(--white-color);
     background-color: black;
     border-radius: 3px;
 
@@ -180,7 +180,7 @@
     top: 10px;
     /* padding: 10px; */
     width: 15px;
-    background-color: #111111;
+    background-color: var(--black-color-1)111;
     height: 15px;
     padding: 5px;
     border-radius: 3px;

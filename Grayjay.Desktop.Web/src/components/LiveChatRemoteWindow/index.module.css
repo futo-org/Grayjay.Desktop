@@ -9,9 +9,9 @@
 .window {
     height: 100%;
     padding: 10px;
-    background-color: #111;
+    background-color: var(--black-color-1);
     border-radius: 10px;
-    border: 2px solid #222;
+    border: 2px solid var(--grey-color-8);
     box-sizing: border-box;
 }
 .window iframe {

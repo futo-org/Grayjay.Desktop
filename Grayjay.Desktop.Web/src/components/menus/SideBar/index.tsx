@@ -334,7 +334,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             ev.preventDefault();
             ev.stopPropagation();
           }}>
-            <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
+            <div style="background-color: var(--black-color-1); width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
     flex-direction: column; align-items: center; gap: 6px;">
               {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (
                   <SideBarButton

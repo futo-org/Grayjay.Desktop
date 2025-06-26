@@ -1,5 +1,5 @@
 .checkbox {
-    border-color: #8C8C8C;
+    border-color: var(--grey-color-4);
     border-radius: 8px;
     border-width: 3.6px;
     width: 22px;
@@ -14,8 +14,8 @@
 }
 
 .checkbox.checked {
-    border-color: #019BE7;
-    background-color: #019BE7;
+    border-color: var(--blue-color-1);
+    background-color: var(--blue-color-1);
     border-radius: 8px;
     border-width: 3.6px;
     width: 22px;

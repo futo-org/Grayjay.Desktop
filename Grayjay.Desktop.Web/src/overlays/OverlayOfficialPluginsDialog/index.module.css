@@ -9,11 +9,11 @@
     padding-right: 20px;
     padding-bottom: 20px;
     border-radius: 12px;
-    scrollbar-color: #555 #333;
+    scrollbar-color: var(--grey-color-5) var(--grey-color-6);
     scrollbar-width: thin;
     overflow-y: auto;
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
     box-shadow: 0px 1.648px 3.148px 0px rgba(0, 0, 0, 0.10), 0px 7.252px 6.519px 0px rgba(0, 0, 0, 0.16), 0px 17.8px 13px 0px rgba(0, 0, 0, 0.21), 0px 34.281px 25.481px 0px rgba(0, 0, 0, 0.26), 0px 57.685px 46.852px 0px rgba(0, 0, 0, 0.32), 0px 89px 80px 0px rgba(0, 0, 0, 0.42);
 }
 
@@ -44,7 +44,7 @@
     width: 40px;
     height: 40px;
     border-radius: 48px;
-    background: #2E2E2E;
+    background: var(--grey-color-6);
     cursor: pointer;
 }
 .closeButton img {
@@ -62,7 +62,7 @@
     margin: 10px;
     display: inline-block;
     vertical-align: top;
-    background-color: #222;
+    background-color: var(--grey-color-8);
     border-radius: 6px;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .source:hover {
-    background-color: #333;
+    background-color: var(--grey-color-6);
 }
 
 

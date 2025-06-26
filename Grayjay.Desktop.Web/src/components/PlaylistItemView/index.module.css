@@ -1,5 +1,5 @@
 .metadata {
-    color: rgba(255, 255, 255, 0.60);
+    color: rgb(from var(--white-color)  r g b / 0.60);
     font-family: Inter;
     font-size: 16px;
     font-style: normal;
@@ -49,7 +49,7 @@
     -webkit-line-clamp: 2;
     flex: 1 0 0;
     overflow: hidden;
-    color: #F0F0F0;
+    color: var(--grey-color-0);
     text-overflow: ellipsis;
     font-family: Inter;
     font-size: 16px;

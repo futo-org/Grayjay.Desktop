@@ -45,16 +45,16 @@ const OverlaySelectOnlineSyncDeviceDialog: Component<OverlaySelectOnlineSyncDevi
           <div>
             <For each={StateSync.devicesOnline$()}>{ dev => 
               <div onClick={()=>{UIOverlay.dismiss(); props.act(dev)}} style="cursor: pointer">
-                  <div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center;">
+                  <div style="display: flex; flex-direction: row; border-radius: 4px; background: var(--black-color-2); padding: 14px 18px 14px; gap: 12px;  margin-left: 20px; margin-right: 20px; align-items: center;">
                     <img src={StateSync.getSyncIcon(dev.linkType)} style="width: 44px;" />
                     <div style="display: flex; flex-direction: column; flex-grow: 1; align-items: flex-start; justify-content: center;">
-                        <div style="overflow: hidden; color: white; text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{dev.displayName ?? dev.publicKey}</div>
-                        <div style="color: #595959; font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{dev.metadata}</div>
+                        <div style="overflow: hidden; color: var(--white-color); text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{dev.displayName ?? dev.publicKey}</div>
+                        <div style="color: var(--grey-color-5); font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{dev.metadata}</div>
                     </div>
                 
-                    <div style="border-radius: 4px; border: 1px solid #2E2E2E; display: flex; padding: 6px 8px; align-items: center; gap: 4px; flex-shrink: 0; height: fit-content;">
+                    <div style="border-radius: 4px; border: 1px solid var(--grey-color-6); display: flex; padding: 6px 8px; align-items: center; gap: 4px; flex-shrink: 0; height: fit-content;">
                       <img src={StateSync.getSyncIcon(dev.linkType)} style="width: 20x; cursor: pointer;" />
-                      <div style="color: #BFBFBF; font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{StateSync.getSyncLinkName(dev.linkType)}</div>
+                      <div style="color: var(--grey-color-1); font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{StateSync.getSyncLinkName(dev.linkType)}</div>
                     </div>
                   </div>
               </div>

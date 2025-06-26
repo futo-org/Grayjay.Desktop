@@ -1065,7 +1065,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             onDblClick={handleDblClick}>
 
             <ErrorBoundary fallback={(err, reset) => (<div></div>)}>
-                <video ref={videoElement} style="width: 100%; height: 100%;" onclick={()=>console.log("received click")}></video>
+                <video ref={videoElement} style="width: 100%; height: 100%; background: var(--black-color-3);" onclick={()=>console.log("received click")}></video>
             </ErrorBoundary>
             
             <div class={styles.containerCasting} style={{"display": isAudioOnly() || isCasting() ? "block" : "none"}}>

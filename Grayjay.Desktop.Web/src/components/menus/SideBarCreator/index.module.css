@@ -12,11 +12,11 @@
 
 .sideBarButton:hover {
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.055);
+    background: rgb(from var(--white-color)  r g b / 0.055);
 }
 
 .sideBarButton.selected {
-    background: rgba(255, 255, 255, 0.105);
+    background: rgb(from var(--white-color)  r g b / 0.105);
 }
 
 .sideBarButton.collapsed {
@@ -47,7 +47,7 @@
     line-height: 32px;
     transition: opacity 0.3s ease;
     opacity: 1;
-    color: #BFBFBF;
+    color: var(--grey-color-1);
     
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -55,7 +55,7 @@
     overflow-x: hidden;
 }
 .sideBarButton.selected .text {
-    color: white;
+    color: var(--white-color);
 }
 
 .sideBarButton.collapsed .text {

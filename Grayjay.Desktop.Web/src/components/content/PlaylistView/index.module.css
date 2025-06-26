@@ -72,7 +72,7 @@
     justify-content: center;
     align-items: center;
 
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -87,7 +87,7 @@
 
 .metadata {
     overflow: hidden;
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     leading-trim: both;
     text-edge: cap;
     text-overflow: ellipsis;

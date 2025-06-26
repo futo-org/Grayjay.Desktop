@@ -262,7 +262,7 @@ const ChannelPage: Component = () => {
                       
                 <Show when={error$()}>
                   <div style="text-align: center;">
-                    <div style="color: #555">
+                    <div style="color: var(--grey-color-5)">
                       Failed to load channel
                     </div>
                     <div style="color: #AA0000">

@@ -13,7 +13,7 @@
     
 }
 .descriptor .title {
-    color: #FFF;
+    color: var(--white-color);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;
@@ -23,7 +23,7 @@
     line-height: 24px; /* 133.333% */
 }
 .descriptor .description {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     leading-trim: both;
     text-edge: cap;
     font-family: Inter;

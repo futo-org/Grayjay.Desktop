@@ -6,7 +6,7 @@
     height:auto;
     z-index:9;
     max-height: 100%;
-    background-color: #141414;
+    background-color: var(--black-color-1);
     width: 320px;
     padding: 12px;
     border-radius: 10px;
@@ -14,12 +14,12 @@
     scrollbar-width: thin;
 
     border-radius: 10px;
-    border: 1px solid #2E2E2E;
-    box-shadow: 0px 1.852px 3.148px 0px rgba(0, 0, 0, 0.06), 0px 8.148px 6.519px 0px rgba(0, 0, 0, 0.10), 0px 20px 13px 0px rgba(0, 0, 0, 0.13), 0px 38.519px 25.481px 0px rgba(0, 0, 0, 0.15), 0px 64.815px 46.852px 0px rgba(0, 0, 0, 0.19), 0px 100px 80px 0px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--grey-color-6);
+    box-shadow: 0px 1.852px 3.148px 0px rgb(from var(--black-color-3)  r g b / 0.06), 0px 8.148px 6.519px 0px rgb(from var(--black-color-3)  r g b / 0.10), 0px 20px 13px 0px rgb(from var(--black-color-3)  r g b / 0.13), 0px 38.519px 25.481px 0px rgb(from var(--black-color-3)  r g b / 0.15), 0px 64.815px 46.852px 0px rgb(from var(--black-color-3)  r g b / 0.19), 0px 100px 80px 0px rgb(from var(--black-color-3)  r g b / 0.25);
 }
 
 .title {
-    color: #FFF;
+    color: var(--white-color);
     font-family: "Inter";
     leading-trim: both;
 
@@ -42,7 +42,7 @@
     padding-right: 15px;
 }
 .menuItem .key {
-    color: #D7D7D7;
+    color: var(--grey-color-3);
     font-size: 15px;
     font-style: normal;
     font-weight: 400;
@@ -52,7 +52,7 @@
     font-family: "Inter";
 }
 .menuItem .value {
-    color: #FFF;
+    color: var(--white-color);
     font-size: 15px;
     width: calc(100% - 180px);
     text-align: right;
@@ -73,10 +73,10 @@
 
 }
 .menuItem.isGroup:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgb(from var(--white-color)  r g b /0.1);
 }
 .menuItem.option:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgb(from var(--white-color)  r g b /0.1);
 }
 .menuItem .expander {
     position: absolute;
@@ -91,7 +91,7 @@
 }
 .menuItem .expander img {
     height: 100%;
-    color: #969696;
+    color: var(--grey-color-2);
 }
 .menuItem.isGroup .expander {
     display: block;
@@ -111,7 +111,7 @@
 }
 .menuButton:hover {
     cursor: pointer;
-    background-color: rgba(255,255,255,0.1)
+    background-color: rgb(from var(--white-color)  r g b /0.1)
 }
 .menuButton .icon {
     height: 25px;
@@ -140,7 +140,7 @@
     line-height: 15px;
     font-size: 14px;
     margin-top: 5px;
-    color: #555555;
+    color: var(--grey-color-5);
 }
 
 .menuToggle {
@@ -174,7 +174,7 @@
 }
 
 .menuToggle .nameContainer .name {
-    color: #F0F0F0;
+    color: var(--grey-color-0);
     font-family: Inter;
     font-size: 16px;
     font-style: normal;
@@ -187,7 +187,7 @@
 }
 
 .menuToggle .nameContainer .description {
-    color: #595959;
+    color: var(--grey-color-5);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -219,7 +219,7 @@
 }
 
 .menuHeader .nameContainer .name {
-    color: #F0F0F0;
+    color: var(--grey-color-0);
     font-family: Inter;
     font-size: 16px;
     font-style: normal;
@@ -232,7 +232,7 @@
 }
 
 .menuHeader .nameContainer .description {
-    color: #595959;
+    color: var(--grey-color-5);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;

@@ -514,7 +514,7 @@ const DownloadsPage: Component = () => {
   const video = useVideo();
   let scrollContainerRef: HTMLDivElement | undefined;
   return (
-    <LoaderContainer isLoading={!isReady$()} loadingText={"Loading Downloads"} loadingSubText={params.url} background='#141414'>
+    <LoaderContainer isLoading={!isReady$()} loadingText={"Loading Downloads"} loadingSubText={params.url} background='var(--black-color-1)'>
       <ScrollContainer ref={scrollContainerRef}>
         <Show when={storageInfo$()}>
         <div class={styles.storageContainer}>
@@ -641,7 +641,7 @@ const DownloadsPage: Component = () => {
               {
                 icon: searchIcon,
                 title: "Search Videos",
-                color: "#019BE7",
+                color: "var(--blue-color-1)",
                 action: ()=>{navigate("/web/search?type=" + ContentType.MEDIA)}
               }
             ]} />

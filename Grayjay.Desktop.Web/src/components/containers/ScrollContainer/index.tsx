@@ -40,7 +40,7 @@ const ScrollContainer: Component<ScrollContainerProps> = (p) => {
                         });
                     }}>
                         <IconButton icon={ic_arrowUp} style={{
-                            "border": "1px solid #454545"
+                            "border": "1px solid var(--grey-color-7)"
                         }}></IconButton>
                     </div>
                 </Portal>

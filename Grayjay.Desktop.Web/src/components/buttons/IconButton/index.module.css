@@ -1,7 +1,7 @@
 .container {
     width: 24px;
     height: 24px;
-    background-color: #212122;
+    background-color: var(--grey-color-8);
     border-radius: 50%;
     display: flex;
     flex-shrink: 0;

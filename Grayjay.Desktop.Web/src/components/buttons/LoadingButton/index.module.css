@@ -1,6 +1,6 @@
 .container {
-    background-color: #ffffff0a;
     border-radius: 6px;
+    background-color: rgb(from var(--white-color)  r g b / 0.04);
     padding-left: 40px;
     padding-right: 40px;
     font-weight: 600;

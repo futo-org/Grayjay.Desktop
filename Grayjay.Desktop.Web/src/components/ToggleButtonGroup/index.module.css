@@ -3,7 +3,7 @@
     align-items: flex-start;
     justify-content: center;
     border-radius: 8px;
-    border: 1px solid #454545;
+    border: 1px solid var(--grey-color-7);
     overflow: hidden;
     height: 40px;
 }
@@ -23,10 +23,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #8C8C8C;
+    color: var(--grey-color-4);
 }
 
 .containerButton.active {
-    background: rgba(255, 255, 255, 0.06);
-    color: #FFF;
+    background: rgb(from var(--white-color)  r g b / 0.06);
+    color: var(--white-color);
 }

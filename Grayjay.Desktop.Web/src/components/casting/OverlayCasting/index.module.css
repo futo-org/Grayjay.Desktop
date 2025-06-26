@@ -21,11 +21,11 @@
     flex-direction: column;
     align-items: flex-start;
     border-radius: 12px;
-    border: 1px solid #2E2E2E;
-    background: #141414;
+    border: 1px solid var(--grey-color-6);
+    background: var(--black-color-1);
 
     /* Drop Shadow */
-    box-shadow: 0px 2px 21px 0px rgba(0, 0, 0, 0.55), 0px 32px 64px 0px rgba(0, 0, 0, 0.56);
+    box-shadow: 0px 2px 21px 0px rgb(from var(--black-color-3)  r g b / 0.55), 0px 32px 64px 0px rgb(from var(--black-color-3)  r g b / 0.56);
 }
 
 .containerCastingHeader {
@@ -36,7 +36,7 @@
 }
 
 .containerCastingHeaderTitle {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 20px;
     font-style: normal;
@@ -48,7 +48,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #2E2E2E;
+    background: var(--grey-color-6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -68,7 +68,7 @@
 }
 
 .containerNoDevicesFoundTitle {
-    color: #FFF;
+    color: var(--white-color);
     font-family: Inter;
     font-size: 20px;
     font-style: normal;
@@ -89,7 +89,7 @@
     align-items: center;
     flex-direction: row;
 
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -134,7 +134,7 @@
 }
 
 .containerDevice:hover {
-    background-color: #1B1B1B;
+    background-color: var(--black-color-2);
 }
 
 .containerDevice img {
@@ -144,7 +144,7 @@
 }
 
 .deviceName {
-    color: #F0F0F0;
+    color: var(--grey-color-0);
     font-family: Inter;
     font-size: 16px;
     font-style: normal;
@@ -158,7 +158,7 @@
 }
 
 .deviceType {
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 14px;
     font-style: normal;
@@ -183,7 +183,7 @@
 }
 
 .helpText {
-    color: #019BE7;
+    color: var(--blue-color-1);
     text-align: center;
     font-feature-settings: 'clig' off, 'liga' off;
     font-family: Inter;
@@ -209,7 +209,7 @@
     flex-direction: column; 
     flex-grow: 1;
 
-    color: #8C8C8C;
+    color: var(--grey-color-4);
     font-family: Inter;
     font-size: 12px;
     font-style: normal;

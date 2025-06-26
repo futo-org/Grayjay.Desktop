@@ -41,16 +41,16 @@ const SyncPage: Component = () => {
         break;
     }
   
-    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center; width: calc(100% - 48px);">
+    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: var(--black-color-2); padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center; width: calc(100% - 48px);">
       <img src={iconDevice} style="width: 44px;" />
       <div style="display: flex; flex-direction: column; flex-grow: 1; align-items: flex-start; justify-content: center;">
-          <div style="overflow: hidden; color: white; text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{title}</div>
-          <div style="color: #595959; font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{subtitle}</div>
+          <div style="overflow: hidden; color: var(--white-color); text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{title}</div>
+          <div style="color: var(--grey-color-5); font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{subtitle}</div>
       </div>
   
-      <div style="border-radius: 4px; border: 1px solid #2E2E2E; display: flex; padding: 6px 8px; align-items: center; gap: 4px; flex-shrink: 0; height: fit-content;">
+      <div style="border-radius: 4px; border: 1px solid var(--grey-color-6); display: flex; padding: 6px 8px; align-items: center; gap: 4px; flex-shrink: 0; height: fit-content;">
         <img src={icon} style="width: 20x; cursor: pointer;" />
-        <div style="color: #BFBFBF; font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{status}</div>
+        <div style="color: var(--grey-color-1); font-family: Inter; font-size: 10px; font-style: normal; font-weight: 500; line-height: normal;">{status}</div>
       </div>
       <img src={iconClear} style="width: 30px; cursor: pointer; flex-shrink: 0;" onClick={async () => await SyncBackend.removeDevice(publicKey)} />
     </div>);
@@ -90,7 +90,7 @@ const SyncPage: Component = () => {
           <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
             <div class={styles.headerText}  style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
               Please enable sync to use this feature
-              <ButtonFlex style={{ width: "170px", "margin-top": "20px" }} small={true} text="Enable" color="#019BE7" onClick={ async () => {
+              <ButtonFlex style={{ width: "170px", "margin-top": "20px" }} small={true} text="Enable" color="var(--blue-color-1)" onClick={ async () => {
                 const s = StateGlobal.settings$();
                 if (s == null) {
                   return;
