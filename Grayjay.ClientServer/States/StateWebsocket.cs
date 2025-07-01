@@ -66,6 +66,14 @@ public class StateWebsocket
         });
     }
 
+    public static void LiveEventsClear()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "LiveEventsClear");
+        });
+    }
+
     public static void SyncDevicesChanged()
     {
         Task.Run(async () =>

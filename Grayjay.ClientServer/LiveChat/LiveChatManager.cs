@@ -106,14 +106,13 @@ public class LiveChatManager
                     var newEvents = _pager.GetResults() ?? Array.Empty<PlatformLiveEvent>();
 
                     long nextInterval = 1_000;
-                    if (_pager is IPager<PlatformLiveEvent> jsPager)
-                        nextInterval = 800;//Math.Max(jsPager.NextRequest, 800); TODO fix
+                    if (_pager is LiveEventPager liveEventPager)
+                        nextInterval = Math.Max(liveEventPager.NextRequest, 800);
 
                     if (newEvents.Length > 0)
                     {
                         if (Logger.WillLog(LogLevel.Verbose))
                             Logger.Verbose<LiveChatManager>($"New Live Events ({newEvents.Length}) [{string.Join(", ", newEvents.Select(e => e.Type.ToString()))}]");
-
 
                         HandleEvents(newEvents.ToList());
                     }

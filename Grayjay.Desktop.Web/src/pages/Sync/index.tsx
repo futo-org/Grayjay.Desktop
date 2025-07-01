@@ -107,7 +107,7 @@ const SyncPage: Component = () => {
   
   const renderQrCodeOverlay = () => {
     return (
-      <ScrollContainer style={{
+      <ScrollContainer wrapperStyle={{
         "display": "flex",
         "justify-content": "center",
         "flex-grow": 1, 
@@ -232,7 +232,7 @@ const SyncPage: Component = () => {
               <div style="margin-left: 24px; margin-top: 24px;">
                 My devices
               </div>
-              <ScrollContainer style={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column", "justify-content": "flex-start", "align-items": "center"}}>
+              <ScrollContainer wrapperStyle={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column", "justify-content": "flex-start", "align-items": "center"}}>
                 <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
               </ScrollContainer>
             </Show>
