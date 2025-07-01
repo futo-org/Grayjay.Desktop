@@ -2,6 +2,7 @@ using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync.Models;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 
 namespace Grayjay.ClientServer.States;
 
@@ -56,6 +57,15 @@ public class StateWebsocket
             await instance.WebSocket.Broadcast(null, "EnabledClientsChanged");
         });
     }
+
+    public static void LiveEvents(List<PlatformLiveEvent> liveEvents)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(liveEvents, "LiveEvents");
+        });
+    }
+
     public static void SyncDevicesChanged()
     {
         Task.Run(async () =>

@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Database.Indexes;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
+using Grayjay.ClientServer.LiveChat;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.Pagers;
@@ -417,6 +418,33 @@ namespace Grayjay.ClientServer.Controllers
             }
 
                 return window;
+        }
+
+        [HttpGet]
+        public ActionResult LoadLiveChat()
+        {
+            var video = EnsureVideo(this.State());
+            if (!video.IsLive)
+                return NotFound();
+
+            try
+            {
+                var livePager = StatePlatform.GetLiveEvents(video.Url);
+                var liveChatManager = new LiveChatManager(livePager);
+                liveChatManager.Follow(this, (liveEvents) =>
+                {
+                    if (liveEvents.Count > 0)
+                        StateWebsocket.LiveEvents(liveEvents);
+                });
+                liveChatManager.Start();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
+            }
+
+            return NotFound();
         }
 
         private string ModifyLiveChatResponse(LiveChatWindowDescriptor window, string str)
