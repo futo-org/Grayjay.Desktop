@@ -181,7 +181,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
                 </div>
               </Match>
               <Match when={suggestionItems$() && (suggestionItems$()?.length ?? 0) > 0}>
-                <ScrollContainer style={{"max-height": "40vh", "width": "100%"}}>
+                <ScrollContainer wrapperStyle={{"max-height": "40vh", "width": "100%"}}>
                   <For each={suggestionItems$()}>{(item, i) => {
                     return (
                       <div class={styles.suggestionItem} onClick={async (e) => {

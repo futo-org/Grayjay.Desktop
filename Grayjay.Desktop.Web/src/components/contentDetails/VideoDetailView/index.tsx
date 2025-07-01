@@ -72,6 +72,8 @@ import { IPlatformVideo } from "../../../backend/models/content/IPlatformVideo";
 import HorizontalScrollContainer from "../../containers/HorizontalScrollContainer";
 import HorizontalFlexibleArrayList from "../../containers/HorizontalFlexibleArrayList";
 import SideBar from "../../menus/SideBar";
+import LiveChatWindow from "../../LiveChatWindow";
+import LiveChatState from "../../../state/StateLiveChat"
 
 export interface SourceSelected {
     url: string;
@@ -149,8 +151,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         console.log("Video chapters:", result);
         return result;
     });
-    const [liveChatWindow$] = createResource<ILiveChatWindowDescriptor | undefined>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded || !videoLoaded.isLive) ? undefined : await DetailsBackend.liveChatWindow());
-    const [liveChat$] = createResource<ILiveChatWindowDescriptor | undefined>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded || !videoLoaded.isLive) ? undefined : await DetailsBackend.loadLiveChat());
+    //const [liveChatWindow$] = createResource<ILiveChatWindowDescriptor | undefined>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded || !videoLoaded.isLive) ? undefined : await DetailsBackend.liveChatWindow());
     const [recomPager$] = createResource<Pager<IPlatformContent>>(() => videoLoaded$(), async (videoLoaded: any) => {
         if(!videoLoaded)
             return undefined;
@@ -536,10 +537,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     });
 
     const videoLoadedIsValid$ = createMemo(() => videoLoaded$()?.url === currentVideo$()?.url);
-    const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);
+    const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);   
+    const hasLiveChat$ = createMemo(() => {
+        return videoLoaded$()?.isLive === true;
+    });
     const shouldHideSideBar = createMemo(() => {
         //TODO: Expand these conditions
-        const sideBarVisible = shouldShowQueue() || liveChatWindow$() || recommendationsVisible$();
+        const sideBarVisible = shouldShowQueue() || hasLiveChat$() || recommendationsVisible$();
         return !sideBarVisible || dimensions().width < 1400;
     });
 
@@ -596,6 +600,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     };
 
     onMount(() => {
+        LiveChatState.ensureLiveChatWebsocket();
         resizeObserver.observe(scrollContainerRef!);
         window.addEventListener('resize', handleWindowResize);
         setDimensions({ width: scrollContainerRef!.clientWidth, height: scrollContainerRef!.clientHeight });
@@ -1232,7 +1237,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Standard}>
                 <SideBar alwaysMinimized={true} onNavigate={() => minimize()}></SideBar>
             </Show>
-            <ScrollContainer ref={scrollContainerRef} scrollToTopButton={true} style={{ 
+            <ScrollContainer ref={scrollContainerRef} scrollToTopButton={true} scrollStyle={{ 
                 "overflow-y": isMinimized() ? "hidden" : "scroll", 
                 width: video?.state() === VideoState.Maximized ? "100vw" : undefined
             }}>
@@ -1473,21 +1478,34 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     }} />
                             </Show>
 
-                            <Show when={shouldHideSideBar() && videoLoadedIsValid$() && liveChatWindow$()}>
-                                <Show when={liveChatWindow$()?.error}>
-                                    <div class={styles.liveChatError}>
-                                        {liveChatWindow$()?.error}
-                                    </div>
-                                </Show>
-                                <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
-                                    <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
-                                        'margin-top': '30px',
-                                        "width": "calc(100% - 80px)",
-                                        "margin-right": "40px",
-                                        "margin-left": "40px"
-                                    }} />
-                                </Show>
+                            <Show when={shouldHideSideBar() && videoLoadedIsValid$() && hasLiveChat$()}>
+                                <LiveChatWindow viewCount={videoLoaded$()?.viewCount ?? 0} style={{
+                                    'margin-top': '30px',
+                                    "width": "calc(100% - 80px)",
+                                    "margin-right": "40px",
+                                    "margin-left": "40px"
+                                }} />
                             </Show>
+
+                            {
+                                /*
+                                <Show when={false && shouldHideSideBar() && videoLoadedIsValid$() && liveChatWindow$()}>
+                                    <Show when={liveChatWindow$()?.error}>
+                                        <div class={styles.liveChatError}>
+                                            {liveChatWindow$()?.error}
+                                        </div>
+                                    </Show>
+                                    <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
+                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
+                                            'margin-top': '30px',
+                                            "width": "calc(100% - 80px)",
+                                            "margin-right": "40px",
+                                            "margin-left": "40px"
+                                        }} />
+                                    </Show>
+                                </Show>
+                                */
+                            }
 
                             <Show when={shouldHideSideBar() && recommendationsVisible$()}>
                                 <div style={{
@@ -1625,8 +1643,17 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                             video?.actions.setQueue(i > index ? i - 1 : i, q.slice(0, index).concat(q.slice(index + 1)), video?.repeat(), video?.shuffle());
                                         }} />
                                 </Show>
-                                    
-                                <Show when={videoLoadedIsValid$() && liveChatWindow$()}>
+
+                                <Show when={videoLoadedIsValid$() && hasLiveChat$()}>
+                                    <LiveChatWindow viewCount={videoLoaded$()?.viewCount ?? 0} style={{
+                                        'height': '640px',
+                                        "margin-right": "40px",
+                                        "width": "calc(100% - 40px)"
+                                    }} />
+                                </Show>
+                                
+                                {
+                                /*<Show when={false && videoLoadedIsValid$() && liveChatWindow$()}>
                                     <Show when={liveChatWindow$()?.error}>
                                         <div class={styles.liveChatError}>
                                             {liveChatWindow$()?.error}
@@ -1639,7 +1666,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                             "width": "calc(100% - 40px)"
                                         }} />
                                     </Show>
-                                </Show>
+                                </Show>*/
+                                }
 
                                 <Show when={videoLoadedIsValid$() && recommendationsVisible$()}>
                                     <div style={{

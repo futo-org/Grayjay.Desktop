@@ -56,7 +56,7 @@ namespace Grayjay.ClientServer.Controllers
 
             public long _lastWatchPosition = 0;
             public DateTime _lastWatchPositionChange = DateTime.MinValue;
-
+            public LiveChatManager? LiveChatManager { get; set; }
 
 
             public RefPager<PlatformComment> CommentPager { get; set; }
@@ -89,6 +89,34 @@ namespace Grayjay.ClientServer.Controllers
             }
             state._lastWatchPositionChange = DateTime.MinValue;
             state._lastWatchPosition = 0;
+
+            state.LiveChatManager?.Stop();
+            state.LiveChatManager = null;
+            StateWebsocket.LiveEventsClear();
+            if (video != null && video.IsLive)
+            {
+                try
+                {
+                    var livePager = StatePlatform.GetLiveEvents(video.Url);
+                    if (livePager != null)
+                    {
+                        state.LiveChatManager = new LiveChatManager(livePager);
+                        state.LiveChatManager?.Follow(this, (liveEvents) =>
+                        {
+                            if (liveEvents.Count > 0)
+                                StateWebsocket.LiveEvents(liveEvents);
+                        });
+                        state.LiveChatManager?.Start();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
+                    state.LiveChatManager?.Stop();
+                    state.LiveChatManager = null;
+                }
+            }
+
         }
 
         private void ChangePost(PlatformPostDetails post)
@@ -418,33 +446,6 @@ namespace Grayjay.ClientServer.Controllers
             }
 
                 return window;
-        }
-
-        [HttpGet]
-        public ActionResult LoadLiveChat()
-        {
-            var video = EnsureVideo(this.State());
-            if (!video.IsLive)
-                return NotFound();
-
-            try
-            {
-                var livePager = StatePlatform.GetLiveEvents(video.Url);
-                var liveChatManager = new LiveChatManager(livePager);
-                liveChatManager.Follow(this, (liveEvents) =>
-                {
-                    if (liveEvents.Count > 0)
-                        StateWebsocket.LiveEvents(liveEvents);
-                });
-                liveChatManager.Start();
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
-            }
-
-            return NotFound();
         }
 
         private string ModifyLiveChatResponse(LiveChatWindowDescriptor window, string str)

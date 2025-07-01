@@ -124,7 +124,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <img src={iconClose} />
               </div>
             </div>
-            <ScrollContainer style={{"margin-left": "20px", "margin-right": "20px", "height": "65vh"}}>
+            <ScrollContainer wrapperStyle={{"margin-left": "20px", "margin-right": "20px", "height": "65vh"}}>
               <div style="margin-top: 20px;">
                 <div class={styles.sectionTitle}>Image</div>
                 <div class={styles.sectionDescription}>Edit which image is used as background for your group</div>
