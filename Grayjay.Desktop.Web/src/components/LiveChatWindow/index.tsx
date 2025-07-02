@@ -1,79 +1,42 @@
 import { Component, createEffect, createMemo, createSignal, For, JSX, on, onCleanup, onMount, Show } from 'solid-js';
 import styles from './index.module.css';
 import ScrollContainer from '../containers/ScrollContainer';
-import StateWebsocket from '../../state/StateWebsocket';
-import { createStore } from 'solid-js/store';
 import { toHumanNumber } from '../../utility';
-import LiveChatState from '../../state/StateLiveChat';
+import LiveChatState, { LiveDonationEvent, LiveEventType, LiveRaidEvent } from '../../state/StateLiveChat';
+import LiveChatDonationPill from '../LiveChatDonationPill';
+import { Portal } from 'solid-js/web';
+import DonationOverlay from '../DonationOverlay';
+import RaidOverlay from '../RaidOverlay';
 
 interface LiveChatWindowProps {
     style?: JSX.CSSProperties;
     viewCount?: number;
+    onExecuteRaid: (raid: LiveRaidEvent) => void;
 }
 
 const MAX_MESSAGES = 200;
 
-enum LiveEventType {
-    UNKNOWN = 0,
-    COMMENT = 1,
-    EMOJIS = 4,
-    DONATION = 5,
-    VIEWCOUNT = 10,
-    RAID = 100
-}
-
-interface BaseLiveEvent {
-    type: LiveEventType;
-}
-
-interface LiveCommentEvent extends BaseLiveEvent {
-    type: 1;
-    name: string;
-    thumbnail?: string;
-    message: string;
-    colorName?: string;
-    badges?: string[];
-}
-
-interface LiveDonationEvent extends BaseLiveEvent {
-    type: 5;
-    name: string;
-    thumbnail?: string;
-    message: string;
-    amount: string;
-    colorDonation?: string;
-    expire?: number;
-    receivedAt?: number;
-}
-
-interface LiveEmojisEvent extends BaseLiveEvent {
-    type: 4;
-    emojis: Record<string, string>;
-}
-
-interface LiveRaidEvent extends BaseLiveEvent {
-    type: 100;
-    targetName: string;
-    targetUrl: string;
-    targetThumbnail: string;
-}
-
-interface LiveViewCountEvent extends BaseLiveEvent {
-    type: 10;
-    viewCount: number;
-}
-
-type LiveChatEvent =
-    | LiveCommentEvent
-    | LiveDonationEvent
-    | LiveEmojisEvent
-    | LiveRaidEvent
-    | LiveViewCountEvent;
-
 const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
     const store = LiveChatState.store;
+    const [overlayDonation, setOverlayDonation] = createSignal<LiveDonationEvent | null>(null);
+    const [overlayRaid, setOverlayRaid] = createSignal<LiveRaidEvent | null>(null);
     const [autoScroll, setAutoScroll] = createSignal(true);
 
+    let donationScrollerRef: HTMLDivElement | undefined;
+    const [canScrollLeft, setCanScrollLeft] = createSignal(false);
+    const [canScrollRight, setCanScrollRight] = createSignal(false);
+    function updateDonationArrows() {
+        if (!donationScrollerRef) return;
+        const { scrollLeft, scrollWidth, clientWidth } = donationScrollerRef;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+    }
+    function scrollDonations(amount: number) {
+        donationScrollerRef?.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+    onMount(() => {
+        updateDonationArrows();
+    });
     function isScrolledToBottom() {
         if (!scrollContainerRef) return false;
         const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef;
@@ -86,13 +49,8 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
         }
     }
 
-    function onScroll() {
-        setAutoScroll(isScrolledToBottom());
-    }
-
     const donationList = createMemo(() =>
-        Object.values(store.donations)
-        .sort((a, b) => (b.receivedAt ?? 0) - (a.receivedAt ?? 0))
+        Object.values(store.donations).sort((a, b) => (b.receivedAt ?? 0) - (a.receivedAt ?? 0))
     );
 
     const renderBadges = (name: string, badges: string[] = [], emojis: Record<string,string>) =>
@@ -106,10 +64,10 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
     const renderEmojis = (message: string, emojis: Record<string,string>) => {
         const parts = message.split(/(__.*?__)/g);
         return parts.map(part => {
-        const m = part.match(/^__(.*?)__$/);
-        return m && emojis[m[1]]
-            ? <img src={emojis[m[1]]} alt={m[1]} style="height:20px;vertical-align:middle;margin:0 2px;" />
-            : <span>{part}</span>;
+            const m = part.match(/^__(.*?)__$/);
+            return m && emojis[m[1]]
+                ? <img src={emojis[m[1]]} alt={m[1]} style="height:20px;vertical-align:middle;margin:0 2px;" />
+                : <span>{part}</span>;
         });
     };
 
@@ -123,6 +81,21 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
         });
     }));
 
+    createEffect(() => {
+        setOverlayRaid(store.raid);
+        console.log("raid", store.raid);
+    });
+
+    const handleRaidGo = () => {
+        setOverlayRaid(null);
+        var raid = store.raid;
+        if (raid)
+            props.onExecuteRaid(raid);        
+    };
+    const handleRaidPrevent = () => {
+        setOverlayRaid(null);
+    };
+
     let scrollContainerRef: HTMLDivElement | undefined;
     return (
         <div class={styles.container} style={props.style}>
@@ -132,37 +105,37 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
                     {toHumanNumber((store.viewerCount == 0 ? (props.viewCount ?? 0) : store.viewerCount))} viewers
                 </span>
             </div>
+
             <Show when={donationList().length > 0}>
-                <div style="display:flex; flex-wrap:wrap; gap:8px; padding:8px 16px;">
-                    <For each={donationList()}>
-                        {(d) => (
-                            <div
-                                style={{
-                                    'background-color': d.colorDonation ?? '#333',
-                                    color: '#fff',
-                                    padding: '6px 10px',
-                                    'border-radius': '6px',
-                                    cursor: 'pointer',
-                                    'font-size': '13px'
-                                }}
-                                onClick={() => alert(`Donation from ${d.name}: ${d.message}`)}
-                            >
-                                💸 {d.amount} — {d.name}
-                            </div>
-                        )}
-                    </For>
+                <div class={styles.donationStripWrapper}>
+                    <button
+                        class={styles.chevron}
+                        classList={{ [styles.left]: true, [styles.hidden]: !canScrollLeft() }}
+                        onClick={() => scrollDonations(-200)}
+                        aria-label="Scroll donations left"
+                    >‹</button>
+                    <div
+                        class={styles.donationStrip}
+                        ref={donationScrollerRef}
+                        onScroll={() => updateDonationArrows()}
+                    >
+                        <For each={donationList()}>
+                            {d => (
+                                <LiveChatDonationPill
+                                    donation={d}
+                                    onShowOverlay={setOverlayDonation}
+                                />
+                            )}
+                        </For>
+                    </div>
+                    <button
+                        class={styles.chevron}
+                        classList={{ [styles.right]: true, [styles.hidden]: !canScrollRight() }}
+                        onClick={() => scrollDonations(+200)}
+                        aria-label="Scroll donations right"
+                    >›</button>
                 </div>
             </Show>
-
-            {store.raid && (
-                <div style="background:#552266; color:white; padding:8px 16px; display:flex; align-items:center;">
-                    <img src={store.raid!.targetThumbnail} style="width:32px; height:32px; border-radius:4px; margin-right:12px;" />
-                    <div>
-                        <strong>🚀 Raid </strong> {store.raid!.targetName}
-                    </div>
-                    <button style="margin-left:auto;" onclick={() => /*TODO setRaid(null) */ {}}>Dismiss</button>
-                </div>
-            )}
 
             <div class={styles.containerBody}>
                 <ScrollContainer ref={scrollContainerRef} scrollToBottomButton={true} scrollSmooth={false} onScroll={handleScroll}>
@@ -197,6 +170,8 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
                     </For>
                     <div style="width: 100%; height: 8px"></div>
                 </ScrollContainer>
+                <DonationOverlay donation={overlayDonation()} onDone={() => setOverlayDonation(null)} />
+                <RaidOverlay raid={overlayRaid()} onGo={handleRaidGo} onPrevent={handleRaidPrevent} />
             </div>
         </div>
     );

@@ -24,6 +24,7 @@
 }
 
 .containerBody {
+    position: relative;
     width: 100%;
     flex-grow: 1;
     overflow: hidden;
@@ -69,4 +70,46 @@
     color: rgba(255, 255, 255, 0.7);
     white-space: nowrap;
     margin-right: 8px;
+}
+
+.donationStripWrapper {
+  position: relative;
+  padding: 8px 16px;
+}
+
+.donationStrip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.donationStrip::-webkit-scrollbar {
+    display: none;
+}
+.chevron {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chevron.left {
+    left: 8px;
+}
+.chevron.right {
+    right: 8px;
+}
+.hidden {
+    display: none;
 }
