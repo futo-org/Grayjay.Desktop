@@ -18,11 +18,7 @@ const DonationOverlay: Component<DonationOverlayProps> = (props) => {
         }
         return '#fff';
     };
-
-    createEffect(() => {
-        console.log("color donation", props.donation?.colorDonation);
-    });
-
+    
     return (
         <Show when={props.donation}>
             <div class={styles.backdrop} style={{ '--bg-color': bg(), '--fg-color': fg() }} onClick={() => props.onDone()}>
