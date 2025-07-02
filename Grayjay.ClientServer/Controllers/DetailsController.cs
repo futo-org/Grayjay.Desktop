@@ -17,6 +17,7 @@ using Grayjay.Engine.Exceptions;
 using Grayjay.Engine.Models.Comments;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Models.Subtitles;
 using Grayjay.Engine.Models.Video;
@@ -114,6 +115,15 @@ namespace Grayjay.ClientServer.Controllers
                     Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
                     state.LiveChatManager?.Stop();
                     state.LiveChatManager = null;
+                    StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
+                    {
+                        new LiveEventComment()
+                        {
+                            ColorName = "#FF0000",
+                            Message = "Failed to load live stream because of an error: " + e.Message,
+                            Name = "SYSTEM"
+                        }
+                    });
                 }
             }
 

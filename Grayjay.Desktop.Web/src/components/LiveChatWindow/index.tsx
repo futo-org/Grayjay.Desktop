@@ -146,15 +146,9 @@ const LiveChatWindow: Component<LiveChatWindowProps> = (props) => {
                                 case LiveEventType.COMMENT:
                                     return (
                                         <div class={styles.liveChatItem}>
-                                            <Show when={event.thumbnail && event.thumbnail.length} fallback={<div class={styles.liveChatAuthorImage}></div>}>
-                                                <img
-                                                    src={event.thumbnail || '/assets/img/default-thumbnail.png'}
-                                                    onError={(e) => (e.currentTarget.src = '/assets/img/default-thumbnail.png')}
-                                                    class={styles.liveChatAuthorImage}
-                                                />
+                                            <Show when={event.thumbnail && event.thumbnail.length}>
+                                                <img src={event.thumbnail} class={styles.liveChatAuthorImage} />
                                             </Show>
-
-
                                             <div class={styles.liveChatContent}>
                                                 <span class={styles.liveChatAuthorName} style={{ color: event.colorName || '#ffffff' }}>
                                                     {renderBadges(event.name.trim(), event.badges || [], store.emojis)}
