@@ -73,7 +73,7 @@ import HorizontalScrollContainer from "../../containers/HorizontalScrollContaine
 import HorizontalFlexibleArrayList from "../../containers/HorizontalFlexibleArrayList";
 import SideBar from "../../menus/SideBar";
 import LiveChatWindow from "../../LiveChatWindow";
-import LiveChatState from "../../../state/StateLiveChat"
+import LiveChatState, { LiveRaidEvent } from "../../../state/StateLiveChat"
 
 export interface SourceSelected {
     url: string;
@@ -129,7 +129,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
         try {
             return await UIOverlay.catchDialogExceptions(async ()=>{
-
                 const result = (!url) ? null : (await DetailsBackend.videoLoad(url));
                 setVideoLocal(result?.local);
                 console.info("set video", { url, video: result?.video, local: result?.local });
@@ -1224,6 +1223,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         );
     };
 
+    const handleExecuteRaid = (raid: LiveRaidEvent) => {
+        video?.actions.openVideoByUrl(raid.targetUrl);
+    };
+
     return (
         <div ref={containerRef} class={styles.container} style={{
             "top": isMinimized() ? `${minimizedPosition().y}px` : "0px",
@@ -1479,7 +1482,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             </Show>
 
                             <Show when={shouldHideSideBar() && videoLoadedIsValid$() && hasLiveChat$()}>
-                                <LiveChatWindow viewCount={videoLoaded$()?.viewCount ?? 0} style={{
+                                <LiveChatWindow onExecuteRaid={handleExecuteRaid} viewCount={videoLoaded$()?.viewCount ?? 0} style={{
                                     'margin-top': '30px',
                                     "width": "calc(100% - 80px)",
                                     "margin-right": "40px",
@@ -1645,7 +1648,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 </Show>
 
                                 <Show when={videoLoadedIsValid$() && hasLiveChat$()}>
-                                    <LiveChatWindow viewCount={videoLoaded$()?.viewCount ?? 0} style={{
+                                    <LiveChatWindow onExecuteRaid={handleExecuteRaid} viewCount={videoLoaded$()?.viewCount ?? 0} style={{
                                         'height': '640px',
                                         "margin-right": "40px",
                                         "width": "calc(100% - 40px)"

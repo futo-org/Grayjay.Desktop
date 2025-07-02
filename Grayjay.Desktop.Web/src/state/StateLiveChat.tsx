@@ -10,33 +10,33 @@ export enum LiveEventType {
     VIEWCOUNT = 10, 
     RAID = 100 
 }
-
 export interface LiveCommentEvent {
     type: LiveEventType.COMMENT;
     name: string;
-    message: string;
     thumbnail?: string;
+    message: string;
     colorName?: string;
-    badges?: string[]; 
+    badges?: string[];
 }
 export interface LiveDonationEvent {
     type: LiveEventType.DONATION;
     name: string;
+    thumbnail?: string;
     message: string;
     amount: string;
     colorDonation?: string;
     expire?: number;
-    receivedAt?: number; 
+    receivedAt?: number;
 }
 export interface LiveEmojisEvent { 
     type: LiveEventType.EMOJIS;
-    emojis: Record<string,string>; 
+    emojis: Record<string, string>;
 }
 export interface LiveRaidEvent { 
     type: LiveEventType.RAID;
-    targetName: string; 
-    targetUrl: string; 
-    targetThumbnail: string; 
+    targetName: string;
+    targetUrl: string;
+    targetThumbnail: string;
 }
 export interface LiveViewCountEvent { 
     type: LiveEventType.VIEWCOUNT; 
@@ -67,9 +67,25 @@ const [store, setStore] = createStore<LiveChatStore>({
 });
 
 let websocketHandlerRegistered = false;
+let _expirationInterval: ReturnType<typeof setInterval> | null = null;
+
 export function ensureLiveChatWebsocket() {
     if (websocketHandlerRegistered) return;
     websocketHandlerRegistered = true;
+
+    if (!_expirationInterval) {
+        _expirationInterval = setInterval(() => {
+            const now = Date.now();
+            for (const key in store.donations) {
+                const d = store.donations[key]!;
+                if (d.expire && d.receivedAt! + d.expire <= now) {
+                    setStore('donations', key, undefined!);
+                }
+            }
+        }, 1_000);
+    }
+    
+    //startMockDonations();
 
     StateWebsocket.registerHandlerNew('LiveEvents', (p) => {
         const newEvents = p.payload as LiveChatEvent[];
@@ -80,10 +96,11 @@ export function ensureLiveChatWebsocket() {
                     newMessages.push(ev);
                     break;
                 case LiveEventType.DONATION: {
-                    const key = `${ev.name}${ev.amount}${ev.message}`;
+                    const donation = ev as LiveDonationEvent;
+                    const key = `${donation.name}-${donation.amount}-${donation.message}`;
                     if (!store.donations[key]) {
-                        ev.receivedAt = Date.now();
-                        setStore('donations', key, ev);
+                        donation.receivedAt = Date.now();
+                        setStore('donations', key, donation);
                     }
                     break;
                 }
@@ -120,10 +137,34 @@ export function ensureLiveChatWebsocket() {
     onCleanup(() => {
         StateWebsocket.unregisterHandler('LiveEvents', 'liveEvents');
         websocketHandlerRegistered = false;
+        if (_expirationInterval) {
+            clearInterval(_expirationInterval);
+            _expirationInterval = null;
+        }
     });
 }
 
+let _mockInterval: ReturnType<typeof setInterval> | null = null;
+
+export function startMockDonations(intervalSeconds: number = 5) {
+  if (_mockInterval) clearInterval(_mockInterval);
+
+  _mockInterval = setInterval(() => {
+    const ev: LiveDonationEvent = {
+      type: LiveEventType.DONATION,
+      name: 'Test Donor',
+      message: `Test donation at ${new Date().toLocaleTimeString()}`,
+      amount: `$${(Math.random() * 9 + 1).toFixed(2)}`,
+      colorDonation: '#FFD700',
+      expire: 5000,
+      receivedAt: Date.now()
+    };
+    const key = `${ev.name}-${ev.amount}-${ev.receivedAt}`;
+    setStore('donations', key, ev);
+  }, intervalSeconds * 1000);
+}
+
 export default {
-    store,
-    ensureLiveChatWebsocket
+  store,
+  ensureLiveChatWebsocket
 };

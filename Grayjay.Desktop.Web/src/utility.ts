@@ -568,3 +568,31 @@ export function formatAudioSourceName(audioSource: any): string {
   
   return name + additionalInfoText;
 };
+
+export function hexToRgba(hex: string): { r: number; g: number; b: number; a: number } | null {
+  const cleaned = hex.trim().replace(/^#/, '');
+  let r: number, g: number, b: number;
+  let a = 1;
+
+  if (/^[0-9A-Fa-f]{3,4}$/.test(cleaned)) {
+    const [R, G, B, A] = cleaned.split('');
+    r = parseInt(R + R, 16);
+    g = parseInt(G + G, 16);
+    b = parseInt(B + B, 16);
+    if (A) {
+      a = parseInt(A + A, 16) / 255;
+    }
+  } else if (/^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(cleaned)) {
+    r = parseInt(cleaned.slice(0, 2), 16);
+    g = parseInt(cleaned.slice(2, 4), 16);
+    b = parseInt(cleaned.slice(4, 6), 16);
+    if (cleaned.length === 8) {
+      a = parseInt(cleaned.slice(6, 8), 16) / 255;
+    }
+
+  } else {
+    return null;
+  }
+
+  return { r, g, b, a };
+}
