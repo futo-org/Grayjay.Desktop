@@ -1,7 +1,7 @@
-import { Component, createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import styles from './index.module.css';
 import type { LiveDonationEvent } from '../../state/StateLiveChat';
-import { hexToRgba } from '../../utility';
+import { CSSColor } from '../../CSSColor';
 
 interface DonationOverlayProps {
     donation: LiveDonationEvent | null;
@@ -9,23 +9,16 @@ interface DonationOverlayProps {
 }
 
 const DonationOverlay: Component<DonationOverlayProps> = (props) => {
-    const bg = () => props.donation?.colorDonation ?? '#2A2A2A';
-    const fg = () => {
-        const rgba = props.donation && hexToRgba(props.donation.colorDonation || '');
-        if (rgba) {
-            const { r, g, b } = rgba;
-            if ((r + g + b) > 400 && (r > 140 || g > 140 || b > 140)) return '#000';
-        }
-        return '#fff';
-    };
+    const bg = createMemo(() => props.donation?.colorDonation ?? '#2A2A2A');
+    const fg = createMemo(() => {
+        const cssColor = CSSColor.parseColor(bg());
+        return (cssColor.lightness > 0.5) ? '#000' : '#fff';
+    });
     
     return (
         <Show when={props.donation}>
             <div class={styles.backdrop} style={{ '--bg-color': bg(), '--fg-color': fg() }} onClick={() => props.onDone()}>
-                <div
-                    class={styles.overlay}
-                    style={{ 'background-color': bg(), color: fg() }}
-                >
+                <div class={styles.overlay} style={{ 'background-color': bg(), color: fg() }}>
                     <div class={styles.header}>
                         <Show when={props.donation?.thumbnail && props.donation?.thumbnail.length}>
                             <img src={props.donation?.thumbnail} class={styles.authorImage} />

@@ -1,7 +1,7 @@
-import { Component, onMount } from 'solid-js';
+import { Component, createMemo, onMount } from 'solid-js';
 import styles from './index.module.css';
 import type { LiveDonationEvent } from '../../state/StateLiveChat';
-import { hexToRgba } from '../../utility';
+import { CSSColor } from '../../CSSColor';
 
 interface LiveChatDonationPillProps {
     donation: LiveDonationEvent;
@@ -11,15 +11,11 @@ interface LiveChatDonationPillProps {
 const LiveChatDonationPill: Component<LiveChatDonationPillProps> = (props) => {
     let expireBarRef: HTMLDivElement | undefined;
 
-    const bgColor = props.donation.colorDonation ?? '#2A2A2A';
-    let textColor = '#FFFFFF';
-    const rgba = hexToRgba(bgColor);
-    if (rgba) {
-        const { r, g, b } = rgba;
-        if ((r + g + b) > 400 && (r > 140 || g > 140 || b > 140)) {
-            textColor = '#000000';
-        }
-    }
+    const bg = createMemo(() => props.donation?.colorDonation ?? '#2A2A2A');
+    const fg = createMemo(() => {
+        const cssColor = CSSColor.parseColor(bg());
+        return (cssColor.lightness >= 0.5) ? '#000' : '#fff';
+    });
 
     onMount(() => {
         if (expireBarRef && props.donation.expire) {
@@ -35,22 +31,14 @@ const LiveChatDonationPill: Component<LiveChatDonationPillProps> = (props) => {
     });
 
     return (
-        <div
-            class={styles.root}
-            style={{ 'background-color': bgColor, color: textColor }}
-            onClick={() => props.onShowOverlay(props.donation)}
-        >
+        <div class={styles.root} style={{ 'background-color': bg(), color: fg() }} onClick={() => props.onShowOverlay(props.donation)}>
             <div class={styles.content}>
-                {props.donation.thumbnail && (
-                    <img
-                        src={props.donation.thumbnail}
-                        class={styles.authorImage}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/img/default-thumbnail.png'; }}
-                    />
+                {props.donation.thumbnail && props.donation.thumbnail?.length && (
+                    <img src={props.donation.thumbnail} class={styles.authorImage} />
                 )}
                 <span class={styles.amount}>{props.donation.amount}</span>
             </div>
-            <div ref={expireBarRef} class={styles.expireBar} />
+            <div ref={expireBarRef} class={styles.expireBar} style={{"background-color": fg()}} />
         </div>
     );
 };
