@@ -37,6 +37,7 @@ export interface LiveRaidEvent {
     targetName: string;
     targetUrl: string;
     targetThumbnail: string;
+    isOutgoing: boolean;
 }
 export interface LiveViewCountEvent { 
     type: LiveEventType.VIEWCOUNT; 

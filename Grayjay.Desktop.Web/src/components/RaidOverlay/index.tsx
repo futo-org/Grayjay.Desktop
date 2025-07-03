@@ -1,13 +1,9 @@
 import { Component, createEffect, Show } from 'solid-js';
 import styles from './index.module.css';
-
-export interface RaidEvent {
-    targetName: string;
-    targetThumbnail: string;
-}
+import { LiveRaidEvent } from '../../state/StateLiveChat';
 
 interface RaidOverlayProps {
-    raid: RaidEvent | null;
+    raid: LiveRaidEvent | null;
     onGo: () => void;
     onPrevent: () => void;
 }
@@ -36,11 +32,13 @@ const RaidOverlay: Component<RaidOverlayProps> = (props) => {
                     </div>
 
                     <div class={styles.raidButtons}>
-                        <button class={styles.goButton} onClick={props.onGo}>
-                            Go Now
-                        </button>
+                        <Show when={props.raid?.isOutgoing === true}>
+                            <button class={styles.goButton} onClick={props.onGo}>
+                                Go Now
+                            </button>
+                        </Show>
                         <button class={styles.preventButton} onClick={props.onPrevent}>
-                            Prevent
+                            Dismiss
                         </button>
                     </div>
                 </div>
