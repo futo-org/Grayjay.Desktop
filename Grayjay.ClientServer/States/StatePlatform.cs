@@ -762,6 +762,23 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             _enabledClientsPersistent.Save(_enabledClientsPersistent.GetCopy().OrderBy(x => Array.IndexOf(ids, x)).ToArray());
         }
+
+        public static async Task ReEnableClient(string id, Action afterReload = null) => ReEnableClientWithData(id, null, afterReload);
+        public static async Task ReEnableClientWithData(string id, string data, Action afterReload = null)
+        {
+            var enabledBefore = GetEnabledClients().Select(x => x.ID).ToArray();
+            if(data != null)
+            {
+                var client = GetClient(id);
+                if (client != null)
+                    client.SetReloadData(data);
+            }
+            await SelectClients(enabledBefore.Where(x => x != id).ToArray());
+            await SelectClients(enabledBefore);
+            if (afterReload != null)
+                afterReload();
+        }
+
         public static Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {
             TaskCompletionSource taskResult = new TaskCompletionSource();
