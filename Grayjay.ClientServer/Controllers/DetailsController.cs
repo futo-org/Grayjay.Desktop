@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Database.Indexes;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
+using Grayjay.ClientServer.LiveChat;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.Pagers;
@@ -16,6 +17,7 @@ using Grayjay.Engine.Exceptions;
 using Grayjay.Engine.Models.Comments;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Models.Subtitles;
 using Grayjay.Engine.Models.Video;
@@ -55,7 +57,7 @@ namespace Grayjay.ClientServer.Controllers
 
             public long _lastWatchPosition = 0;
             public DateTime _lastWatchPositionChange = DateTime.MinValue;
-
+            public LiveChatManager? LiveChatManager { get; set; }
 
 
             public RefPager<PlatformComment> CommentPager { get; set; }
@@ -88,6 +90,43 @@ namespace Grayjay.ClientServer.Controllers
             }
             state._lastWatchPositionChange = DateTime.MinValue;
             state._lastWatchPosition = 0;
+
+            state.LiveChatManager?.Stop();
+            state.LiveChatManager = null;
+            StateWebsocket.LiveEventsClear();
+            if (video != null && video.IsLive)
+            {
+                try
+                {
+                    var livePager = StatePlatform.GetLiveEvents(video.Url);
+                    if (livePager != null)
+                    {
+                        state.LiveChatManager = new LiveChatManager(livePager);
+                        state.LiveChatManager?.Follow(this, (liveEvents) =>
+                        {
+                            if (liveEvents.Count > 0)
+                                StateWebsocket.LiveEvents(liveEvents);
+                        });
+                        state.LiveChatManager?.Start();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
+                    state.LiveChatManager?.Stop();
+                    state.LiveChatManager = null;
+                    StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
+                    {
+                        new LiveEventComment()
+                        {
+                            ColorName = "#FF0000",
+                            Message = "Failed to load live stream because of an error: " + e.Message,
+                            Name = "SYSTEM"
+                        }
+                    });
+                }
+            }
+
         }
 
         private void ChangePost(PlatformPostDetails post)

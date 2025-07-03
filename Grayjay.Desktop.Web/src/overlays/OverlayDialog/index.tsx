@@ -142,7 +142,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         <div class={styles.title} style="padding-right: 25px;">
           {props.dialog!.title}
         </div>
-        <ScrollContainer style={{height: "calc(100% - 70px)", width: "100%", "margin-left": "-32px", "margin-right": "-32px", "padding-left": "32px", "padding-right": "32px", "margin-bottom": "-32px" }}>
+        <ScrollContainer wrapperStyle={{height: "calc(100% - 70px)", width: "100%", "margin-left": "-32px", "margin-right": "-32px", "padding-left": "32px", "padding-right": "32px", "margin-bottom": "-32px" }}>
           <div class={styles.description}>
             {props.dialog!.description}
           </div>

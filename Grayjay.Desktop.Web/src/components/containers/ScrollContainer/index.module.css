@@ -1,8 +1,13 @@
+.scrollWrapper {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
 .containerScroll {
     overflow-y: auto;
     overflow-x: hidden;
     height: 100%;
-    position: relative;
     scrollbar-width: 8px;
     scrollbar-color: #555 #333;
     scrollbar-width: thin;
@@ -27,4 +32,11 @@
 
 .containerScroll::-webkit-scrollbar-corner {
     background-color: transparent;
+}
+
+.scrollButton {
+    position: absolute;
+    bottom: 10px;
+    right: 22px;
+    z-index: 999;
 }

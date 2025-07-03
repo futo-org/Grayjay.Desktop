@@ -55,7 +55,7 @@ const SettingsPage: Component<SettingsPageProps> = (props) => {
     <div class={styles.container} style="height: calc(100% - 20px); overflow-y: hidden;">
       <div class={styles.settingsMenu} style={props.settingsMenuStyle}>
           <h1 style="flex-shrink: 0">Settings</h1>
-            <ScrollContainer style={{"padding-right": "4px"}}>
+            <ScrollContainer wrapperStyle={{"padding-right": "4px"}}>
               <div classList={{[styles.settingsMenuItem]: true, [styles.active]: !filterGroup$()}} onClick={()=>setFilterGroup(undefined)}>
                 All
               </div>

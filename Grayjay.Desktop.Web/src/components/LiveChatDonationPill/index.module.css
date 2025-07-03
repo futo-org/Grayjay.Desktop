@@ -1,0 +1,36 @@
+.root {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.content {
+    display: inline-flex;
+    align-items: center;
+}
+
+.authorImage {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 5px;
+    object-fit: cover;
+}
+
+.amount {
+    font-size: 13px;
+    line-height: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.expireBar {
+    width: 100%;
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.67);
+    transform-origin: left;
+    transform: scaleX(1);
+    margin-top: 3px;
+}

@@ -305,7 +305,7 @@ export function formatDuration(duration: Duration) {
 }
 
 export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
-  let timeout: number | null = null;
+  let timeout: NodeJS.Timeout | null = null;
 
   return (...args: Parameters<T>) => {
     const later = () => {
@@ -510,8 +510,8 @@ export function getDummyVideo() : IPlatformVideo {
         } as IThumbnail
       ]
     } as IThumbnails,
-    duration: parseInt((Math.random() * 400)),
-    viewCount: parseInt(Math.random() * 1000000),
+    duration: (Math.random() * 400),
+    viewCount: Math.random() * 1000000,
 
     isLive: false
   } as IPlatformVideo

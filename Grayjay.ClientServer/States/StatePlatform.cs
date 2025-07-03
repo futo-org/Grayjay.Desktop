@@ -17,6 +17,7 @@ using Grayjay.Engine.Models.Channel;
 using Grayjay.Engine.Models.Comments;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Pagers;
 using System.Collections.Concurrent;
@@ -225,6 +226,12 @@ namespace Grayjay.Desktop.POC.Port.States
             => GetContentClient(url)
                 .FromPool(_mainClientPool)
                 .GetComments(url);
+
+        public static IPager<PlatformLiveEvent> GetLiveEvents(string url)
+            => GetContentClient(url)
+                .FromPool(_mainClientPool)
+                .GetLiveEvents(url);
+
 
         public static IPager<PlatformComment> GetComments(PlatformVideoDetails video)
         {

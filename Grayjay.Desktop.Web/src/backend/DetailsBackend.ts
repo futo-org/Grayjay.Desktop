@@ -39,6 +39,9 @@ export abstract class DetailsBackend {
     static async liveChatWindow(): Promise<ILiveChatWindowDescriptor> {
         return await Backend.GET("/details/GetLiveChatWindow");
     }
+    static async loadLiveChat(): Promise<void> {
+        return await Backend.GET("/details/LoadLiveChat");
+    }
     static async getVideoChapters(url: string): Promise<IChapter[]> {
         return await Backend.GET("/details/getVideoChapters?url=" + encodeURIComponent(url));
     }

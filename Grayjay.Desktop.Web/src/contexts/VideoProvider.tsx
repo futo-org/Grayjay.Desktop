@@ -5,6 +5,7 @@ import { IPlatformVideo } from "../backend/models/content/IPlatformVideo";
 import { Duration } from "luxon";
 import { SettingsBackend } from "../backend/SettingsBackend";
 import StateWebsocket from "../state/StateWebsocket";
+import { DetailsBackend } from "../backend/DetailsBackend";
 
 export enum VideoState {
     Closed = 0,
@@ -38,6 +39,7 @@ export interface VideoContextValue {
     //queueType watch later, playlist en queue of undefined
     actions: {
         openVideo: (video: IPlatformVideo, time?: Duration) => void;
+        openVideoByUrl: (url: string, time?: Duration) => void;
         setQueue: (index: number, queue: IPlatformVideo[], repeat?: boolean, shuffle?: boolean) => void;
         addToQueue: (v: IPlatformVideo) => void;
         setIndex: (index: number) => void;
@@ -79,11 +81,21 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         return q[i];
     })
 
-    const openVideo = (video: IPlatformVideo, time?: Duration) => { 
+    const openVideo = (v: IPlatformVideo, time?: Duration) => { 
         batch(() => {
             setIndex(0);
             setStartTime(time);
-            setQueue([ video ]);
+            setQueue([ v ]);
+            if (state() !== VideoState.Maximized)
+                setState(VideoState.Maximized);
+        });
+    };
+    const openVideoByUrl = async (url: string, time?: Duration) => { 
+        const videoLoadResult = await DetailsBackend.videoLoad(url);
+        batch(() => {
+            setIndex(0);
+            setStartTime(time);
+            setQueue([ videoLoadResult.video ]);
             if (state() !== VideoState.Maximized)
                 setState(VideoState.Maximized);
         });
@@ -178,6 +190,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 });
             },
             openVideo,
+            openVideoByUrl,
             setQueue: sq,
             closeVideo,
             addToQueue,

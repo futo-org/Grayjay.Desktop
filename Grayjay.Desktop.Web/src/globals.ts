@@ -15,9 +15,7 @@ export default class Globals {
     const executionPlan = await HandlingBackend.handlePlan(url);
     switch(executionPlan.type) {
       case "content":
-        video.actions.openVideo({
-          url: executionPlan.data
-        } as any, positionSec ? Duration.fromMillis(positionSec * 1000) : Duration.fromMillis(0));
+        video.actions.openVideoByUrl(executionPlan.data, positionSec ? Duration.fromMillis(positionSec * 1000) : Duration.fromMillis(0));
         break;
       case "channel":
         navigate("/web/channel?url=" + encodeURIComponent(url));

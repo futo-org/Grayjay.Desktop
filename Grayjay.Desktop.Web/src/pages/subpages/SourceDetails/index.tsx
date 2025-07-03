@@ -208,7 +208,7 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
                 <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Import Playlists' onClick={()=>importPlaylists(sourceResource$()!.config.id)}></Button>
               </Show>
             </Show>
-            <ScrollContainer ref={scrollContainerRef} style={{"flex-grow": 1, "width": "100%"}}>
+            <ScrollContainer ref={scrollContainerRef} wrapperStyle={{"flex-grow": 1, "width": "100%"}}>
               <SettingsContainer settings={sourceAppSettings$()} onFieldChanged={onSourceAppSettingsChanged} />
               <Show when={sourceSettings$() && (sourceSettings$()?.fields?.length ?? 0) > 0}>
                 <h2 style="margin-top: 56px;">Plugin Settings</h2>

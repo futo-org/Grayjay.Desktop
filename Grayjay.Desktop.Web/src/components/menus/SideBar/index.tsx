@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -16,7 +16,6 @@ import ic_more from '../../../assets/icons/icon_button_more.svg';
 import history from '../../../assets/icons/icon_nav_history.svg';
 import download from '../../../assets/icons/icon24_download.svg';
 import iconSync from '../../../assets/icons/ic_sync.svg';
-import settings from '../../../assets/icons/icon_nav_settings.svg';
 import iconWatchLater from '../../../assets/icons/icon24_watch_later.svg';
 import iconSettings from '../../../assets/icons/ic_settings_color.svg';
 import iconBuy from '../../../assets/icons/ic_buy.svg';
@@ -30,7 +29,6 @@ import SideBarCreator from '../SideBarCreator';
 import UIOverlay from '../../../state/UIOverlay';
 import { WindowBackend } from '../../../backend/WindowBackend';
 import FlexibleArrayList from '../../containers/FlexibleArrayList';
-import Globals from '../../../globals';
 import StateGlobal from '../../../state/StateGlobal';
 import { createResourceDefault } from '../../../utility';
 import { LocalBackend } from '../../../backend/LocalBackend';
@@ -53,7 +51,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
     replace: true
   };
 
-  const [canToggleCollapse, setCanToggleCollapse] = createSignal(props.alwaysMinimized === true ? false : true);
+  const defaultCanToggleCollapse = props.alwaysMinimized === true ? false : true;
+  const [canToggleCollapse, setCanToggleCollapse] = createSignal(defaultCanToggleCollapse);
   const [collapsed, setCollapsed] = createSignal(props.alwaysMinimized === true);
   let wasAutoCollapsed = false;
   const handleCollapse = () => {
@@ -166,7 +165,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         }
         setCanToggleCollapse(false);
       } else {
-        setCanToggleCollapse(true);
+        setCanToggleCollapse(defaultCanToggleCollapse);
 
         if (wasAutoCollapsed) {
           setCollapsed(false);
@@ -215,6 +214,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       }
     });
   };
+  createEffect(on(topButtons$, () => handleResize()));
+  createEffect(on(bottomButtons$, () => handleResize()));
 
   onMount(() => {
     window.addEventListener('resize', handleResize);
@@ -235,7 +236,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       <div class={styles.buttonList}>
         <div class={styles.containerCollapse}>
           <Show when={canToggleCollapse()}>
-          <img src={collapsed() ? ic_sidebarOpen : ic_sidebarClose} class={styles.collapse} onClick={handleCollapse} />
+            <img src={collapsed() ? ic_sidebarOpen : ic_sidebarClose} class={styles.collapse} onClick={handleCollapse} />
           </Show>
         </div>
         <div class={styles.grayjay} oncontextmenu={()=>setDevClicked(devClicked$() + 1)}>
