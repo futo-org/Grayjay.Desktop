@@ -97,6 +97,7 @@ public class LiveChatManager
         {
             while (!token.IsCancellationRequested && counter == _startCounter)
             {
+                long nextInterval = 1_000;
                 if (_pager == null || !_pager.HasMorePages())
                     break;
 
@@ -104,8 +105,6 @@ public class LiveChatManager
                 {
                     _pager.NextPage();
                     var newEvents = _pager.GetResults() ?? Array.Empty<PlatformLiveEvent>();
-
-                    long nextInterval = 1_000;
                     if (_pager is LiveEventPager liveEventPager)
                         nextInterval = Math.Max(liveEventPager.NextRequest, 800);
 
@@ -118,8 +117,6 @@ public class LiveChatManager
                     }
                     else
                         Logger.Info<LiveChatManager>("No new Live Events");
-
-                    await Task.Delay(TimeSpan.FromMilliseconds(nextInterval), token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -129,6 +126,7 @@ public class LiveChatManager
                 {
                     Logger.Error<LiveChatManager>("Failed to load live events", ex);
                 }
+                await Task.Delay(TimeSpan.FromMilliseconds(nextInterval), token);
             }
         }
         catch (Exception ex)
