@@ -1227,6 +1227,18 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         video?.actions.openVideoByUrl(raid.targetUrl);
     };
 
+    const scrollContainerWidth = createMemo(() => {
+        if (video?.state() === VideoState.Maximized) {
+            if (video?.desiredMode() === VideoMode.Standard) {
+                return "calc(100vw - 48px)";
+            } else {
+                return "100vw";
+            }
+        }
+
+        return undefined;
+    });
+
     return (
         <div ref={containerRef} class={styles.container} style={{
             "top": isMinimized() ? `${minimizedPosition().y}px` : "0px",
@@ -1242,7 +1254,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             </Show>
             <ScrollContainer ref={scrollContainerRef} scrollToTopButton={true} scrollStyle={{ 
                 "overflow-y": isMinimized() ? "hidden" : "scroll", 
-                width: video?.state() === VideoState.Maximized ? "100vw" : undefined
+                width: scrollContainerWidth()
             }}>
                 <Show when={video?.state() !== VideoState.Minimized && mode() !== VideoMode.Theatre}>
                     <div style="display: flex; flex-direction: row; justify-content: center; align-items: center">
