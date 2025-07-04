@@ -489,7 +489,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         setResumePositionVisible(visible);
     });
 
-    const changeSource = (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
+    const changeSource = async (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
         console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
         setIsAudioOnly(false);
         
@@ -557,10 +557,18 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
             if (mediaType === 'application/dash+xml' && !videoElement.canPlayType(mediaType)) {
                 dashPlayer = dashjs.MediaPlayer().create();
+                let maxBuffer=(await SettingsBackend.settings())?.object?.playback?.maxBuffer;
+                maxBuffer=[10,30,60,120,180,300,600,1200,3600,18000][maxBuffer];
                 dashPlayer.updateSettings({
                     streaming: {
                         text: {
                             dispatchForManualRendering: true
+                        },
+                        buffer: {
+                            bufferToKeep: maxBuffer,
+                            stableBufferTime: maxBuffer,
+                            bufferTimeAtTopQuality: maxBuffer,
+                            bufferTimeAtTopQualityLongForm: maxBuffer,
                         }
                     }
                 });
