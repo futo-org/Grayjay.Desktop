@@ -41,7 +41,7 @@ namespace Grayjay.ClientServer.Controllers
     [Route("[controller]/[action]")]
     public class DetailsController : ControllerBase
     {
-        public class DetailsState
+        public class DetailsState : IDisposable
         {
             public PlatformPostDetails PostLoaded { get; set; }
             public PlatformVideoDetails VideoLoaded { get; set; }
@@ -66,6 +66,11 @@ namespace Grayjay.ClientServer.Controllers
 
             public IPager<PlatformContent> RecommendationPager { get; set; }
 
+            public void Dispose()
+            {
+                LiveChatManager?.Stop();
+                LiveChatManager = null;
+            }
         }
 
         static ManagedHttpClient _qualityClient = new ManagedHttpClient();
