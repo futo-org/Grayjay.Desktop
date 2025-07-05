@@ -35,6 +35,7 @@ export interface PlayerControlsProps {
     handlePlay?: ()=>void;
     handleTheatre?: () => void;
     handleToggleVolume?: () => void;
+    toggleCaptions?:()=>void;
     onInteraction?: () => void;
     children: JSX.Element;
     volume?: number;
@@ -269,15 +270,42 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     const skip = (direction: number) => {
         let position = props.position.as("milliseconds");
         const duration = props.duration.as("milliseconds");
-        if (duration > 0) {
-            position = Math.max(Math.min(duration, position + direction * 5000), 0);
-        } else {
-            position = Math.max(position + direction * 5000, 0);
-        }
+        position = Math.max(Math.min(duration, position + direction*1000), 0);
         props.onSetPosition?.(Duration.fromMillis(position));
     };
 
     const handleKeyDown = (ev: KeyboardEvent) => {
+        function prevChapter(){
+            let position = props.position.as("seconds");
+            position-=1;
+            position=props.chapters?.find(x=>x.timeStart <= position && x.timeEnd > position)?.timeStart||props.chapters?.find(x=>x.timeEnd < position)?.timeEnd||0;
+            props.onSetPosition?.(Duration.fromMillis(position*1000));
+        }
+        function nextChapter(){
+            let position = props.position.as("seconds");
+            const duration = props.duration.as("seconds");
+            position=props.chapters?.find(x=>x.timeStart <= position && x.timeEnd > position)?.timeEnd||props.chapters?.find(x=>x.timeStart > position)?.timeStart||duration;
+            position=Math.min(position,duration);
+            props.onSetPosition?.(Duration.fromMillis(position*1000));
+        }
+        switch(ev.key){
+            case "MediaTrackPrevious":
+                prevChapter();
+                ev.preventDefault();
+                break;
+            case "MediaTrackNext":
+                nextChapter();
+                ev.preventDefault();
+                break;
+            case "MediaPlayPause":
+                if (props.isPlaying) {
+                    onPause(ev as any);
+                } else {
+                    onPlay(ev as any);
+                }
+                ev.preventDefault();
+                break;
+        }
         const target = ev.target as any;
         if (target) {
             const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
@@ -285,7 +313,21 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 return;
             }
         }
-
+        if(ev.ctrlKey){
+            switch (ev.key) {
+                case "ArrowLeft":{
+                    prevChapter();
+                    ev.preventDefault();
+                    break;
+                }
+                case "ArrowRight":{
+                    nextChapter();
+                    ev.preventDefault();
+                    break;
+                }
+            }
+            return;
+        }
         switch (ev.key) {
             case " ":
             case "k":
@@ -307,6 +349,24 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
+            case "Home":
+                props.onSetPosition?.(Duration.fromMillis(0));
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "End":
+                props.onSetPosition?.(props.duration);
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case ",":
+                skip(-1/60); // framerate might be 30 instead of 60?
+                ev.preventDefault();
+                break;
+            case ".":
+                skip(1/60);
+                ev.preventDefault();
+                break;
             case "ArrowUp":
                 props.onSetVolume?.(Math.min((props.volume ?? 0) + 0.1, 1));
                 props.onInteraction?.();
@@ -314,6 +374,11 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 break;
             case "ArrowDown":
                 props.onSetVolume?.(Math.max((props.volume ?? 0) - 0.1, 0));
+                props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "m":
+                onToggleVolume(ev as any);
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
@@ -327,24 +392,13 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
-            case "m":
-                onToggleVolume(ev as any);
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
-            case "Home":
-                props.onSetPosition?.(Duration.fromMillis(0));
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
-            case "End":
-                props.onSetPosition?.(props.duration);
-                props.onInteraction?.();
-                ev.preventDefault();
-                break;
             case "i":
                 props.handleMinimize?.();
                 props.onInteraction?.();
+                ev.preventDefault();
+                break;
+            case "v":
+                props.toggleCaptions?.();
                 ev.preventDefault();
                 break;
         }
@@ -371,10 +425,10 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     const startSkipping = (direction: number) => {
         stopSkipping();
 
-        skip(direction);
+        skip(direction*5);
         startSkippingTimeout = setTimeout(() => {
             skipInterval = setInterval(() => {
-                skip(direction);
+                skip(direction*5);
             }, 100);
         }, 2000);
     };
