@@ -12,8 +12,8 @@ public class LiveChatManager
     private readonly List<PlatformLiveEvent> _history = new List<PlatformLiveEvent>();
     private readonly Dictionary<object, Action<List<PlatformLiveEvent>>> _followers = new Dictionary<object, Action<List<PlatformLiveEvent>>>();
 
-    private CancellationTokenSource _cts;
-    private int _startCounter = 0;
+    private Thread? _pollingThread;
+    private volatile bool _running;
 
     public long ViewCount { get; private set; }
 
@@ -39,19 +39,21 @@ public class LiveChatManager
 
     public void Start()
     {
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        var token = _cts.Token;
+        Stop();
 
-        var counter = Interlocked.Increment(ref _startCounter);
-        _ = RunLoopAsync(counter, token);
+        _running = true;
+        _pollingThread = new Thread(PollLoop)
+        {
+            IsBackground = true,
+            Name = "LiveChatManager-Poller"
+        };
+        _pollingThread.Start();
     }
 
     public void Stop()
     {
-        // Bump counter to stop loop and cancel token
-        Interlocked.Increment(ref _startCounter);
-        _cts?.Cancel();
+        _running = false;
+        _pollingThread = null;
     }
 
     public List<PlatformLiveEvent> GetHistory()
@@ -91,13 +93,13 @@ public class LiveChatManager
         }
     }
 
-    private async Task RunLoopAsync(int counter, CancellationToken token)
+    private void PollLoop()
     {
         try
         {
-            while (!token.IsCancellationRequested && counter == _startCounter)
+            while (_running && _pager != null && _pager.HasMorePages())
             {
-                long nextInterval = 1_000;
+                long nextIntervalMs = 1_000;
                 if (_pager == null || !_pager.HasMorePages())
                     break;
 
@@ -106,7 +108,7 @@ public class LiveChatManager
                     _pager.NextPage();
                     var newEvents = _pager.GetResults() ?? Array.Empty<PlatformLiveEvent>();
                     if (_pager is LiveEventPager liveEventPager)
-                        nextInterval = Math.Max(liveEventPager.NextRequest, 800);
+                        nextIntervalMs = Math.Max(liveEventPager.NextRequest, 800);
 
                     if (newEvents.Length > 0)
                     {
@@ -126,7 +128,14 @@ public class LiveChatManager
                 {
                     Logger.Error<LiveChatManager>("Failed to load live events", ex);
                 }
-                await Task.Delay(TimeSpan.FromMilliseconds(nextInterval), token);
+
+                var slept = 0;
+                while (_running && slept < nextIntervalMs)
+                {
+                    var chunk = Math.Min(200, (int)(nextIntervalMs - slept));
+                    Thread.Sleep(chunk);
+                    slept += chunk;
+                }
             }
         }
         catch (Exception ex)
@@ -137,7 +146,7 @@ public class LiveChatManager
 
     private void HandleEvents(List<PlatformLiveEvent>? events)
     {
-        if (events == null) return;
+        if (events == null || events.Count == 0) return;
 
         lock (_history)
         {
