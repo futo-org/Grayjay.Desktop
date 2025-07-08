@@ -51,11 +51,15 @@
         const IDLE_MAX_SPEED = .35;
         const IDLE_INITIAL_TARGETS = 10;
         const IDLE_HINT_TEXT = 'Waiting for media to become available';
+        const MIN_RADIUS = 40;
+        const MAX_RADIUS = 60;
         const MIN_SPAWN_RATE = 1.0;
         const MAX_SPAWN_RATE = 20.0;
         const HIT_RATE_INCREMENT = .15;
         const MISS_RATE_DECREMENT = .09;
         const PARTICLES_PER_HIT = 12;
+        const BASE_SCORE = 5;
+        const MAX_CENTER_BONUS = 15;
         const canvas = document.getElementById('loader');
         const ctx = canvas.getContext('2d');
         let dpr = window.devicePixelRatio || 1;
@@ -127,7 +131,7 @@
             if (loaderFinished) return;
             if (!isPlaying) { setTimeout(spawnTarget, 500); return; }
 
-            const radius = rand(40, 80);
+            const radius = rand(MIN_RADIUS, MAX_RADIUS);
             const x = rand(radius, canvas.clientWidth - radius);
             const y = rand(radius, canvas.clientHeight - radius - 60);
             const speed = rand(.1, 1.1);
@@ -143,7 +147,7 @@
         }
         function prepopulateIdleTargets() {
             for (let i = 0; i < IDLE_INITIAL_TARGETS; i++) {
-                const radius = rand(40, 80);
+                const radius = rand(MIN_RADIUS, MAX_RADIUS);
                 const x = rand(radius, canvas.clientWidth - radius);
                 const y = rand(radius, canvas.clientHeight - radius - 60);
                 const speed = rand(.05, .35) * IDLE_SPEED_MULTIPLIER;
@@ -179,7 +183,10 @@
                 t.hit = true;
                 t.hitTime = now();
                 spawnRate = Math.min(spawnRate + HIT_RATE_INCREMENT, MAX_SPAWN_RATE);
-                score += 10;
+                const dist = Math.hypot(x - t.x, y - t.y);
+                const accuracy = 1 - Math.min(1, dist / t.radius);
+                const gain = BASE_SCORE + Math.round(accuracy * MAX_CENTER_BONUS);
+                score += gain;
                 spawnParticles(t.x, t.y);
 
                 if (!isPlaying) {
