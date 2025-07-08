@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Target Tap</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #000;
+            overflow: hidden
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, .8);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: sans-serif;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .3s ease
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="loader"></canvas>
+    <div id="toast"></div>
+
+    <script>
+        const TAU = 2 * Math.PI;
+        const PRIMARY_COLOR = '#2D63ED';
+        const INACTIVE_GLOBAL_ALPHA = 110;
+        const IDLE_SPEED_MULTIPLIER = .015;
+        const FLOAT_ACCEL = .03;
+        const IDLE_MAX_SPEED = .35;
+        const IDLE_INITIAL_TARGETS = 10;
+        const IDLE_HINT_TEXT = 'Waiting for media to become available';
+        const MIN_SPAWN_RATE = 1.0;
+        const MAX_SPAWN_RATE = 20.0;
+        const HIT_RATE_INCREMENT = .15;
+        const MISS_RATE_DECREMENT = .09;
+        const PARTICLES_PER_HIT = 12;
+        const canvas = document.getElementById('loader');
+        const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1;
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(canvas.clientWidth * dpr);
+            canvas.height = Math.floor(canvas.clientHeight * dpr);
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const rand = (min, max) => Math.random() * (max - min) + min;
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const overshootInterp = t => { const k = 1.5; t -= 1; return t * t * ((k + 1) * t + k) + 1; };
+        const now = () => performance.now();
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg; el.style.opacity = '1';
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+        }
+
+        class Target {
+            constructor(x, y, radius, vx, vy, alpha) {
+                this.x = x; this.y = y; this.radius = radius;
+                this.vx = vx; this.vy = vy;
+                this.baseAlpha = alpha;
+                this.spawnTime = now();
+                this.spawnAnimStart = now();
+                this.hit = false; this.hitTime = 0;
+                this.pulseOffset = Math.random() * TAU;
+            }
+        }
+        class Particle {
+            constructor(x, y, vx, vy, color) {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.color = color; this.start = now();
+            }
+        }
+
+        let score = 0;
+        let spawnRate = MIN_SPAWN_RATE;
+        let isPlaying = false;
+        let loaderFinished = true;
+
+        const targets = [];
+        const particles = [];
+
+        function startLoader() {
+            loaderFinished = false;
+            isPlaying = false;
+            score = 0;
+            spawnRate = MIN_SPAWN_RATE;
+            particles.length = 0;
+
+            if (targets.length === 0) prepopulateIdleTargets();
+        }
+        function finishLoader() { loaderFinished = true; particles.length = 0; isPlaying = false; }
+        function stopAndResetLoader() {
+            if (score > 0) {
+                const elapsed = (now() - playStartTime) / 1000;
+                toast(`Nice! score ${score} | ${(score / elapsed).toFixed(1)} / s`);
+            }
+            loaderFinished = true; isPlaying = false; score = 0;
+            targets.length = 0; particles.length = 0;
+        }
+
+        function spawnTarget() {
+            if (loaderFinished) return;
+            if (!isPlaying) { setTimeout(spawnTarget, 500); return; }
+
+            const radius = rand(40, 80);
+            const x = rand(radius, canvas.clientWidth - radius);
+            const y = rand(radius, canvas.clientHeight - radius - 60);
+            const speed = rand(.1, 1.1);
+            const angle = rand(0, TAU);
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const alpha = rand(150, 255) | 0;
+
+            targets.push(new Target(x, y, radius, vx, vy, alpha));
+
+            const delay = (1000 / spawnRate) | 0;
+            setTimeout(spawnTarget, delay);
+        }
+        function prepopulateIdleTargets() {
+            for (let i = 0; i < IDLE_INITIAL_TARGETS; i++) {
+                const radius = rand(40, 80);
+                const x = rand(radius, canvas.clientWidth - radius);
+                const y = rand(radius, canvas.clientHeight - radius - 60);
+                const speed = rand(.05, .35) * IDLE_SPEED_MULTIPLIER;
+                const angle = rand(0, TAU);
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const alpha = rand(60, 110) | 0;
+                targets.push(new Target(x, y, radius, vx, vy, alpha));
+            }
+        }
+        function spawnParticles(cx, cy) {
+            for (let i = 0; i < PARTICLES_PER_HIT; i++) {
+                const angle = rand(0, TAU);
+                const speed = rand(2, 7);
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const col = `rgba(45,99,237,${rand(.5, 1).toFixed(2)})`;
+                particles.push(new Particle(cx, cy, vx, vy, col));
+            }
+        }
+
+        function getPointerPos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const cX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const cY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return { x: (cX - rect.left), y: (cY - rect.top) };
+        }
+        let playStartTime = 0;
+        function handleTap(x, y) {
+            const idx = targets.findIndex(t => !t.hit && Math.hypot(x - t.x, y - t.y) <= t.radius);
+            if (idx >= 0) {
+                const t = targets[idx];
+                t.hit = true;
+                t.hitTime = now();
+                spawnRate = Math.min(spawnRate + HIT_RATE_INCREMENT, MAX_SPAWN_RATE);
+                score += 10;
+                spawnParticles(t.x, t.y);
+
+                if (!isPlaying) {
+                    isPlaying = true;
+                    playStartTime = now();
+                    score = 0;
+                    spawnRate = MIN_SPAWN_RATE;
+                    targets.splice(0, targets.length, t);
+                    spawnTarget();
+                }
+            } else if (isPlaying) {
+                spawnRate = Math.max(spawnRate - MISS_RATE_DECREMENT, MIN_SPAWN_RATE);
+            }
+        }
+        canvas.addEventListener('mousedown', e => { const p = getPointerPos(e); handleTap(p.x, p.y); });
+        canvas.addEventListener('touchstart', e => { const p = getPointerPos(e); handleTap(p.x, p.y); }, { passive: true });
+
+        let lastFrame = now();
+        function loop() {
+            const t = now();
+            const dt = t - lastFrame;
+            lastFrame = t;
+            draw(t, dt);
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+
+        function drawGradientBackground() {
+            const h = canvas.clientHeight;
+            const g = ctx.createLinearGradient(0, 0, 0, h);
+            g.addColorStop(0, 'rgb(20,20,40)');
+            g.addColorStop(.25, 'rgb(15,15,30)');
+            g.addColorStop(.5, 'rgb(10,10,20)');
+            g.addColorStop(.75, 'rgb(5,5,10)');
+            g.addColorStop(1, 'black');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        }
+
+        function drawTargets(nowMs) {
+            const expireMsActive = 1500;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                if (t.hit && nowMs - t.hitTime > 300) { targets.splice(i, 1); continue; }
+                if (isPlaying && !t.hit && nowMs - t.spawnTime > expireMsActive) {
+                    targets.splice(i, 1); spawnRate = Math.max(spawnRate - MISS_RATE_DECREMENT, MIN_SPAWN_RATE); continue;
+                }
+
+                t.x += t.vx; t.y += t.vy;
+                t.vx += (Math.random() - .5) * FLOAT_ACCEL;
+                t.vy += (Math.random() - .5) * FLOAT_ACCEL;
+
+                const speedCap = isPlaying ? Infinity : IDLE_MAX_SPEED;
+                const mag = Math.hypot(t.vx, t.vy);
+                if (mag > speedCap) { const s = speedCap / mag; t.vx *= s; t.vy *= s; }
+
+                if (t.x - t.radius < 0 || t.x + t.radius > w) t.vx *= -1;
+                if (t.y - t.radius < 0 || t.y + t.radius > h) t.vy *= -1;
+
+                let scale;
+                if (t.hit) {
+                    scale = 1 - ((nowMs - t.hitTime) / 300);
+                    scale = Math.max(0, scale);
+                } else {
+                    const e = nowMs - t.spawnAnimStart;
+                    if (e < 300) scale = overshootInterp(e / 300);
+                    else scale = 1 + .02 * Math.sin(((nowMs - t.spawnAnimStart) / 1000) * TAU + t.pulseOffset);
+                }
+
+                const animAlpha = t.hit ? (1 - scale) * 255 : 255;
+                const globalAlpha = isPlaying ? 255 : INACTIVE_GLOBAL_ALPHA;
+                const alpha = Math.min(255, (animAlpha * t.baseAlpha * globalAlpha) / (255 * 255));
+                const r = t.radius * scale;
+
+                ctx.save();
+                ctx.shadowBlur = r * 0.6;
+                ctx.shadowColor = PRIMARY_COLOR;
+                ctx.globalAlpha = alpha / 255;
+
+                ctx.fillStyle = PRIMARY_COLOR;
+                ctx.beginPath(); ctx.arc(t.x, t.y, r, 0, TAU); ctx.fill();
+                ctx.beginPath(); ctx.arc(t.x, t.y, r * .66, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(t.x, t.y, r * .33, 0, TAU); ctx.fillStyle = 'white'; ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawParticles(nowMs) {
+            const lifespan = 400;
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                const age = nowMs - p.start;
+                if (age > lifespan) { particles.splice(i, 1); continue; }
+                const a = 1 - age / lifespan;
+                ctx.globalAlpha = a;
+                ctx.fillStyle = p.color;
+                p.x += p.vx; p.y += p.vy;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, TAU);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawText() {
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textBaseline = 'top';
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 4;
+            if (isPlaying) {
+                const m = 24,
+                    scoreTxt = `Score: ${score}`,
+                    speedTxt = `Speed: ${spawnRate.toFixed(2)}/s`,
+                    alignRight = Math.max(ctx.measureText(scoreTxt).width, ctx.measureText(speedTxt).width) > canvas.clientWidth - m;
+
+                const x = alignRight ? (canvas.clientWidth - m) : m;
+                ctx.textAlign = alignRight ? 'right' : 'left';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(scoreTxt, x, m);
+                ctx.fillText(speedTxt, x, m + 16);
+            } else if (loaderFinished) {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('Ready!', canvas.clientWidth / 2, canvas.clientHeight / 2);
+            } else {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = '16px sans-serif';
+                ctx.shadowBlur = 2;
+                ctx.fillText(IDLE_HINT_TEXT, canvas.clientWidth / 2, canvas.clientHeight - 48);
+            }
+        }
+
+        function draw(timeMs, dt) {
+            ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+            drawGradientBackground();
+            drawTargets(timeMs);
+            drawParticles(timeMs);
+            drawText();
+        }
+
+        startLoader();
+    </script>
+</body>
+
+</html>
