@@ -11,7 +11,7 @@ export default class Globals {
   public static WindowID = uuidv4();
 
 
-  public static async handleUrl(url: string, video: VideoContextValue, navigate: Navigator, positionSec: number) {
+  public static async handleUrl(url: string, video: VideoContextValue, navigate: Navigator, positionSec?: number) {
     const executionPlan = await HandlingBackend.handlePlan(url);
     switch(executionPlan.type) {
       case "content":

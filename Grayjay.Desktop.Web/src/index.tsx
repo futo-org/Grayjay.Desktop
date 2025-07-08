@@ -29,6 +29,7 @@ import GlobalContextMenu from './components/GlobalContextMenu';
 import BuyPage from './pages/BuyPage';
 import UIOverlay from './state/UIOverlay';
 import ExceptionModel from './backend/exceptions/ExceptionModel';
+import LoaderGameExamplePage from './pages/LoaderGameExamplePage';
 
 const HomePage = lazy(() => import('./pages/Home'));
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'));
@@ -109,7 +110,8 @@ const App: Component<RouteSectionProps> = (props) => {
         if(item.type == "text/uri-list") {
           console.log(item);
           item.getAsString(async function(url: string){
-            Globals.handleUrl(url, video, navigate);
+            if (video && navigate)
+              Globals.handleUrl(url, video, navigate);
           });
           break;
         }
@@ -161,6 +163,7 @@ render(() => (
     <Route path="/web/watchLater" component={WatchLaterPage} />
     <Route path="/web/sources" component={SourcesPage} />
     <Route path="/web/virtualExample" component={VirtualExamplePage} />
+    <Route path="/web/loaderGame" component={LoaderGameExamplePage} />
     <Route path="/web/channel" component={ChannelPage} />
     <Route path="/web/downloads" component={DownloadsPage} />
     <Route path="/web/history" component={HistoryPage} />
