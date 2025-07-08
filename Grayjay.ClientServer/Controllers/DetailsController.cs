@@ -587,8 +587,24 @@ namespace Grayjay.ClientServer.Controllers
                     ((audio != null) ? EnsureLocal(state).AudioSources.IndexOf((LocalAudioSource)audio) : -1)
             );
         [HttpGet]
-        public IActionResult SourceDash(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, bool isLoopback = true)
-            => Content(GenerateSourceDash(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(isLoopback)), "application/dash+xml");
+        public async Task<IActionResult> SourceDash(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, bool isLoopback = true)
+        {
+            var state = this.State();
+            try
+            {
+                return Content(GenerateSourceDash(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(isLoopback)), "application/dash+xml");
+            }
+            catch (ScriptReloadRequiredException reloadEx)
+            {
+                await StatePlatform.HandleReloadRequired(reloadEx);
+                this.VideoLoad(state.DetailsState.VideoLoaded.Url);
+                return await SourceDash(videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, isLoopback);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
         public static string GenerateSourceDash(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null)
         {
             (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
