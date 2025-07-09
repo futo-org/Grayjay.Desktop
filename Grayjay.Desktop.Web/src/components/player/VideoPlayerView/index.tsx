@@ -506,6 +506,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const changeSource = (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
         console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
         setIsAudioOnly(false);
+        setIsPlaying(false);
         
         if (currentUrl === sourceUrl) {
             if (startTime) {
