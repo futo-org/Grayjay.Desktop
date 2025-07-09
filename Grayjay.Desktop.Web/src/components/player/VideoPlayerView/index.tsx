@@ -16,6 +16,8 @@ import { IPlatformVideoDetails } from '../../../backend/models/contentDetails/IP
 import Loader from '../../basics/loaders/Loader';
 import CircleLoader from '../../basics/loaders/CircleLoader';
 import { formatDuration } from '../../../utility';
+import { LoaderGame, LoaderGameHandle } from '../../LoaderGame';
+import StateWebsocket from '../../../state/StateWebsocket';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -78,10 +80,15 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const [isLoading, setIsLoading] = createSignal(true);
     const [resumePositionVisible, setResumePositionVisible] = createSignal(false);
     const [endControlsVisible$, setEndControlsVisible] = createSignal(false);
+    const [loaderGameVisible$, setLoaderGameVisible] = createSignal<number>();
     let currentUrl: string | undefined;
     let castingEndedEmitted = false;
+    let loader: LoaderGameHandle | undefined;
 
     createEffect(() => {
+        if (isPlaying()) {
+            setLoaderGameVisible(undefined);
+        }
         props.onIsPlayingChanged?.(isPlaying());
     });
 
@@ -187,6 +194,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     };
 
     const changeSourceToSetSource = async (source: SourceSelected | undefined) => {
+        setLoaderGameVisible(undefined);
+
         console.info("source", source);
         if (!source || (source.video == -1 && source.audio == -1)) {
             if (untrack(isCasting)) {
@@ -923,6 +932,13 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 play();
             }
         }, this);
+
+        StateWebsocket.registerHandlerNew("VideoLoader", (packet) => {
+            console.info("VideoLoader triggered");
+            setLoaderGameVisible(packet.payload.duration);
+        }, "videoPlayerView");
+
+        createEffect(() => console.info("loaderGameVisible$ changed", loaderGameVisible$()));
     });
 
     onCleanup(async () => {
@@ -935,6 +951,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }
 
         props.eventRestart?.unregister(this);
+
+        StateWebsocket.unregisterHandler("VideoLoader", "videoPlayerView");
     });
 
     const toggleVolume = async () => {
@@ -1043,7 +1061,9 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     }
 
     const controlsVisible$ = createMemo(() => {
-        if (isCasting()) {
+        if (loaderGameVisible$() !== undefined) {
+            return false;
+        } if (isCasting()) {
             return true;
         } else {
             return !isLoading() && (areControlsVisible() || props.lockOverlay || endControlsVisible$());
@@ -1140,6 +1160,22 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 }}>
                     Resume at {formatDuration(props.resumePosition!)}
                 </div>
+            </Show>
+
+            <Show when={loaderGameVisible$()}>
+                <div style="position: absolute; top: 0px; width: 100%; height: 100%;">
+                    <LoaderGame
+                        duration={loaderGameVisible$()}
+                        onReady={(h) => {
+                            loader = h;
+                            h?.startLoader(10000);
+                        }}
+                        style={{ width: "100%", height: "100%" }}
+                    />
+                </div>
+                <Show when={props.loaderUI}>
+                    {props.loaderUI}
+                </Show>
             </Show>
         </div>
     );

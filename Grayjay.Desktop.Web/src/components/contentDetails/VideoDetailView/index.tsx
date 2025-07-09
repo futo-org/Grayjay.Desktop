@@ -1277,7 +1277,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             <TransparentIconButton icon={ic_close} onClick={() => close()} style={{"flex-shrink":0, "width": "40px", "height": "40px"}} />
                         </div>
                     </div>
-
                 </Show>
                 <StickyShrinkOnScrollContainer outerContainerRef={scrollContainerRef}
                     minimumHeight={minimumMaximumHeight().minimum}

@@ -1,4 +1,4 @@
-import { Component, createSignal, onCleanup, onMount, Show, JSX } from "solid-js";
+import { Component, createSignal, onCleanup, onMount, Show, JSX, createEffect } from "solid-js";
 import styles from "./index.module.css";
 
 export interface LoaderGameHandle {
@@ -8,6 +8,7 @@ export interface LoaderGameHandle {
 
 interface LoaderGameProps {
     src?: string;
+    duration?: number;
     onReady?: (h: LoaderGameHandle) => void;
     class?: string;
     style?: JSX.CSSProperties;
@@ -25,6 +26,31 @@ export const LoaderGame: Component<LoaderGameProps> = (props) => {
     let startTime = 0;
     let expectedDur = 0;
 
+    const startLoader = (durationMs: number) => {
+        if (!running()) {
+            setSrc(props.src ?? "https://releases.grayjay.app/loadergame.html");
+        }
+        cancelAnimationFrame(raf);
+
+        if (durationMs && durationMs > 0) {
+            expectedDur = durationMs;
+            startTime = performance.now();
+            setProgress(0);
+            setDeterministic(true);
+            setRunning(true);
+            raf = requestAnimationFrame(updateBar);
+        } else {
+            setDeterministic(false);
+            setRunning(true);
+        }
+    };
+    const stopAndResetLoader = () => {
+        cancelAnimationFrame(raf);
+        setRunning(false);
+        setDeterministic(false);
+        setSrc("about:blank");
+    };
+
     const updateBar = () => {
         const elapsed = performance.now() - startTime;
         setProgress(Math.min(1, elapsed / expectedDur));
@@ -35,31 +61,17 @@ export const LoaderGame: Component<LoaderGameProps> = (props) => {
         }
     };
 
-    const handle: LoaderGameHandle = {
-        startLoader(durationMs) {
-            if (!running()) {
-                setSrc(props.src ?? "https://releases.grayjay.app/loadergame.html");
-            }
-            cancelAnimationFrame(raf);
+    createEffect(() => {
+        if (props.duration !== undefined) {
+            startLoader(props.duration);
+        } else {
+            stopAndResetLoader();
+        }
+    });
 
-            if (durationMs && durationMs > 0) {
-                expectedDur = durationMs;
-                startTime = performance.now();
-                setProgress(0);
-                setDeterministic(true);
-                setRunning(true);
-                raf = requestAnimationFrame(updateBar);
-            } else {
-                setDeterministic(false);
-                setRunning(true);
-            }
-        },
-        stopAndResetLoader() {
-            cancelAnimationFrame(raf);
-            setRunning(false);
-            setDeterministic(false);
-            setSrc("about:blank");
-        },
+    const handle: LoaderGameHandle = {
+        startLoader, 
+        stopAndResetLoader
     };
 
     onMount(() => props.onReady?.(handle));
