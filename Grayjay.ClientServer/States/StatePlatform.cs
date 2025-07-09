@@ -741,8 +741,8 @@ namespace Grayjay.Desktop.POC.Port.States
                 if (IsEnabled(id))
                 {
                     var clientsOriginal = GetEnabledClients();
-                    await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
-                    await SelectClients(clientsOriginal.Select(x => x.Config.ID).ToArray());
+                    await SelectClients(clientsOriginal.Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
+                    await SelectClients(clientsOriginal.Select(x => x.ID).Distinct().ToArray());
                 }
             }
         }
@@ -770,7 +770,7 @@ namespace Grayjay.Desktop.POC.Port.States
             _enabledClientsPersistent.Save(_enabledClientsPersistent.GetCopy().OrderBy(x => Array.IndexOf(ids, x)).ToArray());
         }
 
-        public static async Task ReEnableClient(string id, Action afterReload = null) => ReEnableClientWithData(id, null, afterReload);
+        public static async Task ReEnableClient(string id, Action afterReload = null) => await ReEnableClientWithData(id, null, afterReload);
         public static async Task ReEnableClientWithData(string id, string data, Action afterReload = null)
         {
             var enabledBefore = GetEnabledClients().Select(x => x.ID).ToArray();
@@ -791,7 +791,7 @@ namespace Grayjay.Desktop.POC.Port.States
             var id = reloadRequiredException.Config.ID;
             StateUI.Toast($"Reloading [{reloadRequiredException.Config.Name}] by plugin request");
 
-            if (string.IsNullOrEmpty(reloadRequiredException.ReloadData))
+            if (!string.IsNullOrEmpty(reloadRequiredException.ReloadData))
                 await ReEnableClientWithData(id, reloadRequiredException.ReloadData, afterReload);
             else
                 await ReEnableClient(id, afterReload);
