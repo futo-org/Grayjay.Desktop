@@ -188,6 +188,9 @@ namespace Grayjay.ClientServer.Settings
                 return (int)(height * (16 / (double)9)) * height;
             }
 
+            [SettingsField("Max Buffer", SettingsField.DROPDOWN, "How long to buffer", 3)]
+            [SettingsDropdownOptions("10s", "30s", "1m", "2m", "3m", "5m", "10m", "20m", "1h", "5h")]
+            public int MaxBuffer { get; set; } = 2;
 
             /*
             [SettingsField("Preferred Preview Quality", SettingsField.DROPDOWN, "Default qaulity while previewing a video in a feed", 4)]
