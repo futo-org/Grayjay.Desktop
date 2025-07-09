@@ -3,6 +3,7 @@ using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync.Models;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Models.Live;
+using System.Text.Json;
 
 namespace Grayjay.ClientServer.States;
 
@@ -55,6 +56,17 @@ public class StateWebsocket
         Task.Run(async () =>
         {
             await instance.WebSocket.Broadcast(null, "EnabledClientsChanged");
+        });
+    }
+    public static void VideoLoader(string text, int duration)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(JsonSerializer.Serialize(new
+            {
+                text = text,
+                duration = duration
+            }), "VideoLoader");
         });
     }
 
