@@ -73,8 +73,8 @@ export abstract class DetailsBackend {
     static async sourceAuto(url: string): Promise<ISourceDirectDescriptor> {
         return await Backend.GET(`/details/SourceAuto?url=${encodeURIComponent(url)}`) as ISourceDirectDescriptor;
     }
-    static async sourceProxy(url: string, videoIndex: number, videoIsLocal: boolean, audioIndex: number, audioIsLocal: boolean, subtitleIndex: number, subtitleIsLocal: boolean): Promise<ISourceDirectDescriptor> {
-        return await Backend.GET(`/details/SourceProxy?url=${encodeURIComponent(url)}&videoIndex=${videoIndex}&audioIndex=${audioIndex}&subtitleIndex=${subtitleIndex}&videoIsLocal=${videoIsLocal}&audioIsLocal=${audioIsLocal}&subtitleIsLocal=${subtitleIsLocal}`) as ISourceDirectDescriptor;
+    static async sourceProxy(url: string, videoIndex: number, videoIsLocal: boolean, audioIndex: number, audioIsLocal: boolean, subtitleIndex: number, subtitleIsLocal: boolean, tag: string): Promise<ISourceDirectDescriptor> {
+        return await Backend.GET(`/details/SourceProxy?url=${encodeURIComponent(url)}&videoIndex=${videoIndex}&audioIndex=${audioIndex}&subtitleIndex=${subtitleIndex}&videoIsLocal=${videoIsLocal}&audioIsLocal=${audioIsLocal}&subtitleIsLocal=${subtitleIsLocal}&tag=${encodeURIComponent(tag)}`) as ISourceDirectDescriptor;
     }
     static async sourceVideoQualities(videoIndex: number): Promise<any> {
         return await Backend.GET(`/details/VideoQualities?videoIndex=` + videoIndex) as any;

@@ -15,9 +15,11 @@ import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { IPlatformVideoDetails } from '../../../backend/models/contentDetails/IPlatformVideoDetails';
 import Loader from '../../basics/loaders/Loader';
 import CircleLoader from '../../basics/loaders/CircleLoader';
-import { formatDuration } from '../../../utility';
+import { formatDuration, uuidv4 } from '../../../utility';
 import { LoaderGame, LoaderGameHandle } from '../../LoaderGame';
 import StateWebsocket from '../../../state/StateWebsocket';
+import StateGlobal from '../../../state/StateGlobal';
+import Globals from '../../../globals';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -84,6 +86,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     let currentUrl: string | undefined;
     let castingEndedEmitted = false;
     let loader: LoaderGameHandle | undefined;
+    let currentTag = uuidv4();
 
     createEffect(() => {
         if (isPlaying()) {
@@ -194,6 +197,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     };
 
     const changeSourceToSetSource = async (source: SourceSelected | undefined) => {
+        currentTag = uuidv4();
         setLoaderGameVisible(undefined);
 
         console.info("source", source);
@@ -211,7 +215,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             return;
         }
 
-        const descriptor = await DetailsBackend.sourceProxy(source.url, source.video, source.videoIsLocal, source.audio, source.audioIsLocal, source.subtitle, source.subtitleIsLocal);
+        const descriptor = await DetailsBackend.sourceProxy(source.url, source.video, source.videoIsLocal, source.audio, source.audioIsLocal, source.subtitle, source.subtitleIsLocal, currentTag);
         console.log("Direct url", descriptor.url, descriptor.type);
 
         if (untrack(isCasting)) {
@@ -478,6 +482,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const onError = (error: string, fatal: boolean) => {
         props.onError?.(error, fatal);
         if (fatal) {
+            setLoaderGameVisible(undefined);
             setIsPlaying(false);
         }
     };
@@ -933,9 +938,13 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             }
         }, this);
 
+        console.info("Registered VideoLoader handler");
         StateWebsocket.registerHandlerNew("VideoLoader", (packet) => {
-            console.info("VideoLoader triggered");
-            setLoaderGameVisible(packet.payload.duration);
+            console.info("VideoLoader triggered", packet);
+            if (currentTag === packet.payload.tag && Globals.WindowID === packet.payload.windowId) {
+                setLoaderGameVisible(packet.payload.duration);
+                console.info("VideoLoader triggered accepted", packet);
+            }
         }, "videoPlayerView");
 
         createEffect(() => console.info("loaderGameVisible$ changed", loaderGameVisible$()));
@@ -952,6 +961,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
         props.eventRestart?.unregister(this);
 
+        console.info("Unregistered VideoLoader handler");
         StateWebsocket.unregisterHandler("VideoLoader", "videoPlayerView");
     });
 

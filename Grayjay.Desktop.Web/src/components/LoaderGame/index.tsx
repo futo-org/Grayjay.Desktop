@@ -44,6 +44,7 @@ export const LoaderGame: Component<LoaderGameProps> = (props) => {
             setRunning(true);
         }
     };
+    
     const stopAndResetLoader = () => {
         cancelAnimationFrame(raf);
         setRunning(false);
@@ -62,9 +63,12 @@ export const LoaderGame: Component<LoaderGameProps> = (props) => {
     };
 
     createEffect(() => {
+        console.info("duration changed", props.duration);
         if (props.duration !== undefined) {
+            console.info("startLoader", props.duration);
             startLoader(props.duration);
         } else {
+            console.info("stopAndResetLoader", props.duration);
             stopAndResetLoader();
         }
     });
@@ -74,7 +78,13 @@ export const LoaderGame: Component<LoaderGameProps> = (props) => {
         stopAndResetLoader
     };
 
-    onMount(() => props.onReady?.(handle));
+    onMount(() => {
+        props.onReady?.(handle)
+        if (props.duration !== undefined) {
+            console.info("startLoader", props.duration);
+            startLoader(props.duration);
+        }
+    });
     onCleanup(() => cancelAnimationFrame(raf));
 
     return (
