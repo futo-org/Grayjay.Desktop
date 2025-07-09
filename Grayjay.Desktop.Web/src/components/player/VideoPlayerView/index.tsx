@@ -576,12 +576,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                         text: {
                             dispatchForManualRendering: true
                         },
-                        manifestRequestTimeout: 60000,
-                        buffer: {
-                            bufferTimeAtTopQuality: 10,
-                            stableBufferTime: 10,
-                            bufferTimeAtTopQualityLongForm: 10
-                        }
+                        manifestRequestTimeout: 60000
                     }
                 });
 
