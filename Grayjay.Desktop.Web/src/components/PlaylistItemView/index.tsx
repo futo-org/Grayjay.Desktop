@@ -54,7 +54,7 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
               e.stopPropagation();
             }}>{props.item?.author.name}</div>
             <Show when={props.item}>
-              <div class={styles.metadata}><Show when={(props.item?.viewCount ?? 0) > 0}>{toHumanNumber(props.item?.viewCount)} • </Show>{toHumanNowDiffString(props.item?.dateTime)}</div>
+              <div class={styles.metadata} title={DateTime.fromSeconds(Number(props.item?.dateTime)).toISO()}><Show when={(props.item?.viewCount ?? 0) > 0}>{toHumanNumber(props.item?.viewCount)} • </Show>{toHumanNowDiffString(props.item?.dateTime)}</div>
             </Show>
           </div>
         </div>
