@@ -109,6 +109,18 @@ namespace Grayjay.ClientServer.Database
             _connection.SQL((x) => x.Execute($"UPDATE {_table} SET {setters} WHERE ID = @ID", obj));
         }
 
+        //TODO: Fix this, conflicts dont work
+        /*
+        public long UpdateOrInsert(I obj)
+        {
+            var dataProps = _indexProperties.Where(p => p != nameof(DBIndex<T>.ID)).ToArray();
+            var columns = string.Join(", ", dataProps);
+            var values = string.Join(", ", dataProps.Select(p => $"@{p}"));
+            var setters = string.Join(", ", dataProps.Select(p => $"{p}=excluded.{p}"));
+            return (long)_connection.SQL(c => c.ExecuteScalar($@"INSERT INTO {_table} ({columns}) VALUES ({values}) ON CONFLICT(ID) DO UPDATE SET {setters}; SELECT last_insert_rowid();", obj));
+        }
+        */
+
         public void Delete(long id)
         {
             _connection.SQL((x) => x.Execute($"DELETE FROM {_table} WHERE ID = @ID", new { ID = id }));
