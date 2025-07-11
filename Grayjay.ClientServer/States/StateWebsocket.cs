@@ -71,6 +71,17 @@ public class StateWebsocket
             }, "VideoLoader");
         });
     }
+    public static void VideoLoaderFinish(string windowId, string? tag)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(new
+            {
+                windowId = windowId,
+                tag = tag
+            }, "VideoLoaderFinish");
+        });
+    }
 
     //TODO: Live Events needs to be window specific
     public static void LiveEvents(List<PlatformLiveEvent> liveEvents)
