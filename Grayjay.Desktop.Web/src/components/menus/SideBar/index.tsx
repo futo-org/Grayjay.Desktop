@@ -86,7 +86,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       { icon: subscriptions, name: 'Subscriptions',  path: '/web/subscriptions', selected: location.pathname === '/web/subscriptions' },
       { icon: creators,      name: 'Creators',       path: '/web/creators',      selected: location.pathname === '/web/creators' },
       { icon: playlists,     name: 'Playlists',      path: '/web/playlists',     selected: location.pathname === '/web/playlists' },
-      { icon: playlists,     name: 'Loader Game',      path: '/web/loaderGame',     selected: location.pathname === '/web/loaderGame' },
+      //{ icon: playlists,     name: 'Loader Game',      path: '/web/loaderGame',     selected: location.pathname === '/web/loaderGame' },
     ];
   
     if (video?.watchLater()?.length) {

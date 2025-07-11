@@ -63,46 +63,11 @@
         const canvas = document.getElementById('loader');
         const ctx = canvas.getContext('2d');
         let dpr = window.devicePixelRatio || 1;
-        let prevWidth, prevHeight;
-
-        let score = 0;
-        let spawnRate = MIN_SPAWN_RATE;
-        let isPlaying = false;
-        let loaderFinished = true;
-
-        const targets = [];
-        const particles = [];
-
         function resize() {
             dpr = window.devicePixelRatio || 1;
-            const newWidth = canvas.clientWidth;
-            const newHeight = canvas.clientHeight;
-            canvas.width = Math.floor(newWidth * dpr);
-            canvas.height = Math.floor(newHeight * dpr);
+            canvas.width = Math.floor(canvas.clientWidth * dpr);
+            canvas.height = Math.floor(canvas.clientHeight * dpr);
             ctx.scale(dpr, dpr);
-            if (!isPlaying && !loaderFinished) {
-                if (targets.length > 0 && prevWidth && prevHeight) {
-                    const widthRatio = newWidth / prevWidth;
-                    const heightRatio = newHeight / prevHeight;
-                    targets.forEach(t => {
-                        t.x *= widthRatio;
-                        t.y *= heightRatio;
-                        if (t.x < t.radius) t.x = t.radius;
-                        if (t.x > newWidth - t.radius) t.x = newWidth - t.radius;
-                        if (t.y < t.radius) t.y = t.radius;
-                        if (t.y > newHeight - t.radius - 60) t.y = newHeight - t.radius - 60;
-                    });
-                    particles.forEach(p => {
-                        p.x *= widthRatio;
-                        p.y *= heightRatio;
-                    });
-                } else {
-                    targets.length = 0;
-                    prepopulateIdleTargets();
-                }
-            }
-            prevWidth = newWidth;
-            prevHeight = newHeight;
         }
         window.addEventListener('resize', resize);
         resize();
@@ -124,7 +89,7 @@
                 this.vx = vx; this.vy = vy;
                 this.baseAlpha = alpha;
                 this.spawnTime = now();
-                this.spawnAnim = now();
+                this.spawnAnimStart = now();
                 this.hit = false; this.hitTime = 0;
                 this.pulseOffset = Math.random() * TAU;
             }
@@ -134,6 +99,14 @@
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.color = color; this.start = now();
             }
         }
+
+        let score = 0;
+        let spawnRate = MIN_SPAWN_RATE;
+        let isPlaying = false;
+        let loaderFinished = true;
+
+        const targets = [];
+        const particles = [];
 
         function startLoader() {
             loaderFinished = false;
@@ -279,9 +252,9 @@
                     scale = 1 - ((nowMs - t.hitTime) / 300);
                     scale = Math.max(0, scale);
                 } else {
-                    const e = nowMs - t.spawnAnim;
+                    const e = nowMs - t.spawnAnimStart;
                     if (e < 300) scale = overshootInterp(e / 300);
-                    else scale = 1 + .02 * Math.sin(((nowMs - t.spawnAnim) / 1000) * TAU + t.pulseOffset);
+                    else scale = 1 + .02 * Math.sin(((nowMs - t.spawnAnimStart) / 1000) * TAU + t.pulseOffset);
                 }
 
                 const animAlpha = t.hit ? (1 - scale) * 255 : 255;
