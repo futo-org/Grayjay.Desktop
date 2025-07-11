@@ -172,7 +172,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         return Duration.fromMillis(0);
     };
 
-    const startCastingIfApplicable = async (castConnectionState?: CastConnectionState, shouldResume?: boolean, startTime?: Duration) => {
+    const startCastingIfApplicable = async (castConnectionState?: CastConnectionState, shouldResume?: boolean, startTime?: Duration, tag?: string) => {
         if (castConnectionState === CastConnectionState.Connected) {
             if (!props.source)
                 return;
@@ -184,7 +184,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     resumePosition: getResumePosition(shouldResume, startTime),
                     duration: untrack(duration),
                     sourceSelected: props.source,
-                    speed: 1.0
+                    speed: 1.0,
+                    tag
                 });
             } catch (e) {
                 console.info("failed to start casting", e);
@@ -220,7 +221,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
         if (untrack(isCasting)) {
             console.info("start casting because changeSourceToSetSource call and casting");
-            await startCastingIfApplicable(untrack(casting.activeDevice.state), source.shouldResume, source.time);
+            await startCastingIfApplicable(untrack(casting.activeDevice.state), source.shouldResume, source.time, currentTag);
         } else {
             console.info("change source because changeSourceToSetSource call");
 
@@ -236,7 +237,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     createEffect(on(isCasting, async (isCurrentlyCasting) => {
         if (casting && isCurrentlyCasting) {
             console.info("start casting because isCasting change");
-            await startCastingIfApplicable(untrack(casting.activeDevice.state), true, props.source?.time);
+            await startCastingIfApplicable(untrack(casting.activeDevice.state), true, props.source?.time, currentTag);
             changeSource(undefined);
             stopHideControls();
         } else {
@@ -272,7 +273,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         if (isCasting() && castConnectionState === CastConnectionState.Connected) {
             casting?.actions.close();
             console.info("start casting because casting?.activeDevice.state or isCasting change");
-            await startCastingIfApplicable(castConnectionState, true, props.source?.time);
+            await startCastingIfApplicable(castConnectionState, true, props.source?.time, currentTag);
         }
     });
 
@@ -948,6 +949,12 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 console.info("VideoLoader triggered accepted", packet);
             }
         }, "videoPlayerView");
+        StateWebsocket.registerHandlerNew("VideoLoaderFinish", (packet) => {
+            console.info("VideoLoaderFinish triggered", packet);
+            if (currentTag === packet.payload.tag && Globals.WindowID === packet.payload.windowId) {
+                setLoaderGameVisible(undefined);
+            }
+        }, "videoPlayerView");
 
         createEffect(() => console.info("loaderGameVisible$ changed", loaderGameVisible$()));
     });
@@ -965,6 +972,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
         console.info("Unregistered VideoLoader handler");
         StateWebsocket.unregisterHandler("VideoLoader", "videoPlayerView");
+        StateWebsocket.unregisterHandler("VideoLoaderFinish", "videoPlayerView");
     });
 
     const toggleVolume = async () => {
