@@ -2,12 +2,14 @@
     position: relative;
     height: 100%;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .containerScroll {
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    height: 100%;
     scrollbar-width: 8px;
     scrollbar-color: #555 #333;
     scrollbar-width: thin;
