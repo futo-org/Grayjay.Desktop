@@ -54,11 +54,12 @@ Grayjay Desktop has way more features than this, but for that, check out the web
 
 Below a NixOS configuration in case you like to use Grayjay on NixOS.
 ```
-(pkgs.buildFHSUserEnv {
+(pkgs.buildFHSEnv {
   name = "fhs";
   targetPkgs = _: with pkgs; [
     libz
     icu
+    libgbm
     openssl # For updater
 
     xorg.libX11
