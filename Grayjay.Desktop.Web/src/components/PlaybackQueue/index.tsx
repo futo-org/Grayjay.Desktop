@@ -57,7 +57,7 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
                     </Show>
                 </div>
             </div>
-            <ScrollContainer scrollToTopButton={false} ref={scrollContainerRef} wrapperStyle={{ "max-height": "700px", ... props.scrollContainerStyle }}>
+            <ScrollContainer scrollToTopButton={false} ref={scrollContainerRef} scrollStyle={{ "max-height": "700px", ... props.scrollContainerStyle }}>
                     <VirtualDragDropList items={props.videos}
                         itemHeight={88}
                         onSwap={(index1, index2) => {

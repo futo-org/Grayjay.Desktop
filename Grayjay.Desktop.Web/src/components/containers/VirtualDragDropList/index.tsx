@@ -1,5 +1,5 @@
 import { Component, createSignal, onCleanup, onMount, For, JSX, createMemo, createEffect, ErrorBoundary, Signal, untrack, batch, Accessor, on, Show } from "solid-js";
-import { swap } from "../../../utility";
+import { getNestedOffsetTop, swap } from "../../../utility";
 import { Event1 } from "../../../utility/Event";
 
 export interface VirtualDragDropListProps {
@@ -50,19 +50,6 @@ const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
     }));
     
     const [visibleRange, setVisibleRange] = createSignal<VisibleRange>();
-    
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
-    };
-
     const updatePoolSize = () => {
         const boundingRect = props.outerContainerRef?.getBoundingClientRect();
         if (boundingRect) {

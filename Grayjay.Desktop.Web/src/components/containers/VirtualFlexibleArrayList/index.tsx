@@ -1,6 +1,7 @@
 import { Component, createSignal, onCleanup, onMount, JSX, createMemo, untrack, For, createEffect, Accessor, Show, batch, on } from "solid-js";
 import { Portal } from "solid-js/web";
 import { Event1 } from "../../../utility/Event";
+import { getNestedOffsetTop } from "../../../utility";
 
 export interface VirtualFlexibleArrayListProps {
     items?: any[];
@@ -41,18 +42,6 @@ const VirtualFlexibleArrayList: Component<VirtualFlexibleArrayListProps> = (prop
         }
     
         return cumulativeHeights[low] >= scrollTop ? low : cumulativeHeights.length;
-    };
-
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
     };
 
     const updateVisibleRange = () => {
