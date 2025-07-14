@@ -9,3 +9,4 @@ Categories=AudioVideo;Player;
 Icon=app.grayjay.Grayjay
 Exec=Grayjay
 Terminal=false
+StartupWMClass=cef
