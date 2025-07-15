@@ -157,6 +157,7 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     Logger.e(nameof(DeveloperController), ex.Message, ex);
                     _testPlugin = null;
+                    throw;
                 }
                 return Ok(_testPlugin?.GetPackageVariables());
             }
