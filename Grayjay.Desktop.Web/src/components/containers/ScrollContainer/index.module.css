@@ -13,6 +13,7 @@
     scrollbar-width: 8px;
     scrollbar-color: #555 #333;
     scrollbar-width: thin;
+    width: 100%;
 }
 
 .containerScroll::-webkit-scrollbar {
