@@ -15,8 +15,8 @@ export interface LoaderContainerProps {
 const LoaderContainer: Component<LoaderContainerProps> = (props) => {    
     return (
         <div class={styles.containerLoader} style={{...props.style, "background-color": ((props.background) ? props.background : "transparant")}}>
-            <Switch>
-                <Match when={props.isLoading && !props.loader}>
+            
+                <Show when={props.isLoading && !props.loader}>
                     <div class={styles.loaderWrapper}>
                         <Loader />
                         <Show when={props.loadingText}>
@@ -30,14 +30,14 @@ const LoaderContainer: Component<LoaderContainerProps> = (props) => {
                             </div>
                         </Show>
                     </div>
-                </Match>
-                <Match when={props.isLoading && props.loader}>
+                </Show>
+                <Show when={props.isLoading && props.loader}>
                     {props.loader}
-                </Match>
-                <Match when={!props.isLoading}>
+                </Show>
+                <Show when={!props.isLoading}>
                     {props.children}
-                </Match>
-            </Switch>
+                </Show>
+            
         </div>
     );
 };

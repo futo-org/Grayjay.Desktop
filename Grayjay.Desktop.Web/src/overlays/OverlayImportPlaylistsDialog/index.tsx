@@ -53,8 +53,8 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
     return (
       <OverlayCustomDialog hideHeader={true}>
         
-            <Switch>
-              <Match when={props.dialog.data$().Status == 'selection'}>
+            <div>
+              <Show when={props.dialog.data$().Status == 'selection'}>
               <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
                 <div style="text-align: center;">
                   <div class={styles.dialogTitle}>Import Playlists
@@ -97,9 +97,9 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
                       </div>
                     </div>
                   </div>
-              </Match>
+              </Show>
 
-              <Match when={props.dialog.data$().Status == 'finished'}>
+              <Show when={props.dialog.data$().Status == 'finished'}>
                 <div style="text-align: center;">
                   <div>
                     <img src={iconSuccess} style="width: 100px" />
@@ -112,8 +112,8 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
                     <Button text='Close' onClick={()=>UIOverlay.dismiss()}></Button>
                   </div>
                 </div>
-              </Match>
-            </Switch>
+              </Show>
+            </div>
       </OverlayCustomDialog>
     );
   };

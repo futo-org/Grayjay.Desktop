@@ -27,9 +27,9 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
         <div style="width: 750px" onClick={(ev)=>ev.stopPropagation()}>
           <div style="text-align: center;">
             <h2 style="text-align: center;">Import [{props.dialog.data$().storeName}]</h2>
-            <Switch>
+            <div>
 
-              <Match when={props.dialog.data$().status == 'choice'}>
+              <Show when={props.dialog.data$().status == 'choice'}>
                 <div>
                   <div style="margin: 10px;">
                     <p>
@@ -44,18 +44,18 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                     <Button text='Import' onClick={()=>props.dialog.action!('choice', 'import')} style={{"margin-left": "10px"}}></Button>
                   </div>
                 </div>
-              </Match>
+              </Show>
 
-              <Match when={props.dialog.data$().status == 'importing'}>
+              <Show when={props.dialog.data$().status == 'importing'}>
                 <div>
                   <div style="text-align: center">
                     <LoaderSmall style={{"margin-right": "auto", "margin-left": "auto"}} />
                     <p>{props.dialog?.data$()?.progress}/{props.dialog?.data$()?.total}</p>
                   </div>
                 </div>
-              </Match>
+              </Show>
 
-              <Match when={props.dialog.data$().status == 'finished'}>
+              <Show when={props.dialog.data$().status == 'finished'}>
                 <div>
                   <h2>Finished</h2>
                   <div>
@@ -65,9 +65,9 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                     <Button text='Close' onClick={()=>UIOverlay.dismiss()}></Button>
                   </div>
                 </div>
-              </Match>
+              </Show>
 
-            </Switch>
+            </div>
           </div>
         </div>
       </OverlayCustomDialog>

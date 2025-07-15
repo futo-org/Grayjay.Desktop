@@ -1,5 +1,5 @@
 
-import { Component, Match, Switch } from 'solid-js';
+import { Component, Match, Show, Switch } from 'solid-js';
 import UIOverlay from '../../state/UIOverlay';
 import OverlayCustomDialog from '../OverlayCustomDialog';
 import { CustomDialogLocal } from '../OverlayRoot';
@@ -15,8 +15,8 @@ export interface OverlaySyncStatusDialogProps {
 const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props: OverlaySyncStatusDialogProps) => {
   return (
     <OverlayCustomDialog hideHeader={true}>
-      <Switch>
-      <Match when={props.dialog.data$().Status == 'pairing'}>
+      <>
+      <Show when={props.dialog.data$().Status == 'pairing'}>
           <div style="text-align: center;">
             <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <LoaderSmall />
@@ -26,8 +26,8 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
               <Button text='Close' onClick={() => UIOverlay.dismiss()}></Button>
             </div>
           </div>
-        </Match>
-        <Match when={props.dialog.data$().Status == 'success'}>
+        </Show>
+        <Show when={props.dialog.data$().Status == 'success'}>
           <div style="text-align: center;">
             <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <img src={iconSuccess} style="width: 100px" />
@@ -37,8 +37,8 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
               <Button text='Close' onClick={() => UIOverlay.dismiss()}></Button>
             </div>
           </div>
-        </Match>
-        <Match when={props.dialog.data$().Status == 'error'}>
+        </Show>
+        <Show when={props.dialog.data$().Status == 'error'}>
           <div style="text-align: center;">
             <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: center;">
               <img src={iconError} style="width: 100px" />
@@ -48,8 +48,8 @@ const OverlaySyncStatusDialog: Component<OverlaySyncStatusDialogProps> = (props:
               <Button text='Close' onClick={() => UIOverlay.dismiss()}></Button>
             </div>
           </div>
-        </Match>
-      </Switch>
+        </Show>
+      </>
     </OverlayCustomDialog>
   );
 };

@@ -209,13 +209,13 @@ const HistoryPage: Component = () => {
                   });
                 }} />
           </div>
-          <Switch>
-            <Match when={!historyPager$()?.data?.length && initialLoadComplete && !isLoading}>
+          <div>
+            <Show when={!historyPager$()?.data?.length && initialLoadComplete && !isLoading}>
               <div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%">
                 <img src={no_videos_in_history} style="width: 307px; margin-top: 150px" />
               </div>
-            </Match>
-            <Match when={!historyPager$()?.data?.length && (!initialLoadComplete || isLoading)}>
+            </Show>
+            <Show when={!historyPager$()?.data?.length && (!initialLoadComplete || isLoading)}>
               <VirtualList 
                 items={new Array(30)}
                 outerContainerRef={scrollContainerRef}
@@ -228,8 +228,8 @@ const HistoryPage: Component = () => {
                   );
                 }
               } />
-            </Match>
-            <Match when={historyPager$()?.data?.length}>
+            </Show>
+            <Show when={historyPager$()?.data?.length}>
               <VirtualList 
                 items={historyPager$()?.data}
                 addedItems={historyPager$()?.addedFilteredItemsEvent}
@@ -311,8 +311,8 @@ const HistoryPage: Component = () => {
                   </div>);
                 }
               } />
-            </Match>
-          </Switch>
+            </Show>
+          </div>
         </div>
       </ScrollContainer>
       <Portal>
