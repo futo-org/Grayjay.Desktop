@@ -350,7 +350,7 @@ const OverlayCasting: Component = () => {
                             </div>
                         </div>
 
-                        <Switch>
+                        <div>
                             <Show when={casting?.dialogState() == CastingDialogState.DeviceList}>
                                 <DeviceList />
                             </Show>
@@ -360,7 +360,7 @@ const OverlayCasting: Component = () => {
                             <Show when={casting?.dialogState() == CastingDialogState.ActiveDevice}>
                                 <ActiveDeviceView />
                             </Show>
-                        </Switch>
+                        </div>
                     </div>
                 </div>
             </Show>
