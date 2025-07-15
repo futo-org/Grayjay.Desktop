@@ -241,8 +241,8 @@ const ChannelPage: Component = () => {
                 activeTab={activeTab$()}
                 onActiveTabChanged={(tab) => setActiveTab(tab)} />
             </StickyShrinkOnScrollContainer>
-            <Switch>
-              <Match when={activeTab$() === "Videos"}>
+            <div>
+              <Show when={activeTab$() === "Videos"}>
                 <Show when={canSearchChannel$()}>
                 <InputText icon={ic_search} placeholder={"Search channel"}
                   value={query$()}
@@ -279,8 +279,8 @@ const ChannelPage: Component = () => {
                    <ContentGrid pager={channelPager$()} outerContainerRef={scrollContainerRef} />
                   </LoaderContainer>
                 </Show>
-              </Match>
-              <Match when={activeTab$() === "About"}>
+              </Show>
+              <Show when={activeTab$() === "About"}>
                 <div class={styles.aboutTab}>
                   <div style="position: relative">
                     <img class={styles.aboutLogo} src={channel$()?.thumbnail} />
@@ -301,8 +301,8 @@ const ChannelPage: Component = () => {
                     </div>
                   </Show>
                 </div>
-              </Match>
-            </Switch>
+              </Show>
+            </div>
           </ScrollContainer>
       </LoaderContainer>
     </div>

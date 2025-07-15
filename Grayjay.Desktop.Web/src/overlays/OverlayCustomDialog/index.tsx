@@ -14,8 +14,8 @@ const OverlayCustomDialog: Component<OverlayCustomDialogProps> = (props: Overlay
 
 
     return (
-      <Switch>
-        <Match when={!props.hideDialog}>
+      <div>
+        <Show when={!props.hideDialog}>
           <div class={styles.root} onClick={(ev)=>props.onRootClick && props.onRootClick(ev)}>
             <div class={styles.dialog}>
               <Show when={!props.hideHeader}>
@@ -28,13 +28,13 @@ const OverlayCustomDialog: Component<OverlayCustomDialogProps> = (props: Overlay
               {props.children}
             </div>
           </div>
-        </Match>
-        <Match when={props.hideDialog}>
+        </Show>
+        <Show when={props.hideDialog}>
           <div class={styles.root} onClick={(ev)=>props.onRootClick && props.onRootClick(ev)}>
               {props.children}
           </div>
-        </Match>
-      </Switch>
+        </Show>
+      </div>
     );
   };
   

@@ -87,8 +87,8 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
       <OverlayCustomDialog hideHeader={true} hideDialog={props.dialog.data$().Status == "importing" || props.dialog.data$().Status == "finished"}
               onRootClick={(ev)=> props.dialog.data$().Status == "importing" && ev.stopPropagation()}>
         
-            <Switch>
-              <Match when={props.dialog.data$().Status == 'choice'}>
+            <>
+              <Show when={props.dialog.data$().Status == 'choice'}>
               <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
                 <div style="text-align: center;">
                   <div class={styles.dialogTitle}>Import</div>
@@ -122,8 +122,8 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                       </div>
                     </div>
                   </div>
-              </Match>
-              <Match when={props.dialog.data$().Status == 'enablePlugins'}>
+              </Show>
+              <Show when={props.dialog.data$().Status == 'enablePlugins'}>
                   <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
                     <div style="text-align: center;">
                       <div>
@@ -141,9 +141,9 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                       </div>
                     </div>
                   </div>
-              </Match>
+              </Show>
 
-              <Match when={props.dialog.data$().Status == 'importing'}>
+              <Show when={props.dialog.data$().Status == 'importing'}>
                 <div onClick={(ev)=>ev.stopPropagation()}>
                   <div style="text-align: center; width: 350px;">
                     <LoaderSmall style={{"margin-right": "auto", "margin-left": "auto", "width": "100px"}} />
@@ -183,23 +183,23 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                     </div>
                   </div>
                 </div>
-              </Match>
+              </Show>
 
-              <Match when={props.dialog.data$().Status == 'finished'}>
+              <Show when={props.dialog.data$().Status == 'finished'}>
                 <div>
                 <div style="text-align: center; width: 350px;" onClick={(ev)=>ev.stopPropagation()}>
-                    <Switch>
-                      <Match when={props.dialog.data$().Importing.find(y=>y.Exceptions.length == 0)}>
+                    <div>
+                      <Show when={props.dialog.data$().Importing.find(y=>y.Exceptions.length == 0)}>
                         <div>
                           <img src={iconSuccess} style="width: 150px; margin-left: auto; margin-right: auto;" />
                         </div>
-                      </Match>
-                      <Match when={props.dialog.data$().Importing.find(y=>y.Exceptions.length > 0)}>
+                      </Show>
+                      <Show when={props.dialog.data$().Importing.find(y=>y.Exceptions.length > 0)}>
                         <div>
                           <img src={iconFail} style="width: 150px; margin-left: auto; margin-right: auto;" />
                         </div>
-                      </Match>
-                    </Switch>
+                      </Show>
+                    </div>
                     <div>
                       <For each={props.dialog.data$().Importing}>{(item) =>
                         <div>
@@ -260,9 +260,9 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                     <Button text='Ok' onClick={()=>UIOverlay.dismiss()} style={{"margin-top": "10px"}}></Button>
                   </div>
                 </div>
-              </Match>
+              </Show>
 
-            </Switch>
+            </>
       </OverlayCustomDialog>
     );
   };
