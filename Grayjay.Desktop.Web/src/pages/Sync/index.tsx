@@ -109,16 +109,16 @@ const SyncPage: Component = () => {
     return (
       <ScrollContainer wrapperStyle={{
         "display": "flex",
-        "justify-content": "center",
+        "justify-content": "safe center",
         "flex-grow": 1, 
         "width": "100%",
-        "align-items": "center"
+        "align-items": "safe center"
       }} scrollStyle={{
         "display": "flex",
-        "justify-content": "center",
+        "justify-content": "safe center",
         "flex-grow": 1, 
         "width": "100%",
-        "align-items": "center"
+        "align-items": "safe center"
       }} scrollToTopButton={false}>
         <div class={styles.container}>
           <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
