@@ -242,7 +242,7 @@ const SyncPage: Component = () => {
               </ScrollContainer>
             </Show>
             <Show when={isQrVisible$()}>
-              <div style="position: absolute; width: 100%; flex: 1; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
+              <div style="position: absolute; width: 100%; height: 100%; flex: 1; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
             </Show>
           </>
         </Show>
