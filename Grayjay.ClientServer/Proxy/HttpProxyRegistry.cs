@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 
@@ -78,6 +79,31 @@ namespace Grayjay.ClientServer.Proxy
             ShouldProxy = shouldProxy;
             ProxyAddress = proxyAddress;
             ExposeLocalAsAny = exposeLocalAsAny;
+        }
+
+        public override int GetHashCode()
+        {
+            return (IsLoopback, ShouldProxy, ExposeLocalAsAny, ProxyAddress).GetHashCode();
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (!(obj is ProxySettings s))
+                return false;
+
+            if (IsLoopback != s.IsLoopback)
+                return false;
+
+            if (ShouldProxy != s.ShouldProxy)
+                return false;
+
+            if (ExposeLocalAsAny != s.ExposeLocalAsAny)
+                return false;
+
+            if (ProxyAddress != s.ProxyAddress)
+                return false;
+
+            return true;
         }
     }
 }
