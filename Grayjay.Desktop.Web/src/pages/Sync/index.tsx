@@ -112,9 +112,14 @@ const SyncPage: Component = () => {
         "justify-content": "center",
         "flex-grow": 1, 
         "width": "100%",
-        "height": "100%",
         "align-items": "center"
-      }}>
+      }} scrollStyle={{
+        "display": "flex",
+        "justify-content": "center",
+        "flex-grow": 1, 
+        "width": "100%",
+        "align-items": "center"
+      }} scrollToTopButton={false}>
         <div class={styles.container}>
           <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
             <div class={styles.headerText}>
@@ -191,7 +196,7 @@ const SyncPage: Component = () => {
         }>
           <>
             <Show when={(devices$()?.length ?? 0) > 0} fallback={
-              <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;">
+              <div style="width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; overflow: hidden;">
                 <ButtonFlex text={"Add device"}
                   icon={iconAdd}
                   onClick={() => {
@@ -232,12 +237,12 @@ const SyncPage: Component = () => {
               <div style="margin-left: 24px; margin-top: 24px;">
                 My devices
               </div>
-              <ScrollContainer wrapperStyle={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column", "justify-content": "flex-start", "align-items": "center"}}>
+              <ScrollContainer scrollStyle={{"width": "100%"}} wrapperStyle={{"max-height": "300px", "gap": "8px", "margin-top": "8px", "display": "flex", "flex-direction": "column", "justify-content": "flex-start", "align-items": "center"}}>
                 <For each={devices$()}>{(item) => renderDevice(item.publicKey, item.displayName ?? item.publicKey, item.metadata, item.linkType)}</For>
               </ScrollContainer>
             </Show>
             <Show when={isQrVisible$()}>
-              <div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
+              <div style="position: absolute; width: 100%; flex: 1; top: 0px; left: 0px; background-color: rgba(10,10,10,.95)" onClick={() => setIsQrVisible(false)}>{renderQrCodeOverlay()}</div>
             </Show>
           </>
         </Show>
