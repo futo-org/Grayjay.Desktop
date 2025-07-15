@@ -50,6 +50,7 @@ public class StateCasting : IDisposable
     public event Action<double>? SpeedChanged;
     public event Action<CastConnectionState>? StateChanged;
     private readonly Debouncer _broadcastDevicesDebouncer;
+    private CancellationTokenSource? _updateTimeCts;
 
     private List<CastingDeviceInfo> _lastUpdate = new List<CastingDeviceInfo>();
 
@@ -193,6 +194,28 @@ public class StateCasting : IDisposable
         _serviceDiscoverer = null;
     }
 
+    private async Task UpdateTimeLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            CastingDevice? device;
+            lock (_castingDeviceLock)
+            {
+                device = _activeDevice;
+                if (device == null)
+                    return;
+            }
+
+            await Task.Delay(1000, ct);
+
+            if (!device.PlaybackState.IsPlaying)
+                continue;
+
+            var expectedCurrentTime = device.PlaybackState.ExpectedCurrentTime;
+            device.PlaybackState.SetTime(expectedCurrentTime);
+        }
+    }
+
     public void AddPinnedDevice(CastingDeviceInfo castingDeviceInfo)
     {
         _pinnedDevices.Save(castingDeviceInfo);
@@ -245,6 +268,23 @@ public class StateCasting : IDisposable
         });
     }
 
+    private void StartTimeLoop()
+    {
+        StopTimeLoop();
+        _updateTimeCts = new CancellationTokenSource();
+        _ = Task.Run(async () => await UpdateTimeLoop(_updateTimeCts.Token));
+    }
+
+    private void StopTimeLoop()
+    {
+        if (_updateTimeCts != null)
+        {
+            _updateTimeCts.Cancel();
+            _updateTimeCts.Dispose();
+            _updateTimeCts = null;
+        }
+    }
+
     public void Disconnect()
     {
         lock (_castingDeviceLock)
@@ -253,6 +293,7 @@ public class StateCasting : IDisposable
             if (oldActiveDevice != null)
                 UnbindEvents(oldActiveDevice);
 
+            StopTimeLoop();
             _activeDevice = null;
             oldActiveDevice?.Stop();
         }
@@ -295,6 +336,15 @@ public class StateCasting : IDisposable
     private async void HandleIsPlayingChanged(bool isPlaying)
     {
         IsPlayingChanged?.Invoke(isPlaying);
+
+        var activeDevice = _activeDevice;
+        if (activeDevice != null && (activeDevice.DeviceInfo.Type == CastProtocolType.Airplay || activeDevice.DeviceInfo.Type == CastProtocolType.Chromecast))
+        {
+            if (isPlaying)
+                StartTimeLoop();
+            else
+                StopTimeLoop();
+        }
 
         try
         {
