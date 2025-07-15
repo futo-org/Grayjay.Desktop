@@ -421,28 +421,24 @@ namespace Grayjay.Desktop.Tests
 
         private static void TestDatabase(Action<ManagedDBStore<TestIndex, TestClass>> builder, Action<ManagedDBStore<TestIndex, TestClass>> action)
         {
-            using (var connection = new DatabaseConnection())
-            {
-                connection.EnsureTable<TestIndex>("test");
-                var store = new ManagedDBStore<TestIndex, TestClass>(connection, "test");
-                builder(store);
-                store.Load();
-                store.DeleteAll();
-                action(store);
-                store.Dispose();
-            }
+            var connection = new DatabaseConnection();
+            connection.EnsureTable<TestIndex>("test");
+            var store = new ManagedDBStore<TestIndex, TestClass>(connection, "test");
+            builder(store);
+            store.Load();
+            store.DeleteAll();
+            action(store);
+            store.Dispose();
         }
         private static void TestDatabase(Action<ManagedDBStore<TestIndex, TestClass>> action)
         {
-            using (var connection = new DatabaseConnection())
-            {
-                connection.EnsureTable<TestIndex>("test");
-                var store = new ManagedDBStore<TestIndex, TestClass>(connection, "test");
-                store.Load();
-                store.DeleteAll();
-                action(store);
-                store.Dispose();
-            }
+            var connection = new DatabaseConnection();
+            connection.EnsureTable<TestIndex>("test");
+            var store = new ManagedDBStore<TestIndex, TestClass>(connection, "test");
+            store.Load();
+            store.DeleteAll();
+            action(store);
+            store.Dispose();
         }
     }
 
