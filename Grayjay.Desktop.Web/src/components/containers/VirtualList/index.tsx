@@ -1,5 +1,6 @@
 import { Component, createSignal, onCleanup, onMount, For, JSX, createMemo, createEffect, ErrorBoundary, Accessor, Show, batch, on, untrack } from "solid-js";
 import { Event1 } from "../../../utility/Event";
+import { getNestedOffsetTop } from "../../../utility";
 
 export interface VirtualListProps {
     itemHeight: number;
@@ -43,19 +44,6 @@ const VirtualList: Component<VirtualListProps> = (props) => {
     }));
 
     const [visibleRange, setVisibleRange] = createSignal<VisibleRange>();
-
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
-    };
-
     const updatePoolSize = () => {
         const boundingRect = props.outerContainerRef?.getBoundingClientRect();
         if (boundingRect) {

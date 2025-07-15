@@ -111,7 +111,7 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> MediaLoad(string streamType, double resumePosition, double duration, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, double? speed = null, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> MediaLoad(string streamType, double resumePosition, double duration, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, double? speed = null, CancellationToken cancellationToken = default, string? tag = null)
         {
             var activeDevice = StateCasting.Instance.ActiveDevice;
             if (activeDevice == null)
@@ -120,8 +120,7 @@ namespace Grayjay.ClientServer.Controllers
             //TODO: Uncomment
             //var proxyInnerSources = activeDevice is FCastCastingDevice ? false : true;
             var shouldProxy = false;
-
-            var sourceDescriptor = DetailsController.GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(false, shouldProxy));
+            var sourceDescriptor = await DetailsController.GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(false, shouldProxy, proxyAddress: activeDevice.LocalEndPoint?.Address, exposeLocalAsAny: true), tag, forceReady: true);
             if (sourceDescriptor.Url.StartsWith("/"))
                 sourceDescriptor.Url = $"http://{activeDevice.LocalEndPoint?.Address.ToUrlAddress()}:{GrayjayCastingServer.Instance.BaseUri!.Port}" + sourceDescriptor.Url;
 

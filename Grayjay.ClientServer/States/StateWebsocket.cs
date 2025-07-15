@@ -2,6 +2,8 @@ using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync.Models;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
+using System.Text.Json;
 
 namespace Grayjay.ClientServer.States;
 
@@ -56,6 +58,48 @@ public class StateWebsocket
             await instance.WebSocket.Broadcast(null, "EnabledClientsChanged");
         });
     }
+    public static void VideoLoader(string text, int duration, string windowId, string? tag)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(new
+            {
+                text = text,
+                duration = duration,
+                windowId = windowId,
+                tag = tag
+            }, "VideoLoader");
+        });
+    }
+    public static void VideoLoaderFinish(string windowId, string? tag)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(new
+            {
+                windowId = windowId,
+                tag = tag
+            }, "VideoLoaderFinish");
+        });
+    }
+
+    //TODO: Live Events needs to be window specific
+    public static void LiveEvents(List<PlatformLiveEvent> liveEvents)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(liveEvents, "LiveEvents");
+        });
+    }
+
+    public static void LiveEventsClear()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "LiveEventsClear");
+        });
+    }
+
     public static void SyncDevicesChanged()
     {
         Task.Run(async () =>

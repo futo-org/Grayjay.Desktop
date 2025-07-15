@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Database.Indexes;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
+using Grayjay.ClientServer.LiveChat;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.Pagers;
@@ -16,12 +17,14 @@ using Grayjay.Engine.Exceptions;
 using Grayjay.Engine.Models.Comments;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Models.Subtitles;
 using Grayjay.Engine.Models.Video;
 using Grayjay.Engine.Models.Video.Additions;
 using Grayjay.Engine.Models.Video.Sources;
 using Grayjay.Engine.Pagers;
+using Grayjay.Engine.V8;
 using Grayjay.Engine.Web;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -39,7 +42,7 @@ namespace Grayjay.ClientServer.Controllers
     [Route("[controller]/[action]")]
     public class DetailsController : ControllerBase
     {
-        public class DetailsState
+        public class DetailsState : IDisposable
         {
             public PlatformPostDetails PostLoaded { get; set; }
             public PlatformVideoDetails VideoLoaded { get; set; }
@@ -55,8 +58,11 @@ namespace Grayjay.ClientServer.Controllers
 
             public long _lastWatchPosition = 0;
             public DateTime _lastWatchPositionChange = DateTime.MinValue;
-
-
+            public LiveChatManager? LiveChatManager { get; set; }
+            private object _cachedDashLockObject = new object();
+            public int CachedDashVideoIndex = -1;
+            public int CachedDashAudioIndex = -1;
+            public Task<string>? CachedDashTask = null;
 
             public RefPager<PlatformComment> CommentPager { get; set; }
             public ConcurrentDictionary<string, RefPager<PlatformComment>> RepliesPagers { get; set; } = new ConcurrentDictionary<string, RefPager<PlatformComment>>();
@@ -64,6 +70,41 @@ namespace Grayjay.ClientServer.Controllers
 
             public IPager<PlatformContent> RecommendationPager { get; set; }
 
+            public void ClearCachedDash()
+            {
+                lock (_cachedDashLockObject)
+                {
+                    CachedDashAudioIndex = -1;
+                    CachedDashVideoIndex = 1;
+                    CachedDashTask = null;
+                }
+            }
+
+            public Task<string>? GetCachedDashTask(int videoIndex, int audioIndex)
+            {
+                lock (_cachedDashLockObject)
+                {
+                    if (CachedDashVideoIndex == videoIndex && CachedDashAudioIndex == audioIndex)
+                        return CachedDashTask;
+                    return null;
+                }
+            }
+
+            public void SetCachedDash(int videoIndex, int audioIndex, Task<string> dash)
+            {
+                lock (_cachedDashLockObject)
+                {
+                    CachedDashVideoIndex = videoIndex;
+                    CachedDashAudioIndex = audioIndex;
+                    CachedDashTask = dash;
+                }
+            }
+
+            public void Dispose()
+            {
+                LiveChatManager?.Stop();
+                LiveChatManager = null;
+            }
         }
 
         static ManagedHttpClient _qualityClient = new ManagedHttpClient();
@@ -72,6 +113,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             var state = this.State().DetailsState;
             video = video ?? videoLocal;
+            state.ClearCachedDash();
             state.VideoLoaded = video;
             state.VideoLocal = videoLocal;
             state.VideoSubscription = StateSubscriptions.GetSubscription(video?.Author?.Url ?? videoLocal?.Author?.Url);
@@ -88,6 +130,43 @@ namespace Grayjay.ClientServer.Controllers
             }
             state._lastWatchPositionChange = DateTime.MinValue;
             state._lastWatchPosition = 0;
+
+            state.LiveChatManager?.Stop();
+            state.LiveChatManager = null;
+            StateWebsocket.LiveEventsClear();
+            if (video != null && video.IsLive)
+            {
+                try
+                {
+                    var livePager = StatePlatform.GetLiveEvents(video.Url);
+                    if (livePager != null)
+                    {
+                        state.LiveChatManager = new LiveChatManager(livePager);
+                        state.LiveChatManager?.Follow(this, (liveEvents) =>
+                        {
+                            if (liveEvents.Count > 0)
+                                StateWebsocket.LiveEvents(liveEvents);
+                        });
+                        state.LiveChatManager?.Start();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
+                    state.LiveChatManager?.Stop();
+                    state.LiveChatManager = null;
+                    StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
+                    {
+                        new LiveEventComment()
+                        {
+                            ColorName = "#FF0000",
+                            Message = "Failed to load live stream because of an error: " + e.Message,
+                            Name = "SYSTEM"
+                        }
+                    });
+                }
+            }
+
         }
 
         private void ChangePost(PlatformPostDetails post)
@@ -543,17 +622,48 @@ namespace Grayjay.ClientServer.Controllers
                     ((audio != null) ? EnsureLocal(state).AudioSources.IndexOf((LocalAudioSource)audio) : -1)
             );
         [HttpGet]
-        public IActionResult SourceDash(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, bool isLoopback = true)
-            => Content(GenerateSourceDash(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(isLoopback)), "application/dash+xml");
-        public static string GenerateSourceDash(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null)
+        public async Task<IActionResult> SourceDash(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, bool isLoopback = true, string? tag = null)
         {
-            (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
+            var state = this.State();
+            try
+            {
+                (var taskGenerateSourceDash, var promiseMetadata) = GenerateSourceDash(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(isLoopback));
+                if(!taskGenerateSourceDash.IsCompleted && promiseMetadata != null)
+                    StateWebsocket.VideoLoader("", promiseMetadata.EstimateDuration, state.WindowID, tag);
+                var dash = await taskGenerateSourceDash;
+                StateWebsocket.VideoLoaderFinish(state.WindowID, tag);
+                return Content(dash, "application/dash+xml");
+            }
+            catch (ScriptReloadRequiredException reloadEx)
+            {
+                await StatePlatform.HandleReloadRequired(reloadEx);
+                this.VideoLoad(state.DetailsState.VideoLoaded.Url);
+                return await SourceDash(videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, isLoopback);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+        public static (Task<string>, V8PromiseMetadata?) GenerateSourceDash(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null)
+        {
+            var cachedDashTask = state.DetailsState.GetCachedDashTask(videoIndex, audioIndex);
+            if (cachedDashTask != null)
+            {
+                Logger.w<DetailsController>("Using cached DASH.");
+                return (cachedDashTask, null);
+            }
 
+            (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
             if (sourceVideo is DashManifestRawSource videoRawSource && sourceAudio is DashManifestRawAudioSource audioRawSource)
             {
                 if(sourceSubtitle != null)
                     sourceSubtitle = SubtitleToProxied(state, sourceSubtitle, subtitleIsLocal, subtitleIndex, proxySettings);
-                return GenerateSourceDashRaw(state, videoRawSource, audioRawSource, sourceSubtitle, proxySettings?.IsLoopback ?? true);
+
+                V8PromiseMetadata? metadata = null;
+                var task = GenerateSourceDashRaw(state, videoRawSource, audioRawSource, sourceSubtitle, proxySettings, out metadata);
+                state.DetailsState.SetCachedDash(videoIndex, audioIndex, task);
+                return (task, metadata);
             }
 
 
@@ -663,7 +773,10 @@ namespace Grayjay.ClientServer.Controllers
             else
                 subtitleUrl = null;
 
-            return DashBuilder.GenerateOnDemandDash(sourceVideo, videoUrl, sourceAudio, audioUrl, sourceSubtitle, subtitleUrl);
+            var dash = DashBuilder.GenerateOnDemandDash(sourceVideo, videoUrl, sourceAudio, audioUrl, sourceSubtitle, subtitleUrl);
+            var dashTask = Task.FromResult(dash);
+            state.DetailsState.SetCachedDash(videoIndex, audioIndex, dashTask);
+            return (dashTask, null);
         }
 
         private static ISubtitleSource SubtitleToProxied(WindowState state, ISubtitleSource sourceSubtitle, bool subtitleIsLocal, int subtitleIndex, ProxySettings? proxySettings)
@@ -727,55 +840,60 @@ namespace Grayjay.ClientServer.Controllers
             };
         }
 
-        public static string GenerateSourceDashRaw(WindowState state, DashManifestRawSource videoSource, DashManifestRawAudioSource audioSource, ISubtitleSource subtitleSource, bool loopback)
+        public static Task<string> GenerateSourceDashRaw(WindowState state, DashManifestRawSource videoSource, DashManifestRawAudioSource audioSource, ISubtitleSource subtitleSource, ProxySettings? proxySettings, out V8PromiseMetadata promiseMeta)
         {
             var merging = new DashManifestMergingRawSource(videoSource, audioSource, subtitleSource);
-            var dash = merging.Generate();
 
-            var oldVReqEx = state.DetailsState._videoRequestExecutor;
-            var oldAReqEx = state.DetailsState._audioRequestExecutor;
-            oldVReqEx?.Cleanup();
-            state.DetailsState._videoRequestExecutor = null;
-            oldAReqEx?.Cleanup();
-            state.DetailsState._audioRequestExecutor = null;
+            var dashTask = merging.GenerateAsync(out promiseMeta);
 
-            string videoUrl = null;
-            string audioUrl = null;
-
-            if (merging.Video.HasRequestExecutor)
-                videoUrl = getRequestExecutorProxy("https://grayjay.app/internal/video", merging.Video.GetRequestExecutor(), loopback);
-            else
-                throw new NotImplementedException();
-            if (merging.Audio.HasRequestExecutor)
-                audioUrl = getRequestExecutorProxy("https://grayjay.app/internal/audio", merging.Audio.GetRequestExecutor(), loopback);
-            else
-                throw new NotImplementedException();
-
-
-            foreach(Match representation in DashBuilder.REGEX_REPRESENTATION.Matches(dash))
+            return dashTask.ContinueWith((t) =>
             {
-                var mediaType = representation.Groups[1].Value ?? throw new InvalidDataException("Media type not found for dash representation");
-                dash = DashBuilder.REGEX_MEDIA_INITIALIZATION.Replace(dash, new MatchEvaluator((m) =>
+                var dash = dashTask.Result;
+                var oldVReqEx = state.DetailsState._videoRequestExecutor;
+                var oldAReqEx = state.DetailsState._audioRequestExecutor;
+                oldVReqEx?.Cleanup();
+                state.DetailsState._videoRequestExecutor = null;
+                oldAReqEx?.Cleanup();
+                state.DetailsState._audioRequestExecutor = null;
+
+                string videoUrl = null;
+                string audioUrl = null;
+
+                if (merging.Video.HasRequestExecutor)
+                    videoUrl = getRequestExecutorProxy("https://grayjay.app/internal/video", merging.Video.GetRequestExecutor(), proxySettings);
+                else
+                    throw new NotImplementedException();
+                if (merging.Audio.HasRequestExecutor)
+                    audioUrl = getRequestExecutorProxy("https://grayjay.app/internal/audio", merging.Audio.GetRequestExecutor(), proxySettings);
+                else
+                    throw new NotImplementedException();
+
+
+                foreach (Match representation in DashBuilder.REGEX_REPRESENTATION.Matches(dash))
                 {
-                    if (m.Index < representation.Index || (m.Index + m.Length) > (representation.Index + representation.Length))
-                        return m.Value;
+                    var mediaType = representation.Groups[1].Value ?? throw new InvalidDataException("Media type not found for dash representation");
+                    dash = DashBuilder.REGEX_MEDIA_INITIALIZATION.Replace(dash, new MatchEvaluator((m) =>
+                    {
+                        if (m.Index < representation.Index || (m.Index + m.Length) > (representation.Index + representation.Length))
+                            return m.Value;
 
-                    if (mediaType.StartsWith("video/"))
-                        return $"{m.Groups[1].Value}=\"{videoUrl}?url={HttpUtility.UrlEncode(m.Groups[2].Value).Replace("%24Number%24", "$Number$")}&amp;mediaType={HttpUtility.UrlEncode(mediaType)}\"";
-                    else if (mediaType.StartsWith("audio/"))
-                        return $"{m.Groups[1].Value}=\"{audioUrl}?url={HttpUtility.UrlEncode(m.Groups[2].Value).Replace("%24Number%24", "$Number$")}&amp;mediaType={HttpUtility.UrlEncode(mediaType)}\"";
-                    else
-                        throw new InvalidDataException("Expected video or audio? got: " + mediaType);
-                }));
-            }
+                        if (mediaType.StartsWith("video/"))
+                            return $"{m.Groups[1].Value}=\"{videoUrl}?url={HttpUtility.UrlEncode(m.Groups[2].Value).Replace("%24Number%24", "$Number$")}&amp;mediaType={HttpUtility.UrlEncode(mediaType)}\"";
+                        else if (mediaType.StartsWith("audio/"))
+                            return $"{m.Groups[1].Value}=\"{audioUrl}?url={HttpUtility.UrlEncode(m.Groups[2].Value).Replace("%24Number%24", "$Number$")}&amp;mediaType={HttpUtility.UrlEncode(mediaType)}\"";
+                        else
+                            throw new InvalidDataException("Expected video or audio? got: " + mediaType);
+                    }));
+                }
 
-            return dash;
+                return dash;
+            });
         }
 
-        private static string getRequestExecutorProxy(string registerUrl, RequestExecutor reqExecutor, bool loopback)
+        private static string getRequestExecutorProxy(string registerUrl, RequestExecutor reqExecutor, ProxySettings? proxySettings)
         {
             if (reqExecutor != null && !reqExecutor.DidCleanup)
-                return HttpProxy.Get(loopback).Add(new HttpProxyRegistryEntry()
+                return HttpProxy.Get(proxySettings?.IsLoopback ?? true).Add(new HttpProxyRegistryEntry()
                 {
                     Url = "https://internal.grayjay.app/",
                     IsRelative = true,
@@ -808,7 +926,7 @@ namespace Grayjay.ClientServer.Controllers
                     {
                         InjectPermissiveCORS = true
                     }
-                });
+                }, proxySettings?.ProxyAddress);
             else
                 throw new NotImplementedException();
         }
@@ -850,7 +968,7 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public IActionResult SourceAuto()
+        public async Task<IActionResult> SourceAuto()
         {
             var state = this.State().DetailsState;
             if(state.VideoLocal != null)
@@ -859,7 +977,7 @@ namespace Grayjay.ClientServer.Controllers
                 var bestVideoSourceIndex = VideoHelper.SelectBestVideoSourceIndex(local.VideoSources.Cast<IVideoSource>().ToList(), 9999*9999, new List<string>() { "video/mp4" });
                 var bestAudioSourceIndex = VideoHelper.SelectBestAudioSourceIndex(local.AudioSources.Cast<IAudioSource>().ToList(), new List<string>() { "audio/mp4" }, GrayjaySettings.Instance.Playback.GetPrimaryLanguage(), 9999 * 9999);
                 var bestSubtitleSourceIndex = local.SubtitleSources.Count > 0 ? 0 : -1;
-                return SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, bestSubtitleSourceIndex, true, true, true);
+                return await SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, bestSubtitleSourceIndex, true, true, true);
             }
             else
             {
@@ -878,7 +996,7 @@ namespace Grayjay.ClientServer.Controllers
                     });
 
                 if (bestVideoSourceIndex == -1 && bestAudioSourceIndex == -1 && video.Live != null)
-                    return SourceProxy(-999, -1, -1, false, false, false);
+                    return await SourceProxy(-999, -1, -1, false, false, false);
 
                 if (bestVideoSourceIndex >= 0 && bestAudioSourceIndex >= 0)
                 {
@@ -886,22 +1004,22 @@ namespace Grayjay.ClientServer.Controllers
 
                     if(videoSources is DashManifestRawSource && audioSource is DashManifestRawAudioSource)
                     {
-                        return SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, -1, false, false, false);
+                        return await SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, -1, false, false, false);
                     }
                     else if (!(videoSources is IStreamMetaDataSource) || !(audioSource is IStreamMetaDataSource))
                         throw DialogException.FromException("Cannot play this source",
                             new Exception("Unmuxed sources require IStreamMetaDataSource info to translate to dash"));
                 }
-                return SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, -1, false, false, false);
+                return await SourceProxy(bestVideoSourceIndex, bestAudioSourceIndex, -1, false, false, false);
             }
         }
 
         [HttpGet]
-        public IActionResult SourceProxy(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false)
+        public async Task<IActionResult> SourceProxy(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, string? tag = null)
         {
-            return Ok(GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, null));
+            return Ok(await GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, null, tag));
         }
-        public static SourceDescriptor GenerateSourceProxy(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null)
+        public static async Task<SourceDescriptor> GenerateSourceProxy(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null, string? tag = null, bool forceReady = false)
         {
             var video = EnsureVideo(state);
 
@@ -932,7 +1050,18 @@ namespace Grayjay.ClientServer.Controllers
                     if (!(sourceVideo is IStreamMetaDataSource) || !(sourceAudio is IStreamMetaDataSource))
                         throw DialogException.FromException("Source doesn't provide enough playback info for unmuxed playback (IStreamMetaData)",
                             new Exception("Unmuxed sources require IStreamMetaDataSource info to translate to dash"));
-                return new SourceDescriptor($"/details/SourceDash?videoIndex={videoIndex}&audioIndex={audioIndex}&subtitleIndex={subtitleIndex}&videoIsLocal={videoIsLocal}&audioIsLocal={audioIsLocal}&subtitleIsLocal={subtitleIsLocal}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}", "application/dash+xml", videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
+
+                if (forceReady)
+                {
+                    //Preload the DASH
+                    (var taskGenerateSourceDash, var promiseMetadata) = GenerateSourceDash(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, proxySettings);
+                    if (!taskGenerateSourceDash.IsCompleted && promiseMetadata != null)
+                        StateWebsocket.VideoLoader("", promiseMetadata.EstimateDuration, state.WindowID, tag);
+                    await taskGenerateSourceDash;
+                    StateWebsocket.VideoLoaderFinish(state.WindowID, tag);
+                }
+
+                return new SourceDescriptor($"/details/SourceDash?videoIndex={videoIndex}&audioIndex={audioIndex}&subtitleIndex={subtitleIndex}&videoIsLocal={videoIsLocal}&audioIsLocal={audioIsLocal}&subtitleIsLocal={subtitleIsLocal}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}&tag={tag}", "application/dash+xml", videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
             }
             else if (sourceVideo != null)
             {

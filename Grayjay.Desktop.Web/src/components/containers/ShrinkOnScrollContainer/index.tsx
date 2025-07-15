@@ -1,5 +1,6 @@
 import { Component, createSignal, onCleanup, onMount, JSX, untrack, createEffect } from "solid-js";
 import styles from './index.module.css';
+import { getNestedOffsetTop } from "../../../utility";
 
 export interface ShrinkOnScrollContainerProps {
     outerContainerRef: HTMLDivElement | undefined;
@@ -11,19 +12,6 @@ export interface ShrinkOnScrollContainerProps {
 const ShrinkOnScrollContainer: Component<ShrinkOnScrollContainerProps> = (props) => {
     let containerRef: HTMLDivElement | undefined;
     const [height, setHeight] = createSignal<number>(props.maximumHeight);
-
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
-    };
-
     const handleScroll = () => {
         if (!props.outerContainerRef || !containerRef) 
             return;

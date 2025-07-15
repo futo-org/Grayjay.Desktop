@@ -184,7 +184,7 @@ const SearchPage: Component = () => {
                   <div style="flex-grow: 1"></div>
                   <IconButton icon={iconClose} height='24px' width='24px' style={{ "margin-left": "24px" }} onClick={() => setFiltersDialogVisible(false)} />
                 </div>
-                <ScrollContainer ref={filtersScrollContainerRef} style={{ "width": "100%" }} scrollToTopButton={false}>
+                <ScrollContainer ref={filtersScrollContainerRef} wrapperStyle={{ "width": "100%" }} scrollToTopButton={false}>
                   <div class={styles.filterHeader}>Select sources</div>
                   <ToggleItemBigButtonGroupMulti items={sourceFilters$()} defaultSelectedValues={enabledSources$()} onValueChanged={(items) => {
                     setEnabledSources(items);

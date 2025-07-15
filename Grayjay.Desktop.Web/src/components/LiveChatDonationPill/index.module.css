@@ -1,0 +1,68 @@
+/* Base container -------------------------------------------------- */
+.root{
+  position:relative;
+  width:100%;
+  height:100%;
+}
+
+/* Iframe ----------------------------------------------------------- */
+.iframe{
+  border:none;
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+/* Deterministic progress bar -------------------------------------- */
+.detBar{
+  position:absolute;
+  left:0;
+  bottom:0;
+  height:4px;
+  background:#2D63ED;
+  box-shadow:0 0 6px rgba(45,99,237,.8);
+  transition:width .1s linear;
+}
+
+/* Spinner container ------------------------------------------------ */
+.spinBox{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:72px;
+  height:72px;
+  pointer-events:none;
+}
+
+/* Shared arc geometry --------------------------------------------- */
+/* --- keyframes: fixed --- */
+@keyframes lgRot {
+  to { transform: rotate(360deg); }
+}
+
+.spinner{
+  width:100%;
+  height:100%;
+  animation:lgRot 1.4s linear infinite;
+}
+
+.spinner circle{
+  fill:none;
+  stroke-linecap:round;
+  stroke-width:12;
+  /* (2πr) * 270° / 360°  =>  2π*44*0.75 ≈ 212.054 */
+  stroke-dasharray:212.054;
+  stroke-dashoffset:0;
+}
+
+/* Outer blurred halo ---------------------------------------------- */
+.glowArc{
+  stroke:#2D63ED;
+  filter:blur(8px);
+}
+
+/* Inner gradient sweep -------------------------------------------- */
+.coreArc{
+  stroke:url(#lgSweep);
+}

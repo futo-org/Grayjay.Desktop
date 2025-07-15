@@ -17,6 +17,7 @@ using Grayjay.Engine.Models.Channel;
 using Grayjay.Engine.Models.Comments;
 using Grayjay.Engine.Models.Detail;
 using Grayjay.Engine.Models.Feed;
+using Grayjay.Engine.Models.Live;
 using Grayjay.Engine.Models.Playback;
 using Grayjay.Engine.Pagers;
 using System.Collections.Concurrent;
@@ -225,6 +226,12 @@ namespace Grayjay.Desktop.POC.Port.States
             => GetContentClient(url)
                 .FromPool(_mainClientPool)
                 .GetComments(url);
+
+        public static IPager<PlatformLiveEvent> GetLiveEvents(string url)
+            => GetContentClient(url)
+                .FromPool(_mainClientPool)
+                .GetLiveEvents(url);
+
 
         public static IPager<PlatformComment> GetComments(PlatformVideoDetails video)
         {
@@ -734,8 +741,8 @@ namespace Grayjay.Desktop.POC.Port.States
                 if (IsEnabled(id))
                 {
                     var clientsOriginal = GetEnabledClients();
-                    await SelectClients(GetEnabledClients().Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
-                    await SelectClients(clientsOriginal.Select(x => x.Config.ID).ToArray());
+                    await SelectClients(clientsOriginal.Select(x => x.ID).Where(x => x != id).Distinct().ToArray());
+                    await SelectClients(clientsOriginal.Select(x => x.ID).Distinct().ToArray());
                 }
             }
         }
@@ -762,6 +769,36 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             _enabledClientsPersistent.Save(_enabledClientsPersistent.GetCopy().OrderBy(x => Array.IndexOf(ids, x)).ToArray());
         }
+
+        public static async Task ReEnableClient(string id, Action afterReload = null) => await ReEnableClientWithData(id, null, afterReload);
+        public static async Task ReEnableClientWithData(string id, string data, Action afterReload = null)
+        {
+            var enabledBefore = GetEnabledClients().Select(x => x.ID).ToArray();
+            if(data != null)
+            {
+                var client = GetClient(id);
+                if (client != null)
+                    client.SetReloadData(data);
+            }
+            await SelectClients(enabledBefore.Where(x => x != id).ToArray());
+            await SelectClients(enabledBefore);
+            if (afterReload != null)
+                afterReload();
+        }
+
+        public static async Task HandleReloadRequired(ScriptReloadRequiredException reloadRequiredException, Action afterReload = null)
+        {
+            var id = reloadRequiredException.Config.ID;
+            StateUI.Toast($"Reloading [{reloadRequiredException.Config.Name}] by plugin request");
+
+            if (!string.IsNullOrEmpty(reloadRequiredException.ReloadData))
+                await ReEnableClientWithData(id, reloadRequiredException.ReloadData, afterReload);
+            else
+                await ReEnableClient(id, afterReload);
+            if (afterReload != null)
+                afterReload();
+        }
+
         public static Task SelectClients(Action<string, Exception> onEx, params string[] ids)
         {
             TaskCompletionSource taskResult = new TaskCompletionSource();

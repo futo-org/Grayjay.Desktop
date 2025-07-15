@@ -4,6 +4,7 @@ using Grayjay.ClientServer.Models.History;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Models;
+using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
 using System;
@@ -78,7 +79,14 @@ namespace Grayjay.ClientServer.States
                     index.Position = position;
                     historyVideo.Position = position;
                     historyVideo.Date = (date != null) ? date.Value : DateTime.Now;
-                    _history.Update(index.ID, historyVideo);
+                    try
+                    {
+                        _history.Update(index.ID, historyVideo);
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.e(nameof(StateHistory), $"Failed to update history for video [{historyVideo.Video.Name}]: {ex.Message}", ex);
+                    }
                     OnHistoricVideoChanged?.Invoke(video, position);
                 }
                 return positionBefore;

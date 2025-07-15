@@ -1,5 +1,6 @@
 import { Component, createSignal, onCleanup, onMount, For, JSX, createMemo, createEffect, ErrorBoundary, Accessor, Show, batch, on, untrack } from "solid-js";
 import { Event0, Event1 } from "../../../utility/Event";
+import { getNestedOffsetTop } from "../../../utility";
 
 export interface VirtualGridProps {
     itemHeight?: number;
@@ -42,19 +43,7 @@ const VirtualGrid: Component<VirtualGridProps> = (props) => {
         itemHeight: props.itemHeight ?? props.itemWidth,
         truncated: false
     });
-
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
-    };
-
+    
     const calculateVisibleRange = () => {
         if (!props.outerContainerRef || !containerRef) return;
         

@@ -3,11 +3,12 @@ using Grayjay.ClientServer.Store;
 using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Feed;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 
 namespace Grayjay.ClientServer.States;
 
 
-public class WindowState
+public class WindowState : IDisposable
 {
     public bool Ready { get; set; }
     public string WindowID { get; set; }
@@ -26,7 +27,10 @@ public class WindowState
         WindowID = id;
     }
 
-
+    public void Dispose()
+    {
+        DetailsState.Dispose();
+    }
 }
 
 public static class StateWindow
@@ -118,5 +122,18 @@ public static class StateWindow
     public static WindowState State(this ControllerBase controller)
     {
         return GetState(controller.HttpContext);
+    }
+
+    public static void Shutdown()
+    {
+        List<WindowState> toDispose;
+        lock (_states)
+        {
+            toDispose = _states.Values.ToList();
+            _states.Clear();
+        }
+
+        foreach (var s in toDispose)
+            s.Dispose();
     }
 }

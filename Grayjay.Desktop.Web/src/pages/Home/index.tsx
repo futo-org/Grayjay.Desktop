@@ -14,6 +14,7 @@ import iconHome from "../../assets/icons/icon_nav_home.svg"
 import iconSources from "../../assets/icons/ic_circles.svg"
 import { useNavigate } from '@solidjs/router';
 import EmptyContentView from '../../components/EmptyContentView';
+import LiveChatWindow from '../../components/LiveChatWindow';
 
 const HomePage: Component = () => {
   const homePager = StateGlobal.home$;

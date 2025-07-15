@@ -1,0 +1,84 @@
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    pointer-events: auto;
+    z-index: 10;
+    padding: 6px;
+}
+
+.overlay {
+    pointer-events: auto;
+    width: 100%;
+    max-width: none;
+    padding: 16px;
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    background-color: #2A2A2A;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: fadeIn 200ms ease-out forwards;
+    z-index: 11;
+    border-radius: 6px;
+}
+
+.raidHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.raidMessage {
+    color: #737070;
+    font-size: 14px;
+    text-align: center;
+}
+
+.raidTarget {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.raidImage {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.raidName {
+    font-size: 15px;
+    color: #fff;
+}
+
+.raidButtons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.goButton,
+.preventButton {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.goButton {
+    background: #2f2f2f;
+    color: #fff;
+}
+
+.preventButton {
+    background: #481414;
+    color: #fff;
+}

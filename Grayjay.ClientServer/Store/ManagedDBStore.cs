@@ -169,6 +169,34 @@ namespace Grayjay.ClientServer.Store
             }
         }
 
+        /*
+        public void UpdateOrInsert(long id, T obj)
+        {
+            var existing = (_indexes.Any(x => x.CheckChange)) ? _collection.Get(id) : null;
+
+            var newIndex = new I();
+            newIndex.FromObject(obj);
+            newIndex.ID = id;
+            _collection.UpdateOrInsert(newIndex);
+            newIndex.Serialized = null;
+
+            if (_indexes.Any())
+            {
+                foreach (var index in _indexes)
+                {
+                    var key = index.KeySelector(newIndex);
+                    if (index.CheckChange && existing != null)
+                    {
+                        var keyExisting = index.KeySelector(existing);
+                        if (keyExisting != null)
+                            index.Collection.Remove(keyExisting, out _);
+                    }
+                    index.Collection[key] = newIndex;
+                }
+            }
+        }
+        */
+
         public void Delete(I indexObj)
         {
             _collection.Delete(indexObj.ID);
