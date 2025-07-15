@@ -7,32 +7,56 @@ using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.Database
 {
-    public class DatabaseConnection : IDisposable
+    public class DatabaseConnection
     {
+        private const int BusyTimeoutMs = 5_000;
+        private const int RetryDelayMs = 100;
         private string _connectionString;
-        public SqliteConnection Connection { get; private set; }
 
         public DatabaseConnection()
         {
-            _connectionString = $"Data Source={Path.Combine(StateApp.GetAppDirectory().FullName, "database.db")}";
-            Connection = new SqliteConnection(_connectionString);
-            Connection.Open();
+            var dbPath = Path.Combine(StateApp.GetAppDirectory().FullName, "database.db");
+            var builder = new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Cache = SqliteCacheMode.Shared,
+                Pooling = true,
+                Mode = SqliteOpenMode.ReadWriteCreate
+            };
+            _connectionString = builder.ToString();
+            using var first = new SqliteConnection(_connectionString);
+            first.Open();
+            InitializeDatabase(first);
+        }
+
+        private SqliteConnection OpenConnection()
+        {
+            var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"PRAGMA busy_timeout={BusyTimeoutMs};";
+            cmd.ExecuteNonQuery();
+            return conn;
+        }
+
+        private static T ExecuteWithRetry<T>(Func<T> action)
+        {
+            try
+            {
+                return action();
+            }
+            catch (SqliteException ex) when (ex.SqliteErrorCode == SQLitePCL.raw.SQLITE_BUSY)
+            {
+                Logger.Warning<DatabaseConnection>("SQLITE_BUSY, retrying once after brief delay.", ex);
+                Thread.Sleep(RetryDelayMs);
+                return action();
+            }
         }
 
         public T SQL<T>(Func<SqliteConnection, T> handle)
         {
-            using(var connection = new SqliteConnection(_connectionString))
-            {
-                return handle(connection);
-            }
-        }
-
-        public SqliteCommand GetCommand(string sql, params SqliteParameter[] parameters)
-        {
-            var command = Connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.Add(parameters);
-            return command;
+            using var conn = OpenConnection();
+            return ExecuteWithRetry(() => handle(conn));
         }
 
         public void EnsureTable<T>(string table, string primaryKey = "ID", bool autoIncrement = true)
@@ -42,13 +66,15 @@ namespace Grayjay.ClientServer.Database
             var propertiesSQL = properties
                 .Select(x => (x.Name, GetSQLType(x.PropertyType)))
                 .ToArray();
-            var result = SQL((x) => x.QueryFirstOrDefault($"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}';"));
+
+            var tq = Quote(table);
+            var result = SQL((x) => x.QueryFirstOrDefault($"SELECT name FROM sqlite_master WHERE type='table' AND name={tq};"));
 
             if(result != null)
             {
                 try
                 {
-                    var columns = SQL((x) => x.Query($"PRAGMA table_info({table})"));
+                    var columns = SQL((x) => x.Query($"PRAGMA table_info({tq})"));
                     if (columns.Count() != propertiesSQL.Length)
                     {
                         //Broken, mismatch
@@ -61,7 +87,7 @@ namespace Grayjay.ClientServer.Database
                             var column = columns.FirstOrDefault(x => x.name == prop.Name);
                             if (column == null)
                                 throw new InvalidDataException($"Missing column {prop.Name}");
-                            else if(column.type != prop.Item2)
+                            else if (!string.Equals(column.type, prop.Item2, StringComparison.OrdinalIgnoreCase))
                                 throw new InvalidDataException($"Incorrect column type {prop.Item2} = {column.type}");
                         }
                     }
@@ -69,7 +95,7 @@ namespace Grayjay.ClientServer.Database
                 catch(Exception ex)
                 {
                     Logger.Error<DatabaseConnection>("Deleting table because broken: " + ex.Message);
-                    SQL((x) => x.Execute($"DROP TABLE {table}"));
+                    SQL((x) => x.Execute($"DROP TABLE {tq}"));
                     result = null;
                 }
             }
@@ -88,7 +114,7 @@ namespace Grayjay.ClientServer.Database
                     }
                     definitions.Add(field);
                 }
-                string tableQuery = $"CREATE TABLE {table}\n({string.Join(",\n", definitions)})";
+                string tableQuery = $"CREATE TABLE {tq}\n({string.Join(",\n", definitions)})";
                 SQL((x) => x.Execute(tableQuery));
             }
         }
@@ -107,11 +133,15 @@ namespace Grayjay.ClientServer.Database
             else throw new NotImplementedException(type.Name);
         }
 
-
-        public void Dispose()
+        private static void InitializeDatabase(SqliteConnection c)
         {
-            Connection?.Close();
-            Connection?.Dispose();
+            using var cmd = c.CreateCommand();
+            cmd.CommandText =
+                "PRAGMA journal_mode=WAL;" +
+                $"PRAGMA busy_timeout={BusyTimeoutMs};";
+            cmd.ExecuteNonQuery();
         }
+
+        private string Quote(string id) => '"' + id.Replace("\"", "\"\"") + '"';
     }
 }
