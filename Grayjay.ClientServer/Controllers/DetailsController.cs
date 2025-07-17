@@ -686,7 +686,7 @@ namespace Grayjay.ClientServer.Controllers
                 else
                     videoUrl = null;
             }
-            else if (proxySettings != null && proxySettings.Value.ShouldProxy)
+            else if (proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, sourceAudio))
             {
                 var modifier = (sourceVideo is JSSource jsS) ? jsS.GetRequestModifier() : null;
                 var executor = (sourceVideo is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
@@ -715,7 +715,7 @@ namespace Grayjay.ClientServer.Controllers
                 else
                     audioUrl = null;
             }
-            else if (proxySettings != null && proxySettings.Value.ShouldProxy)
+            else if (proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, sourceAudio))
             {
                 var modifier = (sourceAudio is JSSource jsS) ? jsS.GetRequestModifier() : null;
                 var executor = (sourceAudio is JSSource jsS2) ? jsS2.GetRequestExecutor() : null;
@@ -758,7 +758,7 @@ namespace Grayjay.ClientServer.Controllers
                     }
                     else
                     {
-                        if (proxySettings != null && proxySettings.Value.ShouldProxy)
+                        if (proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, sourceAudio))
                         {
                             subtitleUrl = sourceSubtitle != null
                                 ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry() { Url = uri.ToString() }, proxySettings?.ProxyAddress))
@@ -1046,7 +1046,7 @@ namespace Grayjay.ClientServer.Controllers
             }
 
             (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
-
+            bool hasRequestModifier = (sourceVideo as JSSource)?.HasRequestModifier is true || (sourceAudio as JSSource)?.HasRequestModifier is true;
             if (sourceVideo != null && (sourceAudio != null || sourceSubtitle != null))
             {
                 if (!(sourceVideo is DashManifestRawSource das && sourceAudio is DashManifestRawAudioSource daus))
@@ -1064,7 +1064,7 @@ namespace Grayjay.ClientServer.Controllers
                     StateWebsocket.VideoLoaderFinish(state.WindowID, tag);
                 }
 
-                return new SourceDescriptor($"/details/SourceDash?videoIndex={videoIndex}&audioIndex={audioIndex}&subtitleIndex={subtitleIndex}&videoIsLocal={videoIsLocal}&audioIsLocal={audioIsLocal}&subtitleIsLocal={subtitleIsLocal}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}&tag={tag}", "application/dash+xml", videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
+                return new SourceDescriptor($"/details/SourceDash?videoIndex={videoIndex}&audioIndex={audioIndex}&subtitleIndex={subtitleIndex}&videoIsLocal={videoIsLocal}&audioIsLocal={audioIsLocal}&subtitleIsLocal={subtitleIsLocal}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}&tag={tag}", "application/dash+xml", videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, hasRequestModifier);
             }
             else if (sourceVideo != null)
             {
@@ -1157,7 +1157,7 @@ namespace Grayjay.ClientServer.Controllers
             var modifier = (sourceVideo.HasRequestModifier) ? sourceVideo.GetRequestModifier() : null;
             var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
 
-            var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
+            var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, null) ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {   
                 RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
@@ -1173,7 +1173,7 @@ namespace Grayjay.ClientServer.Controllers
             var modifier = (sourceAudio.HasRequestModifier) ? sourceAudio.GetRequestModifier() : null;
             var executor = (sourceAudio.HasRequestExecutor) ? sourceAudio.GetRequestExecutor() : null;
 
-            var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxy ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
+            var audioUrl = proxySettings != null && proxySettings.Value.ShouldProxySources(null, sourceAudio) ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
             {
                 RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
@@ -1191,7 +1191,7 @@ namespace Grayjay.ClientServer.Controllers
 
             if (sourceVideo is HLSManifestSource hlsm)
             {
-                if (proxySettings != null && proxySettings.Value.ShouldProxy)
+                if (proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, sourceAudio))
                 {
                     return new SourceDescriptor($"/details/SourceHLS?videoIndex={videoIndex}&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}", "application/vnd.apple.mpegurl", videoIndex, -1, -1, false, false, false);
                 }
@@ -1200,7 +1200,7 @@ namespace Grayjay.ClientServer.Controllers
             }
             else if (sourceAudio is HLSManifestAudioSource hlsa)
             {
-                if (proxySettings != null && proxySettings.Value.ShouldProxy)
+                if (proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, sourceAudio))
                 {
                     return new SourceDescriptor($"/details/SourceHLS?audioIndex={audioIndex}&videoIndex=-1&isLoopback={proxySettings?.IsLoopback ?? true}&windowId={state.WindowID}", "application/vnd.apple.mpegurl", -1, audioIndex, -1, false, false, false);
                 }

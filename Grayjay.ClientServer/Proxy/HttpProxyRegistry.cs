@@ -1,3 +1,4 @@
+using Grayjay.Engine.Models.Video.Sources;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
@@ -84,6 +85,19 @@ namespace Grayjay.ClientServer.Proxy
         public override int GetHashCode()
         {
             return (IsLoopback, ShouldProxy, ExposeLocalAsAny, ProxyAddress).GetHashCode();
+        }
+
+        public bool ShouldProxySources(IVideoSource? videoSource, IAudioSource? audioSource)
+        {
+            bool shouldProxy = ShouldProxy;
+            if (shouldProxy)
+                return true;
+
+            var hasRequestModifier = (videoSource as JSSource)?.HasRequestModifier is true || (audioSource as JSSource)?.HasRequestModifier is true;
+            if (hasRequestModifier)
+                return true;
+
+            return false;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
