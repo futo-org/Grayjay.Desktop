@@ -37,6 +37,9 @@ UninstallDisplayIcon={app}\Grayjay.exe
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
+[Tasks]
+Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
 [Dirs]
 Name: "{app}\cef"; Flags: uninsalwaysuninstall
 
@@ -45,9 +48,11 @@ Source: "Files\FUTO.Updater.Client.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Files\UpdaterConfig.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Files\UpdaterOSConfig.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Files\launch"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Metadata\grayjay.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Grayjay"; Filename: "{app}\Grayjay.exe"; WorkingDir: "{app}"; Comment: "Grayjay Desktop"
+Name: "{group}\Grayjay"; Filename: "{app}\Grayjay.exe"; IconFilename: "{app}\grayjay.ico"; WorkingDir: "{app}"; Comment: "Grayjay Desktop"
+Name: "{autodesktop}\Grayjay"; Filename: "{app}\Grayjay.exe"; IconFilename: "{app}\grayjay.ico"; WorkingDir: "{app}"; Comment: "Grayjay Desktop"; Tasks: desktopicon
 
 [Registry]
 Root: HKLM; Subkey: "Software\FUTO\Grayjay"; ValueType: string; ValueName: "InstallLocation"; ValueData: "{app}"; Flags: uninsdeletevalue; Check: IsAdminInstallMode
