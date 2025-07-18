@@ -97,9 +97,9 @@ buildAndDeployStableWindowsInstaller:
   script:
     - dir
     - Write-Host $CI_COMMIT_TAG
-    - bash deploy_windows_installer.sh $CI_COMMIT_TAG $UPDATER_SERVER Grayjay.Desktop
+    - bash deploy_windows_installer.sh
   artifacts:
     paths:
-      - Grayjay.Desktop.Installer/Results/Grayjay.msi
+      - Grayjay.Desktop.Installer/Output/Grayjay-1.0.0-Setup-x64.exe
     expire_in: 1d
   when: manual

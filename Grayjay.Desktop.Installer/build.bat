@@ -1,0 +1,1 @@
+wix build Grayjay.wxs -o Grayjay.msi -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch x64
