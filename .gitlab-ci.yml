@@ -90,10 +90,6 @@ buildAndDeployStableWindowsInstaller:
   stage: buildAndDeployStableWindowsInstaller
   tags:
     - WindowsBuilder
-  only:
-    - tags
-  except:
-    - ^(dev)
   script:
     - dir
     - Write-Host $CI_COMMIT_TAG
