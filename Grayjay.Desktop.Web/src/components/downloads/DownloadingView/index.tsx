@@ -113,20 +113,20 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
     <div class={styles.downloadingCard} style="position: relative;">
         <div class={styles.downloadThumbnail} style={{"background-image": "url(" + getBestThumbnail(downloading$().video.thumbnails)?.url + ")"}} onClick={clicked}>
           <div class={styles.badgeStatus}>
-            <Switch>
-              <Match when={downloading$().state < 3}>
+            <div>
+              <Show when={downloading$().state < 3}>
                 <img src={iconDownloadQueued} class={styles.statusIcon} />
-              </Match>
-              <Match when={downloading$().state == 3}>
+              </Show>
+              <Show when={downloading$().state == 3}>
                 <img src={iconDownloadOngoing} class={styles.statusIcon} />
-              </Match>
-              <Match when={downloading$().state > 3 && downloading$().state != 7}>
+              </Show>
+              <Show when={downloading$().state > 3 && downloading$().state != 7}>
                 <img src={iconDownloadOngoing} class={styles.statusIcon} />
-              </Match>
-              <Match when={downloading$().state == 7}>
+              </Show>
+              <Show when={downloading$().state == 7}>
                 <img src={iconDownloadError} class={styles.statusIcon} />
-              </Match>
-            </Switch>
+              </Show>
+            </div>
             {statusString(downloading$())}
           </div>
 

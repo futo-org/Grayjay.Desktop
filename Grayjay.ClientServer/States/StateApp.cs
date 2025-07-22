@@ -286,7 +286,6 @@ namespace Grayjay.ClientServer.States
             StateWindow.Shutdown();
             ThreadPool.Stop();
             AppCancellationToken.Cancel();
-            Connection.Dispose();
             Connection = null;
         }
 

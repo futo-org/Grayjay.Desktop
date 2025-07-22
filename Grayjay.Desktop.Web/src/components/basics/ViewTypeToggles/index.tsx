@@ -1,4 +1,4 @@
-import { Component, Match, Switch, createEffect, createSignal } from 'solid-js'
+import { Component, Match, Show, Switch, createEffect, createSignal } from 'solid-js'
 
 import styles from './index.module.css';
 
@@ -28,24 +28,24 @@ const ViewTypeToggles: Component<ViewTypeTogglesProps> = (props) => {
     return (
         <div class={styles.toggleViewTypes}>
             <div class={styles.toggleViewType} classList={{ [styles.enabled]: toggle() == "grid" }} onClick={(ev) => handleToggle(ev, "grid")}>
-                <Switch>
-                    <Match when={toggle() == "grid"}>
+                
+                    <Show when={toggle() == "grid"}>
                         <img src={iconGrid} />
-                    </Match>
-                    <Match when={toggle() != "grid"}>
+                    </Show>
+                    <Show when={toggle() != "grid"}>
                         <img src={iconGridInactive} />
-                    </Match>
-                </Switch>
+                    </Show>
+                
             </div>
             <div class={styles.toggleViewType} classList={{ [styles.enabled]: toggle() == "list" }} onClick={(ev) => handleToggle(ev, "list")}>
-                <Switch>
-                    <Match when={toggle() == "list"}>
+                
+                    <Show when={toggle() == "list"}>
                         <img src={iconList} />
-                    </Match>
-                    <Match when={toggle() != "list"}>
+                    </Show>
+                    <Show when={toggle() != "list"}>
                         <img src={iconListInactive} />
-                    </Match>
-                </Switch>
+                    </Show>
+                
             </div>
         </div>
     );

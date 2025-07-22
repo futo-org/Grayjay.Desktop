@@ -21,7 +21,7 @@ import PillButton from "../../buttons/PillButton";
 import IconButton from "../../buttons/IconButton";
 import CustomButton from "../../buttons/CustomButton";
 import CommentView from "../../CommentView";
-import { catchDialogExceptions, createResourceDefault, getBestThumbnail, preventDragDrop, proxyImage, sanitzeHtml, toHumanNowDiffString, toHumanNowDiffStringMinDay, toHumanNumber, formatAudioSourceName } from "../../../utility";
+import { createResourceDefault, getBestThumbnail, preventDragDrop, proxyImage, sanitzeHtml, toHumanNowDiffString, toHumanNowDiffStringMinDay, toHumanNumber, formatAudioSourceName } from "../../../utility";
 import { DetailsBackend } from "../../../backend/DetailsBackend";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import SubscribeButton from "../../buttons/SubscribeButton";
@@ -174,7 +174,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     }));
 
     const [videoSourceQualities$] = createResource<any | undefined>(()=> videoSource$()?.video && !videoSource$()?.videoIsLocal, async () => {
-        if(videoSource$()?.video < 0 && videoSource$()?.video != -999) {
+        if((videoSource$()?.video ?? -1) < 0 && videoSource$()?.video != -999) {
             setVideoQuality(-1);
             return undefined;
         }
@@ -564,25 +564,32 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     });
 
     const minimumMaximumHeight = createMemo(() => {
+        var newMinimumMaximum;
         if (mode() === VideoMode.Theatre) {
             const isMaximized = video?.state() === VideoState.Maximized;
             const minHeight = minimizedHeight();
             const maxHeight = Math.min(dimensions().height * 0.8, desiredMaximizedHeight());
     
             if (video?.theatrePinned()) {
-                return isMaximized
+                newMinimumMaximum = isMaximized
                     ? { minimum: Math.max(200, dimensions().height * 0.35), maximum: maxHeight }
                     : { minimum: minHeight, maximum: minHeight };
             } else {
-                return {
+                newMinimumMaximum = {
                     minimum: isMaximized ? maxHeight : minHeight,
                     maximum: isMaximized ? maxHeight : minHeight
                 };
             }
         } else {
             const standardHeight = standardDimensions().height;
-            return { minimum: standardHeight, maximum: standardHeight };
+            newMinimumMaximum = { minimum: standardHeight, maximum: standardHeight };
         }
+
+        if (newMinimumMaximum.maximum < newMinimumMaximum.minimum) {
+            newMinimumMaximum.maximum = newMinimumMaximum.minimum;
+        }
+
+        return newMinimumMaximum;
     });    
 
     const minimizedWidth = createMemo(() => {

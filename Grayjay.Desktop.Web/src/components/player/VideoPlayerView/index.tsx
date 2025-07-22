@@ -338,7 +338,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         const dur = duration();
         const timeLeft = duration().minus(time);
         console.log("Received position", {time_s: time.as('seconds'), timeLeft_s: timeLeft.as('seconds')});
-        if (dur.as('seconds') > 0 && timeLeft.as('seconds') < 1) {
+        if (dur.as('seconds') > 1 && timeLeft.as('seconds') < 1) {
             if (!castingEndedEmitted) {
                 props.onEnded?.();
                 castingEndedEmitted = true;
@@ -358,7 +358,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             return;
         }
 
-    const duration = casting.activeDevice.duration();
+        const duration = casting.activeDevice.duration();
         setDuration(duration);
     });
 

@@ -127,8 +127,8 @@ const DeviceList: Component = () => {
     });
 
     return (
-        <Switch>
-            <Match when={(pinnedDevices$()?.length ?? 0) == 0 && (discoveredDevices$()?.length ?? 0) == 0}>
+        <>
+            <Show when={(pinnedDevices$()?.length ?? 0) == 0 && (discoveredDevices$()?.length ?? 0) == 0}>
                 <div class={styles.containerNoDevicesFound}>
                     <img src={iconNoDevicesFound} />
                     <div class={styles.containerNoDevicesFoundTitle}>No devices found so far <CircleLoader style={{"width": "16px", "height": "16px", "margin-left": "8px"}} /></div>
@@ -143,8 +143,8 @@ const DeviceList: Component = () => {
                             casting?.actions.openAddDeviceManually();
                         }} />
                 </div>
-            </Match>
-            <Match when={(pinnedDevices$()?.length ?? 0) > 0 || (discoveredDevices$()?.length ?? 0) > 0}>
+            </Show>
+            <Show when={(pinnedDevices$()?.length ?? 0) > 0 || (discoveredDevices$()?.length ?? 0) > 0}>
                 <div class={styles.containerHeader}>
                     Available devices <CircleLoader style={{"width": "16px", "height": "16px", "margin-left": "8px"}} />
                 </div>
@@ -176,8 +176,8 @@ const DeviceList: Component = () => {
                             casting?.actions.openAddDeviceManually();
                         }} />
                 </div>
-            </Match>
-        </Switch>
+            </Show>
+        </>
     );
 };
 
@@ -350,17 +350,17 @@ const OverlayCasting: Component = () => {
                             </div>
                         </div>
 
-                        <Switch>
-                            <Match when={casting?.dialogState() == CastingDialogState.DeviceList}>
+                        <div>
+                            <Show when={casting?.dialogState() == CastingDialogState.DeviceList}>
                                 <DeviceList />
-                            </Match>
-                            <Match when={casting?.dialogState() == CastingDialogState.AddDeviceManually}>
+                            </Show>
+                            <Show when={casting?.dialogState() == CastingDialogState.AddDeviceManually}>
                                 <AddDeviceManually />
-                            </Match>
-                            <Match when={casting?.dialogState() == CastingDialogState.ActiveDevice}>
+                            </Show>
+                            <Show when={casting?.dialogState() == CastingDialogState.ActiveDevice}>
                                 <ActiveDeviceView />
-                            </Match>
-                        </Switch>
+                            </Show>
+                        </div>
                     </div>
                 </div>
             </Show>

@@ -50,6 +50,9 @@
   </content_rating>
   <releases>
     <!-- TODO: add to this section when future versions are released -->
+    <release version="9" date="2025-07-14">
+      <url type="details">https://github.com/futo-org/Grayjay.Desktop/releases/tag/9</url>
+    </release>
     <release version="8" date="2025-06-10">
       <url type="details">https://github.com/futo-org/Grayjay.Desktop/releases/tag/8</url>
     </release>

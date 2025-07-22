@@ -159,23 +159,23 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
           </Show>
           <Show when={props.dialog?.input}>
             <div class={styles.input}>
-              <Switch>
-                <Match when={props.dialog?.input?.type == "inputText"}>
+              <div>
+                <Show when={props.dialog?.input?.type == "inputText"}>
                   <InputText
                     placeholder={(props.dialog?.input as DialogInputText).placeholder}
                     value={""}
                     onTextChanged={(newVal) => { output.text = newVal }} />
-                </Match>
-                <Match when={props.dialog?.input?.type == "dropdown"}>
+                </Show>
+                <Show when={props.dialog?.input?.type == "dropdown"}>
                   <Dropdown
                     options={(props.dialog?.input as DialogDropdown).options}
                     value={output.index}
                     onSelectedChanged={(newVal) => output.index = newVal} />
-                </Match>
-                <Match when={props.dialog?.input?.type == "checkboxList"}>
+                </Show>
+                <Show when={props.dialog?.input?.type == "checkboxList"}>
                   {renderInputCheckboxList(props.dialog?.input as DialogInputCheckboxList, output)}
-                </Match>
-              </Switch>
+                </Show>
+              </div>
             </div>
           </Show>
           <div class={styles.buttons}>

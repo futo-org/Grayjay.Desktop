@@ -1,4 +1,5 @@
 import { Component, createSignal, onCleanup, onMount, JSX, createMemo, children, untrack, For, createEffect } from "solid-js";
+import { getNestedOffsetTop } from "../../../utility";
 
 export interface VirtualFlexibleListProps {
     children: JSX.Element[];
@@ -42,18 +43,6 @@ const VirtualFlexibleList: Component<VirtualFlexibleListProps> = (props) => {
         }
     
         return low > high ? cumulativeHeights.length - 1 : 0;
-    };
-
-    const getNestedOffsetTop = (element: HTMLElement, ancestor: HTMLElement): number => {
-        let offsetTop = 0;
-        let currentElement: HTMLElement | null = element;
-        
-        while (currentElement && currentElement !== ancestor) {
-            offsetTop += currentElement.offsetTop;
-            currentElement = currentElement.offsetParent as HTMLElement;
-        }
-        
-        return offsetTop;
     };
 
     const updateVisibleRange = () => {

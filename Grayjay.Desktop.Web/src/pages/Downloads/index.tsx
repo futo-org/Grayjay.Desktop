@@ -313,8 +313,8 @@ const DownloadsPage: Component = () => {
   function gridUI(scrollContainerRef: HTMLDivElement | undefined) {
     const data = getDownloadedItems();
     return (
-      <Switch>
-        <Match when={videoType$() != "playlist"}>          
+      <>
+        <Show when={videoType$() != "playlist"}>          
           <VirtualGrid outerContainerRef={scrollContainerRef}
               items={data!}
               itemWidth={300}
@@ -339,8 +339,8 @@ const DownloadsPage: Component = () => {
               builder={(index, item) =>
                 <DownloadedView downloaded={item()} onSettings={(e, content)=> onSettingsClicked(e, content)} />
               } />
-        </Match>
-        <Match when={videoType$() == "playlist"}>
+        </Show>
+        <Show when={videoType$() == "playlist"}>
           <VirtualGrid outerContainerRef={scrollContainerRef}
             items={downloadingPlaylists$()}
             itemWidth={300}
@@ -376,8 +376,8 @@ const DownloadsPage: Component = () => {
                   <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} />
                 </Show>
             </Portal>
-        </Match>
-      </Switch>
+        </Show>
+      </>
     );
   }
 
@@ -454,15 +454,15 @@ const DownloadsPage: Component = () => {
     ]
     return (
       <div style="margin-left: 30px; margin-right: 30px">
-        <Switch>
-            <Match when={videoType$() != "playlist"}>
+        <div>
+            <Show when={videoType$() != "playlist"}>
               <DataTable selectable={true}
                 onSelectionChanged={(selected)=>{setSelected(selected)}} 
                 columnInfo={columns} 
                 data={data!} 
                 style={{"margin-top": "20px"}} />
-            </Match>
-            <Match when={videoType$() == "playlist"}>
+            </Show>
+            <Show when={videoType$() == "playlist"}>
               <DataTable selectable={true}
                   onSelectionChanged={(selected)=>{setSelected(selected)}} 
                   columnInfo={[
@@ -503,8 +503,8 @@ const DownloadsPage: Component = () => {
                   ]} 
                   data={downloadingPlaylists$()} 
                   style={{"margin-top": "20px"}} />
-            </Match>
-        </Switch>
+            </Show>
+        </div>
       </div>
     )
   }
@@ -623,14 +623,14 @@ const DownloadsPage: Component = () => {
               </div>
             </div>
           </div>
-          <Switch>
-            <Match when={viewType$() == "grid"}>
+          <div>
+            <Show when={viewType$() == "grid"}>
               {gridUI(scrollContainerRef)}
-            </Match>
-            <Match when={viewType$() == "list"}>
+            </Show>
+            <Show when={viewType$() == "list"}>
               {listUI()}
-            </Match>
-          </Switch>
+            </Show>
+          </div>
         </Show>
         <Show when={!(downloaded$() && downloaded$()!.length > 0)}>
           <EmptyContentView 

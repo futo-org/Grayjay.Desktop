@@ -119,7 +119,7 @@ namespace Grayjay.ClientServer.Controllers
 
             //TODO: Uncomment
             //var proxyInnerSources = activeDevice is FCastCastingDevice ? false : true;
-            var shouldProxy = false;
+            var shouldProxy = activeDevice is FCastCastingDevice ? false : true;
             var sourceDescriptor = await DetailsController.GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(false, shouldProxy, proxyAddress: activeDevice.LocalEndPoint?.Address, exposeLocalAsAny: true), tag, forceReady: true);
             if (sourceDescriptor.Url.StartsWith("/"))
                 sourceDescriptor.Url = $"http://{activeDevice.LocalEndPoint?.Address.ToUrlAddress()}:{GrayjayCastingServer.Instance.BaseUri!.Port}" + sourceDescriptor.Url;

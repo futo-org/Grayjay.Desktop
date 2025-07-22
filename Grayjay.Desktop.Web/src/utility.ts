@@ -568,3 +568,15 @@ export function formatAudioSourceName(audioSource: any): string {
   
   return name + additionalInfoText;
 };
+
+export function getNestedOffsetTop(el: HTMLElement, ancestor: HTMLElement) {
+  let offset = 0, node: HTMLElement | null = el;
+  while (node && node !== ancestor) {
+    offset += node.offsetTop;
+    if (node.scrollTop) {
+      offset -= node.scrollTop;
+    }
+    node = node.parentElement;
+  }
+  return offset;
+};
