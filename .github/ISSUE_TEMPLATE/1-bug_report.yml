@@ -11,6 +11,7 @@ body:
         # Thank you for taking the time to fill out this bug report.
 
         The [Grayjay.Desktop](https://github.com/futo-org/Grayjay.Desktop) issue tracker is reserved for issues relating to the Grayjay Desktop Application
+        If you have a flatpak specific issue, please open the issue on the [flatpak repository](https://github.com/flathub/app.grayjay.Grayjay/issues)
 
         For general usage questions, please see: [The Official FUTO Grayjay Zulip Channel](https://chat.futo.org/#narrow/stream/46-Grayjay)
 
@@ -114,6 +115,14 @@ body:
       placeholder: "Windows 10/Ubuntu 22.04/MacOS 15.5"
     validations:
       required: true
+
+  - type: checkboxes
+    id: flatpak
+    attributes:
+      label: Are you using flatpak?
+      options:
+      - label: Check this if you installed flatpak version for Linux. If unsure, leave blank.
+
 
   - type: checkboxes
     id: login
