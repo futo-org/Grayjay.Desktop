@@ -10,10 +10,12 @@ using Opcode = SyncShared.Opcode;
 
 namespace Grayjay.ClientServer.Sync.Internal
 {
+    public delegate void SessionDataHandler(SyncSession session, byte subOpcode, ReadOnlySpan<byte> data);
+
     //While convenient AF, this shit is not gonna AOT compile. Worst case, keep this in Grayjay.Desktop
     public abstract class SyncHandlers
     {
-        protected Dictionary<byte, Action<SyncSession, byte, ReadOnlySpan<byte>>> _handlers;
+        protected Dictionary<byte, SessionDataHandler> _handlers;
         protected Dictionary<byte, Func<SyncSession, byte, byte[], Task>> _asyncHandlers;
 
         public SyncHandlers()
@@ -32,10 +34,10 @@ namespace Grayjay.ClientServer.Sync.Internal
         }
 
         //TODO: Support automatic responses on return value?
-        private Action<SyncSession, byte, ReadOnlySpan<byte>> GetInvokeMethod(MethodInfo method)
+        private SessionDataHandler GetInvokeMethod(MethodInfo method)
         {
             ParameterInfo[] parameters = method.GetParameters();
-            return new Action<SyncSession, byte, ReadOnlySpan<byte>>((ses, opcode, data) =>
+            return new SessionDataHandler((ses, opcode, data) =>
             {
                 object[] paras = new object[parameters.Length];
                 for(int i = 0; i < parameters.Length; i++)

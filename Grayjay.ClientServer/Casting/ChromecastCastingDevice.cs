@@ -7,6 +7,7 @@ using Google.Protobuf;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using System.Net.Security;
+using Noise;
 
 namespace Grayjay.ClientServer.Casting;
 
@@ -22,6 +23,8 @@ public class ChromecastCastingDevice : CastingDevice
         public double? Speed;
     };
 
+    private const int MAX_LAUNCH_RETRIES = 3;
+
     private CancellationTokenSource? _cancellationTokenSource;
     private Stream? _stream = null;
     private int _requestId = 0;
@@ -30,21 +33,40 @@ public class ChromecastCastingDevice : CastingDevice
     private string? _sessionId = null;
     private bool _launching = false;
     private bool _started = false;
+    private bool _autoLaunchEnabled = true;
+    private int _launchRetries;
+    private DateTime? _lastLaunchTime = null;
     private MediaLoadInformation? _mediaLoadInformation = null;
     private SemaphoreSlim _writerSemaphore = new SemaphoreSlim(1);
     private SemaphoreSlim _readerSemaphore = new SemaphoreSlim(1);
+    private Task? _retryTask = null;
 
     public ChromecastCastingDevice(CastingDeviceInfo deviceInfo) : base(deviceInfo) { }
 
     public override bool CanSetVolume => true;
-
-    public override bool CanSetSpeed => false;
+    public override bool CanSetSpeed => true;
     private IPEndPoint? _localEndPoint = null;
     public override IPEndPoint? LocalEndPoint => _localEndPoint;
 
-    public override Task ChangeSpeedAsync(double speed, CancellationToken cancellationToken = default)
+    public override async Task ChangeSpeedAsync(double speed, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var transportId = _transportId;
+        var mediaSessionId = _mediaSessionId;
+        if (transportId == null || mediaSessionId == null)
+            return;
+
+        var clamped = Math.Clamp(speed, 1.0, 2.0);
+        PlaybackState.SetSpeed(clamped);
+
+        var setSpeedObject = new JsonObject
+        {
+            ["type"] = "SET_PLAYBACK_RATE",
+            ["mediaSessionId"] = mediaSessionId.Value,
+            ["playbackRate"] = clamped,
+            ["requestId"] = _requestId++
+        };
+
+        await SendChannelMessageAsync("sender-0", transportId, "urn:x-cast:com.google.cast.media", setSpeedObject.ToJsonString(), cancellationToken);
     }
 
     public override async Task ChangeVolumeAsync(double volume, CancellationToken cancellationToken = default)
@@ -229,6 +251,7 @@ public class ChromecastCastingDevice : CastingDevice
         };
 
         await SendChannelMessageAsync("sender-0", "receiver-0", "urn:x-cast:com.google.cast.receiver", launchObject.ToJsonString(), cancellationToken);
+        _lastLaunchTime = DateTime.Now;
     }
 
     public override void Start()
@@ -237,7 +260,11 @@ public class ChromecastCastingDevice : CastingDevice
             return;
 
         _started = true;
+        _autoLaunchEnabled = true;
         _launching = true;
+        _launchRetries = 0;
+        _sessionId = null;
+        _mediaSessionId = null;
 
         var cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource = cancellationTokenSource;
@@ -300,6 +327,7 @@ public class ChromecastCastingDevice : CastingDevice
                     _mediaSessionId = null;
                     _sessionId = null;
                     _localEndPoint = null;
+                    _launchRetries = 0;
 
                     SslStream newStream;
                     if (connectedClient != null)
@@ -474,7 +502,6 @@ public class ChromecastCastingDevice : CastingDevice
             return;
 
         _started = false;
-
         _cancellationTokenSource?.Cancel();
         _cancellationTokenSource = null;
     }
@@ -556,11 +583,13 @@ public class ChromecastCastingDevice : CastingDevice
                             if (appId == "CC1AD845")
                             {
                                 sessionIsRunning = true;
+                                _autoLaunchEnabled = false;
 
                                 if (_sessionId == null)
                                 {
                                     ConnectionState.SetState(CastConnectionState.Connected);
                                     _sessionId = applicationUpdate.GetProperty("sessionId").GetString();
+                                    _launchRetries = 0;
 
                                     string? transportId = applicationUpdate.GetProperty("transportId").GetString();
                                     if (transportId == null)
@@ -571,7 +600,6 @@ public class ChromecastCastingDevice : CastingDevice
                                     _transportId = transportId;
 
                                     await RequestMediaStatusAsync(cancellationToken);
-                                    await MediaPlayAsync(cancellationToken);
                                 }
                             }
                         }
@@ -579,26 +607,73 @@ public class ChromecastCastingDevice : CastingDevice
 
                     if (!sessionIsRunning)
                     {
-                        _sessionId = null;
-                        _mediaSessionId = null;
-                        PlaybackState.SetTime(TimeSpan.Zero);
-                        _transportId = null;
-                        Logger.w(nameof(ChromecastCastingDevice), "Session not found.");
-
-                        if (_launching)
+                        if (_lastLaunchTime == null || DateTime.Now - _lastLaunchTime > TimeSpan.FromSeconds(5))
                         {
-                            Logger.i(nameof(ChromecastCastingDevice), "Player not found, launching.");
-                            await LaunchPlayerAsync(cancellationToken);
+                            _sessionId = null;
+                            _mediaSessionId = null;
+                            _transportId = null;
+
+                            if (_autoLaunchEnabled)
+                            {
+                                if (_launching && _launchRetries < MAX_LAUNCH_RETRIES)
+                                {
+                                    Logger.i(nameof(ChromecastCastingDevice), $"No player yet; attempting launch #${_launchRetries + 1}");
+                                    _launchRetries++;
+                                    await LaunchPlayerAsync();
+                                }
+                                else
+                                {
+                                    // Maybe the first GET_STATUS came back empty; still try launching
+                                    Logger.i(nameof(ChromecastCastingDevice), $"Player not found; triggering launch #${_launchRetries + 1}");
+                                    _launching = true;
+                                    _launchRetries++;
+                                    await LaunchPlayerAsync();
+                                }
+                            }
+                            else
+                            {
+                                Logger.e(nameof(ChromecastCastingDevice), $"Player not found ($_launchRetries, _autoLaunchEnabled = $_autoLaunchEnabled); giving up.");
+                                Logger.i(nameof(ChromecastCastingDevice), $"Unable to start media receiver on device");
+                                Stop();
+                            }
                         }
                         else
                         {
-                            Logger.i(nameof(ChromecastCastingDevice), "Player not found, disconnecting.");
-                            Stop();
+                            if (_retryTask == null)
+                            {
+                                Logger.i(nameof(ChromecastCastingDevice), "Scheduled retry job over 5 seconds");
+                                _retryTask = Task.Run(async () =>
+                                {
+                                    var ct = _cancellationTokenSource?.Token ?? CancellationToken.None;
+                                    await Task.Delay(5000, ct);
+                                    if (!ct.IsCancellationRequested || !_started)
+                                    {
+                                        _retryTask = null;
+                                        return;
+                                    }
+
+                                    if (_started)
+                                    {
+                                        try
+                                        {
+                                            await RequestMediaStatusAsync(ct);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Logger.e(nameof(ChromecastCastingDevice), "Failed to get ChromeCast status.", e);
+                                        }
+                                    }
+
+                                    _retryTask = null;
+                                });
+                            }
                         }
                     }
                     else
                     {
                         _launching = false;
+                        _launchRetries = 0;
+                        _autoLaunchEnabled = false;
                     }
 
                     var volume = status.GetProperty("volume");
