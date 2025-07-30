@@ -254,6 +254,25 @@ namespace Grayjay.ClientServer.States
                 }
             });
 
+            ThreadPool.Run(() =>
+            {
+                var enabledPlugins = StatePlatform.GetEnabledClients();
+                foreach(var plugin in enabledPlugins)
+                {
+                    try
+                    {
+                        if(plugin.Descriptor.AppSettings.Sync.EnableHistorySync == true)
+                        {
+                            StateHistory.SyncRemoteHistory(plugin);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.e("StateApp", $"Failed to update remote history for {plugin.Config.Name}");
+                    }
+                }
+            });
+
 
             //Temporary workaround for youtube
             ThreadPool.Run(() =>

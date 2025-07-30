@@ -1,14 +1,19 @@
-﻿using Grayjay.ClientServer.Database.Indexes;
+﻿using Futo.PlatformPlayer.States;
+using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.Database.Indexes;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.History;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Models;
 using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC.Port.States;
+using Grayjay.Engine;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Pagers;
 using System;
 using System.Collections.Concurrent;
+using Logger = Grayjay.Desktop.POC.Logger;
 
 namespace Grayjay.ClientServer.States
 {
@@ -19,6 +24,9 @@ namespace Grayjay.ClientServer.States
         private static readonly ManagedDBStore<DBHistoryIndex, HistoryVideo> _history =
             new ManagedDBStore<DBHistoryIndex, HistoryVideo>(DBHistoryIndex.TABLE_NAME)
             .WithIndex(x=>x.Url, _historyIndex, false, true)
+            .Load();
+
+        private static readonly DictionaryStore<string, long> _remoteHistoryDatesStore = new DictionaryStore<string, long>("remoteHistoryDates", new Dictionary<string, long>())
             .Load();
 
         public static event Action<PlatformVideo, long> OnHistoricVideoChanged;
@@ -181,6 +189,8 @@ namespace Grayjay.ClientServer.States
             var toDelete = _history.GetAllIndexes().Where(x => minutesToDelete == -1 || (now.Subtract(x.DateTime) < toDeleteTime)).ToList();
             foreach (var item in toDelete)
                 _history.Delete(item);
+
+            _remoteHistoryDatesStore.Save(new Dictionary<string, long>());
         }
 
 
@@ -190,6 +200,108 @@ namespace Grayjay.ClientServer.States
             return video
                 .AddMetadata("position", watched)
                 .AddMetadata("watched", StateHistory.IsHistoryWatchedPercentage(watched, video.Duration));
+        }
+
+
+        public static void SyncRemoteHistory(GrayjayPlugin plugin)
+        {
+            if(plugin.Capabilities.HasGetUserHistory && plugin.IsLoggedIn)
+            {
+                Logger.i("StateHistory", $"Syncing remote history for plugin [{plugin.Config.Name}]");
+
+                var hist = StatePlatform.GetUserHistory(plugin.ID);
+                SyncRemoteHistory(plugin.ID, hist, 100, 3);
+            }
+        }
+        public static void SyncRemoteHistory(string pluginId, IPager<PlatformContent> videos, int maxVideos, int maxPages)
+        {
+            DateTime lastDate = DateTimeOffset.FromUnixTimeSeconds(Math.Max(0, _remoteHistoryDatesStore.GetValue(pluginId, 0))).DateTime;
+            var maxVideosCount = (maxVideos <= 0) ? 500 : maxVideos;
+            var maxPageCount = (maxPages <= 0) ? 3 : maxPages;
+            bool exceededDate = false;
+            try
+            {
+                var toSync = new List<PlatformVideo>();
+                var pageCount = 0;
+                var videoCount = 0;
+                var isFirst = true;
+                var oldestPlayback = DateTime.MaxValue;
+                var newestPlayback = DateTime.MinValue;
+                do
+                {
+                    if (!isFirst) videos.NextPage();
+                    var newVideos = videos.GetResults();
+
+                    var foundVideos = false;
+                    var toSyncAddedCount = 0;
+                    foreach(var content in newVideos)
+                    {
+                        if(content is PlatformVideo video && video.PlaybackDate != null)
+                        {
+                            if(video.PlaybackDate < lastDate)
+                            {
+                                exceededDate = true;
+                                break;
+                            }
+
+                            if(video.PlaybackTime > 0)
+                            {
+                                toSync.Add(video);
+                                toSyncAddedCount++;
+                                foundVideos = true;
+                                oldestPlayback = video.PlaybackDate.Value;
+                                if (newestPlayback == DateTime.MinValue)
+                                    newestPlayback = video.PlaybackDate.Value;
+                            }
+                        }
+                    }
+
+                    pageCount++;
+                    videoCount += newVideos.Length;
+                    isFirst = false;
+
+                    if(!foundVideos)
+                    {
+                        Logger.i("StateHistory", "Found no more videos in remote history");
+                        break;
+                    }
+                }
+                while (videos.HasMorePages() && videoCount <= maxVideosCount && pageCount <= maxPageCount && !exceededDate);
+
+                var updated = 0;
+                if(oldestPlayback < DateTime.MaxValue)
+                {
+                    foreach(var video in toSync)
+                    {
+                        var hist = GetHistoryByVideo(video, true, video.PlaybackDate.Value);
+                        if(hist != null && hist.Position < video.PlaybackTime)
+                        {
+                            Logger.i("StateHistory", $"Update history for video [{video.Name}] from remote history");
+                            UpdateHistoryPosition(video, hist, true, video.PlaybackTime, video.PlaybackDate);
+                            updated++;
+                        }
+                    }
+                    if(updated > 0)
+                    {
+                        _remoteHistoryDatesStore.SetAndSave(pluginId, new DateTimeOffset(newestPlayback.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeSeconds());
+                        try
+                        {
+                            var client = StatePlatform.GetClient(pluginId);
+                            StateUI.Toast($"Updated {updated} history from {client.Config.Name}");
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                var plugin = (pluginId != StateDeveloper.DEV_ID) ? StatePlugins.GetPlugin(pluginId) : null;
+                //Log
+                Logger.e("StateHistory", $"Sync Remote History failed for [{plugin?.Config?.Name}] due to: {ex.Message}");
+            }
         }
     }
 }

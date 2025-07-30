@@ -137,28 +137,30 @@ namespace Grayjay.ClientServer.Controllers
             state.LiveChatManager?.Stop();
             state.LiveChatManager = null;
             StateWebsocket.LiveEventsClear();
-            if (video != null && video.IsLive)
+            if (video != null)
             {
-                try
+                if (video.IsLive)
                 {
-                    var livePager = StatePlatform.GetLiveEvents(video.Url);
-                    if (livePager != null)
+                    try
                     {
-                        state.LiveChatManager = new LiveChatManager(livePager);
-                        state.LiveChatManager?.Follow(this, (liveEvents) =>
+                        var livePager = StatePlatform.GetLiveEvents(video.Url);
+                        if (livePager != null)
                         {
-                            if (liveEvents.Count > 0)
-                                StateWebsocket.LiveEvents(liveEvents);
-                        });
-                        state.LiveChatManager?.Start();
+                            state.LiveChatManager = new LiveChatManager(livePager);
+                            state.LiveChatManager?.Follow(this, (liveEvents) =>
+                            {
+                                if (liveEvents.Count > 0)
+                                    StateWebsocket.LiveEvents(liveEvents);
+                            });
+                            state.LiveChatManager?.Start();
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
-                    state.LiveChatManager?.Stop();
-                    state.LiveChatManager = null;
-                    StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
+                    catch (Exception e)
+                    {
+                        Logger.Error<DetailsController>("Failed to retrieve live chat events", e);
+                        state.LiveChatManager?.Stop();
+                        state.LiveChatManager = null;
+                        StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
                     {
                         new LiveEventComment()
                         {
@@ -167,6 +169,39 @@ namespace Grayjay.ClientServer.Controllers
                             Name = "SYSTEM"
                         }
                     });
+                    }
+                }
+                else if(video != null && video.HasVODEvents())
+                {
+                    try
+                    {
+                        var livePager = video.GetVODEvents();
+                        if (livePager != null)
+                        {
+                            state.LiveChatManager = new LiveChatManager(livePager);
+                            state.LiveChatManager?.Follow(this, (liveEvents) =>
+                            {
+                                if (liveEvents.Count > 0)
+                                    StateWebsocket.LiveEvents(liveEvents);
+                            });
+                            state.LiveChatManager?.Start();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error<DetailsController>("Failed to retrieve vod chat events", e);
+                        state.LiveChatManager?.Stop();
+                        state.LiveChatManager = null;
+                        StateWebsocket.LiveEvents(new List<PlatformLiveEvent>()
+                    {
+                        new LiveEventComment()
+                        {
+                            ColorName = "#FF0000",
+                            Message = "Failed to load vod chat because of an error: " + e.Message,
+                            Name = "SYSTEM"
+                        }
+                    });
+                    }
                 }
             }
 
@@ -1219,6 +1254,7 @@ namespace Grayjay.ClientServer.Controllers
                 return false;
             if (url == state.VideoLoaded?.Url && state.VideoHistoryIndex.Url == url)
             {
+                state.LiveChatManager?.SetVideoPosition(position);
                 try
                 {
                     if (state.VideoPlaybackTracker?.ShouldUpdate() ?? false)

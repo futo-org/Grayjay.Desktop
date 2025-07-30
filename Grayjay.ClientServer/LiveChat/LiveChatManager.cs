@@ -15,6 +15,9 @@ public class LiveChatManager
     private Thread? _pollingThread;
     private volatile bool _running;
 
+    private long _position = 0;
+    private long _eventPosition = 0;
+
     public long ViewCount { get; private set; }
 
     public LiveChatManager(IPager<PlatformLiveEvent> pager, long initialViewCount = 0)
@@ -35,6 +38,11 @@ public class LiveChatManager
         var initial = _pager.GetResults();
         if (initial?.Length > 0)
             HandleEvents(initial.ToList());
+    }
+
+    public void SetVideoPosition(long ms)
+    {
+        _position = ms;
     }
 
     public void Start()
@@ -103,12 +111,43 @@ public class LiveChatManager
                 if (_pager == null || !_pager.HasMorePages())
                     break;
 
+                if(_pager is VODEventPager && _eventPosition > _position)
+                {
+                    Thread.Sleep(500);
+                    continue;
+                }
+
                 try
                 {
-                    _pager.NextPage();
-                    var newEvents = _pager.GetResults() ?? Array.Empty<PlatformLiveEvent>();
+                    PlatformLiveEvent[] newEvents = null;
+                    if(_pager is VODEventPager vodPager)
+                    {
+                        long requestPosition = Math.Max(1, _position);
+                        vodPager.NextPage(requestPosition);
+                        newEvents = _pager.GetResults()?
+                            .Where(x=>
+                                x.Time > requestPosition || 
+                                x is LiveEventEmojis)
+                            .ToArray() ?? Array.Empty<PlatformLiveEvent>();
+
+                        if (newEvents.Length > 0)
+                        {
+                            _eventPosition = newEvents.Max(x => x.Time);
+                            Logger.i<LiveChatManager>($"VOD Events last event: {_eventPosition}");
+                        }
+                        else
+                            _eventPosition = requestPosition + Math.Max(vodPager.NextRequest, 800);
+                    }
+                    else
+                    {
+
+                        _pager.NextPage();
+                        newEvents = _pager.GetResults() ?? Array.Empty<PlatformLiveEvent>();
+                    }
                     if (_pager is LiveEventPager liveEventPager)
                         nextIntervalMs = Math.Max(liveEventPager.NextRequest, 800);
+                    else if (_pager is VODEventPager vodEventPager)
+                        nextIntervalMs = Math.Max(vodEventPager.NextRequest, 800);
 
                     if (newEvents.Length > 0)
                     {
@@ -126,7 +165,7 @@ public class LiveChatManager
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error<LiveChatManager>("Failed to load live events", ex);
+                    Logger.Error<LiveChatManager>("Failed to load live events", ex); 
                 }
 
                 var slept = 0;
