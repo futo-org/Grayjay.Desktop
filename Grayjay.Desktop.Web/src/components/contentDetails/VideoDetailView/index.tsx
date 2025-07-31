@@ -538,7 +538,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const videoLoadedIsValid$ = createMemo(() => videoLoaded$()?.url === currentVideo$()?.url);
     const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);   
     const hasLiveChat$ = createMemo(() => {
-        return videoLoaded$()?.isLive === true;
+        return videoLoaded$()?.isLive === true || videoLoaded$()?.isVOD === true;
     });
     const shouldHideSideBar = createMemo(() => {
         //TODO: Expand these conditions

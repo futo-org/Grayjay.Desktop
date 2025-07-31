@@ -569,6 +569,17 @@ namespace Grayjay.Desktop.POC.Port.States
                 return new List<string>();
             return plugin.GetUserPlaylists();
         }
+        public static IPager<PlatformContent> GetUserHistory(string id)
+        {
+            var plugin = GetEnabledClient(id);
+            if (plugin != null && plugin.IsLoggedIn)
+            {
+                return plugin.FromPool(_pagerClientPool)
+                    .getUserHistory();
+            }
+            return new EmptyPager<PlatformContent>();
+        }
+
 
         public static PlaybackTracker GetPlaybackTracker(string url)
         {

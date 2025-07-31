@@ -7,4 +7,5 @@ export interface IPlatformVideoDetails extends IPlatformVideo {
     subtitles: any[];
     //preview
     isLive: boolean;
+    isVOD: boolean;
 }
