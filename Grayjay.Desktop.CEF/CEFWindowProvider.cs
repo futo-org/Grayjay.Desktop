@@ -80,7 +80,7 @@ namespace Grayjay.Desktop.CEF
                 resizable: false,
                 requestModifier: (window, req) =>
                 {
-                    foreach(var header in req.Headers.ToList())
+                    foreach (var header in req.Headers.ToList())
                     {
                         if (header.Key.ToLower().StartsWith("sec-"))
                             req.Headers.Remove(header.Key);
@@ -102,276 +102,253 @@ namespace Grayjay.Desktop.CEF
             if (true)
             {
                 await window.ExecuteDevToolsMethodAsync("Page.enable", "{}");
-                
                 await window.ExecuteDevToolsMethodAsync("Page.addScriptToEvaluateOnNewDocument", EvaluateScriptParameter("""
-                (()=>{
-                    const __userAgentData = {
-                        architecture: "",
-                        bitness: "",
-                        brands: [
-                            {"brand":"Chromium","version":"124"},
-                            {"brand":"Google Chrome","version":"124"},
-                            {"brand":"Not-A.Brand","version":"99"}
-                        ],
-                        fullVersionList: [
-                            {"brand":"Chromium","version":"124.0.0.0"},
-                            {"brand":"Google Chrome","version":"124.0.0.0"},
-                            {"brand":"Not-A.Brand","version":"99.0.0.0"}
-                        ],
-                        mobile: true,
-                        model: "",
-                        platform: "Android",
-                        platformVersion: "12.0.0",
-                        uaFullVersion: "124.0.0.0",
-                        wow64: false
-                    };
-                    const __mediaDevices = {
-                        async enumerateDevices() {
-                            return  [
-                               {
-                                  "deviceId": "",
-                                  "kind": "audioinput",
-                                  "label": "",
-                                  "groupId": ""
-                               },
-                               {
-                                  "deviceId": "",
-                                  "kind": "videoinput",
-                                  "label": "",
-                                  "groupId": ""
-                               },
-                               {
-                                  "deviceId": "",
-                                  "kind": "audiooutput",
-                                  "label": "",
-                                  "groupId": ""
-                               }
-                            ];
-                        },
-                        async getDisplayMedia(){},
-                        async getSupportedConstraints(){
-                            return {
-                               "aspectRatio": true,
-                               "autoGainControl": true,
-                               "brightness": true,
-                               "channelCount": true,
-                               "colorTemperature": true,
-                               "contrast": true,
-                               "deviceId": true,
-                               "displaySurface": true,
-                               "echoCancellation": true,
-                               "exposureCompensation": true,
-                               "exposureMode": true,
-                               "exposureTime": true,
-                               "facingMode": true,
-                               "focusDistance": true,
-                               "focusMode": true,
-                               "frameRate": true,
-                               "groupId": true,
-                               "height": true,
-                               "iso": true,
-                               "latency": true,
-                               "noiseSuppression": true,
-                               "pan": true,
-                               "pointsOfInterest": true,
-                               "resizeMode": true,
-                               "sampleRate": true,
-                               "sampleSize": true,
-                               "saturation": true,
-                               "sharpness": true,
-                               "suppressLocalAudioPlayback": true,
-                               "tilt": true,
-                               "torch": true,
-                               "voiceIsolation": true,
-                               "whiteBalanceMode": true,
-                               "width": true,
-                               "zoom": true
-                            };
-                        },
-                        async getUserMedia() {},
-                        ondevicechange: null,
-                        async setCaptureHandleConfig(){}
-                    };
-                    const __screen = {
-                        availHeight: 833,
-                        availLeft: 0,
-                        availTop: 0,
-                        availWidth: 385,
-                        colorDepth: 24,
-                        height: 833,
-                        isExtended: false,
-                        orientation: {
-                            angle: 0,
-                            onchange: null,
-                            type: "portrait-primary"
-                        },
-                        pixelDepth: 24,
-                        width: 385
-                    }
-                    async function __getHighEntropyValues(arr) {
-                        const result = {};
-                        for(let key of arr) {
-                            if(key in __userAgentData)
-                                result[key] = __userAgentData[key];
+                    (() => {
+                        const __userAgentData = {
+                            architecture: "",
+                            bitness: "",
+                            brands: [
+                                {"brand":"Chromium","version":"124"},
+                                {"brand":"Google Chrome","version":"124"},
+                                {"brand":"Not-A.Brand","version":"99"}
+                            ],
+                            fullVersionList: [
+                                {"brand":"Chromium","version":"124.0.0.0"},
+                                {"brand":"Google Chrome","version":"124.0.0.0"},
+                                {"brand":"Not-A.Brand","version":"99.0.0.0"}
+                            ],
+                            mobile: true,
+                            model: "",
+                            platform: "Android",
+                            platformVersion: "12.0.0",
+                            uaFullVersion: "124.0.0.0",
+                            wow64: false
+                        };
+                        const __mediaDevices = {
+                            async enumerateDevices() {
+                                return  [
+                                   {
+                                      "deviceId": "",
+                                      "kind": "audioinput",
+                                      "label": "",
+                                      "groupId": ""
+                                   },
+                                   {
+                                      "deviceId": "",
+                                      "kind": "videoinput",
+                                      "label": "",
+                                      "groupId": ""
+                                   },
+                                   {
+                                      "deviceId": "",
+                                      "kind": "audiooutput",
+                                      "label": "",
+                                      "groupId": ""
+                                   }
+                                ];
+                            },
+                            async getDisplayMedia(){},
+                            async getSupportedConstraints(){
+                                return {
+                                   "aspectRatio": true,
+                                   "autoGainControl": true,
+                                   "brightness": true,
+                                   "channelCount": true,
+                                   "colorTemperature": true,
+                                   "contrast": true,
+                                   "deviceId": true,
+                                   "displaySurface": true,
+                                   "echoCancellation": true,
+                                   "exposureCompensation": true,
+                                   "exposureMode": true,
+                                   "exposureTime": true,
+                                   "facingMode": true,
+                                   "focusDistance": true,
+                                   "focusMode": true,
+                                   "frameRate": true,
+                                   "groupId": true,
+                                   "height": true,
+                                   "iso": true,
+                                   "latency": true,
+                                   "noiseSuppression": true,
+                                   "pan": true,
+                                   "pointsOfInterest": true,
+                                   "resizeMode": true,
+                                   "sampleRate": true,
+                                   "sampleSize": true,
+                                   "saturation": true,
+                                   "sharpness": true,
+                                   "suppressLocalAudioPlayback": true,
+                                   "tilt": true,
+                                   "torch": true,
+                                   "voiceIsolation": true,
+                                   "whiteBalanceMode": true,
+                                   "width": true,
+                                   "zoom": true
+                                };
+                            },
+                            async getUserMedia() {},
+                            ondevicechange: null,
+                            async setCaptureHandleConfig(){}
+                        };
+                        const __screen = {
+                            availHeight: 833,
+                            availLeft: 0,
+                            availTop: 0,
+                            availWidth: 385,
+                            colorDepth: 24,
+                            height: 833,
+                            isExtended: false,
+                            orientation: {
+                                angle: 0,
+                                onchange: null,
+                                type: "portrait-primary"
+                            },
+                            pixelDepth: 24,
+                            width: 385
                         }
-                        return result;
-                    }
-                
-                    console.log("MODIFIED START");
-                    let __logged = [];
-                    const ignoreProperties = ["navigator", "clientInformation", "window", "document", "location", "top", "chrome", "TrustedScriptURL", "TrustedScript", "TrustedHTML", "TrustedTypePolicy", "TrustedTypePolicyFactory", "trustedTypes", "performance", "_DumpException", "self", "history"]
-
-                    function __stalk(obj, property, contextName) {
-                        Object.defineProperty(obj, property, {
-                            value: new Proxy(navigator, {
-                                has: (target, key) => {
-                                    return key in target;
-                                },
-                                get: (target, key) => {
-                                    console.log("Accessed: " + contextName + "." + key);
-                                    if(!target)
-                                        return undefined;
-                                    return (typeof target[key] === "function") ? target[key].bind(target) : target[key];
+                        async function __getHighEntropyValues(arr) {
+                            const result = {};
+                            for(let key of arr) {
+                                if(key in __userAgentData)
+                                    result[key] = __userAgentData[key];
+                            }
+                            return result;
+                        }
+                        const __gl = document.createElement("canvas").getContext("webgl");
+                        if (__gl) {
+                            const __gl_debugInfo = __gl.getExtension('WEBGL_debug_renderer_info');
+                            if (__gl_debugInfo) {
+                                const __UNMASKED_VENDOR = __gl_debugInfo.UNMASKED_VENDOR_WEBGL;
+                                const __UNMASKED_RENDERER = __gl_debugInfo.UNMASKED_RENDERER_WEBGL;
+                                const __WebGLRenderingContextGetParameter = WebGLRenderingContext.prototype.getParameter;
+                                WebGLRenderingContext.prototype.getParameter = function(para) {
+                                    let result = __WebGLRenderingContextGetParameter.apply(this, [para]);
+                                    if(para === __UNMASKED_VENDOR)
+                                        result = "Google Inc. (Qualcomm)";
+                                    else if(para === __UNMASKED_RENDERER)
+                                        result = "ANGLE (Qualcomm, Adreno (TM) 640, OpenGL ES 3.2)";
+                                    return result;
                                 }
-                            }),
-                        });
-                    }
-                    __stalk(window, "ontouchstart", "window.ontouchstart");
-                
-                    const __gl = document.createElement("canvas").getContext("webgl");
-                    const __gl_debugInfo = __gl.getExtension('WEBGL_debug_renderer_info');
-                    const __UNMASKED_VENDOR = __gl_debugInfo.UNMASKED_VENDOR_WEBGL;
-                    const __UNMASKED_RENDERER = __gl_debugInfo.UNMASKED_RENDERER_WEBGL;
-                    const __WebGLRenderingContextGetParameter = WebGLRenderingContext.prototype.getParameter;
-                    WebGLRenderingContext.prototype.getParameter = function(para) {
-                        let result = __WebGLRenderingContextGetParameter.apply(this, [para]);
-                        if(para == __UNMASKED_VENDOR)
-                            result = "Google Inc. (Qualcomm)";
-                        else if(para == __UNMASKED_RENDERER)
-                            result = "ANGLE (Qualcomm, Adreno (TM) 640, OpenGL ES 3.2)";
-                        console.log("WebGL Accessed getParameter(" + para + "): " + result);
-                        return result;
-                    }
-                    const __permissionsQuery = Permissions.prototype.query;
-                    Permissions.prototype.query = function(para) {
-                        let result = null;//__permissionsQuery.apply(this, [para]);
-                        console.log("Permissions.query(" + para.name + "): [" + result?.name + ", " + result?.state + "]"); 
-                        if(true) {
-                            result = {
+                            }
+                        }
+                        const __gl2 = document.createElement("canvas").getContext("webgl2");
+                        if (__gl2) {
+                            const __gl_debugInfo2 = __gl2.getExtension('WEBGL_debug_renderer_info');
+                            if (__gl_debugInfo2) {
+                                const __UNMASKED_VENDOR2 = __gl_debugInfo2.UNMASKED_VENDOR_WEBGL;
+                                const __UNMASKED_RENDERER2 = __gl_debugInfo2.UNMASKED_RENDERER_WEBGL;
+                                const __WebGL2RenderingContextGetParameter = WebGL2RenderingContext.prototype.getParameter;
+                                WebGL2RenderingContext.prototype.getParameter = function(para) {
+                                    let result = __WebGL2RenderingContextGetParameter.apply(this, [para]);
+                                    if(para === __UNMASKED_VENDOR2)
+                                        result = "Google Inc. (Qualcomm)";
+                                    else if(para === __UNMASKED_RENDERER2)
+                                        result = "ANGLE (Qualcomm, Adreno (TM) 640, OpenGL ES 3.2)";
+                                    return result;
+                                }
+                            }
+                        }
+                        const __permissionsQuery = Permissions.prototype.query;
+                        Permissions.prototype.query = function(para) {
+                            const result = {
                                 name: para.name,
                                 state: 'prompt',
                                 onchange: null,
                                 constructor: PermissionStatus
-                            }
-                            console.log("Permissions.query(" + para.name + "): Intercepted: " + JSON.stringify(result)); 
+                            };
+                            return result;
                         }
-                        return result;
-                    }
-                    const __objectGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-                    Object.getOwnPropertyDescriptor = function(obj, prop) {
-                        let val = __objectGetOwnPropertyDescriptor(obj, prop);
-                        if(prop == 'webdriver')
-                            val = undefined;
-                        return val;
-                    };
-                    function __getNavigatorValue(target, key) {
-                                switch(key) {
-                                    case "webdriver":
-                                        return false;
-                                    case "platform":
-                                        return "Linux armv81"
-                                    case "constructor":
-                                        return Navigator.prototype.constructor;
-                                    case "maxTouchPoints":
-                                        return 8;
-                                    case "hardwareConcurrency":
-                                        return 3;
-                                    case "keyboard":
-                                        return null;
-                                    case "connection":
-                                        return {
-                                            downlink: 1.6,
-                                            downlinkMax: null,
-                                            effectiveType: "4g",
-                                            rtt: 50,
-                                            saveData: false,
-                                            type: "wifi"
-                                        };
-                                    case "cookieEnabled":
-                                        return true;
-                                    case "deviceMemory":
-                                        return 2;
-                                    case "mediaDevices":
-                                        return __mediaDevices;
-                                    case "permissions":
-                                        return {
-                                            async query(arg) {
-                                                console.log("navigator.permissions.query(...)");
-                                                return target.permissions.query(arg);
-                                            }
-                                        };
-                                    case "languages":
-                                        return ["en-US"];
-                                    case "userAgentData":
-                                        return {
-                                            "brands":[{"brand":"Chromium","version":"124"},{"brand":"Google Chrome","version":"124"},{"brand":"Not-A.Brand","version":"99"}],
-                                            "mobile":true,
-                                            "platform":"Android",
-                                            "getHighEntropyValues": __getHighEntropyValues
-                                        };
-                                }
-                                if(!target)
-                                    return undefined;
-                                return (typeof target[key] === "function") ? target[key].bind(target) : target[key];
-                    }
-                    /*
-                    Object.defineProperty(window, "devicePixelRatio", { value: 3.75 });
-                    Object.defineProperty(window, "innerWidth", { value: 1364 });
-                    Object.defineProperty(window, "innerHeight", { value: 2259 });
-                    Object.defineProperty(window, "outerWidth", { value: 384 });
-                    Object.defineProperty(window, "outerHeight", { value: 636 });
-                    Object.defineProperty(window, "screen", { value: __screen });*/
-                    Object.defineProperty(window, "navigator", {
-                        value: new Proxy(navigator, {
-                            has: (target, key) => {
-                                switch(key) {
-                                    case "webdriver":
-                                        return false;
-
-                                }
-                                return key in target;
-                            },
-                            get: (target, key) => {
-                                if(__logged.indexOf("navigator." + key) < 0) {
-                                    console.log("ACCESSED:navigator." + key);
-                                    __logged.push("navigator." + key);
-                                }
-                                return __getNavigatorValue(target, key);
+                        const __objectGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+                        Object.getOwnPropertyDescriptor = function(obj, prop) {
+                            let val = __objectGetOwnPropertyDescriptor(obj, prop);
+                            if(prop == 'webdriver')
+                                val = undefined;
+                            return val;
+                        };
+                        function __getNavigatorValue(target, key) {
+                            switch(key) {
+                                case "webdriver":
+                                    return false;
+                                case "platform":
+                                    return "Linux armv8l";
+                                case "constructor":
+                                    return Navigator.prototype.constructor;
+                                case "maxTouchPoints":
+                                    return 8;
+                                case "hardwareConcurrency":
+                                    return 3;
+                                case "keyboard":
+                                    return null;
+                                case "connection":
+                                    return {
+                                        downlink: 1.6,
+                                        downlinkMax: null,
+                                        effectiveType: "4g",
+                                        rtt: 50,
+                                        saveData: false,
+                                        type: "wifi"
+                                    };
+                                case "cookieEnabled":
+                                    return true;
+                                case "deviceMemory":
+                                    return 2;
+                                case "mediaDevices":
+                                    return __mediaDevices;
+                                case "permissions":
+                                    return {
+                                        async query(arg) {
+                                            return target.permissions.query(arg);
+                                        }
+                                    };
+                                case "languages":
+                                    return ["en-US"];
+                                case "userAgentData":
+                                    return {
+                                        "brands":[{"brand":"Chromium","version":"124"},{"brand":"Google Chrome","version":"124"},{"brand":"Not-A.Brand","version":"99"}],
+                                        "mobile":true,
+                                        "platform":"Android",
+                                        "getHighEntropyValues": __getHighEntropyValues
+                                    };
                             }
-                        }),
-                    });
-                    Object.defineProperty(window, "clientInformation", {
-                        value: new Proxy(navigator, {
-                            has: (target, key) => {
-                                switch(key) {
-                                    case "webdriver":
-                                        return false;
-                
+                            if(!target)
+                                return undefined;
+                            return (typeof target[key] === "function") ? target[key].bind(target) : target[key];
+                        }
+                        Object.defineProperty(window, "navigator", {
+                            value: new Proxy(navigator, {
+                                has: (target, key) => {
+                                    switch(key) {
+                                        case "webdriver":
+                                            return false;
+                                    }
+                                    return key in target;
+                                },
+                                get: (target, key) => {
+                                    return __getNavigatorValue(target, key);
                                 }
-                                return key in target;
-                            },
-                            get: (target, key) => {
-                                if(__logged.indexOf("clientInformation." + key) >= 0) {
-                                    console.log("ACCESSED:clientInformation." + key);
-                                    __logged.push("clientInformation." + key);
+                            }),
+                        });
+                        Object.defineProperty(window, "clientInformation", {
+                            value: new Proxy(navigator, {
+                                has: (target, key) => {
+                                    switch(key) {
+                                        case "webdriver":
+                                            return false;
+                                    }
+                                    return key in target;
+                                },
+                                get: (target, key) => {
+                                    return __getNavigatorValue(target, key);
                                 }
-                                return __getNavigatorValue(target, key);
-                            }
-                        }),
-                    });
-                    console.log("MODIFIED2");
-                })();
-                """));
+                            }),
+                        });
+                        delete window.webkitRequestFileSystem;
+                        delete window.webkitResolveLocalFileSystemURL;
+                        delete window.webkitSpeechRecognitionError;
+                        delete window.webkitSpeechRecognitionEvent;
+                    })();
+                    """));
             }
 
             if (!string.IsNullOrEmpty(userAgent))
