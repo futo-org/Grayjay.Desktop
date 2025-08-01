@@ -20,7 +20,7 @@ import { LoaderGame, LoaderGameHandle } from '../../LoaderGame';
 import StateWebsocket from '../../../state/StateWebsocket';
 import StateGlobal from '../../../state/StateGlobal';
 import Globals from '../../../globals';
-import { clearLiveChat } from '../../../state/StateLiveChat';
+import { clearLiveChatOnSeek } from '../../../state/StateLiveChat';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -1137,7 +1137,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                         props.onSetScrubbing?.(scrubbing);
                     }}
                     onSetPosition={async (duration) => { 
-                        clearLiveChat();
+                        clearLiveChatOnSeek();
                         setPosition(duration);
                         if (isCasting()) {
                             await CastingBackend.mediaSeek(duration);

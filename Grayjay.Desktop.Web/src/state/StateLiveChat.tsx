@@ -70,12 +70,10 @@ const [store, setStore] = createStore<LiveChatStore>({
 let websocketHandlerRegistered = false;
 let _expirationInterval: ReturnType<typeof setInterval> | null = null;
 
-export function clearLiveChat() {
+export function clearLiveChatOnSeek() {
     setStore({
         messages: [],
-        viewerCount: 0,
         donations: {},
-        emojis: {},
         raid: null
     });
 }
@@ -136,7 +134,13 @@ export function ensureLiveChatWebsocket() {
     }, 'liveEvents');
 
     StateWebsocket.registerHandlerNew('LiveEventsClear', (p) => {
-        clearLiveChat();
+        setStore({
+            messages: [],
+            viewerCount: 0,
+            donations: {},
+            emojis: {},
+            raid: null
+        });
     }, 'liveEventsClear');
 
     onCleanup(() => {
