@@ -70,6 +70,14 @@ const [store, setStore] = createStore<LiveChatStore>({
 let websocketHandlerRegistered = false;
 let _expirationInterval: ReturnType<typeof setInterval> | null = null;
 
+export function clearLiveChatOnSeek() {
+    setStore({
+        messages: [],
+        donations: {},
+        raid: null
+    });
+}
+
 export function ensureLiveChatWebsocket() {
     if (websocketHandlerRegistered) return;
     websocketHandlerRegistered = true;
