@@ -20,6 +20,7 @@ import { LoaderGame, LoaderGameHandle } from '../../LoaderGame';
 import StateWebsocket from '../../../state/StateWebsocket';
 import StateGlobal from '../../../state/StateGlobal';
 import Globals from '../../../globals';
+import { clearLiveChat } from '../../../state/StateLiveChat';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -242,6 +243,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             stopHideControls();
         } else {
             console.info("stop casting because isCasting change");
+            //TODO: playWhenReady = casting?.activeDevice.device()?.isPlaying() ?? false
             await changeSourceToSetSource(props.source ? { ... props.source, shouldResume: true } : undefined);
             await stopCastingIfApplicable();
             startHideControls();
@@ -505,6 +507,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     });
 
     const changeSource = (sourceUrl?: string, mediaType?: string, shouldResume?: boolean, startTime?: Duration) => {
+        //TODO: Implement playWhenReady ?
         console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
         setIsAudioOnly(false);
         setIsPlaying(false);
@@ -1134,6 +1137,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                         props.onSetScrubbing?.(scrubbing);
                     }}
                     onSetPosition={async (duration) => { 
+                        clearLiveChat();
                         setPosition(duration);
                         if (isCasting()) {
                             await CastingBackend.mediaSeek(duration);

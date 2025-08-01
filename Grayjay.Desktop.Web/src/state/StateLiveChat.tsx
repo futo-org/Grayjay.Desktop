@@ -70,6 +70,16 @@ const [store, setStore] = createStore<LiveChatStore>({
 let websocketHandlerRegistered = false;
 let _expirationInterval: ReturnType<typeof setInterval> | null = null;
 
+export function clearLiveChat() {
+    setStore({
+        messages: [],
+        viewerCount: 0,
+        donations: {},
+        emojis: {},
+        raid: null
+    });
+}
+
 export function ensureLiveChatWebsocket() {
     if (websocketHandlerRegistered) return;
     websocketHandlerRegistered = true;
@@ -126,13 +136,7 @@ export function ensureLiveChatWebsocket() {
     }, 'liveEvents');
 
     StateWebsocket.registerHandlerNew('LiveEventsClear', (p) => {
-        setStore({
-            messages: [],
-            viewerCount: 0,
-            donations: {},
-            emojis: {},
-            raid: null
-        });
+        clearLiveChat();
     }, 'liveEventsClear');
 
     onCleanup(() => {
