@@ -54,7 +54,30 @@ namespace Grayjay.ClientServer.Controllers
 
         //Source app settings
         public SettingsObject<PluginAppSettings> SourceAppSettings(string id)
-            => (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor?.AppSettings?.GetSettingsObject() : StatePlugins.GetPlugin(id)?.AppSettings?.GetSettingsObject(id);
+        {
+            if (id == StateDeveloper.DEV_ID)
+            {
+                var plugin = StatePlatform.GetDevClient();
+                var activePlugin = StatePlatform.GetEnabledClient(id);
+                return plugin?.Descriptor?.AppSettings?
+                    .GetSettingsObject()
+                    .ApplyConditionalSettings(new Dictionary<string, Func<bool>>()
+                    {
+                        { "sync", () => activePlugin?.Capabilities?.HasGetUserHistory ?? false}
+                    });
+            }
+            else
+            {
+                var plugin = StatePlugins.GetPlugin(id);
+                var activePlugin = StatePlatform.GetEnabledClient(id);
+                return plugin.AppSettings?
+                    .GetSettingsObject(id)
+                    .ApplyConditionalSettings(new Dictionary<string, Func<bool>>()
+                    {
+                        { "sync", () => activePlugin?.Capabilities?.HasGetUserHistory ?? false}
+                    });
+            };
+        }
 
         [HttpPost]
         public bool SourceAppSettingsSave(string id, [FromBody]PluginAppSettings settings)

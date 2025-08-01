@@ -65,7 +65,7 @@ const Field: Component<FieldProps> = (props) => {
         }
     }
 
-    const [isVisible$, setIsVisible] = createSignal(!props.field.dependency || parseBool(props.parentObject[props.field.dependency]));
+    const [isVisible$, setIsVisible] = createSignal(props.field.visible && (!props.field.dependency || parseBool(props.parentObject[props.field.dependency])));
 
     createEffect(()=>{
         if(props.field.dependency && props.container) {
