@@ -213,8 +213,7 @@ export function dateFromAny(value?: any, def?: DateTime): DateTime | undefined {
   
   if(!isNaN(value)) {
     //TODO: Alt solution
-    const wrongOffset = ((new Date()).getTimezoneOffset()/60);
-    return DateTime.fromSeconds(value).plus({hours: wrongOffset});
+    return DateTime.fromSeconds(value);
   }
   if(typeof value == "string")
     return DateTime.fromISO(value);
