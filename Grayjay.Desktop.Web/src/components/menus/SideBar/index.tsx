@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on, For } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -258,16 +258,18 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             </div>
           </Show>
         </div>
-        {topButtons$().slice(0, visibleTopButtonCount$()).map(btn => (
-          <SideBarButton
-            collapsed={collapsed()}
-            icon={btn.icon}
-            name={btn.name}
-            selected={btn.selected}
-            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-            onRightClick={btn.onRightClick}
-          />
-        ))}
+        <For each={topButtons$().slice(0, visibleTopButtonCount$())}>
+          {(btn) => (
+            <SideBarButton
+              collapsed={collapsed()}
+              icon={btn.icon}
+              name={btn.name}
+              selected={btn.selected}
+              onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
+              onRightClick={btn.onRightClick}
+            />
+          )}
+        </For>
         <Show when={moreTopButtonCount$() > 0}>
           <SideBarButton
               collapsed={collapsed()}
@@ -313,15 +315,17 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         </div>
       </Show>
       <div class={styles.buttonListBottom}>
-        {bottomButtons$().map(btn => (
-          <SideBarButton
-            collapsed={collapsed()}
-            icon={btn.icon}
-            name={btn.name}
-            selected={btn.selected}
-            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-          />
-        ))}
+        <For each={bottomButtons$()}>
+          {(btn) => (
+            <SideBarButton
+              collapsed={collapsed()}
+              icon={btn.icon}
+              name={btn.name}
+              selected={btn.selected}
+              onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
+            />
+          )}
+        </For>
       </div>
       <Portal>
         <Show when={moreTopButtonCount$() > 0 && moreOverlayVisible$()}>
@@ -336,7 +340,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           }}>
             <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
     flex-direction: column; align-items: center; gap: 6px;">
-              {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (
+              <For each={topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$())}>
+                {(btn) => (
                   <SideBarButton
                     collapsed={false}
                     icon={btn.icon}
@@ -345,10 +350,10 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
                     onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
                     onRightClick={btn.onRightClick}
                   />
-                ))}
+                )}
+              </For>
             </div>
           </div>
-
         </Show>
       </Portal>
     </div>
