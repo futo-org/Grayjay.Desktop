@@ -7,6 +7,8 @@ import SubscribeButton from '../../buttons/SubscribeButton';
 import settings from '../../../assets/icons/icon24_settings.svg';
 import TransparentIconButton from '../../buttons/TransparentIconButton';
 import { SubscriptionsBackend } from '../../../backend/SubscriptionsBackend';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface CreatorViewProps {
   id?: IPlatformID,
@@ -18,6 +20,7 @@ interface CreatorViewProps {
   onClick?: () => void;
   onSettingsClick?: (el: HTMLElement) => void;
   isSubscribedInitialState?: boolean;
+  focusableOpts?: FocusableOptions;
 }
 
 const CreatorView: Component<CreatorViewProps> = (props) => {
@@ -42,7 +45,7 @@ const CreatorView: Component<CreatorViewProps> = (props) => {
   });
 
   return (
-    <div class={styles.containerCreator} onClick={() => props.onClick?.()}>
+    <div class={styles.containerCreator} onClick={() => props.onClick?.()} use:focusable={props.focusableOpts}>
       <div style="position: relative; display: inline-block;"> 
         <img src={(props.thumbnail) ? "/Images/CachePassthrough?url=" + encodeURIComponent(props.thumbnail) : undefined} class={styles.thumbnail} referrerPolicy='no-referrer' />
         <Show when={pluginIconUrl()}>

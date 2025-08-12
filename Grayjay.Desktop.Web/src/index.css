@@ -18,6 +18,10 @@ code {
     monospace;
 }
 
+*:focus {
+  outline: none;
+}
+
 .droparea {
   position:fixed;
   top: 0px;

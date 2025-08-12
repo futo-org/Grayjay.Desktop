@@ -257,7 +257,10 @@ const ChannelPage: Component = () => {
                   onSubmit={() => {
                     console.log("Channel Search Submit");
                     updatePager(query$(), channel$()?.url ?? params.url)
-                    }} />
+                    }} 
+                  focusableOpts={{
+                    order: 0
+                  }} />
                 </Show>
                       
                 <Show when={error$()}>

@@ -1,4 +1,4 @@
-import { Component, createSignal, createMemo, Show, Switch, Match, batch, createEffect, onCleanup, onMount } from "solid-js";
+import { Component, createSignal, createMemo, Show, Switch, Match, batch, createEffect, onCleanup, onMount, Accessor } from "solid-js";
 import styles from './index.module.css';
 import { Pager } from "../../../backend/models/pagers/Pager";
 import VideoThumbnailView from "../../content/VideoThumbnailView";
@@ -13,6 +13,7 @@ import iconWatchLater from '../../../assets/icons/icon24_watch_later.svg';
 import iconAddToPlaylist from '../../../assets/icons/icon24_add_to_playlist.svg';
 import iconHide from '../../../assets/icons/icon24_hide.svg';
 import iconDownload from '../../../assets/icons/icon24_download.svg';
+import iconCreator from '../../../assets/icons/icon_nav_creators.svg';
 import Anchor, { AnchorStyle } from "../../../utility/Anchor";
 import { Portal } from "solid-js/web";
 import { WatchLaterBackend } from "../../../backend/WatchLaterBackend";
@@ -37,6 +38,8 @@ import LockedContentThumbnailView from "../../content/LockedContentThumbnailView
 import { IPlatformLockedContent } from "../../../backend/models/content/IPlatformLockedContent";
 import { LocalBackend } from "../../../backend/LocalBackend";
 import { Event0, Event1 } from "../../../utility/Event";
+import { focusable } from "../../../focusable";import { OpenIntent } from "../../../nav";
+ void focusable;
 
 export interface ContentGridProps {
     pager: Pager<IPlatformContent> | undefined;
@@ -72,6 +75,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     }
 
     const [settingsContent$, setSettingsContent] = createSignal<IPlatformContent>();
+    const [settingsMenuOpenIntent$, setSettingsMenuOpenIntent] = createSignal<OpenIntent>();
     const settingsMenu$ = createMemo(() => {
         const content = settingsContent$();        
         return {
@@ -79,6 +83,11 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
             items: [
             
                 ... (content?.contentType === ContentType.MEDIA ? [ 
+                    new MenuItemButton("Navigate to creator", iconCreator, undefined, ()=>{
+                        const author = content?.author;
+                        if(author)
+                            navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
+                    }),
                     new MenuItemButton("Add to queue", iconQueue, undefined, ()=>{
                         video?.actions.addToQueue(content as IPlatformVideo);
                     }),
@@ -108,17 +117,19 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     });
     const [show$, setShow] = createSignal<boolean>(false);
     const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-    function onSettingsClicked(element: HTMLElement, content: IPlatformContent) {
+    function onSettingsClicked(element: HTMLElement, content: IPlatformContent, openIntent: OpenIntent) {
         contentAnchor.setElement(element);
         
         batch(() => {
             setSettingsContent(content);
+            setSettingsMenuOpenIntent(openIntent);
             setShow(true);
         });
     }
     function onSettingsHidden() {
         batch(() => {
             setSettingsContent(undefined);
+            setSettingsMenuOpenIntent(undefined);
             setShow(false);
         });
     }
@@ -167,30 +178,49 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
         lastFilterChangedEvent?.unregister(this);
     });
 
-    const renderCreator = (creator: IPlatformAuthorLink) => {
+    const onBackContentGrid = () => {
+        if (show$()) {
+            onSettingsHidden();
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    const renderCreator = (index: Accessor<number | undefined>, creator: Accessor<IPlatformAuthorLink>) => {
         return (
-            <CreatorView id={creator.id}
-                name={creator.name}
-                onClick={() => navigate("/web/channel?url=" + encodeURIComponent(creator.url), { state: { author: creator
-                 } })}
-                thumbnail={creator.thumbnail}
-                metadata={((creator.subscribers && creator.subscribers > 0) ? (toHumanNumber(creator.subscribers) + " subscribers") : "")}
-                url={creator.url} />
+            <CreatorView id={creator().id}
+                name={creator().name}
+                onClick={() => navigate("/web/channel?url=" + encodeURIComponent(creator().url), { state: { author: creator() } })}
+                thumbnail={creator().thumbnail}
+                metadata={((creator().subscribers && creator().subscribers > 0) ? (toHumanNumber(creator().subscribers) + " subscribers") : "")}
+                url={creator().url}
+                focusableOpts={{
+                    order: index() ?? 0,
+                    onPress: () => navigate("/web/channel?url=" + encodeURIComponent(creator().url), { state: { author: creator() } }),
+                    onBack: () => onBackContentGrid()
+                }} />
         );
     };
 
-    const renderPlaylist = (playlist: IPlatformPlaylist) => {
+    const renderPlaylist = (index: Accessor<number | undefined>, item: Accessor<IPlatformPlaylist>) => {
         const pluginIconUrl$ = createMemo(() => {
-            const plugin = StateGlobal.getSourceConfig(playlist?.id?.pluginID);
+            const plugin = StateGlobal.getSourceConfig(item()?.id?.pluginID);
             return plugin?.absoluteIconUrl;
         });
         
         return (
-            <PlaylistView itemCount={playlist.videoCount}
-                name={playlist.name}
-                thumbnail={playlist.thumbnail}
+            <PlaylistView itemCount={item().videoCount}
+                name={item().name}
+                thumbnail={item().thumbnail}
                 platformIconUrl={pluginIconUrl$()}
-                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(playlist.url))} />
+                onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url))}
+                focusableOpts={{
+                    order: index() ?? 0,
+                    onPress: () => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url)),
+                    onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                    onBack: () => onBackContentGrid()
+                }} />
         );
         //onSettings={(e) => onSettingsClicked(e, playlist)}
     };
@@ -233,62 +263,104 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     elementStyle={{
                         "margin-left": "0px"
                     }}
-                    builder={(index, item) =>
-                        <Switch>
-                            <Match when={item()?.contentType == ContentType.MEDIA}>
+                    builder={(index, item) => 
+                        <>
+                            <Show when={item()?.contentType == ContentType.MEDIA}>
                                 <VideoThumbnailView video={item() as IPlatformVideo}
                                     useCache={!!props?.useCache}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
                                     onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
+                                    focusableOpts={{
+                                        order: index() ?? 0,
+                                        onPress: () => {
+                                            const url = item().backendUrl ?? item().url;
+                                            if (url)
+                                                video?.actions.openVideo(item() as IPlatformVideo);
+                                        },
+                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onBack: () => onBackContentGrid()
+                                    }}
                                     onClick={() => {
                                         const url = item().backendUrl ?? item().url;
                                         if (url)
                                             video?.actions.openVideo(item() as IPlatformVideo);
                                         }} />
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.POST}>
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.POST}>
                                 <PostThumbnailView post={item() as IPlatformPost}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().url;
                                         if(url)
                                             navigate("/web/details/post?url=" + encodeURIComponent(url));
+                                    }}
+                                    focusableOpts={{
+                                        order: index() ?? 0,
+                                        onPress: () => {
+                                            const url = item().backendUrl ?? item().url;
+                                            if(url)
+                                                navigate("/web/details/post?url=" + encodeURIComponent(url));
+                                        },
+                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onBack: () => onBackContentGrid()
                                     }} />
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.NESTED_VIDEO}>
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.NESTED_VIDEO}>
                                 <NestedMediaThumbnailView video={item() as IPlatformNestedMedia}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().contentUrl;
                                         if(url) {
                                             Globals.handleUrl(url, video!, navigate);
                                         }
+                                    }}
+                                    focusableOpts={{
+                                        order: index() ?? 0,
+                                        onPress: () => {
+                                            const url = item().backendUrl ?? item().contentUrl;
+                                            if(url) {
+                                                Globals.handleUrl(url, video!, navigate);
+                                            }
+                                        },
+                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onBack: () => onBackContentGrid()
                                     }} />
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.LOCKED}>
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.LOCKED}>
                                 <LockedContentThumbnailView content={item() as IPlatformLockedContent}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().url;
                                         if(url) {
                                             LocalBackend.open(url);
                                         }
+                                    }}
+                                    focusableOpts={{
+                                        order: index() ?? 0,
+                                        onPress: () => {
+                                            const url = item().backendUrl ?? item().contentUrl;
+                                            if(url) {
+                                                Globals.handleUrl(url, video!, navigate);
+                                            }
+                                        },
+                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onBack: () => onBackContentGrid()
                                     }} />
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.PLAYLIST}>
-                                {renderPlaylist(item() as IPlatformPlaylist)}
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.CHANNEL}>
-                                {renderCreator(item() as any)}
-                            </Match>
-                            <Match when={item()?.contentType == ContentType.PLACEHOLDER}>
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.PLAYLIST}>
+                                {renderPlaylist(index, createMemo(() => item() as IPlatformPlaylist))}
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.CHANNEL}>
+                                {renderCreator(index, createMemo(() => item() as IPlatformAuthorLink))}
+                            </Show>
+                            <Show when={item()?.contentType == ContentType.PLACEHOLDER}>
                                 <PlaceholderThumbnailView placeholder={item() as IPlatformContentPlaceholder} />
-                            </Match>
-                        </Switch>
+                            </Show>
+                        </>
                     } />
             </Show>
             <Portal>
-                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} />
+                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} openIntent={settingsMenuOpenIntent$()} />
             </Portal>
         </div>
     );

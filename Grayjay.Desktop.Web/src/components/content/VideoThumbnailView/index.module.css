@@ -1,12 +1,19 @@
 .container {
-    width: calc(100% - 20px);
+    width: calc(100%);
     height: auto;
     display: flex;
     flex-direction: column;
+    padding: 10px;
+    border-radius: 6px;
+    box-sizing: border-box;
 }
 
 .container:hover {
     cursor: pointer;
+}
+
+.container:focus {
+    background: #303030;
 }
 
 .videoThumbnail {

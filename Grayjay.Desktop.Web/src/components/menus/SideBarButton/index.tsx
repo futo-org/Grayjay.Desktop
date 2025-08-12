@@ -1,6 +1,8 @@
 import { Show, type Component } from 'solid-js';
 
 import styles from './index.module.css';
+import type { FocusableOptions } from "../../../nav"; 
+import { focusable } from "../../../focusable"; void focusable;
 
 interface SideBarButtonProps {
     icon?: string;
@@ -9,6 +11,7 @@ interface SideBarButtonProps {
     collapsed?: boolean;
     onClick?: (event: MouseEvent) => void;
     onRightClick?: (event: MouseEvent) => void;
+    focusableOpts?: FocusableOptions;
 }
 
 const SideBarButton: Component<SideBarButtonProps> = (props) => {
@@ -24,7 +27,7 @@ const SideBarButton: Component<SideBarButtonProps> = (props) => {
   };
 
   return (
-    <div onClick={handleClick} onContextMenu={handleRightClick} class={styles.sideBarButton} classList={{[styles.selected]: props.selected, [styles.collapsed]: props.collapsed}}>
+    <div use:focusable={props.focusableOpts} onClick={handleClick} onContextMenu={handleRightClick} class={styles.sideBarButton} classList={{[styles.selected]: props.selected, [styles.collapsed]: props.collapsed}}>
       <Show when={props.icon}>
         <img src={props.icon} class={styles.icon} alt="logo" />
       </Show>

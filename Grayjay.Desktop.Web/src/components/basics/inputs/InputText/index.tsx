@@ -2,6 +2,8 @@ import { Component, JSX, Show, createEffect, createSignal, mergeProps } from 'so
 
 import close from '../../../../assets/icons/close_FILL0_wght400_GRAD0_opsz24.svg';
 import styles from './index.module.css';
+import { focusable } from "../../../../focusable";import { FocusableOptions } from '../../../../nav';
+ void focusable;
 
 interface InputTextProps {
     placeholder?: string;
@@ -20,6 +22,7 @@ interface InputTextProps {
     label?: string;
     showClearButton?: boolean;
     error?: string | null | undefined;
+    focusableOpts?: FocusableOptions;
 }
 
 const InputText: Component<InputTextProps> = (props) => {
@@ -91,7 +94,8 @@ const InputText: Component<InputTextProps> = (props) => {
                                 merged.onFocusChanged?.(false);
                             }
                         }}
-                        style={props.inputStyle} />
+                        style={props.inputStyle}
+                        use:focusable={props.focusableOpts} />
                 </div>
                 <Show when={props.showClearButton && text().length > 0}>
                     <img onClick={() => {

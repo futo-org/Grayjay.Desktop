@@ -24,6 +24,14 @@
         
 }
 
+.sideBarButton.selected:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.sideBarButton:focus {
+  background: rgba(255, 255, 255, 0.055);
+}
+
 .sideBarButton .icon {
     height: 22px;
     width: 22px;

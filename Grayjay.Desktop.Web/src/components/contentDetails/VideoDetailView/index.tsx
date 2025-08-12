@@ -1336,10 +1336,14 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             handleEscape={() => {
                                 if (video?.state() === VideoState.Maximized) {
                                     minimize();
+                                } else if (video?.state() === VideoState.Minimized) {
+                                    close();
                                 }
                             }}
                             handleMinimize={() => {
-                                minimize();
+                                if (video?.state() === VideoState.Maximized) {
+                                    minimize();
+                                }
                             }}
                             leftButtonContainerStyle={isMinimized() ? {
                                 "width": "calc(100% - 48px)"
