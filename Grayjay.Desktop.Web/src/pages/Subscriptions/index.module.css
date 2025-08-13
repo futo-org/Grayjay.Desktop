@@ -50,6 +50,10 @@
     text-align: center;
     border: 1px solid transparent;
 }
+.channel:focus {
+    background: #303030;
+}
+
 .channel.active {
     border: 1px solid #4D4D4D;
     background: #1B1B1B;
@@ -127,6 +131,9 @@
     background-color: #222;
     cursor: pointer;
 }
+.subGroupExpand:focus {
+    background-color: #505050;
+}
 .subGroupExpand img {
     height: 20px;
     width: 20px;
@@ -136,7 +143,7 @@
     display: inline-block;
     position: relative;
     border-radius: 6px;
-    border: 1px solid rgba(173, 32, 220, 0.13);
+    border: 2px solid rgba(32, 32, 32, 0.13);
 
     background: #1B1B1B;
     width: 170px;
@@ -154,10 +161,6 @@
 }
 .subgroup.active {
     border: 2px solid #02C6E7;
-    margin-left: 0px;
-    margin-right: 6px;
-    margin-top: 0px;
-    margin-bottom: 0px;
 }
 .subgroup .editIcon {
     position: absolute;
@@ -166,6 +169,9 @@
     height: 20px;
     width: 20px;
     opacity: 0.5;
+}
+.subgroup:focus {
+    background: #303030;
 }
 .subgroup .editIcon:hover {
     opacity: 1;
@@ -238,9 +244,18 @@
 
     background: #1B1B1B;
 }
+.filter:focus {
+    background: #474747;
+}
 .filter.active {
     border: 1px solid #454545;
     background: #2E2E2E;
+}
+.filter.active:focus {
+    background: #666666;
+}
+.filter:focus .name {
+    color: #b4b4b4;
 }
 .filter .name {
     color: #555555;

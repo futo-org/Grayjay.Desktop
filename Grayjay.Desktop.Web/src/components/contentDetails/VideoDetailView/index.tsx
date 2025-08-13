@@ -1334,11 +1334,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 }
                             }}
                             handleEscape={() => {
-                                if (video?.state() === VideoState.Maximized) {
+                                /*if (video?.state() === VideoState.Maximized) {
                                     minimize();
                                 } else if (video?.state() === VideoState.Minimized) {
                                     close();
-                                }
+                                }*/
                             }}
                             handleMinimize={() => {
                                 if (video?.state() === VideoState.Maximized) {

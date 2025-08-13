@@ -159,3 +159,17 @@
     align-items: center;
     justify-content: center;
 }
+
+.button:focus,
+.iconClose:focus,
+.addButton:focus,
+.code > img:focus {
+    background-color: #333333;
+    border-color: #4A4A4A;
+}
+
+.button.primary:focus { background: #07A9F0; }
+.button.accent:focus { background: #FF7A70; }
+.button.none:focus { background: #1F1F1F; }
+.iconClose:focus { border-radius: 6px; }
+.code > img:focus { border-radius: 4px; }

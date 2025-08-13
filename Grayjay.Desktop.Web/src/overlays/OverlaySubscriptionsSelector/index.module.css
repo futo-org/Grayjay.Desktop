@@ -45,6 +45,9 @@
     width: 24px;
     height: 24px;
 }
+.closeButton:focus {
+  background: #3A3A3A;
+}
 
 .subscriptionsContainer {
     height: 400px;
@@ -65,6 +68,18 @@
 }
 .subscription.enabled {
     background-color: #212121;
+}
+.subscription:focus {
+  background-color: #1E1E1E;
+}
+.subscription.enabled:focus {
+  background-color: #2A2A2A;
+}
+.subscription:focus .check {
+  border-color: #6A6A6A;
+}
+.subscription.enabled:focus .check {
+  background-color: #07A9F0; /* slightly brighter than #019BE7 */
 }
 .subscription .check {
     width: 18px;

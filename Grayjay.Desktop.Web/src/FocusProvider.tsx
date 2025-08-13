@@ -1,6 +1,7 @@
-import { createContext, useContext, createSignal, onCleanup, createEffect, Accessor, JSX, batch } from "solid-js";
+import { createContext, useContext, createSignal, onCleanup, createEffect, Accessor, JSX } from "solid-js";
 import { Direction, Press, FocusableOptions, ScopeOptions, uid, isVisible, isFocusable, OpenIntent } from "./nav";
-import { useNavigate } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
+import { useVideo, VideoState } from "./contexts/VideoProvider";
 
 type NodeId = string;
 
@@ -17,6 +18,7 @@ interface ScopeEntry {
     opts: Required<Pick<ScopeOptions, "orientation" | "wrap" | "trap">> & ScopeOptions;
     nodes: Set<NodeId>;
     activeNode?: NodeId;
+    hadFocus?: boolean;
 }
 
 type Idx = {
@@ -51,15 +53,14 @@ export interface FocusAPI {
 
 const FocusCtx = createContext<FocusAPI>();
 
-export function useFocus(): FocusAPI {
-    const ctx = useContext(FocusCtx);
-    if (!ctx) throw new Error("FocusProvider missing");
-    return ctx;
+export function useFocus(): FocusAPI | undefined {
+    return useContext(FocusCtx);
 }
 
 export function FocusProvider(props: { children: JSX.Element }) {
     const navigate = useNavigate();
-
+    const video = useVideo();
+    const location = useLocation();
     const index = createIndex();
     const [activeScope, setActiveScope] = createSignal<string | null>(null);
 
@@ -70,7 +71,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             parent: parentScopeId ?? activeScope() ?? undefined,
             opts: {
                 orientation: opts?.orientation ?? "spatial",
-                wrap: !!(opts?.wrap ?? opts?.loop),
+                wrap: !!opts?.wrap,
                 trap: !!opts?.trap,
                 ...opts,
             },
@@ -86,35 +87,42 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function unregisterScope(id: string) {
         const s = index.scopes.get(id);
         if (!s) return;
-        for (const nid of s.nodes) index.nodes.delete(nid);
+        for (const nid of s.nodes) {
+            const n = index.nodes.get(nid);
+            if (n) index.nodeByEl.delete(n.el);
+            index.nodes.delete(nid);
+        }
         index.scopes.delete(id);
-        if (activeScope() === id) setActiveScope(s.parent ?? null);
+        if (activeScope() === id) {
+            const parentId = s.parent ?? null;
+            setActiveScope(parentId);
+            if (parentId) {
+                queueMicrotask(() => focusFirstInScope(parentId));
+            }
+        }
     }
 
     function registerNode(el: HTMLElement, scopeId: string, opts: FocusableOptions) {
         const id = uid("node");
-        const entry: NodeEntry = { id, el, scope: scopeId, opts: { order: 0, priority: 0, roving: false, ...opts } };
+        const entry: NodeEntry = { id, el, scope: scopeId, opts: { priority: 0, ...opts } };
         index.nodes.set(id, entry);
         index.nodeByEl.set(el, id);
+
         const scope = index.scopes.get(scopeId);
-        if (scope) {
-            scope.nodes.add(id);
-            if (entry.opts.roving) {
-                el.tabIndex = -1;
-                if (!scope.activeNode) scope.activeNode = id;
-                const inert = !!entry.opts.focusInert?.();
-                if (scope.activeNode === id && !inert) el.tabIndex = 0;
-            }
-        }
-        if (!entry.opts.roving) {
-            if (!entry.opts.focusInert?.() && el.tabIndex < 0) el.tabIndex = 0;
-        }
+        if (scope) scope.nodes.add(id);
+
+        const inert = !!entry.opts.focusInert?.();
+        if (inert) el.tabIndex = -1;
+        else if (el.tabIndex < 0) el.tabIndex = 0;
+
         return id;
     }
+
 
     function unregisterNode(id: string) {
         const rec = index.nodes.get(id);
         if (!rec) return;
+        index.nodeByEl.delete(rec.el);
         index.nodes.delete(id);
         const scope = index.scopes.get(rec.scope);
         scope?.nodes.delete(id);
@@ -125,14 +133,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
         const rec = index.nodes.get(id);
         if (!rec) return;
         rec.opts = { ...rec.opts, ...opts };
-        const scope = index.scopes.get(rec.scope);
-        if (rec.opts.roving) {
-            const inert = !!rec.opts.focusInert?.();
-            if (scope?.activeNode === rec.id) rec.el.tabIndex = inert ? -1 : 0;
-        } else {
-            if (!rec.opts.focusInert?.() && rec.el.tabIndex < 0) rec.el.tabIndex = 0;
-            if (rec.opts.focusInert?.()) rec.el.tabIndex = -1;
-        }
+        const inert = !!rec.opts.focusInert?.();
+        if (inert) rec.el.tabIndex = -1;
+        else if (rec.el.tabIndex < 0) rec.el.tabIndex = 0;
     }
 
     function candidatesInScope(scopeId: string): NodeEntry[] {
@@ -141,90 +144,251 @@ export function FocusProvider(props: { children: JSX.Element }) {
         return [...s.nodes]
             .map((id) => index.nodes.get(id)!)
             .filter(Boolean)
-            .filter((n) => !n.opts.disabled && isVisible(n.el));
+            .filter((n) => !n.opts.disabled && isVisible(n.el) && !n.opts.focusInert?.());
+    }
+
+    function findNodeFromElement(el: HTMLElement | null): NodeEntry | undefined {
+        let cur: HTMLElement | null = el;
+        while (cur) {
+            const id = index.nodeByEl.get(cur);
+            if (id) return index.nodes.get(id);
+            cur = cur.parentElement;
+        }
+        return undefined;
     }
 
     function currentFocused(): NodeEntry | undefined {
-        const active = document.activeElement as HTMLElement | null;
-        if (!active) return;
-        const id = index.nodeByEl.get(active);
-        if (!id) return;
-        return index.nodes.get(id);
+        return findNodeFromElement(document.activeElement as HTMLElement | null);
     }
 
-    function scopeOf(el: HTMLElement | null): ScopeEntry | undefined {
-        if (!el) return;
-        let cur: HTMLElement | null = el;
+    function rectOf(n: NodeEntry): DOMRect {
+        return (n.opts.getRect?.(n.el) ?? n.el.getBoundingClientRect());
+    }
+
+    function sweepCandidates(scopeId: string, axis: 'x'|'y'|'auto' = 'auto', fromEl?: HTMLElement): NodeEntry[] {
+        const s = index.scopes.get(scopeId);
+        if (!s) return [];
+        const axisResolved: 'x'|'y' =
+            axis === 'auto' ? (s.opts.orientation === 'horizontal' ? 'x' : 'y') : axis;
+
+        const EPS = 2;
+
+        let cands = candidatesInScope(scopeId);
+        if (fromEl) {
+          const cont = nearestScrollContainer(fromEl);
+          const same = cands.filter(n => nearestScrollContainer(n.el) === cont);
+          if (same.length) cands = same;
+        }
+
+        return cands
+            .sort((A, B) => {
+            const a = rectOf(A);
+            const b = rectOf(B);
+            if (axisResolved === 'y') {
+                if (Math.abs(a.top - b.top) > EPS) return a.top - b.top;
+                return a.left - b.left;
+            } else {
+                if (Math.abs(a.left - b.left) > EPS) return a.left - b.left;
+                return a.top - b.top;
+            }
+            });
+    }
+
+    function overlapRatioY(a: DOMRect, b: DOMRect) {
+        const top = Math.max(a.top, b.top);
+        const bottom = Math.min(a.bottom, b.bottom);
+        const overlap = Math.max(0, bottom - top);
+        return overlap / Math.min(a.height, b.height);
+    }
+
+    function overlapRatioX(a: DOMRect, b: DOMRect) {
+        const left = Math.max(a.left, b.left);
+        const right = Math.min(a.right, b.right);
+        const overlap = Math.max(0, right - left);
+        return overlap / Math.min(a.width, b.width);
+    }
+
+    function isScrollContainer(el: Element | null): boolean {
+        if (!el || !(el instanceof HTMLElement)) return false;
+        const s = getComputedStyle(el);
+        const oy = s.overflowY;
+        const ox = s.overflowX;
+        const scrollY = (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight;
+        const scrollX = (ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth;
+        return scrollY || scrollX;
+    }
+        
+    function nearestScrollContainer(el: HTMLElement | null): HTMLElement {
+        let cur: HTMLElement | null = el?.parentElement ?? null;
         while (cur) {
-            const sid = index.scopeByEl.get(cur);
-            if (sid) return index.scopes.get(sid);
+            if (isScrollContainer(cur)) break;
             cur = cur.parentElement;
         }
-        const as = activeScope();
-        return as ? index.scopes.get(as) : undefined;
+        return (cur ?? (document.scrollingElement as HTMLElement) ?? document.documentElement);
+    }
+
+    function containerViewportRect(container: HTMLElement): DOMRect {
+        const root = document.scrollingElement as HTMLElement | null;
+        if (container === document.documentElement || container === root) {
+            return new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+        return container.getBoundingClientRect();
+    }
+
+    function isPartiallyVisibleInContainer(el: HTMLElement, container: HTMLElement, minPx = 2): boolean {
+        const er = el.getBoundingClientRect();
+        const cr = containerViewportRect(container);
+        const iw = Math.min(er.right, cr.right) - Math.max(er.left, cr.left);
+        const ih = Math.min(er.bottom, cr.bottom) - Math.max(er.top, cr.top);
+        return iw >= minPx && ih >= minPx;
+    }
+
+    function scrollIntoViewWithin(container: HTMLElement, el: HTMLElement, dir?: Direction, margin = 12) {
+        const cr = containerViewportRect(container);
+        const er = el.getBoundingClientRect();
+        if (!dir || dir === 'up' || dir === 'down') {
+            if (er.top < cr.top + margin) container.scrollTop += er.top - (cr.top + margin);
+            else if (er.bottom > cr.bottom - margin) container.scrollTop += er.bottom - (cr.bottom - margin);
+        }
+        if (!dir || dir === 'left' || dir === 'right') {
+            if (er.left < cr.left + margin) container.scrollLeft += er.left - (cr.left + margin);
+            else if (er.right > cr.right - margin) container.scrollLeft += er.right - (cr.right - margin);
+        }
+    }
+    function canScroll(container: HTMLElement, dir: Direction) {
+        if (dir === 'up') return container.scrollTop > 0;
+        if (dir === 'down') return container.scrollTop < (container.scrollHeight - container.clientHeight);
+        if (dir === 'left') return container.scrollLeft > 0;
+        if (dir === 'right') return container.scrollLeft < (container.scrollWidth - container.clientWidth);
+        return false;
+    }
+    function nudgeScroll(container: HTMLElement, dir: Direction, stepPx: number) {
+        if (dir === 'up') container.scrollTop = Math.max(0, container.scrollTop - stepPx);
+        if (dir === 'down') container.scrollTop = Math.min(container.scrollHeight - container.clientHeight, container.scrollTop + stepPx);
+        if (dir === 'left') container.scrollLeft = Math.max(0, container.scrollLeft - stepPx);
+        if (dir === 'right') container.scrollLeft = Math.min(container.scrollWidth - container.clientWidth, container.scrollLeft + stepPx);
     }
 
     function spatialNext(from: HTMLElement, dir: Direction, scopeId: string): NodeEntry | undefined {
-        const set = candidatesInScope(scopeId).filter((n) => n.el !== from);
-        if (set.length === 0) return;
+        const all = candidatesInScope(scopeId).filter(n => n.el !== from);
+        if (!all.length) return;
+        if (dir === 'next' || dir === 'prev') return;
+
         const fromRect = from.getBoundingClientRect();
+        const cx0 = fromRect.left + fromRect.width / 2;
+        const cy0 = fromRect.top + fromRect.height / 2;
+
+        const navContainer = nearestScrollContainer(from);
+        const navContRect = containerViewportRect(navContainer);
+
         const vec: Record<Direction, [number, number]> = {
             left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1], next: [1, 0], prev: [-1, 0],
         };
         const [vx, vy] = vec[dir];
+        const isH = (dir === 'left' || dir === 'right');
 
-        type Cand = { n: NodeEntry; score: number };
-        const cands: Cand[] = [];
+        const EDGE_PX = 8;
+        const atTop = navContainer.scrollTop <= 1 || fromRect.top <= navContRect.top + EDGE_PX;
+        const atBottom = (navContainer.scrollHeight - navContainer.clientHeight - navContainer.scrollTop) <= 1 || fromRect.bottom >= navContRect.bottom - EDGE_PX;
+        const atLeft = navContainer.scrollLeft <= 1 || fromRect.left <= navContRect.left + EDGE_PX;
+        const atRight = (navContainer.scrollWidth - navContainer.clientWidth - navContainer.scrollLeft) <= 1 || fromRect.right >= navContRect.right - EDGE_PX;
 
-        for (const n of set) {
-            const rect = (n.opts.getRect?.(n.el) ?? n.el.getBoundingClientRect());
-            const cx = rect.left + rect.width / 2 - (fromRect.left + fromRect.width / 2);
-            const cy = rect.top + rect.height / 2 - (fromRect.top + fromRect.height / 2);
+        const wantEscape =
+            (dir === 'up' && atTop) ||
+            (dir === 'down' && atBottom) ||
+            (dir === 'left' && atLeft) ||
+            (dir === 'right' && atRight);
+
+        type Cand = {
+            n: NodeEntry;
+            cx: number;
+            cy: number;
+            prim: number;
+            perp: number;
+            rowOverlap: number;
+            colOverlap: number;
+            score: number;
+        };
+
+        const forward: Cand[] = [];
+        for (const n of all) {
+            const r = rectOf(n);
+            const cx = (r.left + r.width    / 2) - cx0;
+            const cy = (r.top    + r.height / 2) - cy0;
+
             const dot = cx * vx + cy * vy;
-            if (dot <= 0 && (dir !== "next" && dir !== "prev")) continue;
+            if (dot <= 0) continue;
 
-            const fwd = Math.abs(vx) > 0 ? Math.abs(cx) : Math.abs(cy);
-            const perp = Math.abs(vx) > 0 ? Math.abs(cy) : Math.abs(cx);
+            const rowOverlap = overlapRatioY(fromRect, r);
+            const colOverlap = overlapRatioX(fromRect, r);
 
-            let score = fwd + perp * 2;
+            const prim = isH ? Math.abs(cx) : Math.abs(cy);
+            const perp = isH ? Math.abs(cy) : Math.abs(cx);
 
-            score -= (n.opts.priority ?? 0) * 1000;
-            score += (n.opts.order ?? 0) * 0.001;
+            forward.push({ n, cx, cy, prim, perp, rowOverlap, colOverlap, score: 0 });
+        }
+        if (!forward.length) return;
 
-            cands.push({ n, score });
+        const STRICT_OVERLAP = 0.45;
+        const RELAX_OVERLAP = 0.20;
+        const MAX_ANGLE_TAN = Math.tan(55 * Math.PI / 180);
+
+        let pool: Cand[] = [];
+        if (isH) {
+            pool = forward.filter(c => c.rowOverlap >= STRICT_OVERLAP);
+            if (!pool.length) pool = forward.filter(c => c.rowOverlap >= RELAX_OVERLAP);
+            if (!pool.length) pool = forward.filter(c => c.perp <= c.prim * MAX_ANGLE_TAN);
+        } else {
+            pool = forward.filter(c => c.colOverlap >= STRICT_OVERLAP);
+            if (!pool.length) pool = forward.filter(c => c.colOverlap >= RELAX_OVERLAP);
+            if (!pool.length) pool = forward.filter(c => c.perp <= c.prim * MAX_ANGLE_TAN);
+        }
+        if (!pool.length) return;
+
+        const sameCont = pool.filter(c => nearestScrollContainer(c.n.el) === navContainer);
+        const otherCont = pool.filter(c => nearestScrollContainer(c.n.el) !== navContainer);
+
+        let finalPool: Cand[] = [];
+        if (sameCont.length) {
+            finalPool = sameCont;
+        } else if (wantEscape) {
+            finalPool = otherCont;
+        } else {
+            finalPool = otherCont.filter(c => isPartiallyVisibleInContainer(c.n.el, nearestScrollContainer(c.n.el)));
+            if (!finalPool.length) return;
         }
 
-        if (cands.length === 0) {
-            if (dir === "next" || dir === "prev") {
-                const all = candidatesInScope(scopeId).sort((a, b) => (a.opts.order ?? 0) - (b.opts.order ?? 0));
-                const idx = all.findIndex((x) => x.el === from);
-                if (idx >= 0) {
-                    const nextIdx = dir === "next" ? idx + 1 : idx - 1;
-                    return all[nextIdx];
-                }
-            }
-            return;
+        const SAME_CONT_BIAS = -200;
+        const CROSS_VISIBLE_BIAS = -150;
+        const PERP_COEF = 0.25;
+        const DIST_COEF = 0.02;
+
+        for (const c of finalPool) {
+            let s = c.prim * 1.0 + c.perp * PERP_COEF + Math.hypot(c.cx, c.cy) * DIST_COEF;
+            const cCont = nearestScrollContainer(c.n.el);
+            if (cCont === navContainer) s += SAME_CONT_BIAS;
+            else if (isPartiallyVisibleInContainer(c.n.el, cCont)) s += CROSS_VISIBLE_BIAS;
+            s -= (c.n.opts.priority ?? 0) * 1000;
+            c.score = s;
         }
 
-        cands.sort((a, b) => a.score - b.score);
-        return cands[0].n;
+        finalPool.sort((a, b) => a.score - b.score || a.prim - b.prim || a.perp - b.perp);
+        return finalPool[0]?.n;
+    }
+
+    function adoptActiveNode(scope: ScopeEntry, nodeId: NodeId) {
+        if (scope.activeNode === nodeId) return;
+        scope.activeNode = nodeId;
+        scope.hadFocus = true;
     }
 
     function focusNode(node?: NodeEntry) {
         if (!node) return;
         const scope = index.scopes.get(node.scope);
         if (scope) {
-            if (scope.activeNode !== node.id) {
-                scope.activeNode = node.id;
-                for (const id of scope.nodes) {
-                    const n = index.nodes.get(id)!;
-                    if (!n?.el) continue;
-                    if (n.opts.roving) n.el.tabIndex = (n.id === node.id) ? 0 : -1;
-                }
-            }
+            adoptActiveNode(scope, node.id);
         }
-        node.el.focus({ preventScroll: true });
-        node.el.scrollIntoView({ block: "nearest", inline: "nearest" });
+        node.el.focus();
     }
 
     function findScopeForNavigation(): ScopeEntry | undefined {
@@ -240,76 +404,178 @@ export function FocusProvider(props: { children: JSX.Element }) {
         const scope = findScopeForNavigation();
         if (!scope) return;
 
+        const trap = !!scope.opts.trap;
+
         if (!focused) {
             focusFirstInScope(scope.id);
             return;
         }
 
-        let next = spatialNext(focused.el, dir, scope.id);
-        if (!next && (dir === "next" || dir === "prev") && scope.opts.wrap) {
-            const all = candidatesInScope(scope.id).sort((a, b) => (a.opts.order ?? 0) - (b.opts.order ?? 0));
-            if (all.length) next = dir === "next" ? all[0] : all[all.length - 1];
+        if (dir === 'left' || dir === 'right' || dir === 'up' || dir === 'down') {
+            let next = spatialNext(focused.el, dir, scope.id);
+            if (!next) {
+                const cont = nearestScrollContainer(focused.el);
+                if (canScroll(cont, dir)) {
+                    const r = focused.el.getBoundingClientRect();
+                    const step = (dir === 'up' || dir === 'down')
+                        ? Math.max(24, r.height * 0.9)
+                        : Math.max(24, r.width    * 0.9);
+                    nudgeScroll(cont, dir, step);
+                    next = spatialNext(focused.el, dir, scope.id);
+                }
+            }
+            if (next) {
+                const cont = nearestScrollContainer(next.el);
+                if (!isPartiallyVisibleInContainer(next.el, cont)) {
+                    scrollIntoViewWithin(cont, next.el, dir);
+                }
+                focusNode(next);
+                return;
+            }
+            if (trap) return;
         }
 
-        if (next) {
-            focusNode(next);
-            return;
+        if (dir === 'next' || dir === 'prev') {
+            const list = sweepCandidates(scope.id, 'auto', focused.el);
+            if (!list.length) return;
+
+            const idx = list.findIndex(n => n.id === focused.id);
+            let target: NodeEntry | undefined;
+
+            if (idx >= 0) {
+            const step = dir === 'next' ? 1 : -1;
+            const nextIdx = idx + step;
+            if (nextIdx >= 0 && nextIdx < list.length) {
+                target = list[nextIdx];
+            } else if (scope.opts.wrap) {
+                target = dir === 'next' ? list[0] : list[list.length - 1];
+            }
+            } else {
+            target = (dir === 'next') ? list[0] : list[list.length - 1];
+            }
+
+            if (target) { focusNode(target); return; }
+            if (trap) return;
         }
 
         let parentId = scope.parent;
         while (parentId) {
             const parent = index.scopes.get(parentId);
             if (!parent) break;
-            const cand = focused ? spatialNext(focused.el, dir, parent.id) : undefined;
-            if (cand) {
-                focusNode(cand);
-                return;
+
+            if (dir === 'left' || dir === 'right' || dir === 'up' || dir === 'down') {
+                const cand = spatialNext(focused.el, dir, parent.id);
+                if (cand) { focusNode(cand); return; }
+            } else {
+                const list = sweepCandidates(parent.id, 'auto', focused.el);
+                if (list.length) {
+                    focusNode(dir === 'next' ? list[0] : list[list.length - 1]);
+                    return;
+                }
             }
+
             parentId = parent.parent;
         }
     }
 
-    function press(kind: Press, openIntent: OpenIntent) {
+    function back(): boolean {
+        const state = video?.state();
+        console.log("back", {state, history, location, pathname: location.pathname});
+        if (state === VideoState.Maximized) {
+            video!.actions.minimizeVideo();
+            return true;
+        }
+        
+        if (state === VideoState.Minimized) {
+            video!.actions.closeVideo();
+            return true;
+        } 
+        
+        
+        const rootPaths: string[] = [
+            "/web/",
+            "/web",
+            "/web/index.html",
+            "/web/home",
+            "/web/index",
+            "/web/subscriptions",
+            "/web/creators",
+            "/web/playlists",
+            "/web/watchLater",
+            "/web/sources",
+            "/web/downloads",
+            "/web/history",
+            "/web/sync",
+            "/web/buy",
+            "/web/settings"
+        ];
+
+        if (!rootPaths.some(v => v === location.pathname)) {
+            navigate(-1);
+            return true;
+        }
+
+        return false;
+    }
+
+    function press(kind: Press, openIntent: OpenIntent): boolean {
         const node = currentFocused();
         if (!node) {
             if (kind === "back") {
-                //TODO: Fix
-                //navigate(-1);
+                return back();
             }
-            return;
+            return false;
         }
 
-        if (kind === "press") node.opts.onPress?.(node.el, openIntent);
-        else if (kind === "back") {
+        if (kind === "press") {
+            return node.opts.onPress?.(node.el, openIntent) ?? false;
+        } 
+        
+        if (kind === "back") {
             const backResult = node.opts.onBack?.(node.el, openIntent);
             if (backResult !== true) {
-                //TODO: Fix
-                //navigate(-1);
+                return back();
             }
+            return false;
         }
-        else if (kind === "options") node.opts.onOptions?.(node.el, openIntent);
+
+        if (kind === "options") {
+            return node.opts.onOptions?.(node.el, openIntent) ?? false;
+        }
+
+        return false;
     }
 
     function focusFirstInScope(scopeId: string) {
         const s = index.scopes.get(scopeId);
         if (!s) return;
 
-        const el = s.opts.defaultFocus?.();
-        if (el && isFocusable(el)) {
-            const id = index.nodeByEl.get(el);
-            const n = id ? index.nodes.get(id) : undefined;
-            if (n) return focusNode(n);
+        if (s.hadFocus && s.activeNode) {
+            const last = index.nodes.get(s.activeNode);
+            if (last && !last.opts.disabled && isVisible(last.el) && !last.opts.focusInert?.() && isFocusable(last.el)) {
+                focusNode(last);
+                return;
+            }
         }
 
-        const first = candidatesInScope(scopeId)
-            .filter(n => !n.opts.focusInert?.())
-            .sort((a, b) => (b.opts.priority ?? 0) - (a.opts.priority ?? 0) || (a.opts.order ?? 0) - (b.opts.order ?? 0))[0];
+        const el = s.opts.defaultFocus?.();
+        if (el && isFocusable(el)) {
+            const n = findNodeFromElement(el);
+            if (n && n.scope === scopeId) { focusNode(n); return; }
+        }
 
+        const first = sweepCandidates(scopeId, 'auto')[0];
         if (first) focusNode(first);
     }
 
     function resolveScopeId(el: HTMLElement): string | null {
-            return index.scopeByEl.get(el) ?? null;
+        let cur: HTMLElement | null = el;
+        while (cur) {
+            const sid = index.scopeByEl.get(cur);
+            if (sid) return sid;
+            cur = cur.parentElement;
+        }
+        return null;
     }
 
     function isEditable(el: EventTarget | null): el is HTMLInputElement | HTMLTextAreaElement | HTMLElement {
@@ -395,11 +661,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
             case 'ArrowRight': navigateDirection('right'); e.preventDefault(); break;
             case 'Enter':
             case ' ':
-                press('press', OpenIntent.Keyboard); e.preventDefault(); break;
+                if (press('press', OpenIntent.Keyboard)) e.preventDefault(); break;
             case 'Escape':
-                press('back', OpenIntent.Keyboard); e.preventDefault(); break;
+                if (press('back', OpenIntent.Keyboard)) e.preventDefault(); break;
             case 'o':
-                if (!editable && !e.altKey && !e.metaKey) { press('options', OpenIntent.Keyboard); e.preventDefault(); }
+                if (!editable && !e.altKey && !e.metaKey) { if (press('options', OpenIntent.Keyboard)) e.preventDefault(); }
                 break;
             default:
                 if (!editable) {
@@ -414,7 +680,6 @@ export function FocusProvider(props: { children: JSX.Element }) {
 
 
     let raf = 0;
-    let lastMove = 0;
     const initialDelay = 220; // ms before repeat
     const repeatDelay = 90;
     const axisThreshold = 0.45;
@@ -489,11 +754,21 @@ export function FocusProvider(props: { children: JSX.Element }) {
         raf = requestAnimationFrame(pollGamepads);
     }
 
+    function onFocusIn(e: FocusEvent) {
+        const node = findNodeFromElement(e.target as HTMLElement | null);
+        if (!node) return;
+        const scope = index.scopes.get(node.scope);
+        if (!scope) return;
+        adoptActiveNode(scope, node.id);
+    }
+
     createEffect(() => {
         window.addEventListener("keydown", onKeyDown, { capture: true });
+        window.addEventListener("focusin", onFocusIn, { capture: true });
         raf = requestAnimationFrame(pollGamepads);
         onCleanup(() => {
             window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
+            window.removeEventListener("focusin", onFocusIn, { capture: true } as any);
             cancelAnimationFrame(raf);
         });
     });

@@ -115,14 +115,14 @@ export interface UIOverlay {
       },
       overlayImage(img: string) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayImage img={img} />
           )
         })
       },
       overlayDownloadUrl(url?: string, onResult?: (video: number, audio: number, sub: number)=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayDownloadDialog url={url} onResult={onResult} />
           )
         });
@@ -151,35 +151,35 @@ export interface UIOverlay {
       },
       overlayDownloadPlaylist(playlistId: string, onResult?: (videoPixelCount: number, audioBitrate: number)=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayDownloadMultipleDialog playlistId={playlistId} onResult={onResult} />
           )
         })
       },
       overlayDownloadMultiple(videos: IPlatformVideo[], onResult?: (videoPixelCount: number, audioBitrate: number)=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayDownloadMultipleDialog videos={videos} onResult={onResult} />
           )
         })
       },
       overlaySettings() {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlaySettings />
           )
         });
       },
       overlayImportSelect() {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayImportSelectDialog />
           )
         });
       },
       overlayNewDeviceSync() {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlaySyncNewDeviceDialog />
           )
         });
@@ -190,28 +190,28 @@ export interface UIOverlay {
         }
         
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayShareDialog text={str} />
           )
         });
       },
       overlaySubscriptionSelector(title: string, description: string, ignore: string[], onResponse: (selected: string[])=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlaySubscriptionsSelector title={title} description={description} ignore={ignore} onResult={(results)=>onResponse(results)} />
           )
         });
       },
       overlayImageSelector(title: string, description: string, channels: string[], onResult: (selected: IImageVariable)=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayImageSelector title={title} description={description} channels={channels} onResult={onResult} />
           )
         });
       },
       overlaySelectOnlineSyncDevice(title: string, description: string, onResult: (selected: SyncDevice)=>void) {
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlaySelectOnlineSyncDeviceDialog title={title} description={description} act={onResult} />
           )
         });
@@ -222,7 +222,7 @@ export interface UIOverlay {
           onGlobalDismiss: ()=>{
             this.dismiss();
           },
-          custom: <OverlaySourceInstall
+          custom: () => <OverlaySourceInstall
               prompt={prompt}
               onInstall={async ()=>{
                 
@@ -333,6 +333,7 @@ export interface UIOverlay {
               title: "Continue",
               style: "primary",
               onClick: (output: IDialogOutput)=>{
+                console.log("Create a subscription group", output.text);
                 if(output.text) {
                   //Select subscriptions
                   this.overlaySubscriptionGroupAddCreators([], (selected)=>{
@@ -362,7 +363,7 @@ export interface UIOverlay {
         const copy = { ...group};
         //Enter name
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlaySubscriptionGroupEditDialog subscriptionGroup={copy}  />
           )
         });
@@ -370,7 +371,7 @@ export interface UIOverlay {
       overlayOfficialPlugins() {
         //Enter name
         this.overlay({
-          custom: (
+          custom: () => (
             <OverlayOfficialPluginsDialog />
           )
         });

@@ -1,5 +1,4 @@
-
-import { Component, For, Match, Show, Switch, batch, createEffect, createMemo, createResource, createSignal, onCleanup, onMount } from 'solid-js';
+import { Component, For, Match, Show, Switch, createEffect, createMemo, createSignal } from 'solid-js';
 import styles from './index.module.css';
 import UIOverlay from '../../state/UIOverlay';
 import { Event0 } from '../../utility/Event'
@@ -11,6 +10,8 @@ import icon_close from '../../assets/icons/icon24_close.svg';
 import icon_copy from '../../assets/icons/copy.svg';
 import Tooltip from '../../components/tooltip';
 import ScrollContainer from '../../components/containers/ScrollContainer';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from '../../focusable'; void focusable;
 
 export interface DialogDescriptor {
   icon?: string,
@@ -75,57 +76,98 @@ export interface OverlayDialogProps {
   dialog: DialogDescriptor | undefined,
   onGlobalDismiss?: Event0
 };
-const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps) => {
 
+const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps) => {
+  let containerRef: HTMLDivElement | undefined;
+  const titleId = `dialog-title-${Math.random().toString(36).slice(2)}`;
   let output = props.dialog?.output ?? {
     selected: [],
     text: ((props.dialog?.input?.type == "inputText") ? ((props.dialog?.input as DialogInputText).value ?? "") : ""),
     index: ((props.dialog?.input?.type == "dropdown") ? ((props.dialog?.input as DialogDropdown).value ?? -1) : -1)
   } as IDialogOutput;
-  if (props.dialog)
-    props.dialog.output = output;
+  if (props.dialog) props.dialog.output = output;
   output.button = -1;
 
   props.onGlobalDismiss?.registerOne("dialog", () => {
+    triggerDefaultAction();
+  });
+
+  const hasAnyInput$ = createMemo(() => !!props.dialog?.input);
+  const primaryIndex$ = createMemo(() => props.dialog?.buttons?.findIndex(b => b.style === "primary") ?? -1);
+
+  const triggerDefaultAction = () => {
     if (props.dialog) {
       const action = props.dialog.defaultAction ?? 0;
-      if (props.dialog?.buttons && props.dialog!.buttons.length > action) {
-        props.dialog?.buttons[action].onClick(output);
+      if (props.dialog.buttons && props.dialog.buttons.length > action) {
+        output.button = action;
+        props.dialog.buttons[action].onClick(output);
       }
-      UIOverlay.dismiss();
     }
-  });
+    UIOverlay.dismiss();
+  };
+
+  const dialogBack = () => {
+    triggerDefaultAction();
+    return true;
+  };
+
+  const clickClose = () => {
+    UIOverlay.dismiss();
+  };
+
+  const pressButton = (btn: DialogButton) => {
+    output.button = (props.dialog?.buttons.indexOf(btn) ?? -1);
+    UIOverlay.dismiss();
+    btn.onClick(output);
+  };
 
   const renderInputCheckboxList = (input: DialogInputCheckboxList, output: IDialogOutput) => {
     return (
       <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
         <For each={input.values}>
           {(item, i) => {
+            let rowRef: HTMLDivElement | undefined;
             return (
-              <Checkbox value={false}
-                onChecked={(value) => { 
-                  if (value) {
-                    output.selected = [ ... (output?.selected ?? []), item.value ];
-                  } else {
-                    output.selected = output.selected?.filter((v: any) => v !== item.value) ?? [];
-                  }
+              <div
+                ref={rowRef}
+                use:focusable={{
+                  onPress: () => rowRef?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click(),
+                  onBack: dialogBack,
                 }}
-                label={item.text}
-                style={{
-                  "padding-top": "10px",
-                  "padding-bottom": "10px",
-                  "padding-left": "8px",
-                  width: "100%"
-                }} />
+                style={{ width: "100%" }}
+              >
+                <Checkbox
+                  value={false}
+                  onChecked={(value) => {
+                    if (value) {
+                      output.selected = [ ...(output?.selected ?? []), item.value ];
+                    } else {
+                      output.selected = output.selected?.filter((v: any) => v !== item.value) ?? [];
+                    }
+                  }}
+                  label={item.text}
+                  style={{
+                    "padding-top": "10px",
+                    "padding-bottom": "10px",
+                    "padding-left": "8px",
+                    width: "100%"
+                  }}
+                />
+              </div>
             );
           }}
         </For>
         <Show when={input.addLabel}>
-          <div class={styles.addButton} onClick={() => {
-            input.onAddClicked?.();
-          }}>
+          <div
+            class={styles.addButton}
+            onClick={() => input.onAddClicked?.()}
+            use:focusable={{
+              onPress: () => input.onAddClicked?.(),
+              onBack: dialogBack,
+            }}
+          >
             <img src={icon_add} style="height: 24px; width: 24px;" />
-            <div class={styles.addLabel}>{input.addLabel}</div>  
+            <div class={styles.addLabel}>{input.addLabel}</div>
           </div>
         </Show>
       </div>
@@ -134,29 +176,87 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
 
   return (
     <Show when={props.dialog}>
-      <div class={styles.dialog} onClick={(ev) => ev.stopPropagation()}>
+      <div
+        class={styles.dialog}
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(ev) => ev.stopPropagation()}
+        use:focusScope={{
+          trap: true,
+          wrap: true,
+          orientation: "vertical",
+          defaultFocus: () => {
+            const el =
+              containerRef?.querySelector<HTMLElement>('[data-autofocus]') ??
+              containerRef?.querySelector<HTMLElement>('input, textarea, select, [contenteditable="true"]') ??
+              containerRef?.querySelector<HTMLElement>('[tabindex]:not([tabindex="-1"])');
+            return el ?? null;
+          }
+        }}
+      >
         <Show when={props.dialog?.icon}>
-          <img src={props.dialog?.icon} class={styles.icon} />
+          <img src={props.dialog?.icon} class={styles.icon} alt="" />
         </Show>
-        <img src={icon_close} class={styles.iconClose} onClick={() => UIOverlay.dismiss()} />
-        <div class={styles.title} style="padding-right: 25px;">
+
+        <img
+          src={icon_close}
+          class={styles.iconClose}
+          alt="Close"
+          role="button"
+          tabindex={0}
+          onClick={clickClose}
+          use:focusable={{
+            onPress: clickClose,
+            onBack: dialogBack,
+          }}
+        />
+
+        <div id={titleId} class={styles.title} style="padding-right: 25px;">
           {props.dialog!.title}
         </div>
-        <ScrollContainer wrapperStyle={{height: "calc(100% - 70px)", width: "100%", "margin-left": "-32px", "margin-right": "-32px", "padding-left": "32px", "padding-right": "32px", "margin-bottom": "-32px" }}>
+
+        <ScrollContainer
+          wrapperStyle={{
+            height: "calc(100% - 70px)",
+            width: "100%",
+            "margin-left": "-32px",
+            "margin-right": "-32px",
+            "padding-left": "32px",
+            "padding-right": "32px",
+            "margin-bottom": "-32px"
+          }}
+        >
           <div class={styles.description}>
             {props.dialog!.description}
           </div>
+
           <Show when={props.dialog?.code}>
             <div class={styles.code}>
               <Tooltip text="Copy all">
-                <img src={icon_copy} style="width: 16px; height: 16px; margin-right: 6px; user-select: none;" onClick={async () => {
-                  await navigator.clipboard.writeText(props.dialog!.code!);
-                  UIOverlay.toast("Text has been copied");
-                }} />
+                <img
+                  src={icon_copy}
+                  style="width: 16px; height: 16px; margin-right: 6px; user-select: none;"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(props.dialog!.code!);
+                    UIOverlay.toast("Text has been copied");
+                  }}
+                  role="button"
+                  tabindex={0}
+                  use:focusable={{
+                    onPress: async () => {
+                      await navigator.clipboard.writeText(props.dialog!.code!);
+                      UIOverlay.toast("Text has been copied");
+                    },
+                    onBack: dialogBack,
+                  }}
+                />
               </Tooltip>
               {props.dialog!.code}
             </div>
           </Show>
+
           <Show when={props.dialog?.input}>
             <div class={styles.input}>
               <div>
@@ -164,30 +264,63 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                   <InputText
                     placeholder={(props.dialog?.input as DialogInputText).placeholder}
                     value={""}
-                    onTextChanged={(newVal) => { output.text = newVal }} />
+                    onTextChanged={(newVal) => { output.text = newVal }}
+                  />
                 </Show>
+
                 <Show when={props.dialog?.input?.type == "dropdown"}>
-                  <Dropdown
-                    options={(props.dialog?.input as DialogDropdown).options}
-                    value={output.index}
-                    onSelectedChanged={(newVal) => output.index = newVal} />
+                  <div
+                    use:focusable={{ onBack: dialogBack }}
+                  >
+                    <Dropdown
+                      options={(props.dialog?.input as DialogDropdown).options}
+                      value={output.index}
+                      onSelectedChanged={(newVal) => output.index = newVal}
+                    />
+                  </div>
                 </Show>
+
                 <Show when={props.dialog?.input?.type == "checkboxList"}>
                   {renderInputCheckboxList(props.dialog?.input as DialogInputCheckboxList, output)}
                 </Show>
               </div>
             </div>
           </Show>
+
           <div class={styles.buttons}>
-            <For each={props.dialog!.buttons}>{button =>
-              <div class={styles.button} classList={{
-                [styles.primary]: button.style == "primary",
-                [styles.accent]: button.style == "accent",
-                [styles.none]: button.style == "none" || !button.style
-              }} onClick={(e) => { output.button = (props.dialog?.buttons.indexOf(button) ?? -1); UIOverlay.dismiss(); button.onClick(output); e.preventDefault(); e.stopPropagation() }}>
-                {button.title}
-              </div>
-            }</For>
+            <For each={props.dialog!.buttons}>
+              {(button, i) => {
+                const isPrimary = button.style === "primary";
+                const isAutofocusButton =
+                  !hasAnyInput$() && (
+                    (primaryIndex$() >= 0 ? i() === primaryIndex$() : i() === 0)
+                  );
+
+                return (
+                  <div
+                    class={styles.button}
+                    classList={{
+                      [styles.primary]: isPrimary,
+                      [styles.accent]: button.style == "accent",
+                      [styles.none]: button.style == "none" || !button.style
+                    }}
+                    tabindex={0}
+                    data-autofocus={isAutofocusButton ? '' : undefined}
+                    onClick={(e) => {
+                      pressButton(button);
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    use:focusable={{
+                      onPress: () => pressButton(button),
+                      onBack: dialogBack,
+                    }}
+                  >
+                    {button.title}
+                  </div>
+                );
+              }}
+            </For>
           </div>
         </ScrollContainer>
       </div>

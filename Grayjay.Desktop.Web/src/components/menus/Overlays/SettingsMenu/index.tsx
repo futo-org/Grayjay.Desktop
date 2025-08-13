@@ -217,9 +217,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           setValue(!value$());
         }}
         use:focusable={{
-          order: index(),
           focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
-          roving: true,
           onPress: () => {
             const v = !value$();
             item.onToggle?.(v);
@@ -260,9 +258,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           setValue(!value$());
         }}
         use:focusable={{
-          order: index(),
           focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
-          roving: true,
           onPress: () => {
             const v = !value$();
             item.onToggle?.(v);
@@ -408,8 +404,6 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   onClick={()=>openGroup(item as IMenuItemGroup)} 
                   classList={{[styles.isGroup]: true}}
                   use:focusable={{
-                    order: index(),
-                    roving: true,
                     focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
                     onPress: () => openGroup(item as IMenuItemGroup),
                     onBack: settingsMenuBack,
@@ -432,8 +426,6 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   classList={{[styles.option]: true}} 
                   onClick={()=>selectOption(item as IMenuItemOption)}
                   use:focusable={{
-                    order: index(),
-                    roving: true,
                     focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
                     onPress: () => selectOption(item as IMenuItemOption),
                     onBack: settingsMenuBack,
@@ -461,8 +453,6 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   class={styles.menuButton} 
                   onClick={()=>clickButton(item as IMenuButton)}
                   use:focusable={{
-                    order: index(),
-                    roving: true,
                     focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
                     onPress: () => clickButton(item as IMenuButton),
                     onBack: settingsMenuBack,

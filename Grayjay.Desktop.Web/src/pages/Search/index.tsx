@@ -168,7 +168,7 @@ const SearchPage: Component = () => {
           </div>
           <Show when={searchPager.state == 'ready'}>
             <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={searchPager()} outerContainerRef={scrollContainerRef} />
+              <ContentGrid pager={searchPager()} outerContainerRef={scrollContainerRef} openChannelButton={true} />
             </ScrollContainer>
           </Show>
       </div>

@@ -45,6 +45,7 @@ export interface ContentGridProps {
     pager: Pager<IPlatformContent> | undefined;
     outerContainerRef: HTMLDivElement | undefined;
     useCache?: boolean;
+    openChannelButton?: boolean;
 };
 
 const ContentGrid: Component<ContentGridProps> = (props) => {
@@ -83,11 +84,11 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
             items: [
             
                 ... (content?.contentType === ContentType.MEDIA ? [ 
-                    new MenuItemButton("Navigate to creator", iconCreator, undefined, ()=>{
+                    ... props.openChannelButton === true ? [ new MenuItemButton("Open channel", iconCreator, undefined, ()=>{
                         const author = content?.author;
                         if(author)
                             navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
-                    }),
+                    }) ] : [],
                     new MenuItemButton("Add to queue", iconQueue, undefined, ()=>{
                         video?.actions.addToQueue(content as IPlatformVideo);
                     }),
@@ -196,7 +197,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                 metadata={((creator().subscribers && creator().subscribers > 0) ? (toHumanNumber(creator().subscribers) + " subscribers") : "")}
                 url={creator().url}
                 focusableOpts={{
-                    order: index() ?? 0,
                     onPress: () => navigate("/web/channel?url=" + encodeURIComponent(creator().url), { state: { author: creator() } }),
                     onBack: () => onBackContentGrid()
                 }} />
@@ -216,7 +216,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                 platformIconUrl={pluginIconUrl$()}
                 onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url))}
                 focusableOpts={{
-                    order: index() ?? 0,
                     onPress: () => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url)),
                     onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
                     onBack: () => onBackContentGrid()
@@ -271,7 +270,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                     onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
                                     onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
                                     focusableOpts={{
-                                        order: index() ?? 0,
                                         onPress: () => {
                                             const url = item().backendUrl ?? item().url;
                                             if (url)
@@ -295,7 +293,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                             navigate("/web/details/post?url=" + encodeURIComponent(url));
                                     }}
                                     focusableOpts={{
-                                        order: index() ?? 0,
                                         onPress: () => {
                                             const url = item().backendUrl ?? item().url;
                                             if(url)
@@ -315,7 +312,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                         }
                                     }}
                                     focusableOpts={{
-                                        order: index() ?? 0,
                                         onPress: () => {
                                             const url = item().backendUrl ?? item().contentUrl;
                                             if(url) {
@@ -336,7 +332,6 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                         }
                                     }}
                                     focusableOpts={{
-                                        order: index() ?? 0,
                                         onPress: () => {
                                             const url = item().backendUrl ?? item().contentUrl;
                                             if(url) {

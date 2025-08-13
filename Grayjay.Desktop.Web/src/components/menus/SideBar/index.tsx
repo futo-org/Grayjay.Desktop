@@ -230,7 +230,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
               class={styles.collapse}
               alt=""
               role="button"
-              use:focusable={{ onPress: handleCollapse, roving: true, order: -100 }}
+              use:focusable={{ onPress: handleCollapse, roving: true, order: -1000 }}
               onClick={handleCollapse}
             />
           </Show>
@@ -283,7 +283,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())} 
-            use:focusable={{ roving: true, order: 10000, onPress: () => setExpand(!expand$()) }}>
+            use:focusable={{ onPress: () => setExpand(!expand$()) }}>
               Subscriptions
               <div class={styles.toggle}>
                   <img src={iconChevronDown} />
@@ -357,8 +357,6 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
                       onClick={press}
                       onRightClick={btn.onRightClick}
                       focusableOpts={{
-                        roving: true,
-                        order: i(),
                         onPress: press,
                         onBack: () => {
                           if (moreOverlayVisible$()) {
