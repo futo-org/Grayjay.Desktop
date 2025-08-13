@@ -74,7 +74,7 @@ const OverlayModals: Component<OverlayModalsProps> = (props: OverlayModalsProps)
         if(nextRequest.onShown)
           nextRequest.onShown();
         if(nextRequest.onGlobalDismiss)
-          globalDismissEvent.registerOnce("onCurrentGlobalDimiss", ()=>nextRequest.onGlobalDismiss!(nextRequest.id ?? ""));
+          globalDismissEvent.registerOnce("onCurrentGlobalDismiss", ()=>nextRequest.onGlobalDismiss!(nextRequest.id ?? ""));
       }
       else
         hide();
