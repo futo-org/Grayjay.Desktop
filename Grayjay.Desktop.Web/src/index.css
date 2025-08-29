@@ -19,7 +19,8 @@ code {
 }
 
 *:focus {
-  outline: none;
+  outline: solid 1px #bbbbbb;
+  outline-offset: -1px;
 }
 
 .droparea {
