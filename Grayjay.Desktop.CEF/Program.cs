@@ -261,7 +261,7 @@ namespace Grayjay.Desktop
             SyncShared.Logger.WillLog = (level) => Logger.WillLog((LogLevel)level);
             SyncShared.Logger.LogCallback = (level, tag, message, ex) => Logger.Log((LogLevel)level, tag, message, ex);
 
-            GrayjayDevSettings.Instance.DeveloperMode = File.Exists("DEV");
+            GrayjayDevSettings.Instance.DeveloperMode = File.Exists(Path.Combine(Directories.Base, "DEV"));
 
             foreach(var arg in args)
                 Console.WriteLine(Logger.FormatLogMessage(LogLevel.Info, nameof(Program), "Arg: " + arg));
