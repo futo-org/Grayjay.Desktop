@@ -617,6 +617,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function editableWantsKey(e: KeyboardEvent, trap: boolean) {
         const t = e.target as HTMLElement;
         if (!isEditable(t)) return false;
+        if (e.key === 'Escape') return false;
         if (e.ctrlKey || e.metaKey || e.altKey || isTypingKey(e)) return true;
         if (['w','a','s','d','W','A','S','D'].includes(e.key)) return true;
 

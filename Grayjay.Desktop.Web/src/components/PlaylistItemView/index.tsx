@@ -9,6 +9,8 @@ import { DateTime } from 'luxon';
 import IconButton from '../buttons/IconButton';
 
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
+import { FocusableOptions } from '../../nav';
+import { focusable } from '../../focusable'; void focusable;
 
 interface PlaylistItemViewProps {
   item?: IPlatformVideo;
@@ -17,6 +19,7 @@ interface PlaylistItemViewProps {
   onSettings?: (e: HTMLElement) => void;
   onDragStart?: (e: MouseEvent, el: HTMLElement) => void;
   isEditable?: boolean;
+  focusableOpts?: FocusableOptions;
 }
 
 const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
@@ -32,7 +35,7 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
   return (
     <div style="display: flex; flex-direction: row; align-items: center; width: 100%; height: 100%; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid #2E2E2E; box-sizing: border-box; background-color: #141414" onClick={() => {{
       props.onPlay?.();
-    }}}>
+    }}} use:focusable={props.focusableOpts}>
       <Show when={props.onDragStart && editable$()} fallback={<div style="width: 12px"></div>}>
         <img src={iconDrag} style="width: 24px; height: 24px; padding: 20px; cursor: pointer;" onMouseDown={(e) => props.onDragStart?.(e, e.target as HTMLElement)} />
       </Show>

@@ -58,14 +58,7 @@ const OverlaySubscriptionsSelector: Component<OverlaySubscsriptionsSelectorDialo
         use:focusScope={{
           trap: true,
           wrap: true,
-          orientation: "spatial",
-          defaultFocus: () => {
-            const el =
-              containerRef?.querySelector<HTMLElement>('[data-autofocus]') ??
-              containerRef?.querySelector<HTMLElement>('input, textarea, select, [contenteditable="true"]') ??
-              containerRef?.querySelector<HTMLElement>('[tabindex]:not([tabindex="-1"])');
-            return el ?? null;
-          }
+          orientation: "spatial"
         }}
       > 
         <div class={styles.dialogHeader}>

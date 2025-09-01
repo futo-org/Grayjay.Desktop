@@ -377,12 +377,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
         use:focusScope={{
           trap: true,
           wrap: true,
-          orientation: "vertical",
-          defaultFocus: () => {
-            if (props.openIntent === OpenIntent.Pointer) return null;
-            const el = containerRef?.querySelector<HTMLElement>('[data-autofocus]') ?? containerRef?.querySelector<HTMLElement>('[tabindex]:not([tabindex="-1"])');
-            return el ?? null;
-          }
+          orientation: "vertical"
         }}
       >
         <Show when={menu$()?.title}>

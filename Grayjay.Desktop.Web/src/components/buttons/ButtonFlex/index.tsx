@@ -2,6 +2,7 @@ import { Component, JSX, Show } from 'solid-js'
 
 import styles from './index.module.css';
 import Button from '../Button';
+import { FocusableOptions } from '../../../nav';
 
 interface ButtonProps {
     icon?: string;
@@ -10,6 +11,7 @@ interface ButtonProps {
     onClick?: (event: MouseEvent) => void;
     small?: boolean;
     style?: JSX.CSSProperties;
+    focusableOpts?: FocusableOptions;
 }
 
 const ButtonFlex: Component<ButtonProps> = (props) => {
@@ -20,7 +22,7 @@ const ButtonFlex: Component<ButtonProps> = (props) => {
     style["justify-content"] = "center";
 
     return (
-        <Button icon={props.icon} text={props.text} color={props.color} onClick={props.onClick} small={props.small} style={style}></Button>
+        <Button icon={props.icon} text={props.text} color={props.color} onClick={props.onClick} small={props.small} style={style} focusableOpts={props.focusableOpts}></Button>
     );
 };
 

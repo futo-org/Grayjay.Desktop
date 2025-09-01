@@ -1,9 +1,12 @@
-import { type Component, createSignal, onCleanup, Show, JSX } from 'solid-js';
+import { type Component, createSignal, onCleanup, Show, JSX, batch } from 'solid-js';
 import styles from './index.module.css';
 import chevDown from "../../../../assets/icons/icon_chrevron_down.svg"
 import { Portal } from 'solid-js/web';
 import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
 import SettingsMenu, { Menu } from '../../../menus/Overlays/SettingsMenu';
+import { FocusableOptions, OpenIntent } from '../../../../nav';
+import { focusScope } from '../../../../focusScope'; void focusScope;
+import { focusable } from '../../../../focusable'; void focusable;
 
 export interface SettingsDropdownProps {
     menu: Menu;
@@ -11,18 +14,23 @@ export interface SettingsDropdownProps {
     label?: string;
     style?: JSX.CSSProperties;
     valueString?: string;
+    focusable?: boolean;
 };
 
 const SettingsDropdown: Component<SettingsDropdownProps> = (props) => { 
   let selectElement: HTMLDivElement | undefined;
 
   const [showMenu$, setShowMenu] = createSignal(false);
+  const [menuOpenIntent$, setMenuOpenIntent] = createSignal<OpenIntent>();
   const anchor = new Anchor(null, showMenu$, props.anchorStyle ?? AnchorStyle.BottomRight);
-  const toggleMenu = async (el: HTMLElement) => {
+  const toggleMenu = async (el: HTMLElement, openIntent: OpenIntent) => {
     const newValue = !showMenu$();
     if (newValue)
       anchor.setElement(el);
-    setShowMenu(newValue);
+    batch(() => {
+      setShowMenu(newValue);
+      setMenuOpenIntent(openIntent);
+    });
   };
 
   const hideMenu = () => {
@@ -33,9 +41,13 @@ const SettingsDropdown: Component<SettingsDropdownProps> = (props) => {
     anchor.dispose();
   });
 
+  const onPress = (openIntent: OpenIntent) => {
+    if (selectElement) toggleMenu(selectElement, openIntent);
+  };
+
   return (
     <>
-      <div class={styles.selectContainer} ref={selectElement} onClick={() => { if (selectElement) toggleMenu(selectElement)}} style={props.style}>
+      <div class={styles.selectContainer} ref={selectElement} onClick={() => onPress(OpenIntent.Pointer)} style={props.style} use:focusable={props.focusable === true ? { onPress: () => onPress(OpenIntent.Gamepad) } : undefined}>
           <div class={styles.select}>
               <div class={styles.selectText}>
                   <div style={{"display": "flex", "flex-direction": "column", "white-space": "nowrap", "text-overflow": "ellipsis"}}>
@@ -52,7 +64,7 @@ const SettingsDropdown: Component<SettingsDropdownProps> = (props) => {
           </div>
       </div>
       <Portal>
-        <SettingsMenu menu={props.menu} anchor={anchor} show={showMenu$()} onHide={hideMenu} ignoreGlobal={[selectElement]} />
+        <SettingsMenu menu={props.menu} anchor={anchor} show={showMenu$()} onHide={hideMenu} ignoreGlobal={[selectElement]} openIntent={menuOpenIntent$()} />
       </Portal>
     </>
   );

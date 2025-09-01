@@ -122,28 +122,45 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
   };
 
   const renderInputCheckboxList = (input: DialogInputCheckboxList, output: IDialogOutput) => {
+    const [selected, setSelected] = createSignal<string[]>(output.selected ?? []);
+    createEffect(() => {
+      const uniq = Array.from(new Set(selected()));
+      if (!output.selected || output.selected.length !== uniq.length ||
+          uniq.some((v, i) => v !== output.selected![i])) {
+        output.selected = uniq;
+      }
+    });
+
+    const setSelectedFor = (value: string, next: boolean) => {
+      setSelected(curr => {
+        const has = curr.includes(value);
+        if (next && !has) return [...curr, value];
+        if (!next && has) return curr.filter(v => v !== value);
+        return curr;
+      });
+    };
+
+    const toggle = (value: string) => {
+      setSelected(curr => curr.includes(value) ? curr.filter(v => v !== value) : [...curr, value]);
+    };
+
     return (
       <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
         <For each={input.values}>
-          {(item, i) => {
-            let rowRef: HTMLDivElement | undefined;
+          {item => {
+            const isChecked = () => selected().includes(item.value);
             return (
               <div
-                ref={rowRef}
+                style={{ width: "100%" }}
                 use:focusable={{
-                  onPress: () => rowRef?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click(),
+                  onPress: () => toggle(item.value),
                   onBack: dialogBack,
                 }}
-                style={{ width: "100%" }}
               >
                 <Checkbox
-                  value={false}
-                  onChecked={(value) => {
-                    if (value) {
-                      output.selected = [ ...(output?.selected ?? []), item.value ];
-                    } else {
-                      output.selected = output.selected?.filter((v: any) => v !== item.value) ?? [];
-                    }
+                  value={isChecked()}
+                  onChecked={(next) => {
+                    setSelectedFor(item.value, next);
                   }}
                   label={item.text}
                   style={{
@@ -157,6 +174,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
             );
           }}
         </For>
+
         <Show when={input.addLabel}>
           <div
             class={styles.addButton}
@@ -173,7 +191,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
       </div>
     );
   };
-
+  
   return (
     <Show when={props.dialog}>
       <div
@@ -186,14 +204,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         use:focusScope={{
           trap: true,
           wrap: true,
-          orientation: "vertical",
-          defaultFocus: () => {
-            const el =
-              containerRef?.querySelector<HTMLElement>('[data-autofocus]') ??
-              containerRef?.querySelector<HTMLElement>('input, textarea, select, [contenteditable="true"]') ??
-              containerRef?.querySelector<HTMLElement>('[tabindex]:not([tabindex="-1"])');
-            return el ?? null;
-          }
+          orientation: "vertical"
         }}
       >
         <Show when={props.dialog?.icon}>
@@ -265,6 +276,9 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                     placeholder={(props.dialog?.input as DialogInputText).placeholder}
                     value={""}
                     onTextChanged={(newVal) => { output.text = newVal }}
+                    focusableOpts={{
+                      onBack: dialogBack
+                    }}
                   />
                 </Show>
 

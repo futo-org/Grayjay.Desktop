@@ -245,10 +245,3 @@
 .menuButton .text {
     width: calc(100% - 50px);
 }
-
-.menuItem:focus,
-.menuButton:focus,
-.menuToggle:focus {
-    outline: none;
-    background-color: rgba(255,255,255,0.2);
-}
