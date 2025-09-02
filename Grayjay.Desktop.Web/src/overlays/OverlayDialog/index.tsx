@@ -12,6 +12,7 @@ import Tooltip from '../../components/tooltip';
 import ScrollContainer from '../../components/containers/ScrollContainer';
 import { focusScope } from '../../focusScope'; void focusScope;
 import { focusable } from '../../focusable'; void focusable;
+import { createMutable } from 'solid-js/store';
 
 export interface DialogDescriptor {
   icon?: string,
@@ -69,6 +70,7 @@ export class DialogDropdown implements IDialogInput {
   constructor(options: string[], placeholder: string, value: number) {
     this.options = options;
     this.placeholder = placeholder;
+    this.value = value;
   }
 }
 
@@ -80,13 +82,24 @@ export interface OverlayDialogProps {
 const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps) => {
   let containerRef: HTMLDivElement | undefined;
   const titleId = `dialog-title-${Math.random().toString(36).slice(2)}`;
-  let output = props.dialog?.output ?? {
-    selected: [],
-    text: ((props.dialog?.input?.type == "inputText") ? ((props.dialog?.input as DialogInputText).value ?? "") : ""),
-    index: ((props.dialog?.input?.type == "dropdown") ? ((props.dialog?.input as DialogDropdown).value ?? -1) : -1)
-  } as IDialogOutput;
-  if (props.dialog) props.dialog.output = output;
-  output.button = -1;
+  const output = createMutable<IDialogOutput>({
+    text: '',
+    index: -1,
+    button: -1,
+    selected: []
+  });
+
+  createEffect(() => {
+    const d = props.dialog;
+    if (!d) return;
+
+    output.text = d.input?.type === 'inputText' ? ((d.input as DialogInputText).value ?? '') : '';
+    output.index = d.input?.type === 'dropdown' ? ((d.input as DialogDropdown).value ?? -1) : -1;
+    output.selected = Array.isArray(d.output?.selected) ? [...(d.output!.selected as any[])] : [];
+    output.button = -1;
+
+    d.output = output;
+  });
 
   props.onGlobalDismiss?.registerOne("dialog", () => {
     triggerDefaultAction();
@@ -122,33 +135,21 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
   };
 
   const renderInputCheckboxList = (input: DialogInputCheckboxList, output: IDialogOutput) => {
-    const [selected, setSelected] = createSignal<string[]>(output.selected ?? []);
-    createEffect(() => {
-      const uniq = Array.from(new Set(selected()));
-      if (!output.selected || output.selected.length !== uniq.length ||
-          uniq.some((v, i) => v !== output.selected![i])) {
-        output.selected = uniq;
-      }
-    });
-
-    const setSelectedFor = (value: string, next: boolean) => {
-      setSelected(curr => {
-        const has = curr.includes(value);
-        if (next && !has) return [...curr, value];
-        if (!next && has) return curr.filter(v => v !== value);
-        return curr;
-      });
+    const list = () => Array.isArray(output.selected) ? output.selected as any[] : [];
+    const isChecked = (val: any) => list().includes(val);
+    const setSelectedFor = (val: any, next: boolean) => {
+      const curr = list();
+      const has = curr.includes(val);
+      if (next && !has) output.selected = [...curr, val];
+      if (!next && has)  output.selected = curr.filter(v => v !== val);
     };
 
-    const toggle = (value: string) => {
-      setSelected(curr => curr.includes(value) ? curr.filter(v => v !== value) : [...curr, value]);
-    };
+    const toggle = (val: any) => setSelectedFor(val, !isChecked(val));
 
     return (
       <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
         <For each={input.values}>
           {item => {
-            const isChecked = () => selected().includes(item.value);
             return (
               <div
                 style={{ width: "100%" }}
@@ -158,7 +159,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                 }}
               >
                 <Checkbox
-                  value={isChecked()}
+                  value={isChecked(item.value)}
                   onChecked={(next) => {
                     setSelectedFor(item.value, next);
                   }}
@@ -274,7 +275,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                 <Show when={props.dialog?.input?.type == "inputText"}>
                   <InputText
                     placeholder={(props.dialog?.input as DialogInputText).placeholder}
-                    value={""}
+                    value={output.text}
                     onTextChanged={(newVal) => { output.text = newVal }}
                     focusableOpts={{
                       onBack: dialogBack
