@@ -62,6 +62,7 @@ namespace Grayjay.ClientServer.Controllers
             private object _cachedDashLockObject = new object();
             public int CachedDashVideoIndex = -1;
             public int CachedDashAudioIndex = -1;
+            public int CachedDashSubtitleIndex = -1;
             public ProxySettings? CachedDashProxySettings = null;
             public Task<string>? CachedDashTask = null;
 
@@ -82,22 +83,23 @@ namespace Grayjay.ClientServer.Controllers
                 }
             }
 
-            public Task<string>? GetCachedDashTask(int videoIndex, int audioIndex, ProxySettings? proxySettings)
+            public Task<string>? GetCachedDashTask(int videoIndex, int audioIndex, int subtitleIndex, ProxySettings? proxySettings)
             {
                 lock (_cachedDashLockObject)
                 {
-                    if (CachedDashVideoIndex == videoIndex && CachedDashAudioIndex == audioIndex && Equals(CachedDashProxySettings, proxySettings))
+                    if (CachedDashVideoIndex == videoIndex && CachedDashAudioIndex == audioIndex && CachedDashSubtitleIndex == subtitleIndex && Equals(CachedDashProxySettings, proxySettings))
                         return CachedDashTask;
                     return null;
                 }
             }
 
-            public void SetCachedDash(int videoIndex, int audioIndex, ProxySettings? proxySettings, Task<string> dash)
+            public void SetCachedDash(int videoIndex, int audioIndex, int subtitleIndex, ProxySettings? proxySettings, Task<string> dash)
             {
                 lock (_cachedDashLockObject)
                 {
                     CachedDashVideoIndex = videoIndex;
                     CachedDashAudioIndex = audioIndex;
+                    CachedDashSubtitleIndex = subtitleIndex;
                     CachedDashTask = dash;
                     CachedDashProxySettings = proxySettings;
                 }
@@ -685,7 +687,7 @@ namespace Grayjay.ClientServer.Controllers
         }
         public static (Task<string>, V8PromiseMetadata?) GenerateSourceDash(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null)
         {
-            var cachedDashTask = state.DetailsState.GetCachedDashTask(videoIndex, audioIndex, proxySettings);
+            var cachedDashTask = state.DetailsState.GetCachedDashTask(videoIndex, audioIndex, subtitleIndex, proxySettings);
             if (cachedDashTask != null)
             {
                 Logger.w<DetailsController>("Using cached DASH.");
@@ -700,7 +702,7 @@ namespace Grayjay.ClientServer.Controllers
 
                 V8PromiseMetadata? metadata = null;
                 var task = GenerateSourceDashRaw(state, videoRawSource, audioRawSource, sourceSubtitle, proxySettings, out metadata);
-                state.DetailsState.SetCachedDash(videoIndex, audioIndex, proxySettings, task);
+                state.DetailsState.SetCachedDash(videoIndex, audioIndex, subtitleIndex, proxySettings, task);
                 return (task, metadata);
             }
 
@@ -813,7 +815,7 @@ namespace Grayjay.ClientServer.Controllers
 
             var dash = DashBuilder.GenerateOnDemandDash(sourceVideo, videoUrl, sourceAudio, audioUrl, sourceSubtitle, subtitleUrl);
             var dashTask = Task.FromResult(dash);
-            state.DetailsState.SetCachedDash(videoIndex, audioIndex, proxySettings, dashTask);
+            state.DetailsState.SetCachedDash(videoIndex, audioIndex, subtitleIndex, proxySettings, dashTask);
             return (dashTask, null);
         }
 
