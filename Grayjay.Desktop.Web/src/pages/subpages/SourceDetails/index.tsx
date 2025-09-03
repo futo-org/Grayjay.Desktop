@@ -19,7 +19,7 @@ import StateWebsocket from '../../../state/StateWebsocket';
 import ScrollContainer from '../../../components/containers/ScrollContainer';
 import { LocalBackend } from '../../../backend/LocalBackend';
 import { createResourceDefault } from '../../../utility';
-
+import { focusable } from '../../../focusable'; void focusable;
 
 export interface SourceDetailsProps {
   configId: string
@@ -184,7 +184,9 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
           </div>
           <div class={styles.settings}>
             <Show when={sourceResource$()?.hasUpdate}>
-              <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Update' onClick={()=>reinstallFromRemote()}></Button>
+              <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Update' onClick={()=>reinstallFromRemote()} focusableOpts={{
+                onPress: reinstallFromRemote
+              }}></Button>
             </Show>
             <Show when={!!sourceResource$()?.config?.authentication}>
               <Show when={!sourceResource$()?.hasLoggedIn}>
@@ -192,20 +194,30 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
                   <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px", "opacity": 0.5}} text='Login (Unavailable in Server Mode)'></Button>
                 </Show>
                 <Show when={StateGlobal.settings$()?.object?.info?.mode != "Server"}>
-                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login' onClick={()=>login(sourceResource$()!.config.id)}></Button>
+                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login' onClick={()=>login(sourceResource$()!.config.id)} focusableOpts={{
+                    onPress: () => login(sourceResource$()!.config.id)
+                  }}></Button>
                 </Show>
                 <Show when={StateGlobal.settings$()?.object?.info?.mode != "Server" && sourceResource$()?.config?.id == "DEV"}>
-                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login (Clone From Real)' onClick={()=>loginDevClone()}></Button>
+                  <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Login (Clone From Real)' onClick={()=>loginDevClone()} focusableOpts={{
+                    onPress: loginDevClone
+                  }}></Button>
                 </Show>
               </Show>
               <Show when={!!sourceResource$()?.hasLoggedIn}>
-                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Logout' onClick={()=>logout(sourceResource$()!.config.id)}></Button>
+                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Logout' onClick={()=>logout(sourceResource$()!.config.id)} focusableOpts={{
+                    onPress: ()=>logout(sourceResource$()!.config.id)
+                  }}></Button>
               </Show>
               <Show when={!!sourceResource$()?.state?.capabilities?.hasGetUserSubscriptions && !!sourceResource$()?.hasLoggedIn}>
-                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Import Subscriptions' onClick={()=>importSubscriptions(sourceResource$()!.config.id)}></Button>
+                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Import Subscriptions' onClick={()=>importSubscriptions(sourceResource$()!.config.id)} focusableOpts={{
+                    onPress: ()=>importSubscriptions(sourceResource$()!.config.id)
+                  }}></Button>
               </Show>
               <Show when={!!sourceResource$()?.state?.capabilities?.hasGetUserPlaylists && !!sourceResource$()?.hasLoggedIn}>
-                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Import Playlists' onClick={()=>importPlaylists(sourceResource$()!.config.id)}></Button>
+                <Button style={{width: "calc(100% - 30px)", "margin-bottom": "10px"}} text='Import Playlists' onClick={()=>importPlaylists(sourceResource$()!.config.id)} focusableOpts={{
+                    onPress: ()=>importPlaylists(sourceResource$()!.config.id)
+                  }}></Button>
               </Show>
             </Show>
             <ScrollContainer ref={scrollContainerRef} wrapperStyle={{"flex-grow": 1, "width": "100%"}}>
@@ -215,7 +227,9 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
                 <SettingsContainer settings={sourceSettings$()} onFieldChanged={onSourceSettingsChanged} />
               </Show>
               
-              <Button style={{width: "calc(100% - 54px)", "margin-bottom": "10px", "margin-left": "24px"}} text='Uninstall' color='#550000' onClick={()=>uninstall()}></Button>
+              <Button style={{width: "calc(100% - 54px)", "margin-bottom": "10px", "margin-left": "24px"}} text='Uninstall' color='#550000' onClick={()=>uninstall()} focusableOpts={{
+                onPress: uninstall
+              }}></Button>
             </ScrollContainer>
           </div>
         </div>

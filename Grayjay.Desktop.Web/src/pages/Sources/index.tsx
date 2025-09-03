@@ -27,6 +27,7 @@ import EmptyContentView from '../../components/EmptyContentView';
 import ScrollContainer from '../../components/containers/ScrollContainer';
 import { createResourceDefault, swap } from '../../utility';
 import VirtualDragDropList from '../../components/containers/VirtualDragDropList';
+import { focusable } from '../../focusable'; void focusable;
 
 const SourcesPage: Component = () => {
   const nav = useNavigate();
@@ -127,7 +128,9 @@ const SourcesPage: Component = () => {
                       const source = createMemo(() => item() as ISourceConfig | undefined);
                       return (
                         <Show when={source()}>
-                          <div class={styles.source} classList={{[styles.enabled]: source()!.id == selectedSignal$()}} onClick={()=>selectSource(source()!)}>
+                          <div class={styles.source} classList={{[styles.enabled]: source()!.id == selectedSignal$()}} onClick={()=>selectSource(source()!)} onFocus={() => selectSource(source()!)} use:focusable={{
+                            onPress: () => disableSource(source()!)
+                          }}>
                             <div class={styles.thumb}  onMouseDown={(e) => {
                               startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
                               e.preventDefault();
@@ -158,7 +161,9 @@ const SourcesPage: Component = () => {
               </Show>
                 <For each={disabledSources$()}>
                   {(source, i) =>
-                    <div class={styles.source} classList={{[styles.enabled]: source.id == selectedSignal$()}} onClick={()=>selectSource(source)}>
+                    <div class={styles.source} classList={{[styles.enabled]: source.id == selectedSignal$()}} onClick={()=>selectSource(source)} onFocus={() => selectSource(source)} use:focusable={{
+                      onPress: () => enableSource(source)
+                    }}>
                       <div class={styles.image}>
                         <img src={StateGlobal.getSourceConfig(source.id)?.absoluteIconUrl} />
                       </div>
@@ -175,11 +180,15 @@ const SourcesPage: Component = () => {
               </div>
               <div style="margin-top:24px; margin-bottom: 24px;">
                   <button onClick={[(installSource), null]} 
-                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; width: calc(100% - 40px);">
+                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; width: calc(100% - 40px);" use:focusable={{
+                      onPress: installSource
+                    }}>
                     Install Source
                   </button>
                   <button onClick={[()=>{UIOverlay.overlayOfficialPlugins()}, null]} 
-                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; margin-top: 10px; width: calc(100% - 40px);">
+                      style="border: 0px; cursor: pointer; padding: 18px; border-radius: 8px; background-color: #019BE7; color: white; font-size: 20px; margin-left: 24px; margin-top: 10px; width: calc(100% - 40px);" use:focusable={{
+                      onPress: () => UIOverlay.overlayOfficialPlugins()
+                    }}>
                     Install Official Sources
                   </button>
               </div>

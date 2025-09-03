@@ -5,6 +5,7 @@ import { ISettingsField } from '../../../../../backend/models/settings/SettingsO
 import { ISettingsFieldToggle } from '../../../../../backend/models/settings/fields/SettingsFieldToggle';
 import Toggle from '../../../../basics/inputs/Toggle';
 import FieldKey from '../FieldKey';
+import { focusable } from '../../../../../focusable'; void focusable;
 
 interface FieldToggleProps {
     field: ISettingsFieldToggle,
@@ -24,7 +25,9 @@ const FieldToggle: Component<FieldToggleProps> = (props) => {
     }
 
     return (
-        <div class={styles.container}>
+        <div class={styles.container} use:focusable={{
+            onPress: () => toggle(!value$())
+        }}>
             <FieldKey field={props.field} isSubField={props.isSubField} />
             <div class={styles.value}>
                 <Toggle value={value$()} onToggle={(newVal)=>toggle(newVal)} />

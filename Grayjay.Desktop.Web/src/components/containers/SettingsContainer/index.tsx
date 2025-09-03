@@ -5,7 +5,6 @@ import { Event1 } from "../../../utility/Event";
 import { ISettingsField, ISettingsObject } from "../../../backend/models/settings/SettingsObject";
 import Field from "./fields/Field";
 
-
 export interface SettingsContainerProps {
     settings: ISettingsObject | undefined,
     filterGroup?: string,

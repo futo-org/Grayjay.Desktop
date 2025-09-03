@@ -13,6 +13,7 @@ import ScrollContainer from '../../components/containers/ScrollContainer';
 import { focusScope } from '../../focusScope'; void focusScope;
 import { focusable } from '../../focusable'; void focusable;
 import { createMutable } from 'solid-js/store';
+import { FocusableOptions } from '../../nav';
 
 export interface DialogDescriptor {
   icon?: string,
@@ -27,7 +28,8 @@ export interface DialogDescriptor {
 export interface DialogButton {
   title: string,
   style?: string,
-  onClick: (output: IDialogOutput) => void
+  onClick: (output: IDialogOutput) => void,
+  focusableOpts: FocusableOptions
 }
 
 export interface IDialogOutput {

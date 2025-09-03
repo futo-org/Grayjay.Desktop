@@ -5,8 +5,8 @@ import chevDown from "../../../../assets/icons/icon_chrevron_down.svg"
 import check from "../../../../assets/icons/icon_checkmark.svg"
 import StateGlobal from "../../../../state/StateGlobal";
 import { focusScope } from '../../../../focusScope'; void focusScope;
-import { focusable } from '../../../../focusable';import { FocusableOptions, OpenIntent } from "../../../../nav";
- void focusable;
+import { focusable } from '../../../../focusable'; void focusable;
+import { FocusableOptions, OpenIntent } from "../../../../nav";
 
 export interface DropdownProps {
     options: any[];
