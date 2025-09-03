@@ -1031,6 +1031,26 @@
 					return x.value
 				});
 
+
+				let settingsToUse = __DEV_SETTINGS;
+				if (false) {
+					for (let setting of this.Plugin?.currentPlugin?.settings) {
+						if (typeof settingsToUse[setting.variable] == "undefined") {
+							switch (setting?.type?.toLowerCase()) {
+								case "boolean":
+									settingsToUse[setting.variable] = setting.default === 'true';
+									break;
+								case "dropdown":
+									let dropDownIndex = parseInt(setting.default);
+									if (dropDownIndex) {
+										settingsToUse[setting.variable] = setting.options[dropDownIndex];
+									}
+									break;
+							}
+						}
+					}
+				}
+
 				if(name == "enable") {
 					if(parameterVals.length > 0)
 						parameterVals[0] = this.Plugin.currentPlugin;
