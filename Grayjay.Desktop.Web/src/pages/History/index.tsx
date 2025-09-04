@@ -27,13 +27,14 @@ import UIOverlay from '../../state/UIOverlay';
 import { Portal } from 'solid-js/web';
 import { useNavigate } from '@solidjs/router';
 import { Pager } from '../../backend/models/pagers/Pager';
+import { focusable } from "../../focusable"; void focusable;
 import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
 
 const HistoryPage: Component = () => {
   const video = useVideo();
 
   const [query$, setQuery] = createSignal<string>();
-  const [historyPager$, setHistoryPager] = createSignal<Pager<IHistoryVideo>>();
+  const [historyPager$, setHistoryPager] = createSignal<Pager<IHistoryVideo> | undefined>(undefined, { equals: false });
 
   let initialLoadComplete = false;
   let isLoading = false;
@@ -142,7 +143,7 @@ const HistoryPage: Component = () => {
               setShow(false);
             }),
             new MenuSeperator(),
-            new MenuItemButton("Delete history", ic_trash, undefined, async () => {
+            new MenuItemButton("Delete item", ic_trash, undefined, async () => {
               const historyPager = historyPager$();
               if (!historyPager) {
                 return;
@@ -160,6 +161,8 @@ const HistoryPage: Component = () => {
                 historyPager.dataFiltered.splice(index, 1);
                 historyPager.removedFiltered(index, 1);
               }
+
+              setHistoryPager(historyPager);
             }),
           ]
       } as Menu;
@@ -191,7 +194,8 @@ const HistoryPage: Component = () => {
               }}
               onTextChanged={(newVal) => setQuery(newVal)}
               icon={ic_search}
-              showClearButton={true} />
+              showClearButton={true}
+              focusableOpts={{}} />
 
               <CustomButton 
                 icon={ic_trash}
@@ -207,6 +211,14 @@ const HistoryPage: Component = () => {
                     setSettingsContent(undefined);
                     setShow(true);
                   });
+                }} focusableOpts={{
+                  onPress: (el) => {
+                    contentAnchor.setElement(el);
+                    batch(() => {
+                      setSettingsContent(undefined);
+                      setShow(true);
+                    });
+                  }
                 }} />
           </div>
           <div>
@@ -271,7 +283,17 @@ const HistoryPage: Component = () => {
                     
                   };
 
-                  return (<div class={styles.itemContainer}>
+                  return (<div class={styles.itemContainer} use:focusable={{
+                    onPress: openVideo,
+                    onOptions: (el) => {
+                        contentAnchor.setElement(el as HTMLElement);
+              
+                        batch(() => {
+                          setSettingsContent(historyVideo());
+                          setShow(true);
+                        });
+                    }
+                  }}>
                     <div style="height: 82px; width: 150px; position: relative; border-radius: 4.374px; overflow: hidden; cursor: pointer; flex-shrink: 0;" onClick={openVideo}>
                       <img src={bestThumbnail()?.url} style={{"height": "100%", "width": "100%", "object-fit": "cover"}} referrerPolicy='no-referrer' />
                       <div style={{
