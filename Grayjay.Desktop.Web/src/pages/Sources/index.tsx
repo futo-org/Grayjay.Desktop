@@ -71,7 +71,7 @@ const SourcesPage: Component = () => {
   }
 
   async function installSource() {
-
+    console.info("installSource called");
 
 
     const urlPrompt = await UIOverlay.dialog({

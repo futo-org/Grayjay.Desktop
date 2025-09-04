@@ -22,6 +22,8 @@ import ButtonFlex from '../../buttons/ButtonFlex';
 import UIOverlay from '../../../state/UIOverlay';
 import { CastingBackend } from '../../../backend/CastingBackend';
 import { Portal } from 'solid-js/web';
+import { focusScope } from '../../../focusScope'; void focusScope;
+import { focusable } from "../../../focusable"; void focusable;
 import Button from '../../buttons/Button';
 
 const getDeviceIcon = (device?: CastingDeviceInfo, active?: boolean) => {
@@ -81,12 +83,17 @@ const CastingDeviceView: Component<CastingDeviceViewProps> = (props) => {
         ev.stopPropagation();
     };
 
+    const globalBack = () => (casting?.actions.close(), true);
     return (
         <Show when={icon$() && name}>
             <div class={styles.containerDevice} onClick={async () => {
                 if (props.device.id) {
                     await casting?.actions.connect(props.device.id);
                 }
+            }} use:focusable={{
+                onPress: async () => await casting?.actions.connect(props.device.id),
+                onBack: globalBack,
+                onOptions: () => props.pinned ? casting?.actions?.removePinnedDevice(props.device) : casting?.actions?.addPinnedDevice(props.device)
             }}>
                 <img src={icon$()} /> 
                 <div style="display: flex; flex-direction: column; flex-grow: 1">
@@ -126,6 +133,7 @@ const DeviceList: Component = () => {
             .sort((a, b) => a.name.localeCompare(b.name));
     });
 
+    const globalBack = () => (casting?.actions.close(), true);
     return (
         <>
             <Show when={(pinnedDevices$()?.length ?? 0) == 0 && (discoveredDevices$()?.length ?? 0) == 0}>
@@ -141,6 +149,9 @@ const DeviceList: Component = () => {
                         }}
                         onClick={() => {
                             casting?.actions.openAddDeviceManually();
+                        }} focusableOpts={{
+                            onPress: () => casting?.actions.openAddDeviceManually(),
+                            onBack: globalBack
                         }} />
                 </div>
             </Show>
@@ -174,6 +185,9 @@ const DeviceList: Component = () => {
                         text='Add manually'
                         onClick={() => {
                             casting?.actions.openAddDeviceManually();
+                        }} focusableOpts={{
+                            onPress: () => casting?.actions.openAddDeviceManually(),
+                            onBack: globalBack
                         }} />
                 </div>
             </Show>
@@ -240,20 +254,47 @@ const AddDeviceManually: Component = () => {
         }
     });
 
+    const onClick = async () => {
+        if (hasError$()) {
+            UIOverlay.dialog({
+                title: "Invalid",
+                description: "Cannot add pinned device because there are errors on the input.",
+                buttons: [{title: "OK", onClick:()=>{}}]
+            });
+            return;
+        }
+
+        const ip = ip$();
+        const name = name$();
+        if (!ip || !name) {
+            return;
+        }
+
+        await casting?.actions.addPinnedDevice({
+            id: name,
+            name,
+            port: Number.parseInt(port$()),
+            type: CastProtocolType.FCast,
+            addresses: [ ip ]
+        });
+
+        casting?.actions.open();
+    };
+    const globalBack = () => (casting?.actions.close(), console.info("global back"), true);
     return (
         <div class={styles.containerAddManually}>
-            <ButtonGroup items={["FCast", "Chromecast", "AirPlay"]} defaultSelectedItem={selectedType$()} onItemChanged={v => setSelectedType(v)} style={{"margin-top": "32px"}} />
+            <ButtonGroup items={["FCast", "Chromecast", "AirPlay"]} defaultSelectedItem={selectedType$()} onItemChanged={v => setSelectedType(v)} style={{"margin-top": "32px"}} focusableOpts={{ onBack: globalBack }} />
             <div class={styles.containerHeader} style="margin-top: 24px">Enter device details</div>
             <div style="display: flex; width: 100%; flex-direction: column;">
                 <div style="position: relative; width: 100%; margin-top: 12px;">
-                    <InputText label="Device name" small={true} style={{"width": "100%"}} value={name$()} onTextChanged={(v) => setName(v)} error={nameErrorMessage$()} />
+                    <InputText label="Device name" small={true} style={{"width": "100%"}} value={name$()} onTextChanged={(v) => setName(v)} error={nameErrorMessage$()} focusableOpts={{ onBack: globalBack }} />
                 </div>
                 <div style="display: flex; width: 100%; flex-direction: row; margin-top: 12px;">
                     <div style="position: relative; min-width: 460px; flex-grow: 1;">
-                        <InputText label="Device IP" small={true} style={{"width": "100%"}} value={ip$()} onTextChanged={(v) => setIP(v)} error={ipErrorMessage$()} />
+                        <InputText label="Device IP" small={true} style={{"width": "100%"}} value={ip$()} onTextChanged={(v) => setIP(v)} error={ipErrorMessage$()} focusableOpts={{ onBack: globalBack}} />
                     </div> 
                     <div style="position: relative; margin-left: 12px; width: 200px;">
-                        <InputText label="Port" small={true} style={{"width": "100%"}} value={port$()} onTextChanged={(v) => setPort(v)} error={portErrorMessage$()} />
+                        <InputText label="Port" small={true} style={{"width": "100%"}} value={port$()} onTextChanged={(v) => setPort(v)} error={portErrorMessage$()} focusableOpts={{ onBack: globalBack}} />
                     </div> 
                 </div>
             </div>
@@ -263,38 +304,16 @@ const AddDeviceManually: Component = () => {
                     <div class={styles.helpText}>Help</div>
                 </div>
                 <div style="flex-grow: 1"></div>
-                <ButtonFlex small={true} onClick={async () => {
-                    if (hasError$()) {
-                        UIOverlay.dialog({
-                            title: "Invalid",
-                            description: "Cannot add pinned device because there are errors on the input.",
-                            buttons: [{title: "OK", onClick:()=>{}}]
-                        });
-                        return;
-                    }
-
-                    const ip = ip$();
-                    const name = name$();
-                    if (!ip || !name) {
-                        return;
-                    }
-
-                    await casting?.actions.addPinnedDevice({
-                        id: name,
-                        name,
-                        port: Number.parseInt(port$()),
-                        type: CastProtocolType.FCast,
-                        addresses: [ ip ]
-                    });
-
-                    casting?.actions.open();
-                }}
+                <ButtonFlex small={true} onClick={onClick}
                     text='Add device'
                     color='#019BE7'
                     style={{
                         "height": "48px",
                         "width": "180px",
                         "flex-shrink": "0"
+                    }} focusableOpts={{
+                        onPress: onClick,
+                        onBack: globalBack
                     }}></ButtonFlex>
             </div>
         </div>
@@ -307,7 +326,7 @@ const ActiveDeviceView: Component = () => {
         const activeDevice = casting?.activeDevice?.device();
         return getDeviceIcon(casting?.activeDevice?.device(), activeDevice ? casting?.discoveredDevices().some(d => d.id === activeDevice.id) : undefined)
     });
-    
+    const globalBack = () => (casting?.actions.close(), true);
     return (
         <div style="display: flex; flex-direction: column; width: 100%;">
             <div class={styles.containerHeader}>
@@ -325,6 +344,12 @@ const ActiveDeviceView: Component = () => {
                     onClick={async () => {
                         await CastingBackend.mediaStop();
                         casting?.actions.disconnect();
+                    }} focusableOpts={{
+                        onPress: async () => {
+                            await CastingBackend.mediaStop();
+                            casting?.actions.disconnect();
+                        },
+                        onBack: globalBack
                     }} />
             </div>
         </div>
@@ -333,7 +358,7 @@ const ActiveDeviceView: Component = () => {
 
 const OverlayCasting: Component = () => {
     const casting = useCasting();
-
+    const globalBack = () => (casting?.actions.close(), true);
     return (
         <>
             <Show when={casting?.dialogState() !== CastingDialogState.Closed}>
@@ -341,6 +366,10 @@ const OverlayCasting: Component = () => {
                     <div class={styles.containerCasting} onClick={(ev) => {
                         ev.preventDefault();
                         ev.stopPropagation();
+                    }} use:focusScope={{
+                        trap: true,
+                        wrap: true,
+                        orientation: "spatial"
                     }}>
                         <div class={styles.containerCastingHeader}>
                             <div class={styles.containerCastingHeaderTitle}>Casting</div>
@@ -350,7 +379,7 @@ const OverlayCasting: Component = () => {
                             </div>
                         </div>
 
-                        <div>
+                        <div style="width: 100%">
                             <Show when={casting?.dialogState() == CastingDialogState.DeviceList}>
                                 <DeviceList />
                             </Show>
@@ -369,6 +398,10 @@ const OverlayCasting: Component = () => {
                     <div class={styles.containerCastingBackground} onClick={(ev) => {
                         ev.preventDefault();
                         ev.stopPropagation();
+                    }} use:focusScope={{
+                        trap: true,
+                        wrap: true,
+                        orientation: "spatial"
                     }}>
                         <div class={styles.containerCasting}>
                             <div class={styles.containerCastingHeader}>
@@ -387,7 +420,11 @@ const OverlayCasting: Component = () => {
                                         casting?.actions.disconnect();
                                     }}
                                     text='Disconnect'
-                                    style={{ border: "1px solid rgba(1, 155, 231, 0)", "margin-left": "16px", "flex-shrink": "0" }}></ButtonFlex>
+                                    style={{ border: "1px solid rgba(1, 155, 231, 0)", "margin-left": "16px", "flex-shrink": "0" }}
+                                    focusableOpts={{
+                                        onPress: async () => casting?.actions.disconnect(),
+                                        onBack: globalBack
+                                    }}></ButtonFlex>
                             </div>
                         </div>
                     </div>

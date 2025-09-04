@@ -61,6 +61,7 @@ const OverlayModals: Component = () => {
 
     function loadNextRequest() {
       const next = overlayQueue.shift();
+      console.info("loadNextRequest", overlayQueue);
       globalDismissEvent.unregister('onCurrentGlobalDismiss');
       if (!next) {
         overlayCurrent = undefined;

@@ -69,6 +69,7 @@ export interface UIOverlay {
             dialog: req
           });
           this.onDismiss.register((id: string)=>{
+            console.log("this.onDismiss.invoked", {reqId, req, id});
             if(reqId != id)
               return;
             resolve(req.output);

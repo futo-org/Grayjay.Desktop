@@ -29,7 +29,7 @@ export interface DialogButton {
   title: string,
   style?: string,
   onClick: (output: IDialogOutput) => void,
-  focusableOpts: FocusableOptions
+  focusableOpts?: FocusableOptions
 }
 
 export interface IDialogOutput {
@@ -127,6 +127,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
   };
 
   const clickClose = () => {
+    console.info("OverlayDialog clickClose");
     UIOverlay.dismiss();
   };
 

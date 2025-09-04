@@ -662,7 +662,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
             case 'ArrowRight': navigateDirection('right'); e.preventDefault(); break;
             case 'Enter':
             case ' ':
-                if (press('press', OpenIntent.Keyboard)) e.preventDefault(); break;
+                press('press', OpenIntent.Keyboard);
+                e.preventDefault();
+                break;
             case 'Escape':
                 if (press('back', OpenIntent.Keyboard)) e.preventDefault(); break;
             case 'o':

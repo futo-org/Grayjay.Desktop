@@ -24,6 +24,8 @@ import { SourcesBackend } from '../../backend/SourcesBackend';
 import { ISourceConfig } from '../../backend/models/plugin/ISourceConfigState';
 import Checkbox from '../../components/basics/inputs/Checkbox';
 import { DialogButton, DialogDescriptor, DialogInputText, IDialogOutput } from '../OverlayDialog';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from "../../focusable"; void focusable;
 import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 
 export interface OverlayOfficialPluginsDialogProps {
@@ -95,8 +97,17 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
       }, 100)
     }
 
+    function globalBack() {
+      UIOverlay.dismiss(); 
+      return true; 
+    }
+
     return (
-      <div class={styles.container}> 
+      <div class={styles.container} use:focusScope={{
+          trap: true,
+          wrap: true,
+          orientation: "spatial"
+        }}> 
         <Show when={!installing$()}>
           <div class={styles.dialogHeader}>
             <div class={styles.headerText}>
@@ -105,7 +116,10 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
             <div class={styles.headerSubText}>
               These are official plugins you can quickly install.
             </div>
-            <div class={styles.closeButton} onClick={()=>UIOverlay.dismiss()}>
+            <div class={styles.closeButton} onClick={()=>UIOverlay.dismiss()} use:focusable={{ 
+              onPress: () => UIOverlay.dismiss(), 
+              onBack: globalBack
+            }}>
               <img src={iconClose} />
             </div>
           </div>
@@ -118,7 +132,10 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
           </div>
           <div class={styles.sources} style="position: relative;">
             <For each={sources$()}>{ config =>
-              <div class={styles.source} onClick={()=>toggleSource(config)}>
+              <div class={styles.source} onClick={()=>toggleSource(config)} use:focusable={{ 
+              onPress: () => toggleSource(config), 
+              onBack: globalBack
+            }}>
                 <div class={styles.checkContainer}>
                   <Checkbox value={selected$().indexOf(config.id) >= 0} onChecked={(val)=>{toggleSource(config)}} 
                     style={{height: "100%", width: "100%"}}
@@ -148,7 +165,11 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
                 <Button text={"Install Selected"}
                   onClick={()=>selected$() && selected$().length > 0 && install()}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
-                  color={((selected$() && selected$().length > 0) ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "")} />
+                  color={((selected$() && selected$().length > 0) ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "")}
+                  focusableOpts={{
+                    onPress: install,
+                    onBack: globalBack
+                  }} />
             </div>
         </Show>
         <Show when={installing$()}>

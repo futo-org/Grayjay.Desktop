@@ -1,4 +1,4 @@
-import { Accessor, onCleanup, onMount, createEffect } from "solid-js";
+import { Accessor, onCleanup, onMount, createEffect, on, untrack } from "solid-js";
 import { useFocus } from "./FocusProvider";
 import type { ScopeOptions } from "./nav";
 
@@ -25,21 +25,30 @@ export function focusScope(el: HTMLElement, accessor: Accessor<ScopeOptions | un
         }
     });
 
-    createEffect(() => {
-        if (!scopeId) return;
-        const { trap } = opts();
-        const isActive = focus.getActiveScope() === scopeId;
+    createEffect(on(() => !!opts().trap, (trap, prevTrap) => {
+        if (!scopeId) return trap;
+        if (trap && !prevTrap) {
+            const isActive = untrack(() => focus.getActiveScope() === scopeId);
+            if (!isActive) {
+                focus.setActiveScope(scopeId);
+                queueMicrotask(() => focus.focusFirstInScope(scopeId!));
+            }
+            return trap;
+        }
 
-        if (trap && !isActive) {
-            focus.setActiveScope(scopeId);
-            queueMicrotask(() => focus.focusFirstInScope(scopeId!));
-        } else if (!trap && isActive) {
-            focus.setActiveScope(parentIdAtMount);
-            if (parentIdAtMount) {
-                queueMicrotask(() => focus.focusFirstInScope(parentIdAtMount!));
+        if (!trap && prevTrap) {
+            const isActive = untrack(() => focus.getActiveScope() === scopeId);
+            if (isActive) {
+                focus.setActiveScope(parentIdAtMount);
+                if (parentIdAtMount) {
+                    queueMicrotask(() => focus.focusFirstInScope(parentIdAtMount!));
+                }
             }
         }
-    });
+
+        return trap;
+    },
+    { defer: true }));
 
     onCleanup(() => {
         if (scopeId) focus.unregisterScope(scopeId);
