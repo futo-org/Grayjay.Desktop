@@ -13,11 +13,13 @@ import { useNavigate } from '@solidjs/router';
 import { useVideo } from '../../../contexts/VideoProvider';
 import IconButton from '../../buttons/IconButton';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
+import { focusable } from '../../../focusable'; void focusable;
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
+import { OpenIntent } from '../../../nav';
 
 interface DownloadedViewProps {
   downloaded?: IVideoLocal
-  onSettings?: (element: HTMLDivElement, content: IVideoLocal) => void;
+  onSettings?: (element: HTMLElement, content: IVideoLocal, openIntent: OpenIntent) => void;
 }
 
 const DownloadedView: Component<DownloadedViewProps> = (props) => {
@@ -56,7 +58,10 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
   let refMoreButton: HTMLDivElement | undefined;
 
   return (
-    <div class={styles.downloadingCard}>
+    <div class={styles.downloadingCard} use:focusable={props.downloaded ? {
+      onPress: navigate,
+      onOptions: (el, openIntent) => props.onSettings?.(el, props.downloaded!, openIntent)
+    } : undefined}>
         <div class={styles.downloadThumbnail} onClick={navigate} style={{"background-image": "url(" + getBestThumbnail(props.downloaded?.videoDetails.thumbnails)?.url + ")"}}>
           <div class={styles.badgeStatus}>
             {toHumanTime(props.downloaded?.videoDetails?.duration)}
@@ -76,7 +81,7 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
         </div>
         <Show when={props.onSettings}>
           <IconButton icon={more} ref={refMoreButton}
-            onClick={() => props.onSettings?.(refMoreButton!, props.downloaded!)}
+            onClick={() => props.onSettings?.(refMoreButton!, props.downloaded!, OpenIntent.Pointer)}
             style={{position: 'absolute', bottom: '10px', right: '10px' }} />
         </Show>
     </div>

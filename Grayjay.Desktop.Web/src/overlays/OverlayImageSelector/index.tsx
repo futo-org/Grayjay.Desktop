@@ -9,6 +9,8 @@ import { createResourceDefault, promptFile, toHumanBitrate } from '../../utility
 import Button from '../../components/buttons/Button';
 import InputText from '../../components/basics/inputs/InputText';
 import { SubscriptionsBackend } from '../../backend/SubscriptionsBackend';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from '../../focusable'; void focusable;
 import { ImagesBackend } from '../../backend/ImagesBackend';
 
 
@@ -70,8 +72,17 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
         props.onResult(selected$()!);
     }
 
+    function globalBack() {
+      UIOverlay.dismiss();
+      return true;
+    }
+
     return (
-      <div class={styles.container}> 
+      <div class={styles.container} use:focusScope={{
+        trap: true,
+        wrap: true,
+        orientation: "spatial"
+      }}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>
             {props.title}
@@ -89,34 +100,49 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
           <div class={styles.horizontalList}>
             <div class={styles.image} style="background: linear-gradient(267deg, rgb(1, 214, 230) -100.57%, rgb(1, 130, 231) 90.96%); margin-left: 0px;">
               <div onClick={()=>uploadImage()}
-                  style="width: 100%; height: 100%; display: grid; align-items: center; justify-items: center; cursor: pointer">
+                  style="width: 100%; height: 100%; display: grid; align-items: center; justify-items: center; cursor: pointer"
+                  use:focusable={{
+                    onPress: uploadImage,
+                    onBack: globalBack
+                  }}>
                 Add Image
               </div>
             </div>
             <div class={styles.image}
                 onClick={()=>selectUrl(imageUrl$())}
                 style={{"background-image": "url(" + imageUrl$() + ")"}}
-                classList={{[styles.enabled]: isSelectedUrl(imageUrl$() ?? "nothing")}}>
+                classList={{[styles.enabled]: isSelectedUrl(imageUrl$() ?? "nothing")}}
+                use:focusable={{
+                  onPress: () => selectUrl(imageUrl$()),
+                  onBack: globalBack
+                }}>
               
             </div>
             <For each={images$()}>{ img =>
               <div class={styles.image}
                 style={{"background-image": "url(" + img + ")"}}
                 classList={{[styles.enabled]: isSelectedUrl(img)}}
-                onClick={()=>selectUrl(img)} />
+                onClick={()=>selectUrl(img)}
+                use:focusable={{
+                  onPress: () => selectUrl(img),
+                  onBack: globalBack
+                }} />
             }</For>
           </div>
           <div class={styles.sectionTitle}>Image Url</div>
           <div class={styles.sectionDescription}>Select a image from an url</div>
           <div style="display: flex; justify-content: center;">
-            <InputText placeholder='Enter an image url' style={{"justify-content": "center"}} onTextChanged={(str)=>{setImageUrl(str); selectUrl(str)}} />
+            <InputText placeholder='Enter an image url' style={{"justify-content": "center"}} onTextChanged={(str)=>{setImageUrl(str); selectUrl(str)}} focusableOpts={{ onBack: globalBack }} />
             
           </div>
           <div class={styles.sectionTitle}>Creator Thumbnails</div>
           <div class={styles.sectionDescription}>Select a creator thumbnail as image</div>
           <div class={styles.subscriptionsContainer}>
             <For each={subscriptions$()}>{ sub =>
-              <div class={styles.subscription} classList={{[styles.enabled]: isSelectedSubscription(sub.channel.url)}} onClick={()=>selectSubscription(sub.channel.url, sub.channel.thumbnail)}>
+              <div class={styles.subscription} classList={{[styles.enabled]: isSelectedSubscription(sub.channel.url)}} onClick={()=>selectSubscription(sub.channel.url, sub.channel.thumbnail)} use:focusable={{
+                  onPress: () => selectSubscription(sub.channel.url, sub.channel.thumbnail),
+                  onBack: globalBack
+                }}>
                 <div class={styles.check}>
                   <img src={iconCheck} />
                 </div>
@@ -135,7 +161,11 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
             <Button text={"Select Image"}
               onClick={()=>submit()}
               style={{"margin-left": "auto", cursor: ("pointer")}} 
-              color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+              color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"}
+              focusableOpts={{
+                onPress: submit,
+                onBack: globalBack
+              }} />
         </div>
       </div>
     );

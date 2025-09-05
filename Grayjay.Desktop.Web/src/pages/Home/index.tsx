@@ -14,6 +14,7 @@ import iconHome from "../../assets/icons/icon_nav_home.svg"
 import iconSources from "../../assets/icons/ic_circles.svg"
 import { useNavigate } from '@solidjs/router';
 import EmptyContentView from '../../components/EmptyContentView';
+import { focusable } from '../../focusable'; void focusable;
 import LiveChatWindow from '../../components/LiveChatWindow';
 
 const HomePage: Component = () => {
@@ -34,7 +35,9 @@ const HomePage: Component = () => {
     <div class={styles.container}>
         <NavigationBar isRoot={true} childrenAfter={
           <img src={iconRefresh} style={{"margin-left": "24px", "cursor": "pointer", "height": "30px", "width": "30px" }} 
-            onClick={()=>{ StateGlobal.reloadHome() }} />
+            onClick={()=>{ StateGlobal.reloadHome() }} use:focusable={{
+              onPress: () => StateGlobal.reloadHome()
+            }} />
         } />
         <Show when={homePager.state == 'ready'}>
           <Show when={homePager() && homePager()!.data.length > 0}>

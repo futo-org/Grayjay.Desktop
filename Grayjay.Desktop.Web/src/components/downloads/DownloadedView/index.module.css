@@ -1,7 +1,7 @@
 
 .downloadingCard {
     width: calc(100% - 20px);
-    height: 230px;
+    height: 250px;
     display: inline-block;
     margin: 10px;
 }

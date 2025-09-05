@@ -50,7 +50,9 @@ import { IPlaylist } from '../../backend/models/IPlaylist';
 import { IPlatformContent } from '../../backend/models/content/IPlatformContent';
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
+import { focusable } from '../../focusable'; void focusable;
 import Button from '../../components/buttons/Button';
+import { OpenIntent } from '../../nav';
 
 const DownloadsPage: Component = () => {
   const navigate = useNavigate();
@@ -136,7 +138,7 @@ const DownloadsPage: Component = () => {
   });
 
   const [videoType$, setVideoType] = createSignal("media");
-  const [videoSearch$, setVideSearch] = createSignal("");
+  const [videoSearch$, setVideoSearch] = createSignal("");
   const [viewType$, setViewType] = createSignal("grid");
 
   async function exportDownloads(ids: IPlatformID[]) {
@@ -232,25 +234,30 @@ const DownloadsPage: Component = () => {
   
   const [playlistMenu$, setPlaylistMenu] = createSignal<Menu>()
   const playlistMenuShow$ = createMemo(()=>!!playlistMenu$());
+  const [playlistMenuOpenIntent$, setPlaylistMenuOpenIntent] = createSignal<OpenIntent>();
   const playlistMenuAnchor = new Anchor(null, playlistMenuShow$, AnchorStyle.BottomRight);
-  function showPlaylistMenu(playlist: IPlaylist, element: HTMLElement) {
+  function showPlaylistMenu(playlist: IPlaylist, element: HTMLElement, openIntent: OpenIntent) {
     playlistMenuAnchor.setElement(element);
-    setPlaylistMenu({
-      title: "",
-      items: [
-        new MenuItemButton("Export Playlist", folderIcon, undefined, ()=>{
-          exportDownloads(playlist?.playlist?.videos?.map(x=>x.id) ?? []);
-        }),
-        new MenuItemButton("Delete Downloads", iconTrash, undefined, ()=>{
-          deleteDownload
-          deleteDownloadPlaylist(playlist?.playlist?.id);
-        }),
-      ]
-    } as Menu)
+    batch(() => {
+      setPlaylistMenuOpenIntent(openIntent);
+      setPlaylistMenu({
+        title: "",
+        items: [
+          new MenuItemButton("Export Playlist", folderIcon, undefined, ()=>{
+            exportDownloads(playlist?.playlist?.videos?.map(x=>x.id) ?? []);
+          }),
+          new MenuItemButton("Delete Downloads", iconTrash, undefined, ()=>{
+            deleteDownload
+            deleteDownloadPlaylist(playlist?.playlist?.id);
+          }),
+        ]
+      } as Menu)
+    });
   }
 
 
   const [settingsContent$, setSettingsContent] = createSignal<IVideoLocal>();
+  const [settingsOpenIntent$, setSettingsOpenIntent] = createSignal<OpenIntent>();
   const settingsMenu$ = createMemo(() => {
       const content = settingsContent$();        
       return {
@@ -293,16 +300,18 @@ const DownloadsPage: Component = () => {
   });
     const [show$, setShow] = createSignal<boolean>(false);
     const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-    function onSettingsClicked(element: HTMLElement, content: IVideoLocal) {
+    function onSettingsClicked(element: HTMLElement, content: IVideoLocal, openIntent: OpenIntent) {
         contentAnchor.setElement(element);
         
         batch(() => {
+            setSettingsOpenIntent(openIntent);
             setSettingsContent(content);
             setShow(true);
         });
     }
     function onSettingsHidden() {
         batch(() => {
+            setSettingsOpenIntent(undefined);
             setSettingsContent(undefined);
             setShow(false);
         });
@@ -337,7 +346,7 @@ const DownloadsPage: Component = () => {
                   "margin-bottom": "10px"
               }}
               builder={(index, item) =>
-                <DownloadedView downloaded={item()} onSettings={(e, content)=> onSettingsClicked(e, content)} />
+                <DownloadedView downloaded={item()} onSettings={(e, content, openIntent)=> onSettingsClicked(e, content, openIntent)} />
               } />
         </Show>
         <Show when={videoType$() == "playlist"}>
@@ -367,13 +376,13 @@ const DownloadsPage: Component = () => {
                 <PlaylistView name={item().playlist.name} 
                   itemCount={item().playlist.videos.length}
                   thumbnail={getPlaylistThumbnail(item().playlist) ?? ""} onClick={()=>navigate("/web/playlist?id=" + item().playlist.id)}
-                  onSettings={(el)=>{ showPlaylistMenu(item(), el)}} />
+                  onSettings={(el, openIntent)=>{ showPlaylistMenu(item(), el, openIntent)}} />
               </Show>
             } />
                 
             <Portal>
                 <Show when={playlistMenu$()}>
-                  <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} />
+                  <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} openIntent={playlistMenuOpenIntent$()} />
                 </Show>
             </Portal>
         </Show>
@@ -511,6 +520,20 @@ const DownloadsPage: Component = () => {
 
   const [isDownloadingRetryable$, setIsDownloadingRetryable] = createSignal(false);
 
+  const doExport = () => {
+  if(videoType$() != "playlist")
+    selected$().forEach(x=>exportDownload(x.id));
+  else if(selected$().length > 0)
+    exportDownloads(selected$().flatMap(x=>(x as any).playlist?.videos?.map(y=>y.id)));
+  };
+
+  const doDelete = () => {
+    if(videoType$() != "playlist")
+      deleteDownloads(selected$().map(x=>x.id));
+    else
+      selected$().forEach(x=>deleteDownloadPlaylist((x as any).playlist?.id));
+  };
+
   const video = useVideo();
   let scrollContainerRef: HTMLDivElement | undefined;
   return (
@@ -588,38 +611,28 @@ const DownloadsPage: Component = () => {
             <div class={styles.downloadFilterBar}>
               <div class={styles.searchBar}>
                 <img src={searchIcon} />
-                <input class={styles.input} oninput={(e)=>setVideSearch(e.target.value)} placeholder='Search' />
+                <input class={styles.input} oninput={(e) => setVideoSearch(e.target.value)} placeholder='Search' use:focusable={{}} />
               </div>
               <div class={styles.filters}>
-                  <TogglePill name='Media' value={videoType$() == "media"} onToggle={()=>{setVideoType("media")}} />
-                  <TogglePill name='Videos' value={videoType$() == "video"} onToggle={()=>{setVideoType("video")}} />
-                  <TogglePill name='Audio' value={videoType$() == "audio"} onToggle={()=>{setVideoType("audio")}} />
-                  <TogglePill name='Playlists' value={videoType$() == "playlist"} onToggle={()=>{setVideoType("playlist")}} />
+                  <TogglePill name='Media' value={videoType$() == "media"} onToggle={()=>{setVideoType("media")}} focusableOpts={{}} />
+                  <TogglePill name='Videos' value={videoType$() == "video"} onToggle={()=>{setVideoType("video")}} focusableOpts={{}} />
+                  <TogglePill name='Audio' value={videoType$() == "audio"} onToggle={()=>{setVideoType("audio")}} focusableOpts={{}} />
+                  <TogglePill name='Playlists' value={videoType$() == "playlist"} onToggle={()=>{setVideoType("playlist")}} focusableOpts={{}} />
               </div>
               <div class={styles.viewTypes}>
                 <Show when={selected$().length > 0}>
                   <div style="display: inline-block; text-align: right;">
                     
-                    <button class={styles.selectedButton} onClick={()=>{
-                        if(videoType$() != "playlist")
-                          selected$().forEach(x=>exportDownload(x.id));
-                        else if(selected$().length > 0)
-                          exportDownloads(selected$().flatMap(x=>(x as any).playlist?.videos?.map(y=>y.id)));
-                      }}>
+                    <button class={styles.selectedButton} onClick={doExport} use:focusable={{ onPress: doExport }}>
                       Export
                     </button>
-                    <button class={styles.selectedButton} onClick={()=>{ 
-                        if(videoType$() != "playlist")
-                          deleteDownloads(selected$().map(x=>x.id));
-                        else
-                          selected$().forEach(x=>deleteDownloadPlaylist((x as any).playlist?.id));
-                        }} style="color: #F97066; margin-right: 5px;">
+                    <button class={styles.selectedButton} onClick={doDelete} style="color: #F97066; margin-right: 5px;" use:focusable={{ onPress: doDelete }}>
                       Delete
                     </button>
                   </div>
                 </Show>
 
-                <ViewTypeToggles value={viewType$()} onToggle={(val)=>{setViewType(val)}} />
+                <ViewTypeToggles value={viewType$()} onToggle={(val)=>{setViewType(val)}} focusableOpts={{}} />
               </div>
             </div>
           </div>
@@ -647,7 +660,7 @@ const DownloadsPage: Component = () => {
             ]} />
         </Show>
             <Portal>
-                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} />
+                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} openIntent={settingsOpenIntent$()} />
             </Portal>
       </ScrollContainer>
     </LoaderContainer>

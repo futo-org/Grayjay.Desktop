@@ -2,6 +2,8 @@ import { Component, JSX, Show, createEffect, createSignal, mergeProps } from 'so
 
 import close from '../../../../assets/icons/close_FILL0_wght400_GRAD0_opsz24.svg';
 import styles from './index.module.css';
+import { focusable } from '../../../../focusable'; void focusable;
+import { FocusableOptions } from '../../../../nav';
 
 interface InputTextAreaProps {
     placeholder?: string;
@@ -19,6 +21,7 @@ interface InputTextAreaProps {
     disabled?: boolean;
     label?: string;
     error?: string | null | undefined;
+    focusableOpts?: FocusableOptions;
 }
 
 const InputTextArea: Component<InputTextAreaProps> = (props) => {
@@ -83,7 +86,8 @@ const InputTextArea: Component<InputTextAreaProps> = (props) => {
                             merged.onFocusChanged?.(false);
                         }
                     }}
-                    style={props.inputStyle}>
+                    style={props.inputStyle}
+                    use:focusable={props.focusableOpts}>
                 </textarea>
             </div>
             <Show when={touched() && props.error}>

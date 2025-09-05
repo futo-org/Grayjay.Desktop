@@ -10,6 +10,8 @@ import ButtonFlex from '../../components/buttons/ButtonFlex';
 import Button from '../../components/buttons/Button';
 import { DownloadBackend } from '../../backend/DownloadBackend';
 import Loader from '../../components/basics/loaders/Loader';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from '../../focusable'; void focusable;
 import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 
 export interface OverlayDownloadDialogProps {
@@ -124,8 +126,17 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
       return true;
     });
 
+    function globalBack() {
+      UIOverlay.dismiss();
+      return true;
+    }
+
     return (
-      <div class={styles.container}> 
+      <div class={styles.container} use:focusScope={{
+        trap: true,
+        wrap: true,
+        orientation: "spatial"
+      }}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>
             Download
@@ -147,7 +158,10 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
             <Show when={videoSources$() && videoSources$().length > 0}>
               <div class={styles.sources}>
                 <Show when={hasVideo$()}>
-                  <div class={styles.source} classList={{[styles.enabled]: -1 == selectedVideo$()}} onClick={()=>setVideo(-1)}>
+                  <div class={styles.source} classList={{[styles.enabled]: -1 == selectedVideo$()}} onClick={()=>setVideo(-1)} use:focusable={{
+                    onPress: () => setVideo(-1),
+                    onBack: globalBack
+                  }}>
                     <div class={styles.imgContainer}><img src={iconCheck} /></div>
                     <div class={styles.name}>
                       None
@@ -158,7 +172,10 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
                 </Show>
                 <Index each={videoSources$()}>{(video$, i) =>
                   <Show when={video$()?.subSources?.length == 0}>
-                    <div class={styles.source} classList={{[styles.enabled]: i == selectedVideo$()}} onClick={()=>setVideo(i)}>
+                    <div class={styles.source} classList={{[styles.enabled]: i == selectedVideo$()}} onClick={()=>setVideo(i)} use:focusable={{
+                    onPress: () => setVideo(i),
+                    onBack: globalBack
+                  }}>
                     <div class={styles.imgContainer}><img src={iconCheck} /></div>
                       <div class={styles.name}>
                         {video$().name}
@@ -175,7 +192,10 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
                       <div class={styles.subSourceHeader}>{video$().name}</div>
                       <Index each={video$().subSources}>{(subSource$, i2)=>
                         <div class={styles.source} classList={{[styles.enabled]: i == selectedVideo$() && i2 == selectedManifestIndex$()}} 
-                            onClick={()=>setVideo(i, i2)}>
+                            onClick={()=>setVideo(i, i2)} use:focusable={{
+                              onPress: () => setVideo(i, i2),
+                              onBack: globalBack
+                            }}>
                           <div class={styles.imgContainer}><img src={iconCheck} /></div>
                           <div class={styles.name}>
                             {subSource$().name}
@@ -193,7 +213,10 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
             <Show when={audioSources$() && audioSources$().length > 0}>
               <div class={styles.sources}>
                 <Index each={audioSources$()}>{(audio$, i) =>
-                  <div class={styles.source} classList={{[styles.enabled]: i == selectedAudio$()}} onClick={()=>setSelectedAudio(i)}>
+                  <div class={styles.source} classList={{[styles.enabled]: i == selectedAudio$()}} onClick={()=>setSelectedAudio(i)} use:focusable={{
+                    onPress: () => setSelectedAudio(i),
+                    onBack: globalBack
+                  }}>
                     <div class={styles.imgContainer}><img src={iconCheck} /></div>
                     <div class={styles.name}>
                       {audio$().name}
@@ -208,7 +231,10 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
             <Show when={subtitleSources$() && subtitleSources$().length > 0}>
               <div class={styles.sources}>
                 <Index each={subtitleSources$()}>{(subtitle$, i) =>
-                  <div class={styles.source} classList={{[styles.enabled]: i == selectedSubtitles$(),[styles.full]: true}} onClick={()=> (selectedSubtitles$() == i) ? setSelectedSubtitles(-1) : setSelectedSubtitles(i)}>
+                  <div class={styles.source} classList={{[styles.enabled]: i == selectedSubtitles$(),[styles.full]: true}} onClick={()=> (selectedSubtitles$() == i) ? setSelectedSubtitles(-1) : setSelectedSubtitles(i)} use:focusable={{
+                    onPress: () => (selectedSubtitles$() == i) ? setSelectedSubtitles(-1) : setSelectedSubtitles(i),
+                    onBack: globalBack
+                  }}>
                   <img src={iconCheck} />
                     <div class={styles.name}>
                       {subtitle$().name}
@@ -224,7 +250,11 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
             <Button text='Download'
               onClick={()=>download()}
               style={{"margin-left": "auto", cursor: ((isDownloadable$() ? "pointer" : "default"))}} 
-              color={(isDownloadable$()) ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "gray"} />
+              color={(isDownloadable$()) ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "gray"}
+              focusableOpts={{
+                onPress: download,
+                onBack: globalBack
+              }} />
         </div>
       </div>
     );

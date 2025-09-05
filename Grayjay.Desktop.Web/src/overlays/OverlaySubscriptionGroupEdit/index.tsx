@@ -13,6 +13,8 @@ import InputText from '../../components/basics/inputs/InputText';
 import { SubscriptionsBackend } from '../../backend/SubscriptionsBackend';
 import OverlayImageSelector from '../OverlayImageSelector';
 import OverlaySubscriptionsSelector from '../OverlaySubscriptionsSelector';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from '../../focusable'; void focusable;
 import ScrollContainer from '../../components/containers/ScrollContainer';
 
 
@@ -74,6 +76,11 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
       subscriptionsResource.refetch();
     }
 
+    function globalBack() {
+      UIOverlay.dismiss();
+      return true;
+    }
+
     return (
       <>
         <Show when={stateView$() == 1}>
@@ -90,7 +97,11 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
             onResult={(selected) => addSubscriptions(selected)} />
         </Show>
         <Show when={stateView$() == 3}>
-          <div class={styles.container}> 
+          <div class={styles.container} use:focusScope={{
+            trap: true,
+            wrap: true,
+            orientation: "spatial"
+          }}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
                 Are you sure you want to delete this group?
@@ -103,16 +114,28 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
             <div style="text-align: right">
                 <Button text={"Cancel"}
                   onClick={()=>changeView(0)}
-                  style={{"margin-left": "auto", cursor: ("pointer")}}  />
+                  style={{"margin-left": "auto", cursor: ("pointer")}} 
+                  focusableOpts={{
+                    onPress: () => changeView(0),
+                    onBack: globalBack
+                  }} />
                 <Button text={"Delete"}
                   onClick={()=>deleteGroup()}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
-                  color={"red"} />
+                  color={"red"}
+                  focusableOpts={{
+                    onPress: () => deleteGroup(),
+                    onBack: globalBack
+                  }} />
             </div>
           </div>
         </Show>
         <Show when={stateView$() == 0}>
-          <div class={styles.container}> 
+          <div class={styles.container} use:focusScope={{
+            trap: true,
+            wrap: true,
+            orientation: "spatial"
+          }}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
                 Edit Subscription Group
@@ -129,7 +152,10 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <div class={styles.sectionTitle}>Image</div>
                 <div class={styles.sectionDescription}>Edit which image is used as background for your group</div>
                 <div>
-                    <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(props.subscriptionGroup.image) + ")"}} onClick={()=>changeView(1)}>
+                    <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(props.subscriptionGroup.image) + ")"}} onClick={()=>changeView(1)} use:focusable={{
+                      onPress: () => changeView(1),
+                      onBack: globalBack
+                    }}>
                       <div class={styles.text}>
                         <img src={iconEdit} />
                       </div>
@@ -140,14 +166,17 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <div class={styles.sectionTitle}>Name</div>
                 <div class={styles.sectionDescription}>Edit what the name of your group is.</div>
                 <InputText placeholder='Subscription group name'
-                  value={props.subscriptionGroup.name} onTextChanged={(val) => props.subscriptionGroup.name = val} />
+                  value={props.subscriptionGroup.name} onTextChanged={(val) => props.subscriptionGroup.name = val} focusableOpts={{ onBack: globalBack }} />
               </div>
               <div style="margin-top: 20px;">
                 <div class={styles.sectionTitle}>Subscriptions</div>
                 <div class={styles.sectionDescription}>These are the subscriptions in the group, you can delete groups by selecting them and clicking Delete Selected.</div>
                 <div class={styles.subscriptionsContainer}>
                   <For each={subscriptions$()?.filter(x=>props.subscriptionGroup.urls.indexOf(x.channel.url) >= 0)}>{ sub =>
-                    <div class={styles.subscription} classList={{[styles.enabled]: selected$().indexOf(sub.channel.url) >= 0}} onClick={()=>select(sub)}>
+                    <div class={styles.subscription} classList={{[styles.enabled]: selected$().indexOf(sub.channel.url) >= 0}} onClick={()=>select(sub)} use:focusable={{
+                      onPress: () => select(sub),
+                      onBack: globalBack
+                    }}>
                       <div class={styles.check}>
                         <img src={iconCheck} />
                       </div>
@@ -168,20 +197,36 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                     <Button text={"Delete Selected"}
                       onClick={()=>deleteSelected()}
                       style={{"margin-left": "10px", cursor: ("pointer")}} 
-                      color={"rgba(249, 112, 102, 0.08)"} />
+                      color={"rgba(249, 112, 102, 0.08)"}
+                      focusableOpts={{
+                        onPress: () => deleteSelected(),
+                        onBack: globalBack
+                      }} />
                   </Show>
                 <Button text={"Add Subscriptions"}
                   onClick={()=>changeView(2)}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
-                  color={"#222"} />
+                  color={"#222"}
+                  focusableOpts={{
+                    onPress: () => changeView(2),
+                    onBack: globalBack
+                  }} />
                 <Button text={"Delete Group"}
                   onClick={()=>changeView(3)}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
-                  color={"red"} />
+                  color={"red"}
+                  focusableOpts={{
+                    onPress: () => changeView(3),
+                    onBack: globalBack
+                  }} />
                 <Button text={"Save"}
                   onClick={()=>save()}
                   style={{"margin-left": "10px", cursor: ("pointer")}} 
-                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"}
+                  focusableOpts={{
+                    onPress: () => save(),
+                    onBack: globalBack
+                  }} />
             </div>
           </div>
         </Show>

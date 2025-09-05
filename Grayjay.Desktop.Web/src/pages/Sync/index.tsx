@@ -17,6 +17,7 @@ import NavigationBar from '../../components/topbars/NavigationBar';
 import { createResourceDefault } from '../../utility';
 import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 import { SettingsBackend } from '../../backend/SettingsBackend';
+import { focusable } from '../../focusable'; void focusable;
 import StateGlobal from '../../state/StateGlobal';
 
 const SyncPage: Component = () => {
@@ -41,7 +42,9 @@ const SyncPage: Component = () => {
         break;
     }
   
-    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center; width: calc(100% - 48px);">
+    return (<div style="display: flex; flex-direction: row; border-radius: 6px; background: #1B1B1B; padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;  margin-left: 24px; margin-right: 24px; align-items: center; width: calc(100% - 48px);" use:focusable={{
+        onOptions: async () => await SyncBackend.removeDevice(publicKey)
+      }}>
       <img src={iconDevice} style="width: 44px;" />
       <div style="display: flex; flex-direction: column; flex-grow: 1; align-items: flex-start; justify-content: center;">
           <div style="overflow: hidden; color: white; text-align: center; text-overflow: ellipsis; font-family: Inter; font-size: 14px; font-style: normal; font-weight: 500; line-height: normal;">{title}</div>
@@ -83,6 +86,15 @@ const SyncPage: Component = () => {
     return await QRCode.toDataURL(pairingUrl);
   });
 
+  const enableSync = async () => {
+    const s = StateGlobal.settings$();
+    if (s == null) {
+      return;
+    }
+    s.object.synchronization.enabled = true;
+    await SettingsBackend.settingsSave(s.object);
+  };
+
   const renderEnableSyncPrompt = () => {
     return (
       <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -90,13 +102,8 @@ const SyncPage: Component = () => {
           <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
             <div class={styles.headerText}  style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
               Please enable sync to use this feature
-              <ButtonFlex style={{ width: "170px", "margin-top": "20px" }} small={true} text="Enable" color="#019BE7" onClick={ async () => {
-                const s = StateGlobal.settings$();
-                if (s == null) {
-                  return;
-                }
-                s.object.synchronization.enabled = true;
-                await SettingsBackend.settingsSave(s.object);
+              <ButtonFlex style={{ width: "170px", "margin-top": "20px" }} small={true} text="Enable" color="#019BE7" onClick={enableSync} focusableOpts={{
+                onPress: enableSync
               }} />
             </div>
           </div>
@@ -106,6 +113,11 @@ const SyncPage: Component = () => {
   };
   
   const renderQrCodeOverlay = () => {
+    const copyToClipboard = async () => {
+      await navigator.clipboard.writeText(pairingUrl$()!);
+      UIOverlay.toast('Text copied to clipboard!');
+    };
+
     return (
       <ScrollContainer wrapperStyle={{
         "display": "flex",
@@ -139,9 +151,15 @@ const SyncPage: Component = () => {
                 Please make sure Sync is enabled.
               </div>
             }>
-              <div class={styles.pairingUrl} onClick={async () => {
-                await navigator.clipboard.writeText(pairingUrl$()!);
-                UIOverlay.toast('Text copied to clipboard!');
+              <div class={styles.pairingUrl} onClick={copyToClipboard} use:focusable={{
+                onPress: copyToClipboard,
+                onBack: () => {
+                  if (isQrVisible$()) {
+                    setIsQrVisible(false);
+                    return true;
+                  }
+                  return false;
+                }
               }}>
                 {pairingUrl$()}
               </div>
@@ -204,7 +222,8 @@ const SyncPage: Component = () => {
                   }}
                   style={{cursor: "pointer", "flex-shrink": 0, "margin-right": "20px"}} 
                   small={true}
-                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"}
+                  focusableOpts={{ onPress: () => UIOverlay.overlayNewDeviceSync() }} />
 
                 {renderQrCodeOverlay()}
               </div>
@@ -224,7 +243,10 @@ const SyncPage: Component = () => {
                     setIsQrVisible(true);
                   }}
                   style={{cursor: "pointer", "flex-shrink": 0, "margin-right": "8px"}} 
-                  small={true} />
+                  small={true}
+                  focusableOpts={{
+                    onPress: () => setIsQrVisible(true)
+                  }} />
                 <ButtonFlex text={"Add device"}
                   icon={iconAdd}
                   onClick={() => {
@@ -232,7 +254,10 @@ const SyncPage: Component = () => {
                   }}
                   style={{cursor: "pointer", "flex-shrink": 0}} 
                   small={true}
-                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"} />
+                  color={"linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"}
+                  focusableOpts={{
+                    onPress: () => UIOverlay.overlayNewDeviceSync()
+                  }} />
               </div>
               <div style="margin-left: 24px; margin-top: 24px;">
                 My devices

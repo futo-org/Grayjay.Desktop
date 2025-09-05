@@ -1,11 +1,14 @@
 import { Component, createEffect, createSignal } from 'solid-js'
 
 import styles from './index.module.css';
+import { focusable } from '../../../../focusable'; void focusable;
+import { FocusableOptions } from '../../../../nav';
 
 interface TogglePillProps {
     name: string;
     value: boolean;
     onToggle: (value: boolean) => void;
+    focusableOpts?: FocusableOptions;
 }
 
 const TogglePill: Component<TogglePillProps> = (props) => {
@@ -14,16 +17,18 @@ const TogglePill: Component<TogglePillProps> = (props) => {
         setToggle(props.value);
     });
 
-    function handleToggle(ev: MouseEvent) {
+    function handleToggle() {
         const newValue = !toggle();
         setToggle(newValue);
         props.onToggle(newValue);
-        ev.preventDefault();
-        ev.stopPropagation();
     }
 
     return (
-        <div class={styles.togglePill} classList={{ [styles.enabled]: toggle() }} onClick={(ev) => handleToggle(ev)}>
+        <div class={styles.togglePill} classList={{ [styles.enabled]: toggle() }} onClick={(ev) => {
+            handleToggle();
+            ev.preventDefault();
+            ev.stopPropagation();
+        }} use:focusable={props.focusableOpts && !props.focusableOpts.onPress ? { ... props.focusableOpts, onPress: handleToggle } : props.focusableOpts}>
             {props.name}
         </div>
     );

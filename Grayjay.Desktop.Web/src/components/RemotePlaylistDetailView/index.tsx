@@ -12,6 +12,7 @@ import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import PlaylistItemView from '../PlaylistItemView';
 import { Pager } from '../../backend/models/pagers/Pager';
 import VirtualList from '../containers/VirtualList';
+import { focusable } from '../../focusable'; void focusable;
 import { IPlatformContent } from '../../backend/models/content/IPlatformContent';
 
 interface RemotePlaylistDetailViewProps {
@@ -53,6 +54,8 @@ const RemotePlaylistDetailView: Component<RemotePlaylistDetailViewProps> = (prop
           <div style="flex-grow: 1"></div>
             <img src={iconSettings} style="width: 24px; height: 100%; margin-left: 16px; margin-right: 16px; padding-left: 16px; padding-right: 16px; cursor: pointer;" onClick={(ev) => {
               props?.onInteract?.();
+            }} use:focusable={{
+              onPress: () => props?.onInteract?.()
             }} />
             <CustomButton
             text="Play all"
@@ -61,7 +64,10 @@ const RemotePlaylistDetailView: Component<RemotePlaylistDetailViewProps> = (prop
               background: "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)",
               "flex-shrink": 0
             }}
-            onClick={() => props?.onInteract?.()} />
+            onClick={() => props?.onInteract?.()}
+            focusableOpts={{
+              onPress: () => props?.onInteract?.()
+            }} />
           <CustomButton
             text="Shuffle"
             icon={iconShuffle}
@@ -71,7 +77,10 @@ const RemotePlaylistDetailView: Component<RemotePlaylistDetailViewProps> = (prop
               "margin-right": "16px",
               "flex-shrink": 0
             }}
-            onClick={() => props?.onInteract?.()} />
+            onClick={() => props?.onInteract?.()}
+            focusableOpts={{
+              onPress: () => props?.onInteract?.()
+            }} />
         </div>
         <ScrollContainer ref={scrollContainerRef}>
           <VirtualList outerContainerRef={scrollContainerRef}

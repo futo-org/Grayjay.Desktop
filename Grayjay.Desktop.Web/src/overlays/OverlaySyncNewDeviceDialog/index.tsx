@@ -6,6 +6,7 @@ import UIOverlay from '../../state/UIOverlay';
 import InputTextArea from '../../components/basics/inputs/InputTextArea';
 import Button from '../../components/buttons/Button';
 import { SyncBackend } from '../../backend/SyncBackend';
+import { focusScope } from '../../focusScope'; void focusScope;
 import { createResourceDefault } from '../../utility';
 
 export interface OverlaySyncNewDeviceDialogProps {
@@ -35,9 +36,27 @@ const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (
   const errorMessage$ = createMemo(() => {
     return deviceInfo$() && deviceInfo$()?.length && !isDeviceInfoValid$()?.valid ? (isDeviceInfoValid$()?.message ?? "Device information is not valid") : undefined;
   });
+
+  const globalBack = () => {
+    UIOverlay.dismiss();
+    return true;
+  };
+
+  const linkDevice = async () => {
+    if (!(isDeviceInfoValid$()?.valid === true)) {
+      return;
+    }
+
+    UIOverlay.dismiss();
+    await SyncBackend.addDevice(deviceInfo$());
+  };
   
   return (
-    <div class={styles.container}>
+    <div class={styles.container} use:focusScope={{
+        trap: true,
+        wrap: true,
+        orientation: "spatial"
+    }}>
       <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
         <div class={styles.headerText}>
           Link new device
@@ -50,25 +69,26 @@ const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (
         </div>
       </div>
       <div>
-        <InputTextArea label="Paste device info here" small={true} style={{ "width": "100%" }} value={deviceInfo$()} onTextChanged={(v) => setDeviceInfo(v)} error={errorMessage$()} />
+        <InputTextArea label="Paste device info here" small={true} style={{ "width": "100%" }} value={deviceInfo$()} onTextChanged={(v) => setDeviceInfo(v)} error={errorMessage$()} focusableOpts={{
+          onBack: globalBack
+        }} />
       </div>
       <div style="text-align: right; margin-top: 12px;">
         <Button text={"Cancel"}
           onClick={() => {
             UIOverlay.dismiss();
           }}
-          style={{"margin-left": "auto", cursor: ("pointer")}}  />
+          style={{"margin-left": "auto", cursor: ("pointer")}} focusableOpts={{
+            onPress: globalBack,
+            onBack: globalBack
+          }} />
         <Button text={"Link device"}
-          onClick={async () => {
-            if (!(isDeviceInfoValid$()?.valid === true)) {
-              return;
-            }
-
-            UIOverlay.dismiss();
-            await SyncBackend.addDevice(deviceInfo$());
-          }}
+          onClick={linkDevice}
           style={{"margin-left": "10px", cursor: ("pointer")}} 
-          color={isDeviceInfoValid$()?.valid === true ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : undefined} />
+          color={isDeviceInfoValid$()?.valid === true ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : undefined} focusableOpts={{
+            onPress: linkDevice,
+            onBack: globalBack
+          }} />
       </div>
     </div>
   );

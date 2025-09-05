@@ -25,6 +25,7 @@ import { useNavigate } from '@solidjs/router';
 import InputText from '../basics/inputs/InputText';
 import Dropdown from '../basics/inputs/Dropdown';
 import ic_search from '../../assets/icons/search.svg';
+import { focusable } from '../../focusable'; void focusable;
 import { OpenIntent } from '../../nav';
 
 interface PlaylistDetailViewProps {
@@ -132,6 +133,8 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
           <Show when={props.id}>
             <img src={iconSettings} style="width: 24px; height: 100%; margin-left: 16px; margin-right: 16px; padding-left: 16px; padding-right: 16px; cursor: pointer;" onClick={(ev) => {
               onSettingsClicked(ev.target as HTMLElement, OpenIntent.Pointer, undefined);
+            }}  use:focusable={{
+              onPress: (el, openIntent) => onSettingsClicked(el, openIntent, undefined)
             }} />
           </Show>
           <CustomButton
@@ -141,7 +144,10 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               background: "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)",
               "flex-shrink": 0
             }}
-            onClick={() => props.onPlayAll()} />
+            onClick={() => props.onPlayAll()}
+            focusableOpts={{
+              onPress: () => props.onPlayAll()
+            }} />
           <CustomButton
             text="Shuffle"
             icon={iconShuffle}
@@ -151,7 +157,10 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               "margin-right": "16px",
               "flex-shrink": 0
             }}
-            onClick={() => props.onShuffleAll()} />
+            onClick={() => props.onShuffleAll()}
+            focusableOpts={{
+              onPress: () => props.onShuffleAll()
+            }} />
         </div>
         <ScrollContainer ref={scrollContainerRef}>
           <div class={styles.containerFilters}>
