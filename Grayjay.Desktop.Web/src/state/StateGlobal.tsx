@@ -16,16 +16,19 @@ import { isDev } from "solid-js/web";
 import Globals from "../globals";
 import { WindowBackend } from "../backend/WindowBackend";
 import { LocalBackend } from "../backend/LocalBackend";
+import { ToastDescriptor } from "../overlays/OverlayRoot";
 
 export interface StateGlobal {
     settings$: Resource<any>,
     sources$: Resource<ISourceConfig[]>,
+    toasts$: Accessor<{ descriptor: ToastDescriptor, expired$: Accessor<boolean> }[]>,
     sourceStates$: Resource<ISourceConfigState[]>,
     lastHomeTime$: Accessor<DateTime|undefined>,
     home$: Resource<RefreshPager<IPlatformVideo>>,
     didPurchase$: Resource<boolean>,
     isDeveloper$: Resource<boolean>,
     onGlobalClick: Event1<MouseEvent>,
+    toast(toastDescriptor: ToastDescriptor): void,
     reloadHome(): void,
     getSourceConfig: (id: string | undefined) => ISourceConfig | undefined,
     getSourceState: (id: string | undefined) => ISourceConfigState | undefined,
@@ -118,9 +121,34 @@ function createState() {
         }
     };
 
+    const toast = (toastDescriptor: ToastDescriptor) => {
+        toastDescriptor.id = (Math.random() + 1).toString(36).substring(7);
+
+        const [expired$, setExpired] = createSignal(false);
+        setToasts([{ descriptor: toastDescriptor, expired$: expired$ }].concat(toasts$()));
+        setTimeout(()=>{
+        setExpired(true);
+        setTimeout(()=>{
+            setToasts(toasts$().filter((x)=> x.descriptor !== toastDescriptor));
+        }, 600)
+        }, (toastDescriptor.long ? 3000 : 1500));
+    };
+
+    const [toasts$, setToasts] =  createSignal<{ descriptor: ToastDescriptor, expired$: Accessor<boolean> }[]>([]);
+    StateWebsocket.registerHandlerNew("Toast", (packet)=>{
+      try {
+        const toastDescriptor = packet.payload as ToastDescriptor;
+        if(toastDescriptor) {
+            toast(toastDescriptor);
+        }
+      }
+      catch{}
+    }, "toasts");
+
     const value: StateGlobal = {
         settings$: settings$,
         sources$: sources$,
+        toasts$: toasts$,
         sourceStates$: sourceStates$,
         isDeveloper$: isDeveloper$,
 
@@ -131,6 +159,7 @@ function createState() {
         onGlobalClick: new Event1<MouseEvent>(),
 
 
+        toast: toast,
         reloadHome(){
             homeResource.refetch();
         },

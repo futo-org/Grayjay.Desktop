@@ -10,52 +10,22 @@ import UIOverlay from '../../state/UIOverlay';
 import OverlayDialogLoader, { LoaderDescriptor } from '../OverlayDialogLoader';
 import { ToastDescriptor } from '../OverlayRoot';
 import StateWebsocket from '../../state/StateWebsocket';
+import StateGlobal from '../../state/StateGlobal';
 
 
 export interface OverlayToastsProps {
 };
 const OverlayToasts: Component<OverlayToastsProps> = (props: OverlayToastsProps) => {
-    const [toasts$, setToasts] =  createSignal<ToastDescriptor[]>([]);
-
-    const toastStates = {
-
-    } as any;
-
-    StateWebsocket.registerHandlerNew("Toast", (packet)=>{
-      try {
-        const toast = packet.payload as ToastDescriptor;
-        if(toast) {
-          toast.id = (Math.random() + 1).toString(36).substring(7);
-
-          const [expired$, setExpired] = createSignal(false);
-
-          toastStates[toast.id] = {
-            expired$: expired$
-          }
-          setToasts([toast].concat(toasts$()));
-          //setToasts(toasts$().concat([toast]));
-          setTimeout(()=>{
-            setExpired(true);
-            setTimeout(()=>{
-              setToasts(toasts$().filter((x)=>x != toast));
-            }, 600)
-          }, (toast.long ? 3000 : 1500))
-        }
-      }
-      catch{}
-    }, "toasts");
-    
-
     //TODO: Improve animations
     return (
       <div style="position: absolute; top: 65px; right: 0px; text-align: right; pointer-events: none; z-index: 3">
-        <For each={toasts$()}>{(item, i) =>
-          <div class={styles.toast} classList={{[styles.expired]: !!toastStates[item.id ?? ""]?.expired$(), [styles.showing]: !toastStates[item.id ?? ""]?.expired$()}}>
+        <For each={StateGlobal.toasts$()}>{(item, i) =>
+          <div class={styles.toast} classList={{[styles.expired]: !!item.expired$(), [styles.showing]: !item.expired$()}}>
             <div class={styles.toastTitle}>
-              {item.title}
+              {item.descriptor.title}
             </div>
             <div class={styles.toastText}>
-              {item.text}
+              {item.descriptor.text}
             </div>
           </div>
         }</For>

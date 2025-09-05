@@ -33,6 +33,7 @@ import OverlaySelectOnlineSyncDeviceDialog from "../overlays/OverlaySelectOnline
 import OverlayDownloadMultipleDialog from "../overlays/OverlayDownloadMultipleDialog";
 import OverlayImage from "../overlays/OverlayImage";
 import IPluginPrompt from "../backend/models/plugin/IPluginPrompt";
+import StateGlobal from "./StateGlobal";
 
 export interface IExceptionDialogHandlers {
   back?: () => void,
@@ -78,10 +79,10 @@ export interface UIOverlay {
         });
       },
       toast(text: string) {
-        this.overlay({toast: {text: text}});
+        StateGlobal.toast({text: text});
       },
       toastTitled(title: string, text: string) {
-        this.overlay({toast: {title: title, text: text}});
+        StateGlobal.toast({title: title, text: text});
       },
       overlay(req: OverlayRequest): OverlayRequest {
         this.onOverlay.invoke(req);
