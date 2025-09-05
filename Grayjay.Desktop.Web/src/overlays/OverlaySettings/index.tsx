@@ -11,6 +11,8 @@ import iconWebBlue from "../../assets/icons/icon_link_blue.svg"
 import iconLink from "../../assets/icons/icon_link.svg"
 import iconError from "../../assets/icons/icon_error_warning.svg"
 import IPluginPrompt from '../../backend/models/plugin/IPluginPrompt';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from '../../focusable'; void focusable;
 import SettingsPage from '../../pages/Settings';
 
 
@@ -27,7 +29,11 @@ const OverlaySettings: Component<OverlaySettingsProps> = (props: OverlaySettings
 
     return (
       <OverlayCustomDialog onRootClick={()=>{onClosed(); UIOverlay.dismiss();}} onCloseClick={()=>UIOverlay.dismiss()}>
-        <div style="margin-top: -90px; width: 800px; height: 80vh; max-height: 700px" onClick={(ev)=>ev.stopPropagation()}>
+        <div style="margin-top: -90px; width: 800px; height: 80vh; max-height: 700px" onClick={(ev)=>ev.stopPropagation()}  use:focusScope={{
+          trap: true,
+          wrap: true,
+          orientation: "spatial"
+        }}>
           <SettingsPage settingsContainerStyle={{top: '80px', height: 'calc(100% - 80px)'}} onClosingEvent={onCloseEvent} />
         </div>
       </OverlayCustomDialog>

@@ -14,6 +14,7 @@ import { Event0 } from '../../utility/Event';
 import { ISettingsField } from '../../backend/models/settings/SettingsObject';
 import ScrollContainer from '../../components/containers/ScrollContainer';
 import { SyncBackend } from '../../backend/SyncBackend';
+import { focusable } from '../../focusable'; void focusable;
 import { createResourceDefault } from '../../utility';
 
 
@@ -56,18 +57,24 @@ const SettingsPage: Component<SettingsPageProps> = (props) => {
       <div class={styles.settingsMenu} style={props.settingsMenuStyle}>
           <h1 style="flex-shrink: 0">Settings</h1>
             <ScrollContainer wrapperStyle={{"padding-right": "4px"}}>
-              <div classList={{[styles.settingsMenuItem]: true, [styles.active]: !filterGroup$()}} onClick={()=>setFilterGroup(undefined)}>
+              <div classList={{[styles.settingsMenuItem]: true, [styles.active]: !filterGroup$()}} onClick={()=>setFilterGroup(undefined)} use:focusable={{
+                onPress: () => setFilterGroup(undefined)
+              }}>
                 All
               </div>
               <For each={settings$()?.fields?.filter(x=>x.type == 'group') ?? []}>{item => 
-                <div classList={{[styles.settingsMenuItem]: true, [styles.active]: item.property == filterGroup$()}} onClick={()=>setFilterGroup(item.property)}>
+                <div classList={{[styles.settingsMenuItem]: true, [styles.active]: item.property == filterGroup$()}} onClick={()=>setFilterGroup(item.property)} use:focusable={{
+                  onPress: () => setFilterGroup(item.property)
+                }}>
                   {item.title}
                 </div>
               }</For>
             </ScrollContainer>
             <div class={styles.bottomMenu}>
               <div style="margin-top: 10px; margin-right: 20px;">
-                <Button onClick={()=>{UIOverlay.dismiss(); UIOverlay.overlayImportSelect()}} style={{width: '100%'}} text='Import' icon=''></Button>
+                <Button onClick={()=>{UIOverlay.dismiss(); UIOverlay.overlayImportSelect()}} style={{width: '100%'}} text='Import' icon='' focusableOpts={{
+                  onPress: () => { UIOverlay.dismiss(); UIOverlay.overlayImportSelect() }
+                }}></Button>
               </div>
               <Show when={false}>
                 <div style="margin-top: 10px; margin-right: 20px;">

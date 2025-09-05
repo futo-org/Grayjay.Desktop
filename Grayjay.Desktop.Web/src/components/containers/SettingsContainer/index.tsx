@@ -3,6 +3,7 @@ import styles from './index.module.css';
 
 import { Event1 } from "../../../utility/Event";
 import { ISettingsField, ISettingsObject } from "../../../backend/models/settings/SettingsObject";
+import { focusable } from '../../../focusable'; void focusable;
 import Field from "./fields/Field";
 
 export interface SettingsContainerProps {
