@@ -53,9 +53,7 @@ const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (
   
   return (
     <div class={styles.container} use:focusScope={{
-        trap: true,
-        wrap: true,
-        orientation: "spatial"
+        initialMode: 'trap'
     }}>
       <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
         <div class={styles.headerText}>

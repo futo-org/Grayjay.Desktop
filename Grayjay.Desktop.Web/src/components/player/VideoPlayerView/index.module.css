@@ -6,6 +6,10 @@
     background-color: black;
 }
 
+.container:focus {
+    outline: 0px;
+}
+
 .containerFullscreen {
     width: 100vw;
     height: 100vh;

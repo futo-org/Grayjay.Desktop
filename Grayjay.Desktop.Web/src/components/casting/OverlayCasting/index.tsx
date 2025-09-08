@@ -367,9 +367,7 @@ const OverlayCasting: Component = () => {
                         ev.preventDefault();
                         ev.stopPropagation();
                     }} use:focusScope={{
-                        trap: true,
-                        wrap: true,
-                        orientation: "spatial"
+                        initialMode: 'trap'
                     }}>
                         <div class={styles.containerCastingHeader}>
                             <div class={styles.containerCastingHeaderTitle}>Casting</div>
@@ -399,9 +397,7 @@ const OverlayCasting: Component = () => {
                         ev.preventDefault();
                         ev.stopPropagation();
                     }} use:focusScope={{
-                        trap: true,
-                        wrap: true,
-                        orientation: "spatial"
+                        initialMode: 'trap'
                     }}>
                         <div class={styles.containerCasting}>
                             <div class={styles.containerCastingHeader}>

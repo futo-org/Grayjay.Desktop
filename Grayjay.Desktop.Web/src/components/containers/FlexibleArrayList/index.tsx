@@ -1,4 +1,4 @@
-import { Accessor, Component, createEffect, createSignal, For, JSX, onCleanup, onMount, Show, batch, untrack } from "solid-js";
+import { Accessor, Component, createEffect, createSignal, For, JSX, onCleanup, onMount, Show, batch, untrack, getOwner, runWithOwner } from "solid-js";
 import { Event1 } from "../../../utility/Event";
 
 export interface FlexibleArrayListProps {
@@ -14,6 +14,7 @@ export interface FlexibleArrayListProps {
 }
 
 const FlexibleArrayList: Component<FlexibleArrayListProps> = (props) => {
+    const owner = getOwner();
     let containerRef: HTMLDivElement | undefined;
 
     const [pool, setPool] = createSignal(
@@ -96,22 +97,24 @@ const FlexibleArrayList: Component<FlexibleArrayListProps> = (props) => {
     const attachAddedItems = (addedItems: Event1<{ startIndex: number; endIndex: number }> | undefined) => {
         lastAddedItems?.unregister(this);
         addedItems?.registerOne(this, (range) => {
-            const currentPool = pool();
-            const updatedPool = [...currentPool];
+            runWithOwner(owner!, () => {
+                const currentPool = pool();
+                const updatedPool = [...currentPool];
 
-            for (let i = range.startIndex; i <= range.endIndex; i++) {
-                const [index$, setIndex] = createSignal<number | undefined>(i);
-                const [item$, setItem] = createSignal(props.items?.[i]);
-                updatedPool.splice(i, 0, {
-                    index: index$,
-                    setIndex,
-                    item: item$,
-                    setItem,
-                    element: props.builder(index$, item$),
-                });
-            }
+                for (let i = range.startIndex; i <= range.endIndex; i++) {
+                    const [index$, setIndex] = createSignal<number | undefined>(i);
+                    const [item$, setItem] = createSignal(props.items?.[i]);
+                    updatedPool.splice(i, 0, {
+                        index: index$,
+                        setIndex,
+                        item: item$,
+                        setItem,
+                        element: props.builder(index$, item$),
+                    });
+                }
 
-            setPool(updatedPool);
+                setPool(updatedPool);
+            });
         });
         lastAddedItems = addedItems;
     };

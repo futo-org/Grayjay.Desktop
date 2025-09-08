@@ -98,9 +98,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
         </Show>
         <Show when={stateView$() == 3}>
           <div class={styles.container} use:focusScope={{
-            trap: true,
-            wrap: true,
-            orientation: "spatial"
+            initialMode: 'trap'
           }}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
@@ -132,9 +130,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
         </Show>
         <Show when={stateView$() == 0}>
           <div class={styles.container} use:focusScope={{
-            trap: true,
-            wrap: true,
-            orientation: "spatial"
+            initialMode: 'trap'
           }}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>

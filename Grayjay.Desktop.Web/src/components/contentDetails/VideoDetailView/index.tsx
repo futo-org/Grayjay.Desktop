@@ -73,7 +73,12 @@ import HorizontalScrollContainer from "../../containers/HorizontalScrollContaine
 import HorizontalFlexibleArrayList from "../../containers/HorizontalFlexibleArrayList";
 import SideBar from "../../menus/SideBar";
 import LiveChatWindow from "../../LiveChatWindow";
+import { focusScope } from '../../../focusScope'; void focusScope;
+import { focusable } from '../../../focusable'; void focusable;
 import LiveChatState, { LiveRaidEvent } from "../../../state/StateLiveChat"
+import { useFocus } from "../../../FocusProvider";
+
+const SCOPE_ID = "video-detail-view";
 
 export interface SourceSelected {
     url: string;
@@ -103,6 +108,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     let position: Duration | undefined = undefined;
     let errorCounter: number = 0;
     const video = useVideo();
+    const focus = useFocus()!
 
     const [videoLocal$, setVideoLocal] = createSignal<IVideoLocal | undefined>();
     const currentVideo$ = createMemo(() => {
@@ -428,7 +434,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const [currentPlayerHeight$, setCurrentPlayerHeight] = createSignal<number>();
     const [minimizedHeight, setMinimizedHeight] = createSignal(500);
     const [minimizedPosition, setMinimizedPosition] = createSignal({ x: 0, y: 0 });
-    const [isFullscreen, setIsFullscreen] = createSignal(false);
     const [isDragging, setIsDragging] = createSignal(false);
     const [dimensions, setDimensions] = createSignal({ width: window.innerWidth, height: window.innerHeight });
     const [videoDimensions, setVideoDimensions] = createSignal({ width: 1920, height: 1080 });
@@ -474,27 +479,21 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     });
 
+    const toggleMinimize = () => {
+        video?.actions.setState(isMinimized() ? VideoState.Maximized : VideoState.Minimized);
+    };
+
     const minimize = () => {
-        batch(() => {
-            if (isMinimized())
-                video?.actions.maximizeVideo();
-            else {
-                if (isFullscreen())
-                    document.exitFullscreen();
-                video?.actions.minimizeVideo();
-            }
-        });
+        video?.actions.setState(VideoState.Minimized);
     };
 
     const onMinimize = (e: MouseEvent) => {
-        minimize();
+        toggleMinimize();
         e.stopPropagation();
     };
 
     const close = () => {
         batch(() => {
-            if (isFullscreen())
-                document.exitFullscreen();
             video?.actions.closeVideo();
         });
     }
@@ -525,7 +524,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     };
 
     const isMinimized = createMemo(() => {
-        const res = video?.state() === VideoState.Minimized && !isFullscreen();
+        const res = video?.state() === VideoState.Minimized;
         console.log("isMinimized", res);
         return res;
     });
@@ -688,9 +687,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     }
 
     function handleFullscreenChange(isFullscreen: boolean) {
-        if (isFullscreen)
-            video?.actions.maximizeVideo();
-        setIsFullscreen(isFullscreen);
+        if (video?.state() !== VideoState.Closed && video?.state() !== VideoState.Minimized) {
+            if (isFullscreen) {
+                video?.actions.setState(VideoState.Fullscreen);
+            } else {
+                video?.actions.setState(VideoState.Maximized);
+            }
+        }
     }
 
     const handleDrag = (dx: number, dy: number) => {
@@ -1219,7 +1222,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                 "overflow": "hidden",
                 "gap": "8px",
                 "border-radius": "8px"
-            }} onClick={()=>{video?.actions.openVideo(item())}}>
+            }} onClick={()=>{video?.actions.openVideo(item())}} use:focusable={{
+                onPress: () => video?.actions.openVideo(item())
+            }}>
                 <img src={bestThumbnail()?.url} style="border-radius: 3px; height: 112px; width: 200px; cursor: pointer;" referrerPolicy='no-referrer' />
                 <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; cursor: pointer; margin-left: 10px;">
                     <div class={styles.recommendationItemTitle}>{item()?.name}</div>
@@ -1246,6 +1251,16 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         return undefined;
     });
 
+    createEffect(() => {
+        const s = video?.state();
+        const shouldTrap = s === VideoState.Maximized || s === VideoState.Fullscreen;
+        focus.setScopeMode(SCOPE_ID, shouldTrap ? "trap" : "off");
+    });
+
+    const showSendToDeviceOverlay = () => {
+        UIOverlay.overlaySelectOnlineSyncDevice("Send to Device", "Select a device to send the video to.", (dev) => sendToDevice(dev));
+    };
+
     return (
         <div ref={containerRef} class={styles.container} style={{
             "top": isMinimized() ? `${minimizedPosition().y}px` : "0px",
@@ -1253,9 +1268,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             "height": isMinimized() ? `${minimizedHeight()}px` : undefined,
             "width": isMinimized() ? `${minimizedWidth()}px` : undefined,
             //"transition": transition(),
-            "display": video?.state() === VideoState.Maximized || video?.state() === VideoState.Minimized ? "flex" : "none",
+            "display": video?.state() === VideoState.Maximized || video?.state() === VideoState.Minimized || video?.state() === VideoState.Fullscreen ? "flex" : "none",
             "flex-direction": "row"
-        }} classList={{ [styles.minimized]: isMinimized() }}>
+        }} classList={{ [styles.minimized]: isMinimized() }} use:focusScope={{
+            id: SCOPE_ID,
+            initialMode: 'off',
+            defaultFocus: () => videoContainer 
+        }}>
             <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Standard}>
                 <SideBar alwaysMinimized={true} onNavigate={() => minimize()}></SideBar>
             </Show>
@@ -1341,9 +1360,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 }*/
                             }}
                             handleMinimize={() => {
-                                if (video?.state() === VideoState.Maximized) {
-                                    minimize();
-                                }
+                                minimize();
                             }}
                             leftButtonContainerStyle={isMinimized() ? {
                                 "width": "calc(100% - 48px)"
@@ -1368,6 +1385,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     <img src={ic_close} class={styles.close} alt="close" onClick={onClose} />
                                 </>
                             }
+                            fullscreen={video?.state() === VideoState.Fullscreen}
+                            focusable={true}
                         >
                             <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} />
                             <img src={ic_close} class={styles.close} alt="close" onClick={onClose} />
@@ -1402,13 +1421,21 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                         <RatingView rating={videoLoaded$()?.rating} />
                                     </div>
                                     <Show when={(StateSync.devicesOnline$()?.length ?? 0) > 0}>
-                                        <PillButton icon={ic_sync} text="Send To Device" onClick={() => { UIOverlay.overlaySelectOnlineSyncDevice("Send to Device", "Select a device to send the video to.", (dev) => sendToDevice(dev)) }} />
+                                        <PillButton icon={ic_sync} text="Send To Device" onClick={showSendToDeviceOverlay} focusableOpts={{
+                                            onPress: showSendToDeviceOverlay
+                                        }} />
                                     </Show>
-                                    <PillButton icon={share} text="Share" onClick={() => { UIOverlay.overlayShare(shareUrl$()) }} />
+                                    <PillButton icon={share} text="Share" onClick={() => { UIOverlay.overlayShare(shareUrl$()) }} focusableOpts={{
+                                        onPress: () => UIOverlay.overlayShare(shareUrl$())
+                                    }} />
                                     <Show when={!videoLoaded$.loading && !(videoLoaded$()?.isLive === true)}>
-                                        <PillButton icon={iconDownload} text="Download" onClick={() => { download() }} />
+                                        <PillButton icon={iconDownload} text="Download" onClick={() => { download() }} focusableOpts={{
+                                            onPress: download
+                                        }} />
                                     </Show>
-                                    <PillButton icon={add} text="Add to" onClick={() => { UIOverlay.overlayAddToPlaylist(videoLoaded$()!, ()=>{}) }} />
+                                    <PillButton icon={add} text="Add to" onClick={() => { UIOverlay.overlayAddToPlaylist(videoLoaded$()!, ()=>{}) }} focusableOpts={{
+                                        onPress: () => UIOverlay.overlayAddToPlaylist(videoLoaded$()!, ()=>{})
+                                    }} />
                                 </div>
                             </div>
                             <div class={styles.authorContainer}>
@@ -1418,7 +1445,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 <div class={styles.authorDescription} style={{
                                     "margin-left": isThumbnailValid$() ? undefined : "40px"
                                 }}>
-                                    <div class={styles.authorName} onClick={onClickAuthor}>{author$()?.name}</div>
+                                    <div class={styles.authorName} onClick={onClickAuthor} use:focusable={{
+                                        onPress: onClickAuthor
+                                    }}>{author$()?.name}</div>
                                     <div style="flex-grow:1;"></div>
                                     <Show when={(author$()?.subscribers ?? 0) > 0}>
                                         <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(author$()?.subscribers)} subscribers</div>
@@ -1426,7 +1455,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     </Show>
                                 </div>
 
-                                <SubscribeButton author={author$()?.url} style={{"margin-top": "29px"}} />
+                                <SubscribeButton author={author$()?.url} style={{"margin-top": "29px"}} focusable={true} />
 
                                 <div style="flex-grow: 1;">
                                 </div>
@@ -1460,7 +1489,14 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     "display": fullDescriptionVisible$() ? "none" : "block"
                                 }}>
                                 </div>
-                                <div class={styles.showMoreShowLess} onClick={(ev) => handleDescriptionClick(ev)}>
+                                <div class={styles.showMoreShowLess} onClick={(ev) => handleDescriptionClick(ev)} use:focusable={{
+                                    onPress: () => {
+                                        setFullDescriptionVisible(!fullDescriptionVisible$());
+                                        if (!fullDescriptionVisible$()) {
+                                            descriptionContainerRef?.scrollIntoView();
+                                        }
+                                    }
+                                }}>
                                     Show {fullDescriptionVisible$() ? "less" : "more"}
                                 </div>
                             </div>
@@ -1553,6 +1589,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                                         imageStyle={{"height": "124px", "width": "220px"}}
                                                         video={item()}
                                                         onClick={()=>{video?.actions.openVideo(item())}}
+                                                        focusableOpts={item() ? {
+                                                            onPress: () => video?.actions.openVideo(item())
+                                                        } : undefined}
                                                     />
                                                 );
                                             }} />
@@ -1591,30 +1630,37 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                                 modifiedItems={commentsPager$()?.modifiedItemsEvent}
                                                 removedItems={commentsPager$()?.removedItemsEvent}
                                                 items={commentsPager$()?.data}
-                                                builder={(_, item) =>
-                                                    <CommentView
-                                                        style={{
-                                                            "padding-left": "40px",
-                                                            "padding-right": "40px",
-                                                            "padding-top": "32px"
-                                                        }}
-                                                        editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
-                                                        comment={item()?.object}
-                                                        onClick={(ev) => handleContainerClick(ev)}
-                                                        onRepliesClicked={async () => {
-                                                            const parent = item();
-                                                            if (!parent) {
-                                                                return;
-                                                            }
+                                                builder={(_, item) => {
+                                                    const onRepliesClicked = async () => {
+                                                        const parent = item();
+                                                        if (!parent) {
+                                                            return;
+                                                        }
 
-                                                            batch(async () => {
-                                                                setRepliesParents([ parent.object ]);
-                                                                setRepliesVisible(true);
-                                                            });
+                                                        batch(async () => {
+                                                            setRepliesParents([ parent.object ]);
+                                                            setRepliesVisible(true);
+                                                        });
 
-                                                            setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
-                                                        }} />
-                                                }
+                                                        setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
+                                                    };
+
+                                                    return (
+                                                        <CommentView
+                                                            style={{
+                                                                "padding-left": "40px",
+                                                                "padding-right": "40px",
+                                                                "padding-top": "32px"
+                                                            }}
+                                                            editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
+                                                            comment={item()?.object}
+                                                            onClick={(ev) => handleContainerClick(ev)}
+                                                            onRepliesClicked={onRepliesClicked}
+                                                            focusableOpts={item() ? {
+                                                                onPress: () => onRepliesClicked()
+                                                            } : undefined} />
+                                                    );
+                                                }}
                                                 /*overscan={10}*/ />
                                         </Show>
                                         <Show when={commentsPager$()?.error}>
@@ -1735,6 +1781,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                         <div style="border-radius: 12px; border: 1px solid #2E2E2E; background: #141414; box-shadow: 0px 63px 80px 0px rgba(0, 0, 0, 0.31), 0px 40.833px 46.852px 0px rgba(0, 0, 0, 0.24), 0px 24.267px 25.481px 0px rgba(0, 0, 0, 0.19), 0px 12.6px 13px 0px rgba(0, 0, 0, 0.16), 0px 5.133px 6.519px 0px rgba(0, 0, 0, 0.12), 0px 1.167px 3.148px 0px rgba(0, 0, 0, 0.07); display: flex; flex-direction: column; width: 80vw; max-width: 700px; max-height: 80vh; overflow: hidden;" onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
+                        }}  use:focusScope={{
+                            id: "video-detail-view-replies-overlay",
+                            initialMode: 'trap'
                         }}>
                             <div style="display: flex; flex-direction: row; width: calc(100% - 40px); margin-top: 20px; margin-left: 20px; margin-right: 20px; margin-bottom: 20px;">
                                 <IconButton icon={icon_back} onClick={(e) => {
@@ -1777,30 +1826,38 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     removedItems={repliesPager$()?.removedItemsEvent}
                                     onEnd={onRepliesScrollEnd}
                                     items={repliesPager$()!.data}
-                                    builder={(_, item) =>
-                                        <CommentView
-                                            style={{
-                                                "margin-left": "20px",
-                                                "margin-right": "20px",
-                                                "padding-top": "32px",
-                                                "width": "calc(100% - 40px)"
-                                            }}
-                                            editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
-                                            comment={item()?.object}
-                                            onClick={(ev) => handleContainerClick(ev)}
-                                            onRepliesClicked={() => { 
-                                                const parent = item();
-                                                if (!parent) {
-                                                    return;
-                                                }
+                                    builder={(_, item) => {
+                                        const onRepliesClicked = () => { 
+                                            const parent = item();
+                                            if (!parent) {
+                                                return;
+                                            }
 
-                                                const parents = repliesParents$() ?? [];
-                                                batch(async () => {
-                                                    setRepliesParents([ ... parents, parent?.object ]);
-                                                    setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
-                                                });
-                                        }} />
-                                    }
+                                            const parents = repliesParents$() ?? [];
+                                            batch(async () => {
+                                                setRepliesParents([ ... parents, parent?.object ]);
+                                                setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
+                                            });
+                                        };
+
+                                        return (
+                                            <CommentView
+                                                style={{
+                                                    "margin-left": "20px",
+                                                    "margin-right": "20px",
+                                                    "padding-top": "32px",
+                                                    "width": "calc(100% - 40px)"
+                                                }}
+                                                editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
+                                                comment={item()?.object}
+                                                onClick={(ev) => handleContainerClick(ev)}
+                                                onRepliesClicked={onRepliesClicked}
+                                                focusableOpts={item() ? {
+                                                    onPress: onRepliesClicked,
+                                                    onBack: () => (hideReplies(), true)
+                                                } : undefined} />
+                                        );
+                                    }}
                                     /*overscan={10}*/ />
                                 <div style="height: 20px"></div>
                             </ScrollContainer>

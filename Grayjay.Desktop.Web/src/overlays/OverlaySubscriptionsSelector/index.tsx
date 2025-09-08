@@ -56,9 +56,7 @@ const OverlaySubscriptionsSelector: Component<OverlaySubscsriptionsSelectorDialo
         class={styles.container}
         onClick={(e) => e.stopPropagation()}
         use:focusScope={{
-          trap: true,
-          wrap: true,
-          orientation: "spatial"
+          initialMode: 'trap'
         }}
       > 
         <div class={styles.dialogHeader}>

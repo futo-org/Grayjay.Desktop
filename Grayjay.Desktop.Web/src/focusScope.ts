@@ -17,38 +17,8 @@ export function focusScope(el: HTMLElement, accessor: Accessor<ScopeOptions | un
         el.setAttribute("data-focus-scope", "");
         parentIdAtMount = focus.resolveScopeId(el.parentElement as HTMLElement) ?? focus.getActiveScope() ?? null;
         scopeId = focus.registerScope(el, opts(), parentIdAtMount ?? undefined);
-
-        if (opts().trap) {
-            queueMicrotask(() => {
-                requestAnimationFrame(() => scopeId && focus.focusFirstInScope(scopeId));
-            });
-        }
+        console.info("registerScope", {scopeId, el, opts: opts(), parentIdAtMount});
     });
-
-    createEffect(on(() => !!opts().trap, (trap, prevTrap) => {
-        if (!scopeId) return trap;
-        if (trap && !prevTrap) {
-            const isActive = untrack(() => focus.getActiveScope() === scopeId);
-            if (!isActive) {
-                focus.setActiveScope(scopeId);
-                queueMicrotask(() => focus.focusFirstInScope(scopeId!));
-            }
-            return trap;
-        }
-
-        if (!trap && prevTrap) {
-            const isActive = untrack(() => focus.getActiveScope() === scopeId);
-            if (isActive) {
-                focus.setActiveScope(parentIdAtMount);
-                if (parentIdAtMount) {
-                    queueMicrotask(() => focus.focusFirstInScope(parentIdAtMount!));
-                }
-            }
-        }
-
-        return trap;
-    },
-    { defer: true }));
 
     onCleanup(() => {
         if (scopeId) focus.unregisterScope(scopeId);

@@ -1,4 +1,4 @@
-import { Component, ErrorBoundary, JSX, Show, batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack } from 'solid-js';
+import { Accessor, Component, ErrorBoundary, JSX, Show, batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack } from 'solid-js';
 import styles from './index.module.css';
 import PlayerControlsView from '../PlayerControlsView';
 import { Duration } from 'luxon';
@@ -21,6 +21,8 @@ import StateWebsocket from '../../../state/StateWebsocket';
 import StateGlobal from '../../../state/StateGlobal';
 import Globals from '../../../globals';
 import { clearLiveChatOnSeek } from '../../../state/StateLiveChat';
+import { focusable } from '../../../focusable'; void focusable;
+import { FocusableOptions, OpenIntent } from '../../../nav';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -54,7 +56,9 @@ interface VideoProps {
     rightButtonContainerStyle?: JSX.CSSProperties;
     onVerifyToggle?: (arg: boolean)=>boolean;
     resumePosition?: Duration;
-    loaderUI?: JSX.Element
+    loaderUI?: JSX.Element;
+    fullscreen?: boolean;
+    focusable?: boolean;
 }
 
 const VideoPlayerView: Component<VideoProps> = (props) => {
@@ -160,6 +164,36 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         console.log("thumbnail dimensions changed", thumbnailDimensions());
     });
 
+    const isContainerFullscreen = () => (document.fullscreenElement === containerRef);
+    const syncFullscreenToDom = async (shouldBeFs: boolean) => {
+        if (!containerRef) return;
+        const currentlyFs = isContainerFullscreen();
+        if (shouldBeFs === currentlyFs) return;
+
+        try {
+            if (shouldBeFs) {
+                const req = containerRef.requestFullscreen;
+                if (req) {
+                    await req.call(containerRef);
+                } else {
+                    console.warn("Fullscreen API not available on container.");
+                }
+            } else {
+                const exit = document.exitFullscreen;
+                if (document.fullscreenElement) {
+                    await exit.call(document);
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to change fullscreen:", err);
+        }
+    };
+
+    createEffect(() => {
+        syncFullscreenToDom(!!props.fullscreen);
+    });
+
+    
     const getResumePosition = (shouldResume?: boolean, startTime?: Duration) => {
         if (shouldResume) {
             console.log("getResumePosition", {shouldResume, startTime: startTime?.toMillis(), switchPosition: switchPosition?.toMillis(), result: switchPosition.toMillis()});
@@ -321,10 +355,6 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     };
 
     createEffect(() => {
-        props.onFullscreenChange?.(isFullscreen());
-    });
-
-    createEffect(() => {
         if (!casting) {
             return;
         }
@@ -378,7 +408,13 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     });
 
     const handleFullscreenChange = () => {
-        setIsFullscreen(document.fullscreenElement != null);
+        const elem = document.fullscreenElement;
+        const fsNow = (elem === containerRef);
+        const wasFs = isFullscreen();
+        if (fsNow || (wasFs && !elem)) {
+            if (fsNow !== wasFs) setIsFullscreen(fsNow);
+            props.onFullscreenChange?.(fsNow);
+        }
     };
 
     const pause = () => {
@@ -926,6 +962,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
     onMount(() => {
         document.addEventListener('fullscreenchange', handleFullscreenChange);
+        setIsFullscreen(isContainerFullscreen()); 
         showControls();
 
         props.eventRestart?.register(async () => {
@@ -964,7 +1001,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
     onCleanup(async () => {
         changeSource(undefined, undefined, undefined);
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
         stopHideControls();
 
         if (isCasting()) {
@@ -1043,35 +1080,22 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     };
 
     const toggleFullscreen = () => {
-        const isFs = untrack(isFullscreen);
-        if (isFs) {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-        } else {
-            containerRef?.requestFullscreen();
-            setIsFullscreen(true);
-        }
+        syncFullscreenToDom(!isFullscreen());
     };
 
-    const handleEscape = () => {
-        const isFs = untrack(isFullscreen);
-        if (isFs) {
-            document.exitFullscreen();
-            setIsFullscreen(false);
+    const handleEscape = async () => {
+        if (isFullscreen()) {
+            await syncFullscreenToDom(false);
         } else {
             props.handleEscape?.();
         }
     };
 
-    const handleMinimize = () => {
-        const isFs = untrack(isFullscreen);
-        if (isFs) {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-            props.handleMinimize?.();
-        } else {
-            props.handleMinimize?.();
+    const handleMinimize = async () => {
+        if (isFullscreen()) {
+            await syncFullscreenToDom(false);
         }
+        props.handleMinimize?.();
     };
 
     //TODO: on mouse holding mouse down, fast forward the video until mouse goes up (starting after 1 second)
@@ -1093,6 +1117,39 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }        
     });
 
+    const performSetPosition = async (duration: Duration) => { 
+        clearLiveChatOnSeek();
+        setPosition(duration);
+        if (isCasting()) {
+            await CastingBackend.mediaSeek(duration);
+        } else {
+            setCurrentPosition(duration);
+        }
+    };
+
+    const focusableOpts: Accessor<FocusableOptions | undefined> = createMemo(() => {
+        if (!props.focusable)
+            return undefined;
+
+        return {
+            onDirection: (el, dir, openIntent) => {
+                if (openIntent !== OpenIntent.Gamepad) {
+                    return false;
+                }
+                switch (dir) {
+                    case 'left':
+                        performSetPosition(Duration.fromMillis(Math.max(Math.min(duration().toMillis(), position().toMillis() - 5000), 0)));
+                        return true;
+                    case 'right':
+                        performSetPosition(Duration.fromMillis(Math.max(Math.min(duration().toMillis(), position().toMillis() + 5000), 0)));
+                        return true;
+                }
+
+                return false;
+            }
+        };
+    });
+
     return (
         <div ref={setContainerRef} 
             classList={{
@@ -1105,7 +1162,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             }} 
             onMouseMove={handleMouseMove}
             onMouseLeave={hideControls}
-            onDblClick={handleDblClick}>
+            onDblClick={handleDblClick}
+            use:focusable={focusableOpts()}>
 
             <ErrorBoundary fallback={(err, reset) => (<div></div>)}>
                 <video ref={videoElement} style="width: 100%; height: 100%;" onclick={()=>console.log("received click")}></video>
@@ -1136,15 +1194,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                         setIsScrubbing(scrubbing);
                         props.onSetScrubbing?.(scrubbing);
                     }}
-                    onSetPosition={async (duration) => { 
-                        clearLiveChatOnSeek();
-                        setPosition(duration);
-                        if (isCasting()) {
-                            await CastingBackend.mediaSeek(duration);
-                        } else {
-                            setCurrentPosition(duration);
-                        }
-                    }}
+                    onSetPosition={performSetPosition}
                     isPlaying={isPlaying()}
                     onSetVolume={(v) => setVolume(v)}
                     isLive={props.source?.isLive}

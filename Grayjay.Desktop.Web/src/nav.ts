@@ -1,9 +1,7 @@
 import { Accessor } from "solid-js";
 
 export type Direction = "up" | "down" | "left" | "right" | "next" | "prev";
-export type Press = "press" | "options" | "back" | "start";
-
-export type Orientation = "vertical" | "horizontal" | "spatial";
+export type Press = "press" | "options" | "back" | "start" | "direction";
 export type ScopeId = string;
 
 export enum OpenIntent {
@@ -17,17 +15,17 @@ export interface FocusableOptions {
     priority?: number;
     onPress?: (el: HTMLElement, openIntent: OpenIntent) => void;
     onOptions?: (el: HTMLElement, openIntent: OpenIntent) => void;
+    onDirection?: (el: HTMLElement, direction: Direction, openIntent: OpenIntent) => boolean | undefined;
     onBack?: (el: HTMLElement, openIntent: OpenIntent) => boolean | undefined;
     getRect?: (el: HTMLElement) => DOMRect;
     focusInert?: Accessor<boolean>; //If true, don't claim focus by yourself
 }
 
+export type ScopeMode = 'off' | 'on' | 'trap';
 export interface ScopeOptions {
     id?: ScopeId;
-    orientation?: Orientation;
-    wrap?: boolean;
-    trap?: boolean;
-    defaultFocus?: () => HTMLElement | null;
+    initialMode?: ScopeMode; // defaults to 'on'
+    defaultFocus?: () => HTMLElement | undefined;
 }
 
 export function isVisible(el: Element): boolean {

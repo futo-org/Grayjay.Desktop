@@ -375,9 +375,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
         ref={containerRef} 
         style={{ ...(anchorStyle$() ?? {}), ...props.style }}
         use:focusScope={{
-          trap: true,
-          wrap: true,
-          orientation: "vertical"
+          initialMode: 'trap'
         }}
       >
         <Show when={menu$()?.title}>

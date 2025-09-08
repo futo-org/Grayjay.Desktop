@@ -11,6 +11,7 @@ export enum VideoState {
     Closed = 0,
     Maximized = 1,
     Minimized,
+    Fullscreen
 };
 
 export enum VideoMode {
@@ -38,16 +39,15 @@ export interface VideoContextValue {
     volume: Accessor<number>;
     //queueType watch later, playlist en queue of undefined
     actions: {
-        openVideo: (video: IPlatformVideo, time?: Duration) => void;
-        openVideoByUrl: (url: string, time?: Duration) => void;
+        openVideo: (video: IPlatformVideo, time?: Duration, videoState?: VideoState) => void;
+        openVideoByUrl: (url: string, time?: Duration, videoState?: VideoState) => void;
         setQueue: (index: number, queue: IPlatformVideo[], repeat?: boolean, shuffle?: boolean) => void;
         addToQueue: (v: IPlatformVideo) => void;
         setIndex: (index: number) => void;
         setRepeat: (value: boolean) => void;
         setShuffle: (value: boolean) => void;
         closeVideo: () => void;
-        maximizeVideo: () => void;
-        minimizeVideo: () => void;
+        setState: (videoState: VideoState) => void;
         refetchWatchLater: () => void;
         setDesiredMode: (mode: VideoMode) => void;
         setTheatrePinned: (pinned: boolean) => void;
@@ -81,23 +81,25 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         return q[i];
     })
 
-    const openVideo = (v: IPlatformVideo, time?: Duration) => { 
+    const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => { 
+        const desiredVideoState = videoState ?? VideoState.Maximized;
         batch(() => {
             setIndex(0);
             setStartTime(time);
             setQueue([ v ]);
-            if (state() !== VideoState.Maximized)
-                setState(VideoState.Maximized);
+            if (state() !== desiredVideoState)
+                setState(desiredVideoState);
         });
     };
-    const openVideoByUrl = async (url: string, time?: Duration) => { 
+    const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => { 
+        const desiredVideoState = videoState ?? VideoState.Maximized;
         const videoLoadResult = await DetailsBackend.videoLoad(url);
         batch(() => {
             setIndex(0);
             setStartTime(time);
             setQueue([ videoLoadResult.video ]);
-            if (state() !== VideoState.Maximized)
-                setState(VideoState.Maximized);
+            if (state() !== desiredVideoState)
+                setState(desiredVideoState);
         });
     };
     const sq = (index: number, queue: IPlatformVideo[], repeat?: boolean, shuffle?: boolean) => { 
@@ -135,10 +137,6 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setState(VideoState.Closed);
         });
     };
-    const minimizeVideo = () => {
-        setState(VideoState.Minimized);
-    };
-    const maximizeVideo = () => setState(VideoState.Maximized);
 
     const refetchWatchLater = async () => {
         const videos = await WatchLaterBackend.getAll();
@@ -194,8 +192,10 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setQueue: sq,
             closeVideo,
             addToQueue,
-            maximizeVideo,
-            minimizeVideo,
+            setState: (videoState: VideoState) => {
+                console.info("VIDEO STATE CHANGED", videoState);
+                setState(videoState);
+            },
             setRepeat,
             setShuffle,
             setDesiredMode,

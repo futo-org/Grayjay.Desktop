@@ -3,7 +3,7 @@ import styles from './index.module.css';
 import { Pager } from "../../../backend/models/pagers/Pager";
 import VideoThumbnailView from "../../content/VideoThumbnailView";
 import VirtualGrid from "../VirtualGrid";
-import { useVideo } from "../../../contexts/VideoProvider";
+import { useVideo, VideoState } from "../../../contexts/VideoProvider";
 import PlaceholderThumbnailView from "../../content/PlaceholderThumbnailView";
 import SettingsMenu, { Menu, MenuSeperator, MenuItemButton } from "../../menus/Overlays/SettingsMenu";
 
@@ -273,7 +273,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                         onPress: () => {
                                             const url = item().backendUrl ?? item().url;
                                             if (url)
-                                                video?.actions.openVideo(item() as IPlatformVideo);
+                                                video?.actions.openVideo(item() as IPlatformVideo, undefined, VideoState.Fullscreen);
                                         },
                                         onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
                                         onBack: () => onBackContentGrid()

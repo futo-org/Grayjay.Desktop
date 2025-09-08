@@ -82,9 +82,7 @@ const OverlayDownloadMultipleDialog: Component<OverlayDownloadMultipleDialogProp
 
     return (
       <div class={styles.container} use:focusScope={{
-        trap: true,
-        wrap: true,
-        orientation: "spatial"
+        initialMode: 'trap'
       }}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>

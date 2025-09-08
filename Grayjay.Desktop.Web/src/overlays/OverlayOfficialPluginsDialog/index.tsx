@@ -104,9 +104,7 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
 
     return (
       <div class={styles.container} use:focusScope={{
-          trap: true,
-          wrap: true,
-          orientation: "spatial"
+          initialMode: 'trap'
         }}> 
         <Show when={!installing$()}>
           <div class={styles.dialogHeader}>

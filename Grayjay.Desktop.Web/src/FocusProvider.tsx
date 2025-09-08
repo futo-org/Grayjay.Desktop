@@ -15,10 +15,11 @@ interface NodeEntry {
 interface ScopeEntry {
     id: string;
     parent?: string;
-    opts: Required<Pick<ScopeOptions, "orientation" | "wrap" | "trap">> & ScopeOptions;
+    opts: ScopeOptions;
     nodes: Set<NodeId>;
     activeNode?: NodeId;
     hadFocus?: boolean;
+    mode: 'off' | 'on' | 'trap';
 }
 
 type Idx = {
@@ -43,12 +44,14 @@ export interface FocusAPI {
     registerNode: (el: HTMLElement, scopeId: string, opts: FocusableOptions) => string;
     unregisterNode: (id: string) => void;
     setNodeOptions: (id: string, opts: Partial<FocusableOptions>) => void;
-    navigate: (dir: Direction) => void;
+    navigate: (dir: Direction, openIntent: OpenIntent) => void;
     press: (kind: Press, openIntent: OpenIntent) => void;
-    focusFirstInScope: (scopeId: string) => void;
+    focusFirstInScope: (scopeId: string, isDefaultFocus: boolean) => void;
     setActiveScope: (id: string | null) => void;
     getActiveScope: Accessor<string | null>;
     resolveScopeId: (el: HTMLElement) => string | null;
+    setScopeMode: (id: string, mode: 'off' | 'on' | 'trap') => void;
+    getScopeMode: (id: string) => 'off' | 'on' | 'trap' | undefined;
 }
 
 const FocusCtx = createContext<FocusAPI>();
@@ -63,43 +66,135 @@ export function FocusProvider(props: { children: JSX.Element }) {
     const location = useLocation();
     const index = createIndex();
     const [activeScope, setActiveScope] = createSignal<string | null>(null);
+    const trapStack: string[] = [];
 
+    function isActiveMode(s?: ScopeEntry) { return !!s && s.mode !== 'off'; }
+
+    function isWithinScope(childId: string, ancestorId: string): boolean {
+        let cur: string | undefined | null = childId;
+        while (cur) {
+            if (cur === ancestorId) return true;
+            cur = index.scopes.get(cur)?.parent ?? null;
+        }
+        return false;
+    }
+
+    function syncTabIndexForNode(n: NodeEntry) {
+        const s = index.scopes.get(n.scope);
+        const inert = !!n.opts.focusInert?.();
+        const active = isActiveMode(s);
+        if (inert || !active) n.el.tabIndex = -1;
+        else if (n.el.tabIndex < 0) n.el.tabIndex = 0;
+    }
+
+    function firstActiveAncestor(startId?: string | null): string | null {
+        let cur = startId ?? null;
+        while (cur) {
+            const s = index.scopes.get(cur);
+            if (isActiveMode(s)) return cur;
+            cur = s?.parent ?? null;
+        }
+        return null;
+    }
+
+    function anyActiveScope(excludeId?: string | null): string | null {
+        for (const s of index.scopes.values()) {
+            if (s.id !== (excludeId ?? '') && isActiveMode(s)) return s.id;
+        }
+        return null;
+    }
+
+    function topTrap(): string | null {
+        return trapStack.length ? trapStack[trapStack.length - 1] : null;
+    }
+
+    function recomputeActiveScope() {
+        const trap = topTrap();
+        if (trap) { setActiveScope(trap); return; }
+        const cur = activeScope();
+        const curScope = cur ? index.scopes.get(cur) : undefined;
+        if (cur && isActiveMode(curScope)) return;
+        setActiveScope(anyActiveScope());
+    }
+    
     function registerScope(el: HTMLElement, opts?: ScopeOptions, parentScopeId?: string) {
         const id = opts?.id ?? uid("scope");
+        const initialMode = opts?.initialMode ?? 'on';
         const rec: ScopeEntry = {
             id,
             parent: parentScopeId ?? activeScope() ?? undefined,
-            opts: {
-                orientation: opts?.orientation ?? "spatial",
-                wrap: !!opts?.wrap,
-                trap: !!opts?.trap,
-                ...opts,
-            },
+            opts: { ...opts },
             nodes: new Set(),
+            mode: initialMode,
         };
         index.scopes.set(id, rec);
         index.scopeByEl.set(el, id);
 
-        if (rec.opts.trap) setActiveScope(id);
+        if (rec.mode === 'trap' && !trapStack.includes(id)) {
+            trapStack.push(id);
+            setActiveScope(id);
+            queueMicrotask(() => focusFirstInScope(id, true));
+        } else {
+            recomputeActiveScope();
+        }
+
         return id;
     }
 
     function unregisterScope(id: string) {
         const s = index.scopes.get(id);
         if (!s) return;
+
         for (const nid of s.nodes) {
             const n = index.nodes.get(nid);
             if (n) index.nodeByEl.delete(n.el);
             index.nodes.delete(nid);
         }
         index.scopes.delete(id);
-        if (activeScope() === id) {
-            const parentId = s.parent ?? null;
-            setActiveScope(parentId);
-            if (parentId) {
-                queueMicrotask(() => focusFirstInScope(parentId));
+
+        const tIdx = trapStack.indexOf(id);
+        if (tIdx >= 0) trapStack.splice(tIdx, 1);
+
+        const wasActive = activeScope() === id;
+        recomputeActiveScope();
+        const next = activeScope();
+        if (wasActive && next) queueMicrotask(() => focusFirstInScope(next, true));
+    }
+
+    function setScopeMode(id: string, mode: 'off' | 'on' | 'trap') {
+        console.info("setScopeMode", {id, mode});
+        const s = index.scopes.get(id);
+        if (!s || s.mode === mode) return;
+
+        const prev = s.mode;
+        s.mode = mode;
+
+        for (const nid of s.nodes) {
+            const n = index.nodes.get(nid);
+            if (n) syncTabIndexForNode(n);
+        }
+
+        if (mode === 'trap') {
+            if (!trapStack.includes(id)) trapStack.push(id);
+            setActiveScope(id);
+            queueMicrotask(() => focusFirstInScope(id, true));
+            return;
+        }
+        if (prev === 'trap') {
+            const i = trapStack.indexOf(id);
+            if (i >= 0) trapStack.splice(i, 1);
+        }
+
+        if (mode === 'off') {
+            const cur = currentFocused();
+            if (cur && isWithinScope(cur.scope, id)) {
+                const target = topTrap() ?? firstActiveAncestor(s.parent) ?? anyActiveScope(id);
+                if (target) queueMicrotask(() => focusFirstInScope(target, true));
+                else cur.el.blur?.();
             }
         }
+
+        recomputeActiveScope();
     }
 
     function registerNode(el: HTMLElement, scopeId: string, opts: FocusableOptions) {
@@ -111,13 +206,16 @@ export function FocusProvider(props: { children: JSX.Element }) {
         const scope = index.scopes.get(scopeId);
         if (scope) scope.nodes.add(id);
 
-        const inert = !!entry.opts.focusInert?.();
-        if (inert) el.tabIndex = -1;
-        else if (el.tabIndex < 0) el.tabIndex = 0;
-
+        syncTabIndexForNode(entry);
         return id;
     }
 
+    function setNodeOptions(id: string, opts: Partial<FocusableOptions>) {
+        const rec = index.nodes.get(id);
+        if (!rec) return;
+        rec.opts = { ...rec.opts, ...opts };
+        syncTabIndexForNode(rec);
+    }
 
     function unregisterNode(id: string) {
         const rec = index.nodes.get(id);
@@ -129,18 +227,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (scope?.activeNode === id) scope.activeNode = undefined;
     }
 
-    function setNodeOptions(id: string, opts: Partial<FocusableOptions>) {
-        const rec = index.nodes.get(id);
-        if (!rec) return;
-        rec.opts = { ...rec.opts, ...opts };
-        const inert = !!rec.opts.focusInert?.();
-        if (inert) rec.el.tabIndex = -1;
-        else if (rec.el.tabIndex < 0) rec.el.tabIndex = 0;
-    }
-
     function candidatesInScope(scopeId: string): NodeEntry[] {
         const s = index.scopes.get(scopeId);
-        if (!s) return [];
+        if (!s || !isActiveMode(s)) return [];
         return [...s.nodes]
             .map((id) => index.nodes.get(id)!)
             .filter(Boolean)
@@ -158,18 +247,20 @@ export function FocusProvider(props: { children: JSX.Element }) {
     }
 
     function currentFocused(): NodeEntry | undefined {
-        return findNodeFromElement(document.activeElement as HTMLElement | null);
+        const el = document.activeElement as HTMLElement | null;
+        const node = findNodeFromElement(el);
+        console.info("current focused in scope", {node, el});
+        return node;
     }
 
     function rectOf(n: NodeEntry): DOMRect {
         return (n.opts.getRect?.(n.el) ?? n.el.getBoundingClientRect());
     }
 
-    function sweepCandidates(scopeId: string, axis: 'x'|'y'|'auto' = 'auto', fromEl?: HTMLElement): NodeEntry[] {
+    function sweepCandidates(scopeId: string, fromEl?: HTMLElement): NodeEntry[] {
         const s = index.scopes.get(scopeId);
-        if (!s) return [];
-        const axisResolved: 'x'|'y' =
-            axis === 'auto' ? (s.opts.orientation === 'horizontal' ? 'x' : 'y') : axis;
+        if (!s || !isActiveMode(s)) return [];
+        const isAxisY = false;
 
         const EPS = 2;
 
@@ -184,7 +275,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             .sort((A, B) => {
             const a = rectOf(A);
             const b = rectOf(B);
-            if (axisResolved === 'y') {
+            if (isAxisY) {
                 if (Math.abs(a.top - b.top) > EPS) return a.top - b.top;
                 return a.left - b.left;
             } else {
@@ -388,26 +479,42 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (scope) {
             adoptActiveNode(scope, node.id);
         }
+        console.info("focus element in scope", {node});
         node.el.focus();
     }
 
     function findScopeForNavigation(): ScopeEntry | undefined {
+        const trap = topTrap();
+        if (trap) return index.scopes.get(trap);
+
         const current = currentFocused();
-        if (current) return index.scopes.get(current.scope);
+        if (current) {
+            const s = index.scopes.get(current.scope);
+            if (isActiveMode(s)) return s;
+        }
         const as = activeScope();
-        if (as) return index.scopes.get(as);
-        return [...index.scopes.values()][0];
+        if (as) {
+            const s = index.scopes.get(as);
+            if (isActiveMode(s)) return s;
+        }
+        return [...index.scopes.values()].find(isActiveMode);
     }
 
-    function navigateDirection(dir: Direction) {
+    function navigateDirection(dir: Direction, openIntent: OpenIntent) {
         const focused = currentFocused();
         const scope = findScopeForNavigation();
+        console.info("navigateDirection scope", {scope, focused});
         if (!scope) return;
 
-        const trap = !!scope.opts.trap;
+        const trappingId = topTrap();
+        const trapActive = !!trappingId;
 
         if (!focused) {
-            focusFirstInScope(scope.id);
+            focusFirstInScope(scope.id, false);
+            return;
+        }
+
+        if ((focused.opts.onDirection?.(focused.el, dir, openIntent) ?? false) === true) {
             return;
         }
 
@@ -432,34 +539,36 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 focusNode(next);
                 return;
             }
-            if (trap) return;
+            if (trapActive) return;
         }
 
         if (dir === 'next' || dir === 'prev') {
-            const list = sweepCandidates(scope.id, 'auto', focused.el);
+            const list = sweepCandidates(scope.id, focused.el);
             if (!list.length) return;
 
             const idx = list.findIndex(n => n.id === focused.id);
             let target: NodeEntry | undefined;
 
             if (idx >= 0) {
-            const step = dir === 'next' ? 1 : -1;
-            const nextIdx = idx + step;
-            if (nextIdx >= 0 && nextIdx < list.length) {
-                target = list[nextIdx];
-            } else if (scope.opts.wrap) {
-                target = dir === 'next' ? list[0] : list[list.length - 1];
-            }
+                const step = dir === 'next' ? 1 : -1;
+                const nextIdx = idx + step;
+                if (nextIdx >= 0 && nextIdx < list.length) {
+                    target = list[nextIdx];
+                }
             } else {
-            target = (dir === 'next') ? list[0] : list[list.length - 1];
+                target = (dir === 'next') ? list[0] : list[list.length - 1];
             }
 
             if (target) { focusNode(target); return; }
-            if (trap) return;
+            if (trapActive) return;
         }
 
         let parentId = scope.parent;
         while (parentId) {
+            if (trapActive && trappingId && !isWithinScope(parentId, trappingId)) {
+                return;
+            }
+
             const parent = index.scopes.get(parentId);
             if (!parent) break;
 
@@ -467,13 +576,12 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 const cand = spatialNext(focused.el, dir, parent.id);
                 if (cand) { focusNode(cand); return; }
             } else {
-                const list = sweepCandidates(parent.id, 'auto', focused.el);
+                const list = sweepCandidates(parent.id, focused.el);
                 if (list.length) {
                     focusNode(dir === 'next' ? list[0] : list[list.length - 1]);
                     return;
                 }
             }
-
             parentId = parent.parent;
         }
     }
@@ -481,16 +589,16 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function back(): boolean {
         const state = video?.state();
         console.log("back", {state, history, location, pathname: location.pathname});
-        if (state === VideoState.Maximized) {
-            video!.actions.minimizeVideo();
+        if (state === VideoState.Fullscreen) {
+            video!.actions.setState(VideoState.Maximized);
             return true;
-        }
-        
-        if (state === VideoState.Minimized) {
+        } else if (state === VideoState.Maximized) {
+            video!.actions.setState(VideoState.Minimized);
+            return true;
+        } else if (state === VideoState.Minimized) {
             video!.actions.closeVideo();
             return true;
-        } 
-        
+        }
         
         const rootPaths: string[] = [
             "/web/",
@@ -546,10 +654,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
         return false;
     }
 
-    function focusFirstInScope(scopeId: string) {
+    function focusFirstInScope(scopeId: string, isAutoFocus: boolean) {
         const s = index.scopes.get(scopeId);
-        if (!s) return;
+        console.info("focusFirstInScope", {scopeId, isAutoFocus, s});
 
+        if (!s || !isActiveMode(s)) return;
         if (s.hadFocus && s.activeNode) {
             const last = index.nodes.get(s.activeNode);
             if (last && !last.opts.disabled && isVisible(last.el) && !last.opts.focusInert?.() && isFocusable(last.el)) {
@@ -564,7 +673,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             if (n && n.scope === scopeId) { focusNode(n); return; }
         }
 
-        const first = sweepCandidates(scopeId, 'auto')[0];
+        const first = sweepCandidates(scopeId)[0];
         if (first) focusNode(first);
     }
 
@@ -643,23 +752,23 @@ export function FocusProvider(props: { children: JSX.Element }) {
     }
 
     function onKeyDown(e: KeyboardEvent) {
-        const as = activeScope();
-        const trap = as ? (index.scopes.get(as)?.opts.trap ?? false) : false;
+        ensureFocusInActiveScope();
+        const trap = topTrap();
         const editable = isEditable(e.target);
 
         if (e.key === 'Tab' && trap) {
-            navigateDirection(e.shiftKey ? 'prev' : 'next');
+            navigateDirection(e.shiftKey ? 'prev' : 'next', OpenIntent.Keyboard);
             e.preventDefault();
             return;
         }
 
-        if (editable && editableWantsKey(e, trap)) return;
+        if (editable && editableWantsKey(e, !!trap)) return;
 
         switch (e.key) {
-            case 'ArrowUp': navigateDirection('up'); e.preventDefault(); break;
-            case 'ArrowDown': navigateDirection('down'); e.preventDefault(); break;
-            case 'ArrowLeft': navigateDirection('left'); e.preventDefault(); break;
-            case 'ArrowRight': navigateDirection('right'); e.preventDefault(); break;
+            case 'ArrowUp': navigateDirection('up', OpenIntent.Keyboard); e.preventDefault(); break;
+            case 'ArrowDown': navigateDirection('down', OpenIntent.Keyboard); e.preventDefault(); break;
+            case 'ArrowLeft': navigateDirection('left', OpenIntent.Keyboard); e.preventDefault(); break;
+            case 'ArrowRight': navigateDirection('right', OpenIntent.Keyboard); e.preventDefault(); break;
             case 'Enter':
             case ' ':
                 press('press', OpenIntent.Keyboard);
@@ -672,10 +781,10 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 break;
             default:
                 if (!editable) {
-                    if (e.key === 'w') { navigateDirection('up'); e.preventDefault(); }
-                    else if (e.key === 's') { navigateDirection('down'); e.preventDefault(); }
-                    else if (e.key === 'a') { navigateDirection('left'); e.preventDefault(); }
-                    else if (e.key === 'd') { navigateDirection('right'); e.preventDefault(); }
+                    if (e.key === 'w') { navigateDirection('up', OpenIntent.Keyboard); e.preventDefault(); }
+                    else if (e.key === 's') { navigateDirection('down', OpenIntent.Keyboard); e.preventDefault(); }
+                    else if (e.key === 'a') { navigateDirection('left', OpenIntent.Keyboard); e.preventDefault(); }
+                    else if (e.key === 'd') { navigateDirection('right', OpenIntent.Keyboard); e.preventDefault(); }
                 }
                 break;
         }
@@ -724,11 +833,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 if (padState.dirHeld !== dir) {
                     padState.dirHeld = dir;
                     padState.lastFire = now;
-                    navigateDirection(dir);
+                    navigateDirection(dir, OpenIntent.Gamepad);
                 } else {
                     const delay = padState.lastFire ? (now - padState.lastFire) : Infinity;
                     if (delay >= (initialDelay)) {
-                        navigateDirection(dir);
+                        navigateDirection(dir, OpenIntent.Gamepad);
                         padState.lastFire = now - (initialDelay - repeatDelay);
                     }
                 }
@@ -762,7 +871,32 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (!node) return;
         const scope = index.scopes.get(node.scope);
         if (!scope) return;
+
+        const trap = topTrap();
+        if (trap && !isWithinScope(node.scope, trap)) {
+            queueMicrotask(() => focusFirstInScope(trap, true));
+            return;
+        }
+
+        if (!isActiveMode(scope)) {
+            const target = trap ?? activeScope() ?? firstActiveAncestor(scope.parent) ?? anyActiveScope(scope.id);
+            if (target) queueMicrotask(() => focusFirstInScope(target, true));
+            else (e.target as HTMLElement).blur?.();
+            return;
+        }
+
         adoptActiveNode(scope, node.id);
+    }
+
+    function ensureFocusInActiveScope() {
+        const cur = currentFocused();
+        if (!cur) return;
+        const s = index.scopes.get(cur.scope);
+        if (isActiveMode(s)) return;
+
+        const target = topTrap() ?? firstActiveAncestor(s?.parent) ?? anyActiveScope(cur.scope);
+        if (target) queueMicrotask(() => focusFirstInScope(target, true));
+        else (cur.el as HTMLElement).blur?.();
     }
 
     createEffect(() => {
@@ -776,6 +910,14 @@ export function FocusProvider(props: { children: JSX.Element }) {
         });
     });
 
+    function setActiveScopeSafe(id: string | null) {
+        if (id === null) { setActiveScope(null); return; }
+        const s = index.scopes.get(id);
+        if (s && isActiveMode(s)) { setActiveScope(id); return; }
+        const fallback = topTrap() ?? firstActiveAncestor(s?.parent) ?? anyActiveScope() ?? null;
+        setActiveScope(fallback);
+    }
+
 
     const api: FocusAPI = {
         registerScope,
@@ -786,9 +928,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
         navigate: navigateDirection,
         press,
         focusFirstInScope,
-        setActiveScope,
+        setActiveScope: setActiveScopeSafe,
         getActiveScope: activeScope,
-        resolveScopeId
+        resolveScopeId,
+        setScopeMode,
+        getScopeMode: (id) => index.scopes.get(id)?.mode,
     };
 
     return <FocusCtx.Provider value={api}>{props.children}</FocusCtx.Provider>;

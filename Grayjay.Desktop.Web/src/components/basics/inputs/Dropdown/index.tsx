@@ -72,9 +72,8 @@ const Dropdown: Component<DropdownProps> = (props) => {
             </div>
             <Show when={showOptions$().show}>
                 <div class={styles.optionsContainer} ref={optionsElement} use:focusScope={{
-                    trap: true,
-                    wrap: true,
-                    orientation: "vertical"
+                    id: "dropdown",
+                    initialMode: 'trap'
                 }}>
                     <Index each={props.options}>{(item: any, i: number) =>
                         <div class={styles.option} classList={{[styles.selected]: selectedIndex$() == i}} onClick={()=>selectionChanged(i)} use:focusable={{

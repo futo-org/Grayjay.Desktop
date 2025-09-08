@@ -1,7 +1,7 @@
 import { Navigator, useNavigate } from "@solidjs/router";
 import { HandlingBackend } from "./backend/HandlingBackend";
 import { uuidv4 } from "./utility";
-import { VideoContextState, VideoContextValue, useVideo } from "./contexts/VideoProvider";
+import { VideoContextState, VideoContextValue, VideoState, useVideo } from "./contexts/VideoProvider";
 import { IPlatformVideo } from "./backend/models/content/IPlatformVideo";
 import { Duration } from "luxon";
 
@@ -19,11 +19,11 @@ export default class Globals {
         break;
       case "channel":
         navigate("/web/channel?url=" + encodeURIComponent(url));
-        video?.actions?.minimizeVideo();
+        video?.actions?.setState(VideoState.Minimized);
         break;
       case "playlist":
         navigate("/web/remotePlaylist?url=" + encodeURIComponent(url));
-        video?.actions?.minimizeVideo();
+        video?.actions?.setState(VideoState.Minimized);
         break;
     }
   }

@@ -206,9 +206,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         aria-labelledby={titleId}
         onClick={(ev) => ev.stopPropagation()}
         use:focusScope={{
-          trap: true,
-          wrap: true,
-          orientation: "vertical"
+          initialMode: 'trap'
         }}
       >
         <Show when={props.dialog?.icon}>

@@ -13,6 +13,7 @@ import { proxyImage, swap } from '../../utility';
 import VirtualDragDropList from '../containers/VirtualDragDropList';
 import iconDrag from '../../assets/icons/icon_drag.svg';
 import iconPlay from '../../assets/icons/icon24_play.svg';
+import { focusable } from '../../focusable'; void focusable;
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 
 interface PlaybackQueueProps {
@@ -89,6 +90,12 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
                                     const v = video();
                                     if (!v) return;
                                     props.onVideoClick?.(v);
+                                }} use:focusable={{
+                                    onPress: () => {
+                                        const v = video();
+                                        if (!v) return;
+                                        props.onVideoClick?.(v);
+                                    }
                                 }}>
                                     <div style="display: flex; width: 44px; height: 44px; padding: 20px; cursor: pointer; justify-content: center; align-items: center;" class={styles.itemDrag} onMouseDown={(e) => {
                                         startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
@@ -124,12 +131,6 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
         </div>
     );
 };
-/*
-<div class={styles.itemNumber} onMouseDown={(e) => {
-    startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
-    e.preventDefault();
-    e.stopPropagation();
-}}>{index + 1}</div>
-*/
+
 export default PlaybackQueue;
 

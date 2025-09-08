@@ -30,9 +30,7 @@ const OverlaySettings: Component<OverlaySettingsProps> = (props: OverlaySettings
     return (
       <OverlayCustomDialog onRootClick={()=>{onClosed(); UIOverlay.dismiss();}} onCloseClick={()=>UIOverlay.dismiss()}>
         <div style="margin-top: -90px; width: 800px; height: 80vh; max-height: 700px" onClick={(ev)=>ev.stopPropagation()}  use:focusScope={{
-          trap: true,
-          wrap: true,
-          orientation: "spatial"
+          initialMode: 'trap'
         }}>
           <SettingsPage settingsContainerStyle={{top: '80px', height: 'calc(100% - 80px)'}} onClosingEvent={onCloseEvent} />
         </div>

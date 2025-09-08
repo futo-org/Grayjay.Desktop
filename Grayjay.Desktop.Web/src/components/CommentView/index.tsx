@@ -8,6 +8,8 @@ import { decode } from 'html-entities';
 import { toSvg } from "jdenticon";
 import { ISerializedComment } from '../../backend/models/comments/ISerializedComment';
 import RatingView from '../RatingView';
+import { focusable } from "../../focusable";  void focusable;
+import { FocusableOptions } from '../../nav';
 
 interface CommentViewProps {
   comment?: ISerializedComment;
@@ -15,6 +17,7 @@ interface CommentViewProps {
   onRepliesClicked?: () => void;
   editable?: boolean;
   style?: JSX.CSSProperties;
+  focusableOpts?: FocusableOptions;
 }
 
 const CommentView: Component<CommentViewProps> = (props) => {
@@ -49,7 +52,7 @@ const CommentView: Component<CommentViewProps> = (props) => {
   });
 
   return (
-    <div class={styles.container} onClick={props.onClick} style={props.style}>
+    <div class={styles.container} onClick={props.onClick} style={props.style} use:focusable={props.focusableOpts}>
       <div class={styles.authorContainer}>
         <div class={styles.containerAuthorThumbnail}>
           <Show when={thumbnail()} fallback={jidenticon()}>

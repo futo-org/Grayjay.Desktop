@@ -1,5 +1,6 @@
 import { Component, For, JSX, Show, createSignal } from 'solid-js'
 
+import { focusable } from "../../focusable";  void focusable;
 import styles from './index.module.css';
 
 interface ButtonGroupProps {
@@ -23,7 +24,9 @@ const ButtonGroup: Component<ButtonGroupProps> = (props) => {
     return (
         <div class={styles.containerGroup} style={{ ... props.style, width: `${props.items.length * 120}px` }}>
             <For each={props.items}>{(item, i) =>
-                <div class={styles.containerButton} classList={{ [styles.active]: item == selectedItem() }} onClick={() => selectItem(item)}>
+                <div class={styles.containerButton} classList={{ [styles.active]: item == selectedItem() }} onClick={() => selectItem(item)} use:focusable={{
+                    onPress: () => selectItem(item)
+                 }}>
                     {item}
                 </div>
             }</For>

@@ -115,10 +115,10 @@ const App: Component<RouteSectionProps> = (props) => {
       }
     }
 
-    return <div class="root-container" use:focusScope={{ id: 'content-grid', orientation: 'spatial' }}>
+    return <div class="root-container" use:focusScope={{ id: 'root-container' }}>
       <CastingProvider>
         <SideBar />
-          <Show when={useVideo()?.state() !== VideoState.Maximized}>
+          <Show when={useVideo()?.state() !== VideoState.Maximized && useVideo()?.state() !== VideoState.Fullscreen}>
             <div class="root-content">
               {props.children}
             </div>

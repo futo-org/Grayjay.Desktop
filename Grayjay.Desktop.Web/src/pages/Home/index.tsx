@@ -35,9 +35,7 @@ const HomePage: Component = () => {
     <div class={styles.container}>
         <NavigationBar isRoot={true} childrenAfter={
           <img src={iconRefresh} style={{"margin-left": "24px", "cursor": "pointer", "height": "30px", "width": "30px" }} 
-            onClick={()=>{ StateGlobal.reloadHome() }} use:focusable={{
-              onPress: () => StateGlobal.reloadHome()
-            }} />
+            onClick={()=>{ StateGlobal.reloadHome() }} />
         } />
         <Show when={homePager.state == 'ready'}>
           <Show when={homePager() && homePager()!.data.length > 0}>
