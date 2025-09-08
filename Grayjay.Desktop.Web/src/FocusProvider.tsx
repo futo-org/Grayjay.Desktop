@@ -249,7 +249,6 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function currentFocused(): NodeEntry | undefined {
         const el = document.activeElement as HTMLElement | null;
         const node = findNodeFromElement(el);
-        console.info("current focused in scope", {node, el});
         return node;
     }
 
@@ -479,7 +478,6 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (scope) {
             adoptActiveNode(scope, node.id);
         }
-        console.info("focus element in scope", {node});
         node.el.focus();
     }
 
@@ -503,7 +501,6 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function navigateDirection(dir: Direction, openIntent: OpenIntent) {
         const focused = currentFocused();
         const scope = findScopeForNavigation();
-        console.info("navigateDirection scope", {scope, focused});
         if (!scope) return;
 
         const trappingId = topTrap();

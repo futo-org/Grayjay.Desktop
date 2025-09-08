@@ -15,6 +15,10 @@
     height: 100vh;
 }
 
+.containerFullscreen:focus {
+    outline: 0px;
+}
+
 .controls {
     position: absolute;
     top: 0;

@@ -166,6 +166,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
     const isContainerFullscreen = () => (document.fullscreenElement === containerRef);
     const syncFullscreenToDom = async (shouldBeFs: boolean) => {
+        console.info("syncFullscreenToDom", shouldBeFs);
         if (!containerRef) return;
         const currentlyFs = isContainerFullscreen();
         if (shouldBeFs === currentlyFs) return;
@@ -1143,6 +1144,19 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     case 'right':
                         performSetPosition(Duration.fromMillis(Math.max(Math.min(duration().toMillis(), position().toMillis() + 5000), 0)));
                         return true;
+                    case 'down':
+                        console.info("isFullscreen", isFullscreen());
+                        if (isFullscreen()) {
+                            syncFullscreenToDom(false);
+                            return true;
+                        }
+                        break;
+                    case 'up':
+                        if (!isFullscreen()) {
+                            syncFullscreenToDom(true);
+                            return true;
+                        }
+                        break;
                 }
 
                 return false;
