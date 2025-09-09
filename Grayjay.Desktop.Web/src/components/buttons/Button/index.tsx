@@ -1,4 +1,4 @@
-import { Component, JSX, Show } from 'solid-js'
+import { Component, createMemo, JSX, Show } from 'solid-js'
 
 import styles from './index.module.css';
 import { FocusableOptions } from '../../../nav';
@@ -22,15 +22,17 @@ const Button: Component<ButtonProps> = (props) => {
         }
     };
 
-    const style = {
-        ...props.style,
-        '--btn-bg': props.color ?? '#212122',
-        '--btn-bg-focus': props.focusColor ?? props.color ?? '#212122',
-        width: props.style?.width ?? 'fit-content',
-    } as JSX.CSSProperties & Record<string, string>;
+    const style = createMemo(() => {
+        return {
+            ...props.style,
+            '--btn-bg': props.color ?? '#212122',
+            '--btn-bg-focus': props.focusColor ?? props.color ?? '#212122',
+            width: props.style?.width ?? 'fit-content'
+        } as JSX.CSSProperties & Record<string, string>;
+    });
 
     return (
-        <div class={styles.container} classList={{[styles.small]: props.small}} style={style} onClick={handleClick} use:focusable={props.focusableOpts}>
+        <div class={styles.container} classList={{[styles.small]: props.small}} style={style()} onClick={handleClick} use:focusable={props.focusableOpts}>
             <Show when={props.icon}>
                 <img src={props.icon} class={styles.icon} alt={props.text} />
             </Show>

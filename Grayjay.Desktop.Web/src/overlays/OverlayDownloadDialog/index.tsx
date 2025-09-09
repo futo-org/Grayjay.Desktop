@@ -233,7 +233,7 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
                     onPress: () => (selectedSubtitles$() == i) ? setSelectedSubtitles(-1) : setSelectedSubtitles(i),
                     onBack: globalBack
                   }}>
-                  <img src={iconCheck} />
+                    <div class={styles.imgContainer}><img src={iconCheck} /></div>
                     <div class={styles.name}>
                       {subtitle$().name}
                     </div>
@@ -248,7 +248,7 @@ const OverlayDownloadDialog: Component<OverlayDownloadDialogProps> = (props: Ove
             <Button text='Download'
               onClick={()=>download()}
               style={{"margin-left": "auto", cursor: ((isDownloadable$() ? "pointer" : "default"))}} 
-              color={(isDownloadable$()) ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "gray"}
+              color={isDownloadable$() ? "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" : "gray"}
               focusableOpts={{
                 onPress: download,
                 onBack: globalBack
