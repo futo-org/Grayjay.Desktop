@@ -52,7 +52,7 @@ import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
 import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
 import { focusable } from '../../focusable'; void focusable;
 import Button from '../../components/buttons/Button';
-import { OpenIntent } from '../../nav';
+import { InputSource } from '../../nav';
 
 const DownloadsPage: Component = () => {
   const navigate = useNavigate();
@@ -234,12 +234,12 @@ const DownloadsPage: Component = () => {
   
   const [playlistMenu$, setPlaylistMenu] = createSignal<Menu>()
   const playlistMenuShow$ = createMemo(()=>!!playlistMenu$());
-  const [playlistMenuOpenIntent$, setPlaylistMenuOpenIntent] = createSignal<OpenIntent>();
+  const [playlistMenuInputSource$, setPlaylistMenuInputSource] = createSignal<InputSource>();
   const playlistMenuAnchor = new Anchor(null, playlistMenuShow$, AnchorStyle.BottomRight);
-  function showPlaylistMenu(playlist: IPlaylist, element: HTMLElement, openIntent: OpenIntent) {
+  function showPlaylistMenu(playlist: IPlaylist, element: HTMLElement, inputSource: InputSource) {
     playlistMenuAnchor.setElement(element);
     batch(() => {
-      setPlaylistMenuOpenIntent(openIntent);
+      setPlaylistMenuInputSource(inputSource);
       setPlaylistMenu({
         title: "",
         items: [
@@ -257,7 +257,7 @@ const DownloadsPage: Component = () => {
 
 
   const [settingsContent$, setSettingsContent] = createSignal<IVideoLocal>();
-  const [settingsOpenIntent$, setSettingsOpenIntent] = createSignal<OpenIntent>();
+  const [settingsInputSource$, setSettingsInputSource] = createSignal<InputSource>();
   const settingsMenu$ = createMemo(() => {
       const content = settingsContent$();        
       return {
@@ -300,18 +300,18 @@ const DownloadsPage: Component = () => {
   });
     const [show$, setShow] = createSignal<boolean>(false);
     const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-    function onSettingsClicked(element: HTMLElement, content: IVideoLocal, openIntent: OpenIntent) {
+    function onSettingsClicked(element: HTMLElement, content: IVideoLocal, inputSource: InputSource) {
         contentAnchor.setElement(element);
         
         batch(() => {
-            setSettingsOpenIntent(openIntent);
+            setSettingsInputSource(inputSource);
             setSettingsContent(content);
             setShow(true);
         });
     }
     function onSettingsHidden() {
         batch(() => {
-            setSettingsOpenIntent(undefined);
+            setSettingsInputSource(undefined);
             setSettingsContent(undefined);
             setShow(false);
         });
@@ -346,7 +346,7 @@ const DownloadsPage: Component = () => {
                   "margin-bottom": "10px"
               }}
               builder={(index, item) =>
-                <DownloadedView downloaded={item()} onSettings={(e, content, openIntent)=> onSettingsClicked(e, content, openIntent)} />
+                <DownloadedView downloaded={item()} onSettings={(e, content, inputSource)=> onSettingsClicked(e, content, inputSource)} />
               } />
         </Show>
         <Show when={videoType$() == "playlist"}>
@@ -376,13 +376,13 @@ const DownloadsPage: Component = () => {
                 <PlaylistView name={item().playlist.name} 
                   itemCount={item().playlist.videos.length}
                   thumbnail={getPlaylistThumbnail(item().playlist) ?? ""} onClick={()=>navigate("/web/playlist?id=" + item().playlist.id)}
-                  onSettings={(el, openIntent)=>{ showPlaylistMenu(item(), el, openIntent)}} />
+                  onSettings={(el, inputSource)=>{ showPlaylistMenu(item(), el, inputSource)}} />
               </Show>
             } />
                 
             <Portal>
                 <Show when={playlistMenu$()}>
-                  <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} openIntent={playlistMenuOpenIntent$()} />
+                  <SettingsMenu menu={playlistMenu$()!!} show={playlistMenuShow$()} onHide={()=>{setPlaylistMenu(undefined)}} anchor={playlistMenuAnchor} inputSource={playlistMenuInputSource$()} />
                 </Show>
             </Portal>
         </Show>
@@ -660,7 +660,7 @@ const DownloadsPage: Component = () => {
             ]} />
         </Show>
             <Portal>
-                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} openIntent={settingsOpenIntent$()} />
+                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} inputSource={settingsInputSource$()} />
             </Portal>
       </ScrollContainer>
     </LoaderContainer>

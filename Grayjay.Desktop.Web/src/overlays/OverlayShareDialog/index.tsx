@@ -19,6 +19,8 @@ import iconZipEncrypted from '../../assets/icons/ic_zip_encrypted_detailed.svg'
 import iconPlatforms from '../../assets/icons/ic_sources_detailed.svg'
 import iconNewPipe from '../../assets/icons/ic_newpipe.svg'
 import iconDocument from '../../assets/icons/ic_document_detailed.svg'
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from "../../focusable"; void focusable;
 import { Navigator, useNavigate } from '@solidjs/router';
 
 export interface OverlayShareDialogProps {
@@ -36,7 +38,9 @@ const OverlayShareDialog: Component<OverlayShareDialogProps> = (props: OverlaySh
       }, 800);
     }
     return (
-      <div class={styles.container}> 
+      <div class={styles.container} use:focusScope={{
+          initialMode: 'trap'
+      }}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>
             Share
@@ -50,7 +54,7 @@ const OverlayShareDialog: Component<OverlayShareDialogProps> = (props: OverlaySh
         </div>
           <div style="position: relative;">
             <div class={styles.copyText}>{props.text}</div>
-            <Button text='Copy' onClick={copyText} style={{"margin-top": "10px", "width": "100%"}}></Button>
+            <Button text='Copy' onClick={copyText} style={{"margin-top": "10px", "width": "100%"}} focusableOpts={{ onPress: copyText, onBack: () => (UIOverlay.dismiss(), true) }}></Button>
             <div class={styles.copyLabel} classList={{[styles.visible]: didCopy$()}}>
               Copied to clipboard
             </div>

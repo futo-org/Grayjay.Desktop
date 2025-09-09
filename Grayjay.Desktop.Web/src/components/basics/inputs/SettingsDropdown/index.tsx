@@ -4,7 +4,7 @@ import chevDown from "../../../../assets/icons/icon_chrevron_down.svg"
 import { Portal } from 'solid-js/web';
 import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
 import SettingsMenu, { Menu } from '../../../menus/Overlays/SettingsMenu';
-import { FocusableOptions, OpenIntent } from '../../../../nav';
+import { FocusableOptions, InputSource } from '../../../../nav';
 import { focusScope } from '../../../../focusScope'; void focusScope;
 import { focusable } from '../../../../focusable'; void focusable;
 
@@ -21,15 +21,15 @@ const SettingsDropdown: Component<SettingsDropdownProps> = (props) => {
   let selectElement: HTMLDivElement | undefined;
 
   const [showMenu$, setShowMenu] = createSignal(false);
-  const [menuOpenIntent$, setMenuOpenIntent] = createSignal<OpenIntent>();
+  const [menuInputSource$, setMenuInputSource] = createSignal<InputSource>();
   const anchor = new Anchor(null, showMenu$, props.anchorStyle ?? AnchorStyle.BottomRight);
-  const toggleMenu = async (el: HTMLElement, openIntent: OpenIntent) => {
+  const toggleMenu = async (el: HTMLElement, inputSource: InputSource) => {
     const newValue = !showMenu$();
     if (newValue)
       anchor.setElement(el);
     batch(() => {
       setShowMenu(newValue);
-      setMenuOpenIntent(openIntent);
+      setMenuInputSource(inputSource);
     });
   };
 
@@ -41,13 +41,13 @@ const SettingsDropdown: Component<SettingsDropdownProps> = (props) => {
     anchor.dispose();
   });
 
-  const onPress = (openIntent: OpenIntent) => {
-    if (selectElement) toggleMenu(selectElement, openIntent);
+  const onPress = (inputSource: InputSource) => {
+    if (selectElement) toggleMenu(selectElement, inputSource);
   };
 
   return (
     <>
-      <div class={styles.selectContainer} ref={selectElement} onClick={() => onPress(OpenIntent.Pointer)} style={props.style} use:focusable={props.focusable === true ? { onPress: () => onPress(OpenIntent.Gamepad) } : undefined}>
+      <div class={styles.selectContainer} ref={selectElement} onClick={() => onPress("pointer")} style={props.style} use:focusable={props.focusable === true ? { onPress: () => onPress("gamepad") } : undefined}>
           <div class={styles.select}>
               <div class={styles.selectText}>
                   <div style={{"display": "flex", "flex-direction": "column", "white-space": "nowrap", "text-overflow": "ellipsis"}}>
@@ -64,7 +64,7 @@ const SettingsDropdown: Component<SettingsDropdownProps> = (props) => {
           </div>
       </div>
       <Portal>
-        <SettingsMenu menu={props.menu} anchor={anchor} show={showMenu$()} onHide={hideMenu} ignoreGlobal={[selectElement]} openIntent={menuOpenIntent$()} />
+        <SettingsMenu menu={props.menu} anchor={anchor} show={showMenu$()} onHide={hideMenu} ignoreGlobal={[selectElement]} inputSource={menuInputSource$()} />
       </Portal>
     </>
   );

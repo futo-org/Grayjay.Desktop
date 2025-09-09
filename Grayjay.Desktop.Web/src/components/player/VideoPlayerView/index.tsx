@@ -22,7 +22,7 @@ import StateGlobal from '../../../state/StateGlobal';
 import Globals from '../../../globals';
 import { clearLiveChatOnSeek } from '../../../state/StateLiveChat';
 import { focusable } from '../../../focusable'; void focusable;
-import { FocusableOptions, OpenIntent } from '../../../nav';
+import { FocusableOptions, InputSource } from '../../../nav';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -1133,8 +1133,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             return undefined;
 
         return {
-            onDirection: (el, dir, openIntent) => {
-                if (openIntent !== OpenIntent.Gamepad) {
+            onDirection: (el, dir, inputSource) => {
+                if (inputSource === "keyboard" && ["left", "right", "up"].indexOf(dir) !== -1) {
+                    return true;
+                }
+                if (inputSource !== "gamepad") {
                     return false;
                 }
                 switch (dir) {

@@ -562,6 +562,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         return { width, height };
     });
 
+    const theatrePinned = createMemo(() => video?.theatrePinned() && focus.lastInputSource() === "pointer");
     const minimumMaximumHeight = createMemo(() => {
         var newMinimumMaximum;
         if (mode() === VideoMode.Theatre) {
@@ -569,7 +570,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             const minHeight = minimizedHeight();
             const maxHeight = Math.min(dimensions().height * 0.8, desiredMaximizedHeight());
     
-            if (video?.theatrePinned()) {
+            if (theatrePinned()) {
                 newMinimumMaximum = isMaximized
                     ? { minimum: Math.max(200, dimensions().height * 0.35), maximum: maxHeight }
                     : { minimum: minHeight, maximum: minHeight };
@@ -1308,7 +1309,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                     minimumHeight={minimumMaximumHeight().minimum}
                     maximumHeight={minimumMaximumHeight().maximum}
                     heightChanged={(newHeight) => setCurrentPlayerHeight(newHeight)}
-                    sticky={mode() === VideoMode.Theatre && video?.theatrePinned() || isMinimized()}>
+                    sticky={mode() === VideoMode.Theatre && theatrePinned() || isMinimized()}>
                     <div style="height: 100%;" ref={videoContainer}>
                         <VideoPlayerView ref={setVideoPlayerContainerRef}
                             video={videoLoaded$()}
@@ -1337,7 +1338,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onVerifyToggle={verifyToggle}
                             buttons={
                                 <>
-                                    <Show when={!isMinimized() && mode() === VideoMode.Theatre}>
+                                    <Show when={!isMinimized() && mode() === VideoMode.Theatre && focus.lastInputSource() === "pointer"}>
                                         <img src={video?.theatrePinned() ? pinned_fill : pinned} class={styles.pinned} alt="pin theatre" onClick={() => video?.actions?.setTheatrePinned(!video?.theatrePinned())} />
                                     </Show>
                                     <Show when={!shouldShowQueue()}>

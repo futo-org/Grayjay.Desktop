@@ -1,7 +1,7 @@
 import { Component, For, JSX, Show, createMemo } from 'solid-js'
 
 import styles from './index.module.css';
-import iconSearch from '../../assets/icons/icon24_search.svg'
+import iconSearch from '../../assets/icons/icon24_search.svg';
 import Button from '../buttons/Button';
 
 interface EmptyContentAction {
@@ -35,7 +35,9 @@ const EmptyContentView: Component<EmptyContentViewProps> = (props) => {
               </div>
               <div class={styles.buttons}>
                 <For each={props.actions}>{ (btn: EmptyContentAction) =>
-                  <Button text={btn.title} color={btn.color} icon={btn.icon} onClick={()=>{btn.action()}} style={{margin: "8px", width: "280px", height: "58px"}} />
+                  <Button text={btn.title} color={btn.color} icon={btn.icon} onClick={()=>{btn.action()}} style={{margin: "8px", width: "280px", height: "58px"}} focusableOpts={{
+                    onPress: () => btn.action()
+                  }} />
                 }</For>
               </div>
             </div>

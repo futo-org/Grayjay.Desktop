@@ -1,22 +1,18 @@
 import { Accessor } from "solid-js";
 
+export type PointerType = "pointerdown" | "pointerup" | "pointermove";
+export type InputSource = "keyboard" | "pointer" | "gamepad";
 export type Direction = "up" | "down" | "left" | "right" | "next" | "prev";
 export type Press = "press" | "options" | "back" | "start" | "direction";
 export type ScopeId = string;
 
-export enum OpenIntent {
-  Pointer = 'pointer',
-  Gamepad = 'gamepad',
-  Keyboard = 'keyboard'
-}
-
 export interface FocusableOptions {
     disabled?: boolean;
     priority?: number;
-    onPress?: (el: HTMLElement, openIntent: OpenIntent) => void;
-    onOptions?: (el: HTMLElement, openIntent: OpenIntent) => void;
-    onDirection?: (el: HTMLElement, direction: Direction, openIntent: OpenIntent) => boolean | undefined;
-    onBack?: (el: HTMLElement, openIntent: OpenIntent) => boolean | undefined;
+    onPress?: (el: HTMLElement, inputSource: InputSource) => void;
+    onOptions?: (el: HTMLElement, inputSource: InputSource) => void;
+    onDirection?: (el: HTMLElement, direction: Direction, inputSource: InputSource) => boolean | undefined;
+    onBack?: (el: HTMLElement, inputSource: InputSource) => boolean | undefined;
     getRect?: (el: HTMLElement) => DOMRect;
     focusInert?: Accessor<boolean>; //If true, don't claim focus by yourself
 }

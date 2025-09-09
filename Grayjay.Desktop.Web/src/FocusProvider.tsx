@@ -1,5 +1,5 @@
 import { createContext, useContext, createSignal, onCleanup, createEffect, Accessor, JSX } from "solid-js";
-import { Direction, Press, FocusableOptions, ScopeOptions, uid, isVisible, isFocusable, OpenIntent } from "./nav";
+import { Direction, Press, FocusableOptions, ScopeOptions, uid, isVisible, isFocusable, InputSource } from "./nav";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useVideo, VideoState } from "./contexts/VideoProvider";
 
@@ -39,19 +39,21 @@ function createIndex(): Idx {
 }
 
 export interface FocusAPI {
+    lastInputSource: Accessor<InputSource>;
     registerScope: (el: HTMLElement, opts?: ScopeOptions, parentScopeId?: string) => string;
     unregisterScope: (id: string) => void;
     registerNode: (el: HTMLElement, scopeId: string, opts: FocusableOptions) => string;
     unregisterNode: (id: string) => void;
     setNodeOptions: (id: string, opts: Partial<FocusableOptions>) => void;
-    navigate: (dir: Direction, openIntent: OpenIntent) => void;
-    press: (kind: Press, openIntent: OpenIntent) => void;
+    navigate: (dir: Direction, inputSource: InputSource) => void;
+    press: (kind: Press, inputSource: InputSource) => void;
     focusFirstInScope: (scopeId: string, isDefaultFocus: boolean) => void;
     setActiveScope: (id: string | null) => void;
     getActiveScope: Accessor<string | null>;
     resolveScopeId: (el: HTMLElement) => string | null;
     setScopeMode: (id: string, mode: 'off' | 'on' | 'trap') => void;
     getScopeMode: (id: string) => 'off' | 'on' | 'trap' | undefined;
+    getFocusedNode: Accessor<NodeEntry | undefined>;
 }
 
 const FocusCtx = createContext<FocusAPI>();
@@ -66,6 +68,8 @@ export function FocusProvider(props: { children: JSX.Element }) {
     const location = useLocation();
     const index = createIndex();
     const [activeScope, setActiveScope] = createSignal<string | null>(null);
+    const [lastInputSource, setLastInputSource] = createSignal<InputSource>("pointer");
+    const [focusedNode, setFocusedNode] = createSignal<NodeEntry | undefined>(undefined);
     const trapStack: string[] = [];
 
     function isActiveMode(s?: ScopeEntry) { return !!s && s.mode !== 'off'; }
@@ -225,6 +229,10 @@ export function FocusProvider(props: { children: JSX.Element }) {
         const scope = index.scopes.get(rec.scope);
         scope?.nodes.delete(id);
         if (scope?.activeNode === id) scope.activeNode = undefined;
+
+        if (focusedNode()?.id === id) {
+            setFocusedNode(undefined);
+        }
     }
 
     function candidatesInScope(scopeId: string): NodeEntry[] {
@@ -479,6 +487,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             adoptActiveNode(scope, node.id);
         }
         node.el.focus();
+        setFocusedNode(node);
     }
 
     function findScopeForNavigation(): ScopeEntry | undefined {
@@ -498,7 +507,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         return [...index.scopes.values()].find(isActiveMode);
     }
 
-    function navigateDirection(dir: Direction, openIntent: OpenIntent) {
+    function navigateDirection(dir: Direction, inputSource: InputSource) {
         const focused = currentFocused();
         const scope = findScopeForNavigation();
         if (!scope) return;
@@ -511,7 +520,8 @@ export function FocusProvider(props: { children: JSX.Element }) {
             return;
         }
 
-        if ((focused.opts.onDirection?.(focused.el, dir, openIntent) ?? false) === true) {
+        setLastInputSource(inputSource);
+        if ((focused.opts.onDirection?.(focused.el, dir, inputSource) ?? false) === true) {
             return;
         }
 
@@ -623,7 +633,8 @@ export function FocusProvider(props: { children: JSX.Element }) {
         return false;
     }
 
-    function press(kind: Press, openIntent: OpenIntent): boolean {
+    function press(kind: Press, inputSource: InputSource): boolean {
+        setLastInputSource(inputSource);
         const node = currentFocused();
         if (!node) {
             if (kind === "back") {
@@ -633,11 +644,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
         }
 
         if (kind === "press") {
-            return node.opts.onPress?.(node.el, openIntent) ?? false;
+            return node.opts.onPress?.(node.el, inputSource) ?? false;
         } 
         
         if (kind === "back") {
-            const backResult = node.opts.onBack?.(node.el, openIntent);
+            const backResult = node.opts.onBack?.(node.el, inputSource);
             if (backResult !== true) {
                 return back();
             }
@@ -645,7 +656,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         }
 
         if (kind === "options") {
-            return node.opts.onOptions?.(node.el, openIntent) ?? false;
+            return node.opts.onOptions?.(node.el, inputSource) ?? false;
         }
 
         return false;
@@ -754,7 +765,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         const editable = isEditable(e.target);
 
         if (e.key === 'Tab' && trap) {
-            navigateDirection(e.shiftKey ? 'prev' : 'next', OpenIntent.Keyboard);
+            navigateDirection(e.shiftKey ? 'prev' : 'next', "keyboard");
             e.preventDefault();
             return;
         }
@@ -762,26 +773,26 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (editable && editableWantsKey(e, !!trap)) return;
 
         switch (e.key) {
-            case 'ArrowUp': navigateDirection('up', OpenIntent.Keyboard); e.preventDefault(); break;
-            case 'ArrowDown': navigateDirection('down', OpenIntent.Keyboard); e.preventDefault(); break;
-            case 'ArrowLeft': navigateDirection('left', OpenIntent.Keyboard); e.preventDefault(); break;
-            case 'ArrowRight': navigateDirection('right', OpenIntent.Keyboard); e.preventDefault(); break;
+            case 'ArrowUp': navigateDirection('up', "keyboard"); e.preventDefault(); break;
+            case 'ArrowDown': navigateDirection('down', "keyboard"); e.preventDefault(); break;
+            case 'ArrowLeft': navigateDirection('left', "keyboard"); e.preventDefault(); break;
+            case 'ArrowRight': navigateDirection('right', "keyboard"); e.preventDefault(); break;
             case 'Enter':
             case ' ':
-                press('press', OpenIntent.Keyboard);
+                press('press', "keyboard");
                 e.preventDefault();
                 break;
             case 'Escape':
-                if (press('back', OpenIntent.Keyboard)) e.preventDefault(); break;
+                if (press('back', "keyboard")) e.preventDefault(); break;
             case 'o':
-                if (!editable && !e.altKey && !e.metaKey) { if (press('options', OpenIntent.Keyboard)) e.preventDefault(); }
+                if (!editable && !e.altKey && !e.metaKey) { if (press('options', "keyboard")) e.preventDefault(); }
                 break;
             default:
                 if (!editable) {
-                    if (e.key === 'w') { navigateDirection('up', OpenIntent.Keyboard); e.preventDefault(); }
-                    else if (e.key === 's') { navigateDirection('down', OpenIntent.Keyboard); e.preventDefault(); }
-                    else if (e.key === 'a') { navigateDirection('left', OpenIntent.Keyboard); e.preventDefault(); }
-                    else if (e.key === 'd') { navigateDirection('right', OpenIntent.Keyboard); e.preventDefault(); }
+                    if (e.key === 'w') { navigateDirection('up', "keyboard"); e.preventDefault(); }
+                    else if (e.key === 's') { navigateDirection('down', "keyboard"); e.preventDefault(); }
+                    else if (e.key === 'a') { navigateDirection('left', "keyboard"); e.preventDefault(); }
+                    else if (e.key === 'd') { navigateDirection('right', "keyboard"); e.preventDefault(); }
                 }
                 break;
         }
@@ -815,7 +826,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             const now = ts;
 
             const horiz = Math.abs(lx) > axisThreshold ? (lx > 0 ? "right" : "left") as Direction : undefined;
-            const vert    = Math.abs(ly) > axisThreshold ? (ly > 0 ? "down" : "up") as Direction : undefined;
+            const vert = Math.abs(ly) > axisThreshold ? (ly > 0 ? "down" : "up") as Direction : undefined;
             const stickDir = vert ?? horiz;
 
             const dpadDir =
@@ -830,14 +841,16 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 if (padState.dirHeld !== dir) {
                     padState.dirHeld = dir;
                     padState.lastFire = now;
-                    navigateDirection(dir, OpenIntent.Gamepad);
+                    navigateDirection(dir, "gamepad");
                 } else {
                     const delay = padState.lastFire ? (now - padState.lastFire) : Infinity;
                     if (delay >= (initialDelay)) {
-                        navigateDirection(dir, OpenIntent.Gamepad);
+                        navigateDirection(dir, "gamepad");
                         padState.lastFire = now - (initialDelay - repeatDelay);
                     }
                 }
+
+                setLastInputSource("gamepad");
             } else {
                 padState.dirHeld = undefined;
                 padState.lastFire = undefined;
@@ -848,13 +861,13 @@ export function FocusProvider(props: { children: JSX.Element }) {
             const optionsBtn = gp.buttons[btn.X]?.pressed;
             const startBtn = gp.buttons[btn.START]?.pressed;
 
-            if (pressBtn && !padState.pressed.has(btn.A)) { press("press", OpenIntent.Gamepad); padState.pressed.add(btn.A); }
+            if (pressBtn && !padState.pressed.has(btn.A)) { press("press", "gamepad"); padState.pressed.add(btn.A); }
             if (!pressBtn) padState.pressed.delete(btn.A);
 
-            if (backBtn && !padState.pressed.has(btn.B)) { press("back", OpenIntent.Gamepad); padState.pressed.add(btn.B); }
+            if (backBtn && !padState.pressed.has(btn.B)) { press("back", "gamepad"); padState.pressed.add(btn.B); }
             if (!backBtn) padState.pressed.delete(btn.B);
 
-            if (optionsBtn && !padState.pressed.has(btn.X)) { press("options", OpenIntent.Gamepad); padState.pressed.add(btn.X); }
+            if (optionsBtn && !padState.pressed.has(btn.X)) { press("options", "gamepad"); padState.pressed.add(btn.X); }
             if (!optionsBtn) padState.pressed.delete(btn.X);
 
             if (startBtn && !padState.pressed.has(btn.START)) { padState.pressed.add(btn.START); }
@@ -883,6 +896,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         }
 
         adoptActiveNode(scope, node.id);
+        setFocusedNode(node);
     }
 
     function ensureFocusInActiveScope() {
@@ -896,9 +910,14 @@ export function FocusProvider(props: { children: JSX.Element }) {
         else (cur.el as HTMLElement).blur?.();
     }
 
+    const onPointerMove = (e: PointerEvent) => {
+        setLastInputSource("pointer");
+    };
+
     createEffect(() => {
         window.addEventListener("keydown", onKeyDown, { capture: true });
         window.addEventListener("focusin", onFocusIn, { capture: true });
+        window.addEventListener("pointermove", onPointerMove, { passive: true });
         raf = requestAnimationFrame(pollGamepads);
         onCleanup(() => {
             window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
@@ -915,8 +934,15 @@ export function FocusProvider(props: { children: JSX.Element }) {
         setActiveScope(fallback);
     }
 
+    createEffect(() => {
+        console.info("lastInputSource", lastInputSource());
+        const src = lastInputSource();
+        const root = document.body;
+        root.setAttribute("data-input-source", src);
+    });
 
     const api: FocusAPI = {
+        lastInputSource,
         registerScope,
         unregisterScope,
         registerNode,
@@ -930,6 +956,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         resolveScopeId,
         setScopeMode,
         getScopeMode: (id) => index.scopes.get(id)?.mode,
+        getFocusedNode: focusedNode
     };
 
     return <FocusCtx.Provider value={api}>{props.children}</FocusCtx.Provider>;

@@ -3,7 +3,7 @@ import { Component, Show, createMemo, createSignal, onCleanup, onMount } from 's
 import styles from './index.module.css';
 import IconButton from '../../buttons/IconButton';
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
-import { FocusableOptions, OpenIntent } from '../../../nav';
+import { FocusableOptions, InputSource } from '../../../nav';
 import { focusable } from '../../../focusable'; void focusable;
 
 interface PlaylistViewProps {
@@ -12,7 +12,7 @@ interface PlaylistViewProps {
   thumbnail?: string;
   platformIconUrl?: string;
   onClick: () => void;
-  onSettings?: (element: HTMLDivElement, openIntent: OpenIntent) => void;
+  onSettings?: (element: HTMLDivElement, inputSource: InputSource) => void;
   focusableOpts?: FocusableOptions;
 }
 
@@ -68,7 +68,7 @@ const PlaylistView: Component<PlaylistViewProps> = (props) => {
             <IconButton icon={more} 
               ref={refMoreButton} 
               onClick={(e) => {
-                props.onSettings?.(refMoreButton!, OpenIntent.Pointer);
+                props.onSettings?.(refMoreButton!, "pointer");
                 e.preventDefault();
                 e.stopPropagation();
               }}

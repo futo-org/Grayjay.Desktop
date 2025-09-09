@@ -15,11 +15,11 @@ import IconButton from '../../buttons/IconButton';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { focusable } from '../../../focusable'; void focusable;
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
-import { OpenIntent } from '../../../nav';
+import { InputSource } from '../../../nav';
 
 interface DownloadedViewProps {
   downloaded?: IVideoLocal
-  onSettings?: (element: HTMLElement, content: IVideoLocal, openIntent: OpenIntent) => void;
+  onSettings?: (element: HTMLElement, content: IVideoLocal, inputSource: InputSource) => void;
 }
 
 const DownloadedView: Component<DownloadedViewProps> = (props) => {
@@ -60,7 +60,7 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
   return (
     <div class={styles.downloadingCard} use:focusable={props.downloaded ? {
       onPress: navigate,
-      onOptions: (el, openIntent) => props.onSettings?.(el, props.downloaded!, openIntent)
+      onOptions: (el, inputSource) => props.onSettings?.(el, props.downloaded!, inputSource)
     } : undefined}>
         <div class={styles.downloadThumbnail} onClick={navigate} style={{"background-image": "url(" + getBestThumbnail(props.downloaded?.videoDetails.thumbnails)?.url + ")"}}>
           <div class={styles.badgeStatus}>
@@ -81,7 +81,7 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
         </div>
         <Show when={props.onSettings}>
           <IconButton icon={more} ref={refMoreButton}
-            onClick={() => props.onSettings?.(refMoreButton!, props.downloaded!, OpenIntent.Pointer)}
+            onClick={() => props.onSettings?.(refMoreButton!, props.downloaded!, "pointer")}
             style={{position: 'absolute', bottom: '10px', right: '10px' }} />
         </Show>
     </div>

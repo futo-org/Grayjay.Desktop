@@ -1,0 +1,36 @@
+.container {
+    position: absolute;
+    bottom: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    left: 288px;
+    background: #1B1B1BEE;
+    border: #2E2E2E 1px solid;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.button {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.buttonImage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: black;
+    background: #999999;
+    padding: 4px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}

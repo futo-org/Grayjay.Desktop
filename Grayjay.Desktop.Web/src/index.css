@@ -18,9 +18,14 @@ code {
     monospace;
 }
 
-*:focus {
-  outline: solid 1px #bbbbbb;
+:where(body[data-input-source="keyboard"]) :where(*:focus),
+:where(body[data-input-source="gamepad"]) :where(*:focus) {
+  outline: 1px solid #bbb;
   outline-offset: -1px;
+}
+
+:where(body[data-input-source="pointer"]) :where(*:focus) {
+  outline: none;
 }
 
 .droparea {

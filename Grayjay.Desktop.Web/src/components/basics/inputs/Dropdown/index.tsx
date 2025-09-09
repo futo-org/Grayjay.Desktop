@@ -6,7 +6,7 @@ import check from "../../../../assets/icons/icon_checkmark.svg"
 import StateGlobal from "../../../../state/StateGlobal";
 import { focusScope } from '../../../../focusScope'; void focusScope;
 import { focusable } from '../../../../focusable'; void focusable;
-import { FocusableOptions, OpenIntent } from "../../../../nav";
+import { FocusableOptions, InputSource } from "../../../../nav";
 
 export interface DropdownProps {
     options: any[];
@@ -20,22 +20,22 @@ export interface DropdownProps {
 
 const Dropdown: Component<DropdownProps> = (props) => {    
     const [selectedIndex$, setSelectedIndex] = createSignal(props.value);
-    const [showOptions$, setShowOptions] = createSignal<{ show: boolean, openIntent?: OpenIntent }>({ show: false, openIntent: undefined });
+    const [showOptions$, setShowOptions] = createSignal<{ show: boolean, inputSource?: InputSource }>({ show: false, inputSource: undefined });
 
     function selectionChanged(index: number) {
-        setShowOptions({ show: false, openIntent: showOptions$().openIntent });
+        setShowOptions({ show: false, inputSource: showOptions$().inputSource });
         setSelectedIndex(index);
         props.onSelectedChanged(index);
     }
 
-    let toggleShow = (openIntent: OpenIntent) => {
-        setShowOptions({ show: !showOptions$().show, openIntent });        
+    let toggleShow = (inputSource: InputSource) => {
+        setShowOptions({ show: !showOptions$().show, inputSource });        
 
         if(showOptions$()) {
             StateGlobal.onGlobalClick.registerOne(this, (ev)=>{
               if(ev.target && !optionsElement?.contains(ev.target as Node) && !selectElement.contains(ev.target as Node)) {
                 StateGlobal.onGlobalClick.unregister(this);
-                setShowOptions({ show: false, openIntent: showOptions$().openIntent });
+                setShowOptions({ show: false, inputSource: showOptions$().inputSource });
               }
             });
         }
@@ -55,7 +55,7 @@ const Dropdown: Component<DropdownProps> = (props) => {
     });
     
     return (
-        <div class={styles.selectContainer} onClick={() => toggleShow(OpenIntent.Pointer)} style={props.style} use:focusable={{ onPress: () => toggleShow(OpenIntent.Gamepad) }}>
+        <div class={styles.selectContainer} onClick={() => toggleShow("pointer")} style={props.style} use:focusable={{ onPress: () => toggleShow("gamepad") }}>
             <div ref={refSelectElement} class={styles.select}>
                 <div class={styles.selectText}>
                     <div style={{"display": "flex", "flex-direction": "column"}}>
@@ -77,11 +77,11 @@ const Dropdown: Component<DropdownProps> = (props) => {
                 }}>
                     <Index each={props.options}>{(item: any, i: number) =>
                         <div class={styles.option} classList={{[styles.selected]: selectedIndex$() == i}} onClick={()=>selectionChanged(i)} use:focusable={{
-                                focusInert: createMemo(() => showOptions$().openIntent === OpenIntent.Pointer),
+                                focusInert: createMemo(() => showOptions$().inputSource === "pointer"),
                                 onPress: () => selectionChanged(i),
-                                onBack: (el, openIntent) => {
+                                onBack: (el, inputSource) => {
                                     if (showOptions$().show) {
-                                        setShowOptions({ show: false, openIntent });
+                                        setShowOptions({ show: false, inputSource });
                                         return true;
                                     }
                                     return false;

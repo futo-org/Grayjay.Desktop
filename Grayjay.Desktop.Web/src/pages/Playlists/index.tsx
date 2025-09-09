@@ -33,7 +33,7 @@ import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
 import InputText from '../../components/basics/inputs/InputText';
 import Dropdown from '../../components/basics/inputs/Dropdown';
 import ic_search from '../../assets/icons/search.svg';
-import { OpenIntent } from '../../nav';
+import { InputSource } from '../../nav';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -72,7 +72,7 @@ const PlaylistsPage: Component = () => {
   };
 
   const [settingsContent$, setSettingsContent] = createSignal<IPlatformVideo | IPlaylist>();
-  const [settingsOpenIntent$, setSettingsOpenIntent] = createSignal<OpenIntent>();
+  const [settingsInputSource$, setSettingsInputSource] = createSignal<InputSource>();
   const settingsMenu$ = createMemo(() => {
     const content = settingsContent$();
     const itemsArray = [
@@ -97,7 +97,7 @@ const PlaylistsPage: Component = () => {
 
   const [show$, setShow] = createSignal<boolean>(false);
   const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-  function onSettingsClicked(element: HTMLElement, content: IPlatformVideo | IPlaylist, openIntent: OpenIntent) {
+  function onSettingsClicked(element: HTMLElement, content: IPlatformVideo | IPlaylist, inputSource: InputSource) {
     contentAnchor.setElement(element);
 
     batch(() => {
@@ -239,7 +239,20 @@ const PlaylistsPage: Component = () => {
 
                       video?.actions?.setQueue(index()!, queue, false, false);
                     }}
-                    onSettings={(e, content) => onSettingsClicked(e, content)} />
+                    onSettings={(e, content) => onSettingsClicked(e, content, "pointer")}
+                    focusableOpts={{
+                      onPress: (el, inputSource) => {
+                        const queue = video?.watchLater();
+                        if (!queue) {
+                          return;
+                        }
+
+                        video?.actions?.setQueue(index()!, queue, false, false);
+                      },
+                      onOptions: (el, inputSource) => {
+                        onSettingsClicked(el, item(), inputSource)
+                      }
+                    }} />
                 } />
             </div>
           </Show>
@@ -308,10 +321,10 @@ const PlaylistsPage: Component = () => {
                           navigate("/web/playlist?id=" + playlist.id);
                         }
                       }}
-                      onSettings={(e, openIntent) => {
+                      onSettings={(e, inputSource) => {
                         const playlist = item();
                         if (playlist) {
-                          onSettingsClicked(e, playlist, openIntent);
+                          onSettingsClicked(e, playlist, inputSource);
                         }
                       }}
                       focusableOpts={item() ? {
@@ -321,10 +334,10 @@ const PlaylistsPage: Component = () => {
                             navigate("/web/playlist?id=" + playlist.id);
                           }
                         },
-                        onOptions: (el, openIntent) => {
+                        onOptions: (el, inputSource) => {
                           const playlist = item();
                           if (playlist) {
-                            onSettingsClicked(e, playlist, openIntent);
+                            onSettingsClicked(el, playlist, inputSource);
                           }
                         }
                       } : undefined} />
@@ -357,7 +370,7 @@ const PlaylistsPage: Component = () => {
         </ScrollContainer>
       
       <Portal>
-        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} openIntent={settingsOpenIntent$()} />
+        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} inputSource={settingsInputSource$()} />
       </Portal>
     </div>
   );

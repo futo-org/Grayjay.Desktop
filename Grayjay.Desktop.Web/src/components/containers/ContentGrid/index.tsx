@@ -38,7 +38,7 @@ import LockedContentThumbnailView from "../../content/LockedContentThumbnailView
 import { IPlatformLockedContent } from "../../../backend/models/content/IPlatformLockedContent";
 import { LocalBackend } from "../../../backend/LocalBackend";
 import { Event0, Event1 } from "../../../utility/Event";
-import { focusable } from "../../../focusable";import { OpenIntent } from "../../../nav";
+import { focusable } from "../../../focusable";import { InputSource } from "../../../nav";
  void focusable;
 
 export interface ContentGridProps {
@@ -76,7 +76,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     }
 
     const [settingsContent$, setSettingsContent] = createSignal<IPlatformContent>();
-    const [settingsMenuOpenIntent$, setSettingsMenuOpenIntent] = createSignal<OpenIntent>();
+    const [settingsMenuInputSource$, setSettingsMenuInputSource] = createSignal<InputSource>();
     const settingsMenu$ = createMemo(() => {
         const content = settingsContent$();        
         return {
@@ -118,19 +118,19 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     });
     const [show$, setShow] = createSignal<boolean>(false);
     const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-    function onSettingsClicked(element: HTMLElement, content: IPlatformContent, openIntent: OpenIntent) {
+    function onSettingsClicked(element: HTMLElement, content: IPlatformContent, inputSource: InputSource) {
         contentAnchor.setElement(element);
         
         batch(() => {
             setSettingsContent(content);
-            setSettingsMenuOpenIntent(openIntent);
+            setSettingsMenuInputSource(inputSource);
             setShow(true);
         });
     }
     function onSettingsHidden() {
         batch(() => {
             setSettingsContent(undefined);
-            setSettingsMenuOpenIntent(undefined);
+            setSettingsMenuInputSource(undefined);
             setShow(false);
         });
     }
@@ -217,7 +217,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                 onClick={() => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url))}
                 focusableOpts={item() ? {
                     onPress: () => navigate("/web/remotePlaylist?url=" + encodeURIComponent(item().url)),
-                    onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                    onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                     onBack: () => onBackContentGrid()
                 } : undefined} />
         );
@@ -267,7 +267,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                             <Show when={item()?.contentType == ContentType.MEDIA}>
                                 <VideoThumbnailView video={item() as IPlatformVideo}
                                     useCache={!!props?.useCache}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, "pointer")}
                                     onAddtoQueue={(e, content)=>video?.actions.addToQueue(content as IPlatformVideo)}
                                     focusableOpts={item() ? {
                                         onPress: () => {
@@ -275,7 +275,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                             if (url)
                                                 video?.actions.openVideo(item() as IPlatformVideo, undefined, VideoState.Fullscreen);
                                         },
-                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                                         onBack: () => onBackContentGrid()
                                     } : undefined}
                                     onClick={() => {
@@ -286,7 +286,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                             </Show>
                             <Show when={item()?.contentType == ContentType.POST}>
                                 <PostThumbnailView post={item() as IPlatformPost}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, "pointer")}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().url;
                                         if(url)
@@ -298,13 +298,13 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                             if(url)
                                                 navigate("/web/details/post?url=" + encodeURIComponent(url));
                                         },
-                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                                         onBack: () => onBackContentGrid()
                                     } : undefined} />
                             </Show>
                             <Show when={item()?.contentType == ContentType.NESTED_VIDEO}>
                                 <NestedMediaThumbnailView video={item() as IPlatformNestedMedia}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, "pointer")}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().contentUrl;
                                         if(url) {
@@ -318,13 +318,13 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                                 Globals.handleUrl(url, video!, navigate);
                                             }
                                         },
-                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                                         onBack: () => onBackContentGrid()
                                     } : undefined} />
                             </Show>
                             <Show when={item()?.contentType == ContentType.LOCKED}>
                                 <LockedContentThumbnailView content={item() as IPlatformLockedContent}
-                                    onSettings={(e, content)=> onSettingsClicked(e, content, OpenIntent.Pointer)}
+                                    onSettings={(e, content)=> onSettingsClicked(e, content, "pointer")}
                                     onClick={() =>{
                                         const url = item().backendUrl ?? item().url;
                                         if(url) {
@@ -338,7 +338,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                                 Globals.handleUrl(url, video!, navigate);
                                             }
                                         },
-                                        onOptions: (e, openIntent) => onSettingsClicked(e, item(), openIntent),
+                                        onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                                         onBack: () => onBackContentGrid()
                                     } : undefined} />
                             </Show>
@@ -355,7 +355,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     } />
             </Show>
             <Portal>
-                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} openIntent={settingsMenuOpenIntent$()} />
+                <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={()=>onSettingsHidden()} anchor={contentAnchor} inputSource={settingsMenuInputSource$()} />
             </Portal>
         </div>
     );

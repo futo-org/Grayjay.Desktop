@@ -8,7 +8,7 @@ import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
 import CheckboxFlex from '../../../basics/inputs/CheckboxFlex';
 import { focusScope } from '../../../../focusScope'; void focusScope;
 import { focusable } from "../../../../focusable"; void focusable;
-import { OpenIntent } from '../../../../nav';
+import { InputSource } from '../../../../nav';
 
 export interface MenuItem {
   type?: string
@@ -144,7 +144,7 @@ export interface SettingsMenuProps {
   style?: JSX.CSSProperties,
   onHide?: () => void,
   ignoreGlobal?: (HTMLElement | undefined)[],
-  openIntent?: OpenIntent
+  inputSource?: InputSource
 };
 const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) => {
     let containerRef: HTMLDivElement | undefined;
@@ -217,7 +217,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           setValue(!value$());
         }}
         use:focusable={{
-          focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+          focusInert: createMemo(() => props.inputSource === "pointer"),
           onPress: () => {
             const v = !value$();
             item.onToggle?.(v);
@@ -258,7 +258,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           setValue(!value$());
         }}
         use:focusable={{
-          focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+          focusInert: createMemo(() => props.inputSource === "pointer"),
           onPress: () => {
             const v = !value$();
             item.onToggle?.(v);
@@ -397,7 +397,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   onClick={()=>openGroup(item as IMenuItemGroup)} 
                   classList={{[styles.isGroup]: true}}
                   use:focusable={{
-                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    focusInert: createMemo(() => props.inputSource === "pointer"),
                     onPress: () => openGroup(item as IMenuItemGroup),
                     onBack: settingsMenuBack,
                   }}
@@ -419,7 +419,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   classList={{[styles.option]: true}} 
                   onClick={()=>selectOption(item as IMenuItemOption)}
                   use:focusable={{
-                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    focusInert: createMemo(() => props.inputSource === "pointer"),
                     onPress: () => selectOption(item as IMenuItemOption),
                     onBack: settingsMenuBack,
                   }}
@@ -446,7 +446,7 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                   class={styles.menuButton} 
                   onClick={()=>clickButton(item as IMenuButton)}
                   use:focusable={{
-                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    focusInert: createMemo(() => props.inputSource === "pointer"),
                     onPress: () => clickButton(item as IMenuButton),
                     onBack: settingsMenuBack,
                   }}

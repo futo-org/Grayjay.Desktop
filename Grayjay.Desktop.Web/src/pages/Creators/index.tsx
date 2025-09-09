@@ -185,7 +185,7 @@ const CreatorsPage: Component = () => {
                     if(url)
                       navigate("/web/channel?url=" + encodeURIComponent(url), { state: { author: item()?.channel } })
                     },
-                    onOptions: (e, openIntent) => showSubscriptionSettings(e, item()),
+                    onOptions: (e, inputSource) => showSubscriptionSettings(e, item()),
                     onBack: () => hideSubscriptionSettings()
                 } : undefined} />
             } />

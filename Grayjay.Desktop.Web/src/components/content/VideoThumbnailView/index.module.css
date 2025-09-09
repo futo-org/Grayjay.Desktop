@@ -12,10 +12,6 @@
     cursor: pointer;
 }
 
-.container:focus {
-    background: #303030;
-}
-
 .videoThumbnail {
     width: 100%;
     height: auto;

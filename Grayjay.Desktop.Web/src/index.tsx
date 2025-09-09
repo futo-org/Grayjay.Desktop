@@ -27,7 +27,8 @@ import GlobalContextMenu from './components/GlobalContextMenu';
 import BuyPage from './pages/BuyPage';
 import LoaderGameExamplePage from './pages/LoaderGameExamplePage';
 import { FocusProvider } from './FocusProvider';
-import { focusScope } from './focusScope'; void focusScope;
+import { focusScope } from './focusScope';import ControllerOverlay from './components/ControllerOverlay';
+ void focusScope;
 
 const HomePage = lazy(() => import('./pages/Home'));
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'));
@@ -123,6 +124,7 @@ const App: Component<RouteSectionProps> = (props) => {
               {props.children}
             </div>
           </Show>
+          <ControllerOverlay />
           <VideoDetailView />
         <OverlayCasting />
       </CastingProvider>
