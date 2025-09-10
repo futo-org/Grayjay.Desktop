@@ -17,7 +17,7 @@ namespace Grayjay.ClientServer.Controllers
             if (GrayjayServer.Instance.WindowProvider != null && !GrayjayServer.Instance.HeadlessMode)
             {
                 await GrayjayServer.Instance.WindowProvider.CreateWindowAsync(
-                    url: $"{GrayjayServer.Instance.BaseUrl}/web/index.html", 
+                    url: $"{GrayjayServer.Instance.BaseUrl}/web/index.html",
                     title: "Grayjay (Sub)",
                     minimumWidth: 900,
                     minimumHeight: 550,
@@ -52,6 +52,23 @@ namespace Grayjay.ClientServer.Controllers
         public string Echo(string str)
         {
             return str;
+        }
+
+        [HttpGet]
+        public bool Close([FromServices] IHost host)
+        {
+            Response.OnCompleted(async () =>
+            {
+                try
+                {
+                    await host.StopAsync(TimeSpan.FromMilliseconds(100));
+                }
+                catch (Exception e)
+                {
+                    Logger.e(nameof(WindowController), "Failed to stop host.", e);
+                }
+            });
+            return true;
         }
     }
 }

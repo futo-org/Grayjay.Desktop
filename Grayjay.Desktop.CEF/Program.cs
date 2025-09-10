@@ -412,7 +412,7 @@ namespace Grayjay.Desktop
             GrayjayServer server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef) : null), 
                 isHeadless, 
                 isServer);
-            _ = Task.Run(async () => 
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -421,6 +421,10 @@ namespace Grayjay.Desktop
                 catch (Exception ex)
                 {
                     Logger.e(nameof(Program), $"Main: Unhandled error in RunServerAsync.", ex);
+                }
+                finally
+                {
+                    Logger.i(nameof(Program), "Application graceful exit requested.");
                     cancellationTokenSource.Cancel();
                 }
             });
@@ -481,7 +485,7 @@ namespace Grayjay.Desktop
                                 {
                                     var processIds = new int[]
                                     {
-                                Process.GetCurrentProcess().Id
+                                        Process.GetCurrentProcess().Id
                                     };
                                     var changelog = Updater.GetTargetChangelog();
                                     int currentVersion = (updaterVersion > 0) ? updaterVersion : Updater.GetUpdaterVersion();
@@ -629,11 +633,19 @@ namespace Grayjay.Desktop
                 });
             }
 
-            Logger.i(nameof(Program), "Main: Waiting for window exit.");
             if (window != null)
+            {
+                Logger.i(nameof(Program), "Main: Waiting for window exit.");
                 await window.WaitForExitAsync(cancellationTokenSource.Token);
+                Logger.i(nameof(Program), "Main: Window exited.");
+            }
             else
+            {
+                Logger.i(nameof(Program), "Main: Waiting for server exit.");
                 cancellationTokenSource.Token.WaitHandle.WaitOne();
+                Logger.i(nameof(Program), "Main: Server exited.");
+            }
+
             File.Delete(PortFile);
             cancellationTokenSource.Cancel();
             if(cef != null)

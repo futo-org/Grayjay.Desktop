@@ -22,4 +22,9 @@ export abstract class WindowBackend {
         await Backend.GET("/window/Echo?str=" + str);
         return true;
     }
+
+    static async closeWindow(): Promise<boolean> {
+        await Backend.GET("/window/Close");
+        return true;
+    }
 }

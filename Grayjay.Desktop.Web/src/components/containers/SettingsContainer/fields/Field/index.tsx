@@ -20,7 +20,8 @@ interface FieldProps {
     field: ISettingsField,
     onFieldChanged?: (field: ISettingsField, newVal: any)=>void,
     parentObject: any,
-    isSubField?: boolean
+    isSubField?: boolean,
+    onBack?: () => boolean
 }
 
 const Field: Component<FieldProps> = (props) => {
@@ -87,16 +88,18 @@ const Field: Component<FieldProps> = (props) => {
                     <Match when={props.field.type == "group"}>
                         <FieldGroup field={props.field as ISettingsFieldGroup} value={props.parentObject[props.field.property]}
                             container={props.container}
-                            onFieldChanged={onChanged} />
+                            onFieldChanged={onChanged}
+                            onBack={props.onBack} />
                     </Match>
                     <Match when={props.field.type == "group_flat"}>
                         <FieldGroup field={props.field as ISettingsFieldGroup} value={props.parentObject}
                             container={props.container}
-                            onFieldChanged={onChanged} />
+                            onFieldChanged={onChanged}
+                            onBack={props.onBack} />
                     </Match>
                     <Match when={props.field.type == "toggle"}>
                         <FieldToggle field={props.field as ISettingsFieldToggle} value={parseBool(props.parentObject[props.field.property])} 
-                            onFieldChanged={onChangedDirect} isSubField={props.isSubField} />
+                            onFieldChanged={onChangedDirect} isSubField={props.isSubField} onBack={props.onBack} />
                     </Match>
                     <Match when={props.field.type == "readonly"}>
                         <FieldReadOnly field={props.field as ISettingsFieldReadOnly} value={props.parentObject[props.field.property]}
@@ -104,7 +107,7 @@ const Field: Component<FieldProps> = (props) => {
                     </Match>
                     <Match when={props.field.type == "dropdown"}>
                         <FieldDropDown field={props.field as ISettingsFieldDropDown} value={props.parentObject[props.field.property]}
-                            onFieldChanged={onChangedDirect} isSubField={props.isSubField} />
+                            onFieldChanged={onChangedDirect} isSubField={props.isSubField} onBack={props.onBack} />
                     </Match>
                 </Switch>
             </Show>

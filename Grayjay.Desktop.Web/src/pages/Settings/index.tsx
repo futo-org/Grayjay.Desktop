@@ -52,19 +52,28 @@ const SettingsPage: Component<SettingsPageProps> = (props) => {
     }
   }
 
+  const globalBack = () => {
+    console.info("globalBack");
+    onClosing();
+    UIOverlay.dismiss();
+    return true;
+  };
+
   return (
     <div class={styles.container} style="height: calc(100% - 20px); overflow-y: hidden;">
       <div class={styles.settingsMenu} style={props.settingsMenuStyle}>
           <h1 style="flex-shrink: 0">Settings</h1>
             <ScrollContainer wrapperStyle={{"padding-right": "4px"}}>
               <div classList={{[styles.settingsMenuItem]: true, [styles.active]: !filterGroup$()}} onClick={()=>setFilterGroup(undefined)} use:focusable={{
-                onPress: () => setFilterGroup(undefined)
+                onPress: () => setFilterGroup(undefined),
+                onBack: globalBack
               }}>
                 All
               </div>
               <For each={settings$()?.fields?.filter(x=>x.type == 'group') ?? []}>{item => 
                 <div classList={{[styles.settingsMenuItem]: true, [styles.active]: item.property == filterGroup$()}} onClick={()=>setFilterGroup(item.property)} use:focusable={{
-                  onPress: () => setFilterGroup(item.property)
+                  onPress: () => setFilterGroup(item.property),
+                  onBack: globalBack
                 }}>
                   {item.title}
                 </div>
@@ -73,7 +82,8 @@ const SettingsPage: Component<SettingsPageProps> = (props) => {
             <div class={styles.bottomMenu}>
               <div style="margin-top: 10px; margin-right: 20px;">
                 <Button onClick={()=>{UIOverlay.dismiss(); UIOverlay.overlayImportSelect()}} style={{width: '100%'}} text='Import' icon='' focusableOpts={{
-                  onPress: () => { UIOverlay.dismiss(); UIOverlay.overlayImportSelect() }
+                  onPress: () => { UIOverlay.dismiss(); UIOverlay.overlayImportSelect() },
+                  onBack: globalBack
                 }}></Button>
               </div>
               <Show when={false}>
@@ -85,7 +95,7 @@ const SettingsPage: Component<SettingsPageProps> = (props) => {
       </div>
       <div class={styles.settingsContainer} style={props.settingsContainerStyle}>
         <ScrollContainer>
-          <SettingsContainer settings={settings$()} filterGroup={filterGroup$()} onFieldChanged={onFieldChanged} />
+          <SettingsContainer settings={settings$()} filterGroup={filterGroup$()} onFieldChanged={onFieldChanged} onBack={globalBack} />
         </ScrollContainer>
       </div>
     </div>

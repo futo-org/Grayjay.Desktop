@@ -76,7 +76,7 @@ namespace Grayjay.ClientServer
             _app.UseWebSockets();
             _app.UseRouting();
             _app.MapControllers();
-            _app.Lifetime.ApplicationStarted.Register(() => 
+            _app.Lifetime.ApplicationStarted.Register(() =>
             {
                 var server = _app.Services.GetRequiredService<IServer>();
                 var addressFeature = server.Features.Get<IServerAddressesFeature>()!;
@@ -172,7 +172,21 @@ namespace Grayjay.ClientServer
                 await StateSync.Instance.StartAsync();
 
             _app.UseMiddleware<RequestLoggingMiddleware>();
-            await Task.WhenAll(_app.RunAsync(cancellationToken), StateDownloads.StartDownloadCycle());
+            Logger.i(nameof(GrayjayServer), $"RunServerAsync: _app.RunAsync(cancellationToken) starting...");
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await StateDownloads.StartDownloadCycle();
+                }
+                catch (Exception e)
+                {
+                    Logger.e(nameof(GrayjayServer), "Exception occurred in StartDownloadCycle.", e);
+                }
+            });
+
+            await _app.RunAsync(cancellationToken);
+            Logger.i(nameof(GrayjayServer), $"RunServerAsync: _app.RunAsync(cancellationToken) finished.");
         }
         public async Task StopServer()
         {

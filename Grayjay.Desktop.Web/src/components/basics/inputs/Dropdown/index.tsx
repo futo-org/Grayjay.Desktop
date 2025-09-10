@@ -16,6 +16,7 @@ export interface DropdownProps {
     label?: string;
     style?: JSX.CSSProperties;
     focusable?: boolean;
+    onBack?: () => boolean;
 };
 
 const Dropdown: Component<DropdownProps> = (props) => {    
@@ -55,7 +56,7 @@ const Dropdown: Component<DropdownProps> = (props) => {
     });
     
     return (
-        <div class={styles.selectContainer} onClick={() => toggleShow("pointer")} style={props.style} use:focusable={{ onPress: () => toggleShow("gamepad") }}>
+        <div class={styles.selectContainer} onClick={() => toggleShow("pointer")} style={props.style} use:focusable={{ onPress: () => toggleShow("gamepad"), onBack: props.onBack }}>
             <div ref={refSelectElement} class={styles.select}>
                 <div class={styles.selectText}>
                     <div style={{"display": "flex", "flex-direction": "column"}}>

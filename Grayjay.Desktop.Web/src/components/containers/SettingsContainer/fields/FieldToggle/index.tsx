@@ -12,6 +12,7 @@ interface FieldToggleProps {
     onFieldChanged?: (field: ISettingsField, newVal: boolean)=>void,
     value: boolean,
     isSubField?: boolean
+    onBack?: () => boolean
 }
 
 const FieldToggle: Component<FieldToggleProps> = (props) => {
@@ -26,7 +27,8 @@ const FieldToggle: Component<FieldToggleProps> = (props) => {
 
     return (
         <div class={styles.container} use:focusable={{
-            onPress: () => toggle(!value$())
+            onPress: () => toggle(!value$()),
+            onBack: () => props.onBack?.() ?? false
         }}>
             <FieldKey field={props.field} isSubField={props.isSubField} />
             <div class={styles.value}>

@@ -12,6 +12,7 @@ export interface SettingsContainerProps {
     filterName?: string,
     onFieldChanged?: (arg0: ISettingsField, arg1: any) => void;
     style?: JSX.CSSProperties;
+    onBack?: () => boolean;
 };
 
 export class SettingsContainerParent {
@@ -32,7 +33,7 @@ export interface IFieldChangedEvent {
 }
 
 const SettingsContainer: Component<SettingsContainerProps> = (props) => {
-    let object = createMemo(()=>(props.settings) ? new SettingsContainerParent(props.settings) : null);
+    let object = createMemo(()=>(props.settings) ? new SettingsContainerParent(props.settings) : undefined);
     let existing: ISettingsObject | undefined = undefined;
     let didChange = false;
 
@@ -67,7 +68,10 @@ const SettingsContainer: Component<SettingsContainerProps> = (props) => {
                 <div style="margin: 24px">
                     <For each={props.settings!!.fields}>{ field =>
                         <Show when={(!props.filterGroup || (field.type == 'group' && field.property == props.filterGroup)) && (!props.filterName || field.title.indexOf(props.filterName!) >= 0)}>
-                            <Field container={object()} field={field} parentObject={props.settings?.object} onFieldChanged={onFieldChanged} />
+                            <Field container={object()} field={field} parentObject={props.settings?.object} onFieldChanged={onFieldChanged} onBack={() => {
+                                console.info("onBack");
+                                return props.onBack?.() ?? false;
+                            }} />
                         </Show>
                     }</For>
                 </div>

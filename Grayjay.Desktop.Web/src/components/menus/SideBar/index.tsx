@@ -22,7 +22,8 @@ import iconBuy from '../../../assets/icons/ic_buy.svg';
 import iconLink from '../../../assets/icons/icon_link.svg';
 import iconSources from '../../../assets/icons/ic_circles.svg';
 import iconChevronDown from '../../../assets/icons/icon16_chevron_down.svg';
-import iconPlus from '../../../assets/icons/icon24_add.svg'
+import iconPlus from '../../../assets/icons/icon24_add.svg';
+import iconExitToApp from '../../../assets/icons/icon_exit_to_app.svg';
 import ScrollContainer from '../../containers/ScrollContainer';
 import { SubscriptionsBackend } from '../../../backend/SubscriptionsBackend';
 import SideBarCreator from '../SideBarCreator';
@@ -34,7 +35,8 @@ import { createResourceDefault } from '../../../utility';
 import { LocalBackend } from '../../../backend/LocalBackend';
 import { Portal } from 'solid-js/web';
 import { FocusableOptions } from '../../../nav';
-import { focusable } from "../../../focusable"; void focusable;
+import { focusable } from "../../../focusable";import { useFocus } from '../../../FocusProvider';
+ void focusable;
 
 export interface SideBarProps {
   alwaysMinimized?: boolean;
@@ -46,6 +48,7 @@ export interface SideBarProps {
 };
 
 const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
+  const focus = useFocus();
   const video = useVideo();
   const location = useLocation();
   const navigate = useNavigate();
@@ -94,6 +97,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const historyBtn: ButtonItem = { icon: history, name: 'History', path: '/web/history', getSelected: createMemo(() => location.pathname === '/web/history') };
   const syncBtn: ButtonItem = { icon: iconSync, name: 'Sync', path: '/web/sync', getSelected: createMemo(() => location.pathname === '/web/sync') };
   const newWindowBtn: ButtonItem = { icon: iconPlus, name: 'New Window', action: () => WindowBackend.startWindow(), getSelected: createMemo(() => false) };
+  const closeWindowBtn: ButtonItem = { icon: iconExitToApp, name: 'Close', action: () => WindowBackend.closeWindow(), getSelected: createMemo(() => false) };
   const delayBtn: ButtonItem = { icon: iconPlus, name: 'Delay', action: () => { WindowBackend.echo('test'); WindowBackend.delay(10000); }, getSelected: createMemo(() => false) };
   const developerBtn: ButtonItem = { icon: iconLink, name: 'Developer', path: '/Developer/Index', getSelected: createMemo(() => location.pathname === '/Developer/Index'), onRightClick: () => LocalBackend.open(`http://${window.location.host}/Developer/Index`) };
 
@@ -104,7 +108,12 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       list.push(watchLaterBtn);
     }
   
-    list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn, newWindowBtn]);
+    list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn]);
+    if (focus?.lastInputSource() === "pointer") {
+      list.push(newWindowBtn);
+    } else {
+      list.push(closeWindowBtn);
+    }
   
     if (devClicked$() > 5) {
       list.push(delayBtn);
@@ -280,7 +289,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           />
         </Show>
       </div>
-      <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200} fallback={<div style="flex-grow:1"></div>}>
+      <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200 && focus?.lastInputSource() === "pointer"} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())} 
             use:focusable={{ onPress: () => setExpand(!expand$()) }}>

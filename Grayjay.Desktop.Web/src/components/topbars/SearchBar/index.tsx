@@ -16,6 +16,7 @@ import { SearchBackend } from '../../../backend/SearchBackend';
 import LoaderSmall from '../../basics/loaders/LoaderSmall';
 import { ContentType } from '../../../backend/models/ContentType';
 import ScrollContainer from '../../containers/ScrollContainer';
+import { useFocus } from '../../../FocusProvider';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -29,6 +30,7 @@ interface SearchBarProps {
 
 const SearchBar: Component<SearchBarProps> = (props) => {
   const navigate = useNavigate();
+  const focus = useFocus();
 
   const buttonStyle: JSX.CSSProperties = {
     "border-radius": "6px",
@@ -156,7 +158,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
         }}
         onTextChanged={(v) => setQuery(v)}
         onSubmit={async (v) => await searchFor(v, searchType$())} />
-        <Show when={suggestionsVisible$()}>
+        <Show when={suggestionsVisible$() && focus?.lastInputSource() === "pointer"}>
           <div class={styles.suggestionsContainer} onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();

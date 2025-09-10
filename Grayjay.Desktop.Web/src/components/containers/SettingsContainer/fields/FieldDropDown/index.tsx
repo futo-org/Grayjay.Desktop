@@ -13,7 +13,8 @@ interface FieldDropDownProps {
     field: ISettingsFieldDropDown
     onFieldChanged?: (field: ISettingsField, newVal: number)=>void,
     value: number,
-    isSubField?: boolean
+    isSubField?: boolean,
+    onBack?: () => boolean
 }
 
 const FieldDropDown: Component<FieldDropDownProps> = (props) => {
@@ -28,7 +29,7 @@ const FieldDropDown: Component<FieldDropDownProps> = (props) => {
         <div class={styles.container}>
             <FieldKey field={props.field} isSubField={!!props.isSubField} />
             <div class={styles.value}>
-                <Dropdown options={props.field.options} value={props.value} onSelectedChanged={selectedChanged} anchorStyle={AnchorStyle.BottomRight} />
+                <Dropdown options={props.field.options} value={props.value} onSelectedChanged={selectedChanged} anchorStyle={AnchorStyle.BottomRight} onBack={props.onBack} />
             </div>
         </div>
     );

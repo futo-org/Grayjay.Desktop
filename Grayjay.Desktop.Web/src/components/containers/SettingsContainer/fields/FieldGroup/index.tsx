@@ -10,7 +10,8 @@ interface FieldGroupProps {
     container?: SettingsContainerParent,
     field: ISettingsFieldGroup,
     onFieldChanged?: (field: ISettingsField, newVal: any)=>void,
-    value: any
+    value: any,
+    onBack?: () => boolean
 }
 
 const FieldGroup: Component<FieldGroupProps> = (props) => {
@@ -31,7 +32,8 @@ const FieldGroup: Component<FieldGroupProps> = (props) => {
                         container={props.container}
                         parentObject={props.value} 
                         onFieldChanged={(field: ISettingsField, newVal: any)=>props.onFieldChanged && props.onFieldChanged(field, newVal)}
-                        isSubField={true} />
+                        isSubField={true}
+                        onBack={props.onBack} />
                 }</For>
             </div>
         </div>
