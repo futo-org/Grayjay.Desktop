@@ -1,17 +1,25 @@
 .container {
     position: absolute;
     bottom: 8px;
+    left: 288px;
     padding: 12px;
     border-radius: 12px;
-    left: 288px;
-    background: #1B1B1BEE;
     border: #2E2E2E 1px solid;
-
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 12px;
+    z-index: 2;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(40, 40, 40, 0.9) 0%,
+        rgba(30, 30, 30, 0.8) 70%,
+        rgba(30, 30, 30, 0.7) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .button {

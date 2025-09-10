@@ -9,10 +9,10 @@ interface ControllerOverlayProps {
 
 const ControllerOverlay: Component<ControllerOverlayProps> = (props) => {
     //const colorOptions = "#FFC857";
-    const colorPress = "#0ba30bff";
-    const colorBack = "#c12f3bff";
-    const colorOptions = "#118AB2";
-    const colorDirection = "#e39a11ff";
+    const colorPress = "#77f62b";
+    const colorBack = "#ed412a";
+    const colorOptions = "#1db3ee";
+    const colorDirection = "#88b3c9";
 
     const focus = useFocus();
     return (
@@ -21,7 +21,7 @@ const ControllerOverlay: Component<ControllerOverlayProps> = (props) => {
                 <div class={styles.container}>
                     <Show when={focus?.getFocusedNode()?.opts.onPress !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorPress}>Enter</div> Activate</div></Show>
                     <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>O</div> Options</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>Escape</div> Back</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>Esc</div> Back</div></Show>
                     <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>WASD/Arrows</div> Directionality</div></Show>
                 </div>
             </Show>
