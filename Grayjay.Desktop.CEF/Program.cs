@@ -237,6 +237,7 @@ namespace Grayjay.Desktop
 
             bool isHeadless = args?.Contains("--headless") ?? false;
             bool isServer = args?.Contains("--server") ?? false;
+            bool isFullscreen = args?.Contains("--fullscreen") ?? false;
 #if DEBUG
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsAPI.AllocConsole();
@@ -375,7 +376,8 @@ namespace Grayjay.Desktop
                     preferredHeight: 950,
                     title: "Grayjay",
                     iconPath: Utilities.FindFile("grayjay.png"),
-                    appId: "com.futo.grayjay.desktop"
+                    appId: "com.futo.grayjay.desktop",
+                    fullscreen: isFullscreen
                 );
                 await window.SetDevelopmentToolsEnabledAsync(true);
                 Logger.i(nameof(Program), $"Time to window show {sw.ElapsedMilliseconds}ms");
