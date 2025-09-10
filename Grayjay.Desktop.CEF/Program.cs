@@ -238,6 +238,8 @@ namespace Grayjay.Desktop
             bool isHeadless = args?.Contains("--headless") ?? false;
             bool isServer = args?.Contains("--server") ?? false;
             bool isFullscreen = args?.Contains("--fullscreen") ?? false;
+            double? scaleFactor = args?.FirstOrDefault(a => a.StartsWith("--scale-factor=")) is string s && double.TryParse(s["--scale-factor=".Length..], out var v) ? v : null;
+
 #if DEBUG
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsAPI.AllocConsole();
@@ -379,6 +381,25 @@ namespace Grayjay.Desktop
                     appId: "com.futo.grayjay.desktop",
                     fullscreen: isFullscreen
                 );
+                if (scaleFactor != null && scaleFactor != 1.0)
+                {
+                    window.OnLoadEnd += async (url) =>
+                    {
+                        try
+                        {
+                            if (url != null && url.EndsWith("/web/index.html"))
+                            {
+                                await window.ExecuteDevToolsMethodAsync("Emulation.setPageScaleFactor", $$"""{"pageScaleFactor":{{scaleFactor}}}""");
+                                Logger.i(nameof(Program), "Set page scale factor.");
+                            }
+                            Logger.i(nameof(Program), "OnLoadEnd: " + url);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.e(nameof(Program), "Failed to set page scale factor.", e);
+                        }
+                    };
+                }
                 await window.SetDevelopmentToolsEnabledAsync(true);
                 Logger.i(nameof(Program), $"Time to window show {sw.ElapsedMilliseconds}ms");
                 Logger.i(nameof(Program), $"Main: Starting window finished ({startWindowWatch.ElapsedMilliseconds}ms)");

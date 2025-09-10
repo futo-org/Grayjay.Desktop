@@ -5,6 +5,7 @@ import Button from "../../buttons/Button";
 import IconButton from "../../buttons/IconButton";
 import ic_arrowUp from '../../../assets/icons/arrow_upward.svg';
 import ic_arrowDown from "../../../assets/icons/arrow_downward.svg";
+import { useFocus } from "../../../FocusProvider";
 
 export interface ScrollContainerProps {
     ref?: HTMLDivElement;
@@ -18,6 +19,7 @@ export interface ScrollContainerProps {
 };
 
 const ScrollContainer: Component<ScrollContainerProps> = (p) => {
+    const focus = useFocus();
     const props = mergeProps({ scrollToTopButton: !p.scrollToBottomButton ? true : false, scrollToBottomButton: false, scrollSmooth: true }, p);
     if (props.scrollToTopButton && props.scrollToBottomButton) {
         throw new Error("Only one of scrollToTopButton or scrollToBottomButton should be true.");
@@ -60,7 +62,7 @@ const ScrollContainer: Component<ScrollContainerProps> = (p) => {
             <div class={styles.scrollWrapper} style={props.wrapperStyle}>
                 <div ref={props.ref} class={styles.containerScroll} onScroll={handleScroll} style={props.scrollStyle}>
                     {props.children}
-                    <Show when={buttonVisible()}>
+                    <Show when={buttonVisible() && focus?.lastInputSource() === "pointer"}>
                         <div class={styles.scrollButton} onClick={handleButtonClick}>
                             <IconButton
                                 icon={props.scrollToTopButton ? ic_arrowUp : ic_arrowDown}
