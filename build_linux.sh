@@ -31,10 +31,10 @@ dotnet publish -r $runtime -c Release -p:AssemblyVersion=1.$version.0.0
 cd ..
 
 # Copy wwwroot
-mkdir -p Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish/wwwroot
-cp -r Grayjay.Desktop.Web/dist Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish/wwwroot/web
+mkdir -p Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish/wwwroot
+cp -r Grayjay.Desktop.Web/dist Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish/wwwroot/web
 
-cd Grayjay.Desktop.CEF/bin/Release/net9.0/$runtime/publish	
+cd Grayjay.Desktop.CEF/bin/Release/net8.0/$runtime/publish	
 
 chmod u=rwx Grayjay
 chmod u=rwx cef/dotcefnative
