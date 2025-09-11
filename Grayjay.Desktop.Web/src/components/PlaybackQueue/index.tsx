@@ -10,7 +10,7 @@ import iconShuffleInactive from '../../assets/icons/icon_shuffle_inactive.svg';
 import iconClear from '../../assets/icons/close_FILL0_wght300_GRAD0_opsz24.svg';
 import ScrollContainer from '../containers/ScrollContainer';
 import { proxyImage, swap } from '../../utility';
-import VirtualDragDropList from '../containers/VirtualDragDropList';
+import VirtualDragDropList, { DragSession } from '../containers/VirtualDragDropList';
 import iconDrag from '../../assets/icons/icon_drag.svg';
 import iconPlay from '../../assets/icons/icon24_play.svg';
 import { focusable } from '../../focusable'; void focusable;
@@ -40,6 +40,7 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
         ev.stopPropagation();
     };
 
+    let dragSession: DragSession | undefined;
     return (
         <div class={styles.containerPlaybackQueue} style={props.style}>
             <div style="display: flex; flex-direction: row; width: 100%;  margin-bottom: 24px;">
@@ -66,7 +67,7 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
                                 props.onIndexMoved?.(index1, index2);
                             swap(props.videos, index1, index2);
                         }}
-                        builder={(index, item, containerRef, startDrag) => {
+                        builder={(index, item, containerRef, dragControls) => {
                             const video = createMemo(() => item() as IPlatformVideo | undefined);
                             const bestThumbnail = createMemo(() => {
                                 const v = video();
@@ -95,10 +96,30 @@ const PlaybackQueue: Component<PlaybackQueueProps> = (props) => {
                                         const v = video();
                                         if (!v) return;
                                         props.onVideoClick?.(v);
+                                    },
+                                    onAction: () => {
+                                        if (!dragSession) {
+                                            dragSession = dragControls.startProgrammaticDrag();
+                                        } else {
+                                            dragSession.end();
+                                            dragSession = undefined;
+                                        }
+                                    },
+                                    onActionLabel: "Reorder",
+                                    onDirection: (el, dir) => {
+                                        if (!dragSession || !dragSession.isActive()) return false;
+                                        if (dir === "up") {
+                                            dragSession.moveBy(-1);
+                                            return true;
+                                        }
+                                        else if (dir === "down") {
+                                            dragSession.moveBy(1);
+                                            return true;
+                                        }
                                     }
                                 }}>
                                     <div style="display: flex; width: 44px; height: 44px; padding: 20px; cursor: pointer; justify-content: center; align-items: center;" class={styles.itemDrag} onMouseDown={(e) => {
-                                        startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
+                                        dragControls.startPointerDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
                                         e.preventDefault();
                                         e.stopPropagation();
                                     }}>

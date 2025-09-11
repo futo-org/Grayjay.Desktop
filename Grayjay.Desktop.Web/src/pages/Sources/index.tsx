@@ -26,7 +26,7 @@ import { ISourceConfig } from '../../backend/models/plugin/ISourceConfigState';
 import EmptyContentView from '../../components/EmptyContentView';
 import ScrollContainer from '../../components/containers/ScrollContainer';
 import { createResourceDefault, swap } from '../../utility';
-import VirtualDragDropList from '../../components/containers/VirtualDragDropList';
+import VirtualDragDropList, { DragSession } from '../../components/containers/VirtualDragDropList';
 import { focusable } from '../../focusable'; void focusable;
 
 const SourcesPage: Component = () => {
@@ -106,6 +106,7 @@ const SourcesPage: Component = () => {
       setSelectedSignal(source.id);
   }
 
+  let dragSession: DragSession | undefined;
   let scrollContainerRef: HTMLDivElement | undefined;
 
   return (
@@ -124,15 +125,35 @@ const SourcesPage: Component = () => {
                     swap(enabledSources$()!, index1, index2);
                     SourcesBackend.sourcesReorder(enabledSources$()?.map(v => v.id) ?? [])
                   }}
-                  builder={(index, item, containerRef, startDrag) => {
+                  builder={(index, item, containerRef, dragControls) => {
                       const source = createMemo(() => item() as ISourceConfig | undefined);
                       return (
                         <Show when={source()}>
                           <div class={styles.source} classList={{[styles.enabled]: source()!.id == selectedSignal$()}} onClick={()=>selectSource(source()!)} onFocus={() => selectSource(source()!)} use:focusable={{
-                            onPress: () => disableSource(source()!)
+                            onPress: () => disableSource(source()!),
+                            onAction: () => {
+                              if (!dragSession) {
+                                dragSession = dragControls.startProgrammaticDrag();
+                              } else {
+                                dragSession.end();
+                                dragSession = undefined;
+                              }
+                            },
+                            onActionLabel: "Reorder",
+                            onDirection: (el, dir) => {
+                              if (!dragSession || !dragSession.isActive()) return false;
+                              if (dir === "up") {
+                                dragSession.moveBy(-1);
+                                return true;
+                              }
+                              else if (dir === "down") {
+                                dragSession.moveBy(1);
+                                return true;
+                              }
+                            }
                           }}>
                             <div class={styles.thumb}  onMouseDown={(e) => {
-                              startDrag(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
+                              dragControls.startPointerDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, e.target as HTMLElement);
                               e.preventDefault();
                               e.stopPropagation();
                             }}>
