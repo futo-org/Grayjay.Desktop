@@ -25,6 +25,7 @@ import iconChevUp from "../../assets/icons/icon_chevron_right.svg"
 import iconFail from "../../assets/icons/ic_fail_small.svg"
 import iconSuccess from "../../assets/icons/ic_success_small.svg"
 
+import { focusable } from '../../focusable'; void focusable;
 import Toggle from '../../components/basics/inputs/Toggle';
 
 export interface OverlayImportDialogProps {
@@ -81,12 +82,12 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
         values.unshift(props.dialog.data$().PluginSettings);
     });
 
+    const globalBack = () => (UIOverlay.dismiss(), true);
     const [shownExceptions$, setShownException] = createSignal();
 
     return (
       <OverlayCustomDialog hideHeader={true} hideDialog={props.dialog.data$().Status == "importing" || props.dialog.data$().Status == "finished"}
-              onRootClick={(ev)=> props.dialog.data$().Status == "importing" && ev.stopPropagation()}>
-        
+              onRootClick={(ev)=> props.dialog.data$().Status == "importing" && ev.stopPropagation()} focusScope={true}>        
             <>
               <Show when={props.dialog.data$().Status == 'choice'}>
               <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
@@ -97,7 +98,10 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                   </div>
                       <div>
                         <For each={importOptions}>{(item) => 
-                          <div class={styles.importItem}>
+                          <div class={styles.importItem} use:focusable={{
+                            onPress: () => item.value = !item.value,
+                            onBack: globalBack
+                          }}>
                             <div class={styles.icon}>
                               <img src={item.icon} />
                             </div>
@@ -116,8 +120,14 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                         }</For>
                         
                         <div style="text-align: center; margin-top: 30px;">
-                          <Button text='Cancel' onClick={()=>props.dialog.action!('choice', 'cancel')} style={{"margin-left": "10px"}}></Button>
-                          <Button text='Import' onClick={()=>startImport()} style={{"margin-left": "10px"}}></Button>
+                          <Button text='Cancel' onClick={()=>props.dialog.action!('choice', 'cancel')} style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: () => props.dialog.action!('choice', 'cancel'),
+                            onBack: globalBack
+                          }}></Button>
+                          <Button text='Import' onClick={()=>startImport()} style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: startImport,
+                            onBack: globalBack
+                          }}></Button>
                         </div>
                       </div>
                     </div>
@@ -135,8 +145,14 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                       </div>
                       <div>
                         <div style="text-align: center; margin-top: 30px;">
-                          <Button text='No' onClick={()=>props.dialog.action!('import', 'false')} style={{"margin-left": "10px"}}></Button>
-                          <Button text='Yes' onClick={()=>props.dialog.action!('import', 'true')} color='#019BE7' style={{"margin-left": "10px"}}></Button>
+                          <Button text='No' onClick={()=>props.dialog.action!('import', 'false')} style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: () => props.dialog.action!('import', 'false'),
+                            onBack: globalBack
+                          }}></Button>
+                          <Button text='Yes' onClick={()=>props.dialog.action!('import', 'true')} color='#019BE7' style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: () => props.dialog.action!('import', 'true'),
+                            onBack: globalBack
+                          }}></Button>
                         </div>
                       </div>
                     </div>
@@ -217,7 +233,10 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                                 </div>
                               </Show>
                               <Show when={item.Exceptions.length > 0 || item.Warnings.length > 0}>
-                                <div onClick={()=>(shownExceptions$() != item) ? setShownException(item) : setShownException(null)} style="cursor: pointer;">
+                                <div onClick={()=>(shownExceptions$() != item) ? setShownException(item) : setShownException(null)} style="cursor: pointer;" use:focusable={{
+                                  onPress: (shownExceptions$() != item) ? setShownException(item) : setShownException(null),
+                                  onBack: globalBack
+                                }}>
                                   <Show when={item.Exceptions.length > 0}>
                                     <span style="margin: 2px; color: red;">
                                       {item.Exceptions.length} error(s)
@@ -257,7 +276,10 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
                     </div>
                   </div>
                   <div style="text-align: center;">
-                    <Button text='Ok' onClick={()=>UIOverlay.dismiss()} style={{"margin-top": "10px"}}></Button>
+                    <Button text='Ok' onClick={()=>UIOverlay.dismiss()} style={{"margin-top": "10px"}} focusableOpts={{
+                      onPress: () => UIOverlay.dismiss(),
+                      onBack: globalBack
+                    }}></Button>
                   </div>
                 </div>
               </Show>

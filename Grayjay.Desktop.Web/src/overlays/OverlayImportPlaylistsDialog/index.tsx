@@ -25,12 +25,30 @@ import iconChevUp from "../../assets/icons/icon_chevron_right.svg"
 import iconFail from "../../assets/icons/ic_fail_small.svg"
 import iconSuccess from "../../assets/icons/ic_success_small.svg"
 
+import { focusable } from '../../focusable'; void focusable;
 import Toggle from '../../components/basics/inputs/Toggle';
+import { createStore, reconcile } from 'solid-js/store';
+
+interface Playlist {
+  url: string;
+  name: string;
+  thumbnail: string;
+}
 
 export interface OverlayImportPlaylistsDialogProps {
   dialog: CustomDialogLocal
 };
 const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps> = (props: OverlayImportPlaylistsDialogProps) => {
+    const [view, setView] = createStore<{ Playlists: Playlist[] }>({ Playlists: [] });
+    createEffect(() => {
+      const d = props.dialog.data$();
+      setView('Playlists', reconcile(d.Playlists ?? [], { key: 'url' }));
+    });
+
+    const selectedSet = createMemo(() => new Set<string>(props.dialog.data$().Selected ?? []));
+    const selectedCount = createMemo(
+      () => view.Playlists.reduce((n, c) => n + (selectedSet().has(c.url) ? 1 : 0), 0)
+    );
 
     function toggleSub(url: string) {
       console.log("Toggle Sub: " + url);
@@ -50,8 +68,11 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
       props.dialog.action!('deselectAll', '');
     }
 
+    createEffect(() => console.info("OverlayImportPlaylistsDialog data", props.dialog.data$()));
+
+    const globalBack = () => (UIOverlay.dismiss(), true);
     return (
-      <OverlayCustomDialog hideHeader={true}>
+      <OverlayCustomDialog hideHeader={true} focusScope={true}>
         
             <div>
               <Show when={props.dialog.data$().Status == 'selection'}>
@@ -67,8 +88,11 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
                   </div>
                       <div>
                         <div class={styles.channels}>
-                          <For each={props.dialog.data$().Playlists}>{ playlist =>
-                            <div class={styles.channel}>
+                          <For each={view.Playlists}>{ playlist =>
+                            <div class={styles.channel} use:focusable={{
+                              onPress: () => toggleSub(playlist.url),
+                              onBack: globalBack
+                            }}>
                               <div class={styles.toggle}>
                                 <Toggle value={props.dialog.data$().Selected.indexOf(playlist.url) >= 0} onToggle={(v)=>{toggleSub(playlist.url)}} />
                               </div>
@@ -85,14 +109,28 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
                           Total: {props.dialog.data$().Total}, Found: {props.dialog.data$().Loaded}, Failed: {props.dialog.data$().Failed}
                         </div>
                         <div style="text-align: center; margin-top: 15px;">
-                          <Show when={props.dialog.data$().Playlists.filter((x: any)=>props.dialog.data$().Selected.indexOf(x.url) >= 0).length == props.dialog.data$().Playlists.length}>
-                            <Button text='Deselect All' onClick={()=>deselectAll()} />
+                          <Show when={selectedCount() === view.Playlists.length && view.Playlists.length > 0}>
+                            <Button
+                              text='Deselect All'
+                              onClick={deselectAll}
+                              focusableOpts={{ onPress: deselectAll, onBack: globalBack }}
+                            />
                           </Show>
-                          <Show when={props.dialog.data$().Playlists.filter((x: any)=>props.dialog.data$().Selected.indexOf(x.url) >= 0).length != props.dialog.data$().Playlists.length}>
-                            <Button text='Select All' onClick={()=>selectAll()} />
+                          <Show when={selectedCount() !== view.Playlists.length}>
+                            <Button
+                              text='Select All'
+                              onClick={selectAll}
+                              focusableOpts={{ onPress: selectAll, onBack: globalBack }}
+                            />
                           </Show>
-                          <Button text='Cancel' onClick={()=>props.dialog.action!('close', '')} style={{"margin-left": "10px"}}></Button>
-                          <Button text='Import' color={(props.dialog.data$().Selected.length > 0) ? '#019BE7' : '#181818'} onClick={()=>importPlaylists()} style={{"margin-left": "10px"}}></Button>
+                          <Button text='Cancel' onClick={()=>props.dialog.action!('close', '')} style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: () => props.dialog.action!('close', ''),
+                            onBack: globalBack
+                          }}></Button>
+                          <Button text='Import' color={(props.dialog.data$().Selected.length > 0) ? '#019BE7' : '#181818'} onClick={()=>importPlaylists()} style={{"margin-left": "10px"}} focusableOpts={{
+                            onPress: () => importPlaylists(),
+                            onBack: globalBack
+                          }}></Button>
                         </div>
                       </div>
                     </div>
@@ -109,7 +147,10 @@ const OverlayImportPlaylistsDialog: Component<OverlayImportPlaylistsDialogProps>
                     Imported {props.dialog.data$().Selected.length} Playlists
                   </div>
                   <div>
-                    <Button text='Close' onClick={()=>UIOverlay.dismiss()}></Button>
+                    <Button text='Close' onClick={()=>UIOverlay.dismiss()} focusableOpts={{
+                      onPress: globalBack,
+                      onBack: globalBack
+                    }}></Button>
                   </div>
                 </div>
               </Show>

@@ -190,7 +190,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           setMoreTopButtonCount(topButtonCount - (topButtonsVisible - 1));
         }
 
-        console.log({topButtonsRootHeight, remainingSpace, innerHeight: window.innerHeight, bottomButtonCount, totalBottomButtonHeight, availableSideBarTopHeight, availableSidebarTopButtonsHeight, topButtonCount, topButtonsVisible});
+        //console.log({topButtonsRootHeight, remainingSpace, innerHeight: window.innerHeight, bottomButtonCount, totalBottomButtonHeight, availableSideBarTopHeight, availableSidebarTopButtonsHeight, topButtonCount, topButtonsVisible});
       } else {
         const topButtonListHeight = topButtonCount * 44 + (topButtonCount - 1) * 6 /* gap */;
         setTopButtonListHeight(topButtonListHeight);

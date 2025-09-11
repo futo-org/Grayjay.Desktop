@@ -2,10 +2,22 @@ import { Component, createSignal, onCleanup, onMount, For, JSX, createMemo, crea
 import { getNestedOffsetTop, swap } from "../../../utility";
 import { Event1 } from "../../../utility/Event";
 
+export interface DragSession {
+    isActive: Accessor<boolean>;
+    moveBy: (delta: number) => void;
+    end: () => void;
+}
+
+export interface DragControls {
+    startPointerDrag: (startPageY: number, containerTopY: number, el: HTMLElement) => void;
+    startProgrammaticDrag: () => DragSession | undefined;
+}
+
+
 export interface VirtualDragDropListProps {
     itemHeight: number;
     items?: any[];
-    builder: (index: Accessor<number | undefined>, item: Accessor<any>, containerRef: HTMLDivElement, startDrag: (startPageY: number, top: number, el: HTMLElement) => void)=> JSX.Element;
+    builder: (index: Accessor<number | undefined>, item: Accessor<any>, containerRef: HTMLDivElement, controls: DragControls)=> JSX.Element;
     outerContainerRef: HTMLDivElement | undefined;
     overscan?: number;
     notifyEndOnLast?: number;
@@ -22,6 +34,8 @@ interface VisibleRange {
     endIndex: number;
 }
 
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
 const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
     let containerRef: HTMLDivElement | undefined;
 
@@ -34,7 +48,13 @@ const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
             const [item$, setItem] = createSignal<any>();
             const dragOffsetY = createSignal(0);
             const isDragging = createSignal(false);
-            const element = props.builder(index$, item$, containerRef!, (startPageY, containerTopY, el) => startDrag(index$, startPageY, containerTopY, el, isDragging, dragOffsetY));
+
+            const controls: DragControls = {
+                startPointerDrag: (startPageY, containerTopY, el) => startPointerDrag(index$, startPageY, containerTopY, el, isDragging, dragOffsetY),
+                startProgrammaticDrag: () => startProgrammaticDrag(index$, isDragging, dragOffsetY)
+            };
+
+            const element = props.builder(index$, item$, containerRef!, controls);
             return {
                 top: top$,
                 setTop,
@@ -329,7 +349,89 @@ const VirtualDragDropList: Component<VirtualDragDropListProps> = (props) => {
         });
     });
 
-    const startDrag = (i: Accessor<number | undefined>, startPageY: number, containerTopY: number, el: HTMLElement, isDragging: Signal<boolean>, dragOffsetY: Signal<number>) => {
+    const ensureIndexVisible = (index: number) => {
+        const outer = props.outerContainerRef;
+        if (!outer || !containerRef) return;
+        const listTopInOuter = getNestedOffsetTop(containerRef, outer);
+        const scrollOffset = outer.scrollTop - listTopInOuter;
+        const viewportTop = scrollOffset;
+        const viewportBottom = viewportTop + outer.clientHeight;
+
+        const itemTop = index * props.itemHeight;
+        const itemBottom = itemTop + props.itemHeight;
+
+        if (itemTop < viewportTop) {
+            outer.scrollTop = itemTop + listTopInOuter;
+        } else if (itemBottom > viewportBottom) {
+            outer.scrollTop = itemBottom - outer.clientHeight + listTopInOuter;
+        }
+    };
+
+    const applySwap = (fromIndex: number, toIndex: number) => {
+        if (fromIndex === toIndex) return;
+
+        props.onSwap?.(fromIndex, toIndex);
+        const item1 = pool().find(v => v.index() === fromIndex);
+        const item2 = pool().find(v => v.index() === toIndex);
+
+        if (item1 && item2) {
+            const tempIndex = item2.index();
+            item2.setIndex(item1.index());
+            item1.setIndex(tempIndex);
+
+            const tempTop = item2.top();
+            item2.setTop(item1.top());
+            item1.setTop(tempTop);
+        } else if (item1 && !item2) {
+            item1.setIndex(toIndex);
+            item1.setTop(toIndex * props.itemHeight);
+        } else if (!item1 && item2) {
+            item2.setIndex(fromIndex);
+            item2.setTop(fromIndex * props.itemHeight);
+        }
+    };
+
+    const startProgrammaticDrag = (i: Accessor<number | undefined>, isDragging: Signal<boolean>, dragOffsetY: Signal<number>): DragSession | undefined => {
+        const currentIndex = i();
+        const itemsCount = props.items?.length ?? 0;
+        if (currentIndex === undefined || itemsCount <= 1) return undefined;
+
+        let si = currentIndex;
+        let active = true;
+
+        isDragging[1](true);
+        dragOffsetY;
+
+        const [active$, setActive] = createSignal(true);
+        const moveBy = (delta: number) => {
+            if (!active) return;
+            if (!props.items || props.items.length === 0) return;
+
+            const target = clamp(si + delta, 0, props.items.length - 1);
+            if (target === si) return;
+
+            applySwap(si, target);
+            si = target;
+            ensureIndexVisible(si);
+        };
+
+        const end = () => {
+            if (!active) return;
+            active = false;
+            isDragging[1](false);
+            dragOffsetY;
+            setActive(false);
+            props.onDragEnd?.();
+        };
+
+        return {
+            isActive: active$,
+            moveBy,
+            end
+        };
+    };
+
+    const startPointerDrag = (i: Accessor<number | undefined>, startPageY: number, containerTopY: number, el: HTMLElement, isDragging: Signal<boolean>, dragOffsetY: Signal<number>) => {
         let spY = startPageY - containerTopY;
         const currentIndex = i();
         if (currentIndex === undefined) {

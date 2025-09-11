@@ -3,7 +3,7 @@ import { Accessor } from "solid-js";
 export type PointerType = "pointerdown" | "pointerup" | "pointermove";
 export type InputSource = "keyboard" | "pointer" | "gamepad";
 export type Direction = "up" | "down" | "left" | "right" | "next" | "prev";
-export type Press = "press" | "options" | "back" | "start" | "direction";
+export type Press = "press" | "options" | "back" | "start" | "direction" | "action";
 export type ScopeId = string;
 
 export interface FocusableOptions {
@@ -17,6 +17,8 @@ export interface FocusableOptions {
     onDirectionLabel?: string;
     onBack?: (el: HTMLElement, inputSource: InputSource) => boolean | undefined;
     onBackLabel?: string;
+    onAction?: (el: HTMLElement, inputSource: InputSource) => void;
+    onActionLabel?: string;
     getRect?: (el: HTMLElement) => DOMRect;
     focusInert?: Accessor<boolean>; //If true, don't claim focus by yourself
 }

@@ -660,6 +660,10 @@ export function FocusProvider(props: { children: JSX.Element }) {
             return node.opts.onOptions?.(node.el, inputSource) ?? false;
         }
 
+        if (kind === "action") {
+            return node.opts.onAction?.(node.el, inputSource) ?? false;
+        }
+
         return false;
     }
 
@@ -788,6 +792,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
             case 'o':
                 if (!editable && !e.altKey && !e.metaKey) { if (press('options', "keyboard")) e.preventDefault(); }
                 break;
+            case 'p':
+                if (!editable && !e.altKey && !e.metaKey) { if (press('action', "keyboard")) e.preventDefault(); }
+                break;
             default:
                 if (!editable) {
                     if (e.key === 'w') { navigateDirection('up', "keyboard"); e.preventDefault(); }
@@ -860,6 +867,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             const pressBtn = gp.buttons[btn.A]?.pressed;
             const backBtn = gp.buttons[btn.B]?.pressed;
             const optionsBtn = gp.buttons[btn.X]?.pressed;
+            const actionBtn = gp.buttons[btn.Y]?.pressed;
             const startBtn = gp.buttons[btn.START]?.pressed;
 
             if (pressBtn && !padState.pressed.has(btn.A)) { press("press", "gamepad"); padState.pressed.add(btn.A); }
@@ -870,6 +878,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
 
             if (optionsBtn && !padState.pressed.has(btn.X)) { press("options", "gamepad"); padState.pressed.add(btn.X); }
             if (!optionsBtn) padState.pressed.delete(btn.X);
+
+            if (actionBtn && !padState.pressed.has(btn.Y)) { press("action", "gamepad"); padState.pressed.add(btn.Y); }
+            if (!actionBtn) padState.pressed.delete(btn.Y);
 
             if (startBtn && !padState.pressed.has(btn.START)) { padState.pressed.add(btn.START); }
             if (!startBtn) padState.pressed.delete(btn.START);
@@ -936,7 +947,6 @@ export function FocusProvider(props: { children: JSX.Element }) {
     }
 
     createEffect(() => {
-        console.info("lastInputSource", lastInputSource());
         const src = lastInputSource();
         const root = document.body;
         root.setAttribute("data-input-source", src);

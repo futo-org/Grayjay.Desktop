@@ -8,7 +8,7 @@ import iconShuffle from '../../assets/icons/icon_shuffle.svg';
 import CustomButton from '../buttons/CustomButton';
 import ScrollContainer from '../containers/ScrollContainer';
 import { swap } from '../../utility';
-import VirtualDragDropList from '../containers/VirtualDragDropList';
+import VirtualDragDropList, { DragSession } from '../containers/VirtualDragDropList';
 import { Portal } from 'solid-js/web';
 import SettingsMenu, { Menu, MenuItemButton, MenuSeperator } from '../menus/Overlays/SettingsMenu';
 import Anchor, { AnchorStyle } from '../../utility/Anchor';
@@ -113,6 +113,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
     return result;
   });
 
+  let dragSession: DragSession | undefined;
   let scrollContainerRef: HTMLDivElement | undefined;
   return (
     <div class={styles.container}>
@@ -190,7 +191,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               swap(videos, index1, index2);
             }}
             onDragEnd={() => props.onDragEnd()}
-            builder={(index, item, containerRef, startDrag) => {
+            builder={(index, item, containerRef, dragControls) => {
               const video = createMemo(() => item() as IPlatformVideo | undefined);
               return (
                 <PlaylistItemView item={video()} 
@@ -206,7 +207,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                     onSettingsClicked(el, "pointer", v);
                   }} 
                   onDragStart={(e, el) => {
-                    startDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, el);
+                    dragControls.startPointerDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, el);
                     e.preventDefault();
                     e.stopPropagation();
                   }} 
@@ -225,6 +226,27 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                       const v = video();
                       if (!v) return;
                       onSettingsClicked(el, inputSource, v);
+                    },
+                    onAction: () => {
+                      if (!isEditable$()) return;
+                      if (!dragSession) {
+                        dragSession = dragControls.startProgrammaticDrag();
+                      } else {
+                        dragSession.end();
+                        dragSession = undefined;
+                      }
+                    },
+                    onActionLabel: "Reorder",
+                    onDirection: (el, dir) => {
+                      if (!dragSession || !dragSession.isActive()) return false;
+                      if (dir === "up") {
+                        dragSession.moveBy(-1);
+                        return true;
+                      }
+                      else if (dir === "down") {
+                        dragSession.moveBy(1);
+                        return true;
+                      }
                     }
                   }} />
               );

@@ -113,23 +113,25 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
             }
           } as CustomDialogLocal;
           customDialogs[dialogLocal.id] = dialogLocal;
-          let ui = undefined;
+          let ui: () => JSX.Element;
           switch(dialogLocal.name) {
             case "import":
-              ui = <OverlayImportDialog dialog={dialogLocal}></OverlayImportDialog>
+              ui = () => <OverlayImportDialog dialog={dialogLocal}></OverlayImportDialog>
               break;
             case "importSubs":
-              ui = <OverlayImportSubscriptionsDialog dialog={dialogLocal}></OverlayImportSubscriptionsDialog>
+              ui = () => <OverlayImportSubscriptionsDialog dialog={dialogLocal}></OverlayImportSubscriptionsDialog>
               break;
             case "importPlaylists":
-              ui = <OverlayImportPlaylistsDialog dialog={dialogLocal}></OverlayImportPlaylistsDialog>
+              ui = () => <OverlayImportPlaylistsDialog dialog={dialogLocal}></OverlayImportPlaylistsDialog>
               break;
             case "syncConfirm":
-              ui = <OverlaySyncConfirmDialog dialog={dialogLocal}></OverlaySyncConfirmDialog>
+              ui = () => <OverlaySyncConfirmDialog dialog={dialogLocal}></OverlaySyncConfirmDialog>
               break;
             case "syncStatus":
-              ui = <OverlaySyncStatusDialog dialog={dialogLocal}></OverlaySyncStatusDialog>
+              ui = () => <OverlaySyncStatusDialog dialog={dialogLocal}></OverlaySyncStatusDialog>
               break;
+            default:
+              throw Error('Unrecognized dialog type: ' + dialogLocal.name);
           }
 
           let overlayObj: OverlayRequest | undefined = undefined;
