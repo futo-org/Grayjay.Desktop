@@ -10,9 +10,13 @@ export interface FocusableOptions {
     disabled?: boolean;
     priority?: number;
     onPress?: (el: HTMLElement, inputSource: InputSource) => void;
+    onPressLabel?: string;
     onOptions?: (el: HTMLElement, inputSource: InputSource) => void;
+    onOptionsLabel?: string;
     onDirection?: (el: HTMLElement, direction: Direction, inputSource: InputSource) => boolean | undefined;
+    onDirectionLabel?: string;
     onBack?: (el: HTMLElement, inputSource: InputSource) => boolean | undefined;
+    onBackLabel?: string;
     getRect?: (el: HTMLElement) => DOMRect;
     focusInert?: Accessor<boolean>; //If true, don't claim focus by yourself
 }

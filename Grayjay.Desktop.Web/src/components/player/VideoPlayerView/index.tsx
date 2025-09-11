@@ -1133,6 +1133,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             return undefined;
 
         return {
+            onPress: togglePlay,
+            onPressLabel: "Toggle Playback",
             onDirection: (el, dir, inputSource) => {
                 if (inputSource === "keyboard" && ["left", "right", "up"].indexOf(dir) !== -1) {
                     return true;
@@ -1163,7 +1165,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 }
 
                 return false;
-            }
+            },
+            onDirectionLabel: "DU: Toggle Fullscreen  LR: Seek"
         };
     });
 

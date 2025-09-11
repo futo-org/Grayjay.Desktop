@@ -15,22 +15,24 @@ const ControllerOverlay: Component<ControllerOverlayProps> = (props) => {
     const colorDirection = "#e39a11ff";
 
     const focus = useFocus();
+
+    const isVisible$ = createMemo(() => focus?.getFocusedNode() && (focus?.getFocusedNode()?.opts.onPress || focus?.getFocusedNode()?.opts.onOptions || focus?.getFocusedNode()?.opts.onBack || focus?.getFocusedNode()?.opts.onDirection));
     return (
-        <Show when={focus?.getFocusedNode()}>
+        <Show when={isVisible$()}>
             <Show when={focus?.lastInputSource() === "keyboard"}>
                 <div class={styles.container}>
-                    <Show when={focus?.getFocusedNode()?.opts.onPress !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorPress}>Enter</div> Activate</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>O</div> Options</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>Escape</div> Back</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>WASD/Arrows</div> Directionality</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onPress !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorPress}>Enter</div> {focus?.getFocusedNode()?.opts.onPressLabel ?? "Activate"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>O</div> {focus?.getFocusedNode()?.opts.onOptionsLabel ?? "Options"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>Escape</div> {focus?.getFocusedNode()?.opts.onBackLabel ?? "Back"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>WASD/Arrows</div> {focus?.getFocusedNode()?.opts.onDirectionLabel ?? "Direction"}</div></Show>
                 </div>
             </Show>
             <Show when={focus?.lastInputSource() === "gamepad"}>
                 <div class={styles.container}>
-                    <Show when={focus?.getFocusedNode()?.opts.onPress !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorPress}>A</div> Activate</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>X</div> Options</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>B</div> Back</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>DPAD/Thumb</div> Directionality</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onPress !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorPress}>A</div> {focus?.getFocusedNode()?.opts.onPressLabel ?? "Activate"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>X</div> {focus?.getFocusedNode()?.opts.onOptionsLabel ?? "Options"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>B</div> {focus?.getFocusedNode()?.opts.onBackLabel ?? "Back"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>DPAD/Thumb</div> {focus?.getFocusedNode()?.opts.onDirectionLabel ?? "Direction"}</div></Show>
                 </div>
             </Show>
         </Show>

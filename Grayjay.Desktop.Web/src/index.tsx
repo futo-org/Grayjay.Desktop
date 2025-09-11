@@ -124,7 +124,9 @@ const App: Component<RouteSectionProps> = (props) => {
               {props.children}
             </div>
           </Show>
-          <ControllerOverlay />
+          <div style="position: absolute; bottom: 8px; right: 20px;">
+            <ControllerOverlay />
+          </div>
           <VideoDetailView />
         <OverlayCasting />
       </CastingProvider>

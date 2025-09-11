@@ -77,6 +77,7 @@ import { focusScope } from '../../../focusScope'; void focusScope;
 import { focusable } from '../../../focusable'; void focusable;
 import LiveChatState, { LiveRaidEvent } from "../../../state/StateLiveChat"
 import { useFocus } from "../../../FocusProvider";
+import ControllerOverlay from "../../ControllerOverlay";
 
 const SCOPE_ID = "video-detail-view";
 
@@ -1869,6 +1870,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             <Show when={video?.state() === VideoState.Maximized && video?.desiredMode() === VideoMode.Theatre}>
                 <div style={{ "position": "absolute", "left": "0px", "top": "0px", "z-index": 2, "width": sideBarHidden$() ? "10px" : undefined, "cursor": sideBarAutoHidden$() && sideBarHidden$() ? "none" : undefined }} onMouseMove={handleSideBarMove} onMouseLeave={handleSideBarMouseLeave}>
                     <SideBar alwaysMinimized={true} onNavigate={() => minimize()} style={{ "transition": "transform 0.3s ease-in-out" }} classList={{ [styles.sideBarHidden]: sideBarHidden$() }} onMoreOpened={() => setSideBarHidden(true)}></SideBar>
+                </div>
+            </Show>
+            <Show when={video?.state() === VideoState.Maximized}>
+                <div style={{"position": "absolute", "bottom": "8px", "right": repliesPager$() ? "12px" : "20px", "z-index": mode() === VideoMode.Theatre ? 2 : undefined}}>
+                    <ControllerOverlay />
                 </div>
             </Show>
         </div>
