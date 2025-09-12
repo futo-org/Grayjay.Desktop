@@ -367,6 +367,11 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (dir === 'right') container.scrollLeft = Math.min(container.scrollWidth - container.clientWidth, container.scrollLeft + stepPx);
     }
 
+    function sameOrDescendantContainer(parent: HTMLElement, el: HTMLElement) {
+        const candCont = nearestScrollContainer(el);
+        return candCont === parent || parent.contains(candCont);
+    }
+
     function spatialNext(from: HTMLElement, dir: Direction, scopeId: string): NodeEntry | undefined {
         const all = candidatesInScope(scopeId).filter(n => n.el !== from);
         if (!all.length) return;
@@ -383,95 +388,153 @@ export function FocusProvider(props: { children: JSX.Element }) {
             left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1], next: [1, 0], prev: [-1, 0],
         };
         const [vx, vy] = vec[dir];
-        const isH = (dir === 'left' || dir === 'right');
+        const isVertical = (dir === 'up' || dir === 'down');
 
         const EDGE_PX = 8;
-        const atTop = navContainer.scrollTop <= 1 || fromRect.top <= navContRect.top + EDGE_PX;
+        const atTop = navContainer.scrollTop <= 1 || fromRect.top    <= navContRect.top    + EDGE_PX;
         const atBottom = (navContainer.scrollHeight - navContainer.clientHeight - navContainer.scrollTop) <= 1 || fromRect.bottom >= navContRect.bottom - EDGE_PX;
-        const atLeft = navContainer.scrollLeft <= 1 || fromRect.left <= navContRect.left + EDGE_PX;
-        const atRight = (navContainer.scrollWidth - navContainer.clientWidth - navContainer.scrollLeft) <= 1 || fromRect.right >= navContRect.right - EDGE_PX;
+        const atLeft = navContainer.scrollLeft <= 1 || fromRect.left  <= navContRect.left   + EDGE_PX;
+        const atRight = (navContainer.scrollWidth - navContainer.clientWidth - navContainer.scrollLeft) <= 1 || fromRect.right  >= navContRect.right - EDGE_PX;
 
-        const wantEscape =
-            (dir === 'up' && atTop) ||
-            (dir === 'down' && atBottom) ||
-            (dir === 'left' && atLeft) ||
-            (dir === 'right' && atRight);
+        const wantEscape = (dir === 'up' && atTop) || (dir === 'down' && atBottom) || (dir === 'left' && atLeft) || (dir === 'right' && atRight);
+        const BEAM_MIN = 44;
+        const BEAM_PAD = 12;
+        const BEAM_SCALE = 1.0;
 
-        type Cand = {
-            n: NodeEntry;
-            cx: number;
-            cy: number;
-            prim: number;
-            perp: number;
-            rowOverlap: number;
-            colOverlap: number;
-            score: number;
+        const beam = isVertical
+            ? {
+                left: cx0 - Math.max(BEAM_MIN / 2, fromRect.width  * BEAM_SCALE / 2) - BEAM_PAD,
+                right: cx0 + Math.max(BEAM_MIN / 2, fromRect.width  * BEAM_SCALE / 2) + BEAM_PAD,
+            }
+            : {
+                top: cy0 - Math.max(BEAM_MIN / 2, fromRect.height * BEAM_SCALE / 2) - BEAM_PAD,
+                bottom: cy0 + Math.max(BEAM_MIN / 2, fromRect.height * BEAM_SCALE / 2) + BEAM_PAD,
+            };
+
+        const intervalOverlap = (a1: number, a2: number, b1: number, b2: number) => Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
+        const pointIntervalDist = (p: number, a: number, b: number) => (p < a ? a - p : (p > b ? p - b : 0));
+        const hitsBeam = (r: DOMRect) => {
+            return isVertical
+                ? intervalOverlap(r.left, r.right, (beam as any).left, (beam as any).right) > 0
+                : intervalOverlap(r.top, r.bottom, (beam as any).top, (beam as any).bottom) > 0;
         };
 
-        const forward: Cand[] = [];
+        const forward: { n: NodeEntry; r: DOMRect; cx: number; cy: number; }[] = [];
         for (const n of all) {
             const r = rectOf(n);
-            const cx = (r.left + r.width    / 2) - cx0;
-            const cy = (r.top    + r.height / 2) - cy0;
-
+            const cx = (r.left + r.width / 2) - cx0;
+            const cy = (r.top  + r.height / 2) - cy0;
             const dot = cx * vx + cy * vy;
-            if (dot <= 0) continue;
-
-            const rowOverlap = overlapRatioY(fromRect, r);
-            const colOverlap = overlapRatioX(fromRect, r);
-
-            const prim = isH ? Math.abs(cx) : Math.abs(cy);
-            const perp = isH ? Math.abs(cy) : Math.abs(cx);
-
-            forward.push({ n, cx, cy, prim, perp, rowOverlap, colOverlap, score: 0 });
+            if (dot > 0) forward.push({ n, r, cx, cy });
         }
         if (!forward.length) return;
 
+        const sameOrDesc = forward.filter(c => sameOrDescendantContainer(navContainer, c.n.el));
+        const unrelated  = forward.filter(c => !sameOrDescendantContainer(navContainer, c.n.el));
         const STRICT_OVERLAP = 0.45;
         const RELAX_OVERLAP = 0.20;
-        const MAX_ANGLE_TAN = Math.tan(55 * Math.PI / 180);
+        const MAX_ANGLE_TAN = Math.tan(65 * Math.PI / 180);
 
-        let pool: Cand[] = [];
-        if (isH) {
-            pool = forward.filter(c => c.rowOverlap >= STRICT_OVERLAP);
-            if (!pool.length) pool = forward.filter(c => c.rowOverlap >= RELAX_OVERLAP);
-            if (!pool.length) pool = forward.filter(c => c.perp <= c.prim * MAX_ANGLE_TAN);
-        } else {
-            pool = forward.filter(c => c.colOverlap >= STRICT_OVERLAP);
-            if (!pool.length) pool = forward.filter(c => c.colOverlap >= RELAX_OVERLAP);
-            if (!pool.length) pool = forward.filter(c => c.perp <= c.prim * MAX_ANGLE_TAN);
-        }
-        if (!pool.length) return;
-
-        const sameCont = pool.filter(c => nearestScrollContainer(c.n.el) === navContainer);
-        const otherCont = pool.filter(c => nearestScrollContainer(c.n.el) !== navContainer);
-
-        let finalPool: Cand[] = [];
-        if (sameCont.length) {
-            finalPool = sameCont;
-        } else if (wantEscape) {
-            finalPool = otherCont;
-        } else {
-            finalPool = otherCont.filter(c => isPartiallyVisibleInContainer(c.n.el, nearestScrollContainer(c.n.el)));
-            if (!finalPool.length) return;
+        function verticalPool(cands: typeof forward) {
+            const strict = cands.filter(c => (intervalOverlap(fromRect.left, fromRect.right, c.r.left, c.r.right) / Math.min(fromRect.width, c.r.width || 1)) >= STRICT_OVERLAP);
+            if (strict.length) return strict;
+            const relaxed = cands.filter(c => (intervalOverlap(fromRect.left, fromRect.right, c.r.left, c.r.right) / Math.min(fromRect.width, c.r.width || 1)) >= RELAX_OVERLAP);
+            if (relaxed.length) return relaxed;
+            const beamHits = cands.filter(c => hitsBeam(c.r));
+            if (beamHits.length) return beamHits;
+            return cands.filter(c => Math.abs(c.cx) <= Math.abs(c.cy) * MAX_ANGLE_TAN);
         }
 
+        function horizontalPool(cands: typeof forward) {
+            const strict = cands.filter(c => (intervalOverlap(fromRect.top, fromRect.bottom, c.r.top, c.r.bottom) / Math.min(fromRect.height, c.r.height || 1)) >= STRICT_OVERLAP);
+            if (strict.length) return strict;
+            const relaxed = cands.filter(c => (intervalOverlap(fromRect.top, fromRect.bottom, c.r.top, c.r.bottom) / Math.min(fromRect.height, c.r.height || 1)) >= RELAX_OVERLAP);
+            if (relaxed.length) return relaxed;
+            const beamHits = cands.filter(c => hitsBeam(c.r));
+            if (beamHits.length) return beamHits;
+            return cands.filter(c => Math.abs(c.cy) <= Math.abs(c.cx) * MAX_ANGLE_TAN);
+        }
+
+        function chooseAxisPool(cands: typeof forward) {
+            return isVertical ? verticalPool(cands) : horizontalPool(cands);
+        }
+
+        let axisPool = chooseAxisPool(sameOrDesc);
+        if (!axisPool.length) {
+            axisPool = wantEscape ? chooseAxisPool(unrelated)
+                                : chooseAxisPool(unrelated).filter(c => isPartiallyVisibleInContainer(c.n.el, nearestScrollContainer(c.n.el)));
+            if (!axisPool.length) return;
+        }
+
+        const PERP_COEF = 0.35;
+        const DIST_COEF = 0.015;
+        const ALIGN_BONUS = -120;
         const SAME_CONT_BIAS = -200;
         const CROSS_VISIBLE_BIAS = -150;
-        const PERP_COEF = 0.25;
-        const DIST_COEF = 0.02;
+        const SMALL_TARGET_PX = 28;
+        const SMALL_BONUS = -100;
 
-        for (const c of finalPool) {
-            let s = c.prim * 1.0 + c.perp * PERP_COEF + Math.hypot(c.cx, c.cy) * DIST_COEF;
-            const cCont = nearestScrollContainer(c.n.el);
-            if (cCont === navContainer) s += SAME_CONT_BIAS;
-            else if (isPartiallyVisibleInContainer(c.n.el, cCont)) s += CROSS_VISIBLE_BIAS;
+        type Scored = {
+            n: NodeEntry;
+            prim: number;
+            perp: number;
+            centerHyp: number;
+            beamOverlapRatio: number;
+            sameContainer: boolean;
+            score: number;
+        };
+
+        const scored: Scored[] = [];
+        for (const c of axisPool) {
+            const r = c.r;
+
+            let prim: number;
+            if (dir === 'down') prim = Math.max(0, r.top    - fromRect.bottom);
+            else if (dir === 'up') prim = Math.max(0, fromRect.top - r.bottom);
+            else if (dir === 'right') prim = Math.max(0, r.left  - fromRect.right);
+            else /* left */ prim = Math.max(0, fromRect.left - r.right);
+
+            const perp = isVertical
+                ? pointIntervalDist(cx0, r.left, r.right)
+                : pointIntervalDist(cy0, r.top, r.bottom);
+
+            const centerHyp = Math.hypot(c.cx, c.cy);
+            const candCont = nearestScrollContainer(c.n.el);
+            const sameContainer = (candCont === navContainer);
+
+            const beamOverlap = isVertical
+                ? intervalOverlap(r.left, r.right, (beam as any).left, (beam as any).right)
+                : intervalOverlap(r.top, r.bottom, (beam as any).top, (beam as any).bottom);
+            const span = isVertical ? r.width : r.height;
+            const beamOverlapRatio = span > 0 ? (beamOverlap / span) : 0;
+
+            let s = 0;
+            s += prim * 1.0;
+            s += perp * PERP_COEF;
+            s += centerHyp * DIST_COEF;
+
+            if (perp === 0) s += ALIGN_BONUS;
+            if (sameContainer) s += SAME_CONT_BIAS;
+            else if (isPartiallyVisibleInContainer(c.n.el, candCont)) s += CROSS_VISIBLE_BIAS;
+
+            s += -80 * beamOverlapRatio;
+            const smallDim = isVertical ? r.width : r.height;
+            if (smallDim <= SMALL_TARGET_PX) s += SMALL_BONUS;
+
             s -= (c.n.opts.priority ?? 0) * 1000;
-            c.score = s;
+            scored.push({ n: c.n, prim, perp, centerHyp, beamOverlapRatio, sameContainer, score: s });
         }
 
-        finalPool.sort((a, b) => a.score - b.score || a.prim - b.prim || a.perp - b.perp);
-        return finalPool[0]?.n;
+        if (!scored.length) return;
+
+        scored.sort((a, b) =>
+            a.score - b.score
+            || a.prim - b.prim
+            || a.perp - b.perp
+            || a.centerHyp - b.centerHyp
+        );
+
+        return scored[0]?.n;
     }
 
     function adoptActiveNode(scope: ScopeEntry, nodeId: NodeId) {
