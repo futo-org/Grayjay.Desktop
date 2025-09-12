@@ -88,8 +88,12 @@ const BuyPage: Component = () => {
       <p class={styles.descriptionShared}>
         License keys are shared between Android and Desktop.
       </p>
-      <Button text='Enter License' color='primary' onClick={()=>enterLicense()} style={{margin: '10px'}} />
-      <Button text='Buy a License' color="#019BE7" onClick={()=>buy()} style={{margin: '10px'}} />
+      <Button text='Enter License' color='primary' onClick={()=>enterLicense()} style={{margin: '10px'}} focusableOpts={{
+        onPress: () => enterLicense()
+      }} />
+      <Button text='Buy a License' color="#019BE7" onClick={()=>buy()} style={{margin: '10px'}} focusableOpts={{
+        onPress: () => buy()
+      }} />
     </div>
   );
 };

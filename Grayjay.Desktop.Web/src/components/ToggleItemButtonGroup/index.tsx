@@ -1,5 +1,6 @@
 import { Component, For, JSX, Show, createEffect, createSignal } from 'solid-js'
 
+import { focusable } from "../../focusable";  void focusable;
 import styles from './index.module.css';
 
 export interface ToggleButtonGroupItem {
@@ -39,7 +40,9 @@ const ToggleItemButtonGroup: Component<ToggleItemButtonGroupProps> = (props) => 
                     <Show when={i() > 0}>
                         <div style="height: 100%; width: 1px; background-color: #454545;"></div>
                     </Show>
-                    <div class={styles.containerButton} classList={{ [styles.active]: item.value == selectedItem() }} onClick={() => toggleItem(item)}>
+                    <div class={styles.containerButton} classList={{ [styles.active]: item.value == selectedItem() }} onClick={() => toggleItem(item)} use:focusable={{
+                        onPress: () => toggleItem(item)
+                    }}>
                         <Show when={item.icon}>
                             <img src={item.icon} style="width: 16px; height: 16px; flex-shrink: 0;" />
                         </Show>

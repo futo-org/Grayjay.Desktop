@@ -19,6 +19,8 @@ import ScrollContainer from '../../components/containers/ScrollContainer';
 import ToggleItemButtonGroupMulti from '../../components/ToggleItemButtonGroupMulti';
 import ToggleItemBigButtonGroupMulti, { ToggleBigButtonGroupItemMulti } from '../../components/ToggleItemBigButtonGroupMulti';
 import StateGlobal from '../../state/StateGlobal';
+import { focusScope } from '../../focusScope'; void focusScope;
+import { focusable } from "../../focusable"; void focusable;
 import { createResourceDefault } from '../../utility';
 
 const SearchPage: Component = () => {
@@ -163,7 +165,9 @@ const SearchPage: Component = () => {
               performSearch(v, sortBy$(), filterValues$(), enabledSources$());
             }} />
             <Show when={searchType$() === ContentType.MEDIA}>
-              <CustomButton text='Filters' icon={iconFilters} border='1px solid #2E2E2E' style={{"height": "44px" }} onClick={() => setFiltersDialogVisible(true)} />
+              <CustomButton text='Filters' icon={iconFilters} border='1px solid #2E2E2E' style={{"height": "44px" }} onClick={() => setFiltersDialogVisible(true)} focusableOpts={{
+                onPress: () => setFiltersDialogVisible(true)
+              }} />
             </Show>
           </div>
           <Show when={searchPager.state == 'ready'}>
@@ -174,7 +178,9 @@ const SearchPage: Component = () => {
       </div>
       <Portal>
           <Show when={filtersDialogVisible$()}>
-            <div class={styles.filtersDialogBackground} onClick={() => setFiltersDialogVisible(false)}>
+            <div class={styles.filtersDialogBackground} onClick={() => setFiltersDialogVisible(false)} use:focusScope={{
+                initialMode: 'trap'
+            }}>
               <div class={styles.filtersDialog} onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -182,7 +188,10 @@ const SearchPage: Component = () => {
                 <div style="display: flex; align-items: center; width: 100%;">
                   <div class={styles.filtersDialogTitle}>Filters</div>
                   <div style="flex-grow: 1"></div>
-                  <IconButton icon={iconClose} height='24px' width='24px' style={{ "margin-left": "24px" }} onClick={() => setFiltersDialogVisible(false)} />
+                  <IconButton icon={iconClose} height='24px' width='24px' style={{ "margin-left": "24px" }} onClick={() => setFiltersDialogVisible(false)} focusableOpts={{
+                    onPress: () => setFiltersDialogVisible(false),
+                    onBack: () => setFiltersDialogVisible(false)
+                  }} />
                 </div>
                 <ScrollContainer ref={filtersScrollContainerRef} wrapperStyle={{ "width": "100%" }} scrollToTopButton={false}>
                   <div class={styles.filterHeader}>Select sources</div>

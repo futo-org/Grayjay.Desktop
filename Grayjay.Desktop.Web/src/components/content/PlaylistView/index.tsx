@@ -4,7 +4,8 @@ import styles from './index.module.css';
 import IconButton from '../../buttons/IconButton';
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
 import { FocusableOptions, InputSource } from '../../../nav';
-import { focusable } from '../../../focusable'; void focusable;
+import { focusable } from '../../../focusable';import { useFocus } from '../../../FocusProvider';
+ void focusable;
 
 interface PlaylistViewProps {
   name?: string;
@@ -17,6 +18,7 @@ interface PlaylistViewProps {
 }
 
 const PlaylistView: Component<PlaylistViewProps> = (props) => {
+  const focus = useFocus();
   const [containerWidth$, setContainerWidth] = createSignal<number>(260);
 
   const totalThumbnailsHeight$ = createMemo(() => {
@@ -64,7 +66,7 @@ const PlaylistView: Component<PlaylistViewProps> = (props) => {
             <div class={styles.metadata}>{props.itemCount ?? 0} items</div>
           </div>
 
-          <Show when={props.onSettings}>
+          <Show when={props.onSettings && focus?.lastInputSource() === "pointer"}>
             <IconButton icon={more} 
               ref={refMoreButton} 
               onClick={(e) => {

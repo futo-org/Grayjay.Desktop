@@ -8,7 +8,8 @@ import settings from '../../../assets/icons/icon24_settings.svg';
 import TransparentIconButton from '../../buttons/TransparentIconButton';
 import { SubscriptionsBackend } from '../../../backend/SubscriptionsBackend';
 import { FocusableOptions } from '../../../nav';
-import { focusable } from '../../../focusable'; void focusable;
+import { focusable } from '../../../focusable';import { useFocus } from '../../../FocusProvider';
+ void focusable;
 
 interface CreatorViewProps {
   id?: IPlatformID,
@@ -24,6 +25,8 @@ interface CreatorViewProps {
 }
 
 const CreatorView: Component<CreatorViewProps> = (props) => {
+  const focus = useFocus();
+
   const pluginIconUrl = createMemo(() => {
     const plugin = StateGlobal.getSourceConfig(props.id?.pluginID);
     return plugin?.absoluteIconUrl;
@@ -67,17 +70,18 @@ const CreatorView: Component<CreatorViewProps> = (props) => {
           {watchTimeData$()}
         </div>
       </Show>
-      <div style={{"display": "flex", "flex-direction": "row", "align-items": "end"}}>
-        <SubscribeButton style={{"margin-top": "12px", "width": "100%"}} small={true} author={props.url} isSubscribedInitialState={props.isSubscribedInitialState} />
-        <Show when={props.onSettingsClick}>
-          <TransparentIconButton style={{"margin-left": "4px", "flex-shrink": "0", "width": "42px", "height": "42px"}} icon={settings} onClick={(ev) => {
-            props.onSettingsClick?.(ev.target! as HTMLElement);
-            ev.stopPropagation();
-            ev.preventDefault();
-          }} />
-        </Show>
-      </div>
-      
+      <Show when={focus?.lastInputSource() === "pointer"}>
+        <div style={{"display": "flex", "flex-direction": "row", "align-items": "end"}}>
+          <SubscribeButton style={{"margin-top": "12px", "width": "100%"}} small={true} author={props.url} isSubscribedInitialState={props.isSubscribedInitialState} />
+          <Show when={props.onSettingsClick}>
+            <TransparentIconButton style={{"margin-left": "4px", "flex-shrink": "0", "width": "42px", "height": "42px"}} icon={settings} onClick={(ev) => {
+              props.onSettingsClick?.(ev.target! as HTMLElement);
+              ev.stopPropagation();
+              ev.preventDefault();
+            }} />
+          </Show>
+        </div>
+      </Show>
   </div>
   );
 };

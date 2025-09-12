@@ -11,7 +11,8 @@ import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import AnimatedImage from '../../basics/AnimatedImage';
 import { FocusableOptions } from '../../../nav';
-import { focusable } from '../../../focusable'; void focusable;
+import { focusable } from '../../../focusable';import { useFocus } from '../../../FocusProvider';
+ void focusable;
 
 interface VideoProps {
   video?: IPlatformVideo;
@@ -25,6 +26,8 @@ interface VideoProps {
 }
 
 const VideoThumbnailView: Component<VideoProps> = (props) => {
+  const focus = useFocus();
+
   var bestThumbnail$ = createMemo(()=>{
     return (props.video?.thumbnails?.sources?.length ?? 0 > 0) ? props.video?.thumbnails.sources[Math.max(0, props.video.thumbnails.sources.length - 1)] : null;
   })
@@ -106,14 +109,14 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
             </div>
             
 
-            <Show when={props.onAddtoQueue}>
+            <Show when={props.onAddtoQueue && focus?.lastInputSource() === "pointer"}>
               <IconButton icon={addToQueueIcon} 
                 style={{"margin-right": "7px", "margin-top": "4px"}}
                 iconPadding='3px'
                 height={"22px"} width={"22px"} ref={refAddToQueueButton} onClick={() => props.onAddtoQueue?.(refAddToQueueButton!, props.video!)} />
             </Show>
             
-            <Show when={props.onSettings}>
+            <Show when={props.onSettings && focus?.lastInputSource() === "pointer"}>
               <IconButton icon={more} ref={refMoreButton} onClick={() => openMoreOverlay()} />
             </Show>
         </div>

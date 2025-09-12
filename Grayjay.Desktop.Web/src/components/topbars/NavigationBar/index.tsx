@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js';
-import { Show } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 
 import styles from './index.module.css';
 import { useNavigate } from '@solidjs/router';
@@ -9,7 +9,8 @@ import TransparentIconButton from '../../buttons/TransparentIconButton';
 import SearchBar from '../SearchBar';
 import { useCasting } from '../../../contexts/Casting';
 import { ContentType } from '../../../backend/models/ContentType';
-import { focusable } from '../../../focusable'; void focusable;
+import { focusable } from '../../../focusable';import { useFocus } from '../../../FocusProvider';
+ void focusable;
 
 interface NavigationBarProps {
   initialText?: string;
@@ -21,16 +22,17 @@ interface NavigationBarProps {
 }
 
 const NavigationBar: Component<NavigationBarProps> = (props) => {
+  const focus = useFocus();
   const navigate = useNavigate();
   const casting = useCasting();
-  const canGoBack = !props.isRoot && history.length > 0;
+  const canGoBack$ = createMemo(() => !props.isRoot && history.length > 0 && focus?.lastInputSource() === "pointer");
 
   return (
     <div class={styles.containerTopBar} style={{ "margin-left": "24px", "margin-right": "24px", width: "calc(100% - 48px)", ... props.style}}>
-      <Show when={canGoBack}>
+      <Show when={canGoBack$()}>
         <TransparentIconButton icon={back} onClick={() => navigate(-1)} style={{"flex-shrink":0}} />
       </Show>
-      <SearchBar style={{ "flex-grow": 1, "max-width": "700px" }} initialText={props.initialText} inputStyle={{ "margin-left": !canGoBack ? "0px" : "24px" }} overlayStyle={{ "margin-left": !canGoBack ? "0px" : "24px" }} defaultSearchType={props.defaultSearchType} />
+      <SearchBar style={{ "flex-grow": 1, "max-width": "700px" }} initialText={props.initialText} inputStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} overlayStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} defaultSearchType={props.defaultSearchType} />
       <Show when={props.children}>
         {props.children}
       </Show>

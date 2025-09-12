@@ -4,6 +4,8 @@
 
     display: flex;
     flex-direction: column;
+    padding: 1px;
+    border-radius: 6px;
 }
 
 .container:hover {

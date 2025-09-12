@@ -29,8 +29,10 @@ import { useNavigate } from '@solidjs/router';
 import { Pager } from '../../backend/models/pagers/Pager';
 import { focusable } from "../../focusable"; void focusable;
 import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
+import { useFocus } from '../../FocusProvider';
 
 const HistoryPage: Component = () => {
+  const focus = useFocus();
   const video = useVideo();
 
   const [query$, setQuery] = createSignal<string>();
@@ -294,7 +296,7 @@ const HistoryPage: Component = () => {
                         });
                     }
                   }}>
-                    <div style="height: 82px; width: 150px; position: relative; border-radius: 4.374px; overflow: hidden; cursor: pointer; flex-shrink: 0;" onClick={openVideo}>
+                    <div style="height: 82px; width: 150px; position: relative; border-radius: 4.374px; overflow: hidden; cursor: pointer; flex-shrink: 0; padding: 1px;" onClick={openVideo}>
                       <img src={bestThumbnail()?.url} style={{"height": "100%", "width": "100%", "object-fit": "cover"}} referrerPolicy='no-referrer' />
                       <div style={{
                         "position": "absolute",
@@ -318,18 +320,20 @@ const HistoryPage: Component = () => {
                       </div>
                     </div>
                     <div style="flex-grow: 1"></div>
-                    <IconButton icon={ic_more}
-                      style={{"flex-shrink": 0}}
-                      ref={refMoreButton} 
-                      onClick={(e) => {
-                        contentAnchor.setElement(e.target as HTMLElement);
-              
-                        batch(() => {
-                          setSettingsContent(historyVideo);
-                          setShow(true);
-                        });
-                      }} 
-                    />
+                    <Show when={focus?.lastInputSource() === "pointer"}>
+                      <IconButton icon={ic_more}
+                        style={{"flex-shrink": 0}}
+                        ref={refMoreButton} 
+                        onClick={(e) => {
+                          contentAnchor.setElement(e.target as HTMLElement);
+                
+                          batch(() => {
+                            setSettingsContent(historyVideo);
+                            setShow(true);
+                          });
+                        }} 
+                      />
+                    </Show>
                   </div>);
                 }
               } />
