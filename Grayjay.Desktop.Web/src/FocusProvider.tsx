@@ -2,7 +2,6 @@ import { createContext, useContext, createSignal, onCleanup, createEffect, Acces
 import { Direction, Press, FocusableOptions, ScopeOptions, uid, isVisible, isFocusable, InputSource } from "./nav";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useVideo, VideoState } from "./contexts/VideoProvider";
-import UIOverlay from "./state/UIOverlay";
 
 type NodeId = string;
 

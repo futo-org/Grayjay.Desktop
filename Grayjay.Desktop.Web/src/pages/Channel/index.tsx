@@ -30,6 +30,7 @@ import { SubscriptionsBackend } from '../../backend/SubscriptionsBackend';
 import { Menus } from '../../Menus';
 import { Portal } from 'solid-js/web';
 import UIOverlay from '../../state/UIOverlay';
+import { useFocus } from '../../FocusProvider';
 
 interface ChannelTopBarProps {
   authorUrl?: string;
@@ -135,6 +136,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
 const ChannelPage: Component = () => {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
+  const focus = useFocus();
 
   console.log(location)
   console.log(params);
@@ -231,7 +233,7 @@ const ChannelPage: Component = () => {
       }>
           <ScrollContainer ref={scrollContainerRef}>
             <StickyShrinkOnScrollContainer outerContainerRef={scrollContainerRef}
-                minimumHeight={136} 
+                minimumHeight={focus?.lastInputSource() === 'pointer' ? 136 : 540} 
                 maximumHeight={540}>
               <ChannelTopBar bannerUrl={channel$()?.banner ?? authorSummary$()?.banner} 
                 thumbnailUrl={channel$()?.thumbnail ?? authorSummary$()?.thumbnail}
