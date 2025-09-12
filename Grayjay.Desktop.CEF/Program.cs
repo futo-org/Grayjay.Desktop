@@ -389,7 +389,7 @@ namespace Grayjay.Desktop
                         {
                             if (url != null && url.EndsWith("/web/index.html"))
                             {
-                                await window.ExecuteDevToolsMethodAsync("Emulation.setPageScaleFactor", $$"""{"pageScaleFactor":{{scaleFactor}}}""");
+                                await window.SetZoomAsync(scaleFactor.Value);
                                 Logger.i(nameof(Program), "Set page scale factor.");
                             }
                             Logger.i(nameof(Program), "OnLoadEnd: " + url);
