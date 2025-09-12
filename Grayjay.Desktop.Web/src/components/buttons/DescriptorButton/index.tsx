@@ -1,6 +1,8 @@
 import { Component, JSX, Show } from 'solid-js'
 
 import styles from './index.module.css';
+import { focusable } from "../../../focusable"; void focusable;
+import { FocusableOptions } from '../../../nav';
 
 interface DescriptorButtonProps {
     icon?: string;
@@ -11,6 +13,7 @@ interface DescriptorButtonProps {
     small?: boolean;
     disabled?: boolean;
     style?: JSX.CSSProperties;
+    focusableOpts?: FocusableOptions;
 }
 
 const DescriptorButton: Component<DescriptorButtonProps> = (props) => {
@@ -23,7 +26,7 @@ const DescriptorButton: Component<DescriptorButtonProps> = (props) => {
     };
 
     return (
-        <div class={styles.container} classList={{[styles.small]: props.small}} onClick={handleClick} style={{... props.style, width: (props.style?.width ?? "fit-content"), opacity: (props.disabled ? "0.3" : "1.0")}}>
+        <div class={styles.container} classList={{[styles.small]: props.small}} onClick={handleClick} style={{... props.style, width: (props.style?.width ?? "fit-content"), opacity: (props.disabled ? "0.3" : "1.0")}} use:focusable={props.focusableOpts}>
             <Show when={props.icon}>
                 <img src={props.icon} class={styles.icon} alt={props.text} />
             </Show>
