@@ -287,14 +287,14 @@ const AddDeviceManually: Component = () => {
             <div class={styles.containerHeader} style="margin-top: 24px">Enter device details</div>
             <div style="display: flex; width: 100%; flex-direction: column;">
                 <div style="position: relative; width: 100%; margin-top: 12px;">
-                    <InputText label="Device name" small={true} style={{"width": "100%"}} value={name$()} onTextChanged={(v) => setName(v)} error={nameErrorMessage$()} focusableOpts={{ onBack: globalBack }} />
+                    <InputText label="Device name" small={true} style={{"width": "100%"}} value={name$()} onTextChanged={(v) => setName(v)} error={nameErrorMessage$()} focusable={true} onBack={globalBack} />
                 </div>
                 <div style="display: flex; width: 100%; flex-direction: row; margin-top: 12px;">
                     <div style="position: relative; min-width: 460px; flex-grow: 1;">
-                        <InputText label="Device IP" small={true} style={{"width": "100%"}} value={ip$()} onTextChanged={(v) => setIP(v)} error={ipErrorMessage$()} focusableOpts={{ onBack: globalBack}} />
+                        <InputText label="Device IP" small={true} style={{"width": "100%"}} value={ip$()} onTextChanged={(v) => setIP(v)} error={ipErrorMessage$()} focusable={true} onBack={globalBack} />
                     </div> 
                     <div style="position: relative; margin-left: 12px; width: 200px;">
-                        <InputText label="Port" small={true} style={{"width": "100%"}} value={port$()} onTextChanged={(v) => setPort(v)} error={portErrorMessage$()} focusableOpts={{ onBack: globalBack}} />
+                        <InputText label="Port" small={true} style={{"width": "100%"}} value={port$()} onTextChanged={(v) => setPort(v)} error={portErrorMessage$()} focusable={true} onBack={globalBack} />
                     </div> 
                 </div>
             </div>

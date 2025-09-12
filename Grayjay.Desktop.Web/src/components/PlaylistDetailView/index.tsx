@@ -175,7 +175,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               onTextChanged={(v) => {
                 setFilterText(v);
               }}
-              focusableOpts={{}} />
+              focusable={true} />
           </div>
 
           <VirtualDragDropList outerContainerRef={scrollContainerRef}

@@ -82,9 +82,8 @@ const OverlaySubscriptionsSelector: Component<OverlaySubscsriptionsSelectorDialo
             <InputText 
               placeholder='Search for videos or creators'
               style={{"margin": "10px"}} 
-              focusableOpts={{
-                onBack: dialogBack,
-              }}
+              focusable={true}
+              onBack={dialogBack} 
             />
           </div>
           <div class={styles.subscriptionsContainer}>

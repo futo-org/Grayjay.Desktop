@@ -146,7 +146,7 @@ const CreatorsPage: Component = () => {
               onTextChanged={(v) => {
                 setFilterText(v);
               }}
-              focusableOpts={{}} />
+              focusable={true} />
             <Dropdown label="Sort by" onSelectedChanged={(v) => setSortBy(v)} value={sortBy()} options={sortOptions} anchorStyle={AnchorStyle.BottomLeft} style={{"width": "230px"}} />
           </div>
 

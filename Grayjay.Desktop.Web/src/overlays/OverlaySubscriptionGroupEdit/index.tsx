@@ -162,7 +162,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
                 <div class={styles.sectionTitle}>Name</div>
                 <div class={styles.sectionDescription}>Edit what the name of your group is.</div>
                 <InputText placeholder='Subscription group name'
-                  value={props.subscriptionGroup.name} onTextChanged={(val) => props.subscriptionGroup.name = val} focusableOpts={{ onBack: globalBack }} />
+                  value={props.subscriptionGroup.name} onTextChanged={(val) => props.subscriptionGroup.name = val} focusable={true} onBack={globalBack}  />
               </div>
               <div style="margin-top: 20px;">
                 <div class={styles.sectionTitle}>Subscriptions</div>

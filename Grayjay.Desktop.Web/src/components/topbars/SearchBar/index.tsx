@@ -143,7 +143,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
         placeholder={props.placeholder || "Search"}
         value={query$()}
         showClearButton={true}
-        focusableOpts={{}}
+        focusable={true} 
         onClick={async () => {
           if (!suggestionsVisible$()) {
             setSuggestionsVisible(true);

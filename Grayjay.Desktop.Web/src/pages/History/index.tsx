@@ -195,7 +195,7 @@ const HistoryPage: Component = () => {
               onTextChanged={(newVal) => setQuery(newVal)}
               icon={ic_search}
               showClearButton={true}
-              focusableOpts={{}} />
+              focusable={true} />
 
               <CustomButton 
                 icon={ic_trash}

@@ -2,7 +2,7 @@ import { Component, JSX, Show, createEffect, createSignal, mergeProps } from 'so
 
 import close from '../../../../assets/icons/close_FILL0_wght400_GRAD0_opsz24.svg';
 import styles from './index.module.css';
-import { focusable } from "../../../../focusable";import { FocusableOptions } from '../../../../nav';
+import { focusable } from "../../../../focusable";import { FocusableOptions, InputSource } from '../../../../nav';
  void focusable;
 
 interface InputTextProps {
@@ -22,10 +22,12 @@ interface InputTextProps {
     label?: string;
     showClearButton?: boolean;
     error?: string | null | undefined;
-    focusableOpts?: FocusableOptions;
+    focusable?: boolean;
+    onBack?: (el: HTMLElement, inputSource: InputSource) => boolean;
 }
 
 const InputText: Component<InputTextProps> = (props) => {
+    let rootElement: HTMLInputElement | undefined;
     let inputElement: HTMLInputElement | undefined;
 
     const merged = mergeProps({ small: true }, props);
@@ -36,25 +38,53 @@ const InputText: Component<InputTextProps> = (props) => {
 
     const [hasFocus, setHasFocus] = createSignal(false);
     const [touched, setTouched] = createSignal(false);
-
+    let wasEnterDown = false;
 
     createEffect(() => {
         merged.onTextChanged?.(text());
     });
 
     const onKey = (ev: KeyboardEvent, isUp: Boolean) => {
-        if(ev.key === 'Enter' && isUp) {
-            merged.onSubmit?.(text());
+        console.info("onKey", {ev, isUp, activeElement: document.activeElement, inputElement});
+        if (document.activeElement === inputElement && ev.key === 'Enter') {
+            if (isUp) {
+                if (wasEnterDown) {
+                    merged.onSubmit?.(text());
+                    wasEnterDown = false;
+                }
+            } else {
+                wasEnterDown = true;
+            }
         }
     };
 
     return (
-        <div style={{
+        <div ref={rootElement} style={{
             "width": "100%",
             "display": "flex",
             "flex-direction": "column",
             ... merged.style
-        }}>
+        }} use:focusable={props.focusable ? {
+            onPress: () => {
+                if (document.activeElement === inputElement) {
+                    merged.onSubmit?.(text());
+                } else {
+                    inputElement?.focus();
+                }
+            },
+            onBack: (el: HTMLElement, inputSource: InputSource) => {
+                if (document.activeElement == inputElement) {
+                    rootElement?.focus();
+                    return true;
+                }
+                return props.onBack?.(el, inputSource);
+            },
+            onAction: () => {
+                setText("");
+                props.onSubmit?.("");
+            },
+            onActionLabel: "Clear"
+        } : undefined}>
             <div class={styles.containerInputText} classList={{[styles.focus]: hasFocus(), [styles.disabled]: merged.disabled, [styles.hasLabel]: props.label ? true : false, [styles.error]: touched() && props.error ? true : false}} onClick={() => inputElement?.focus()} style={{
                 "box-sizing": "border-box",
                 "overflow": "hidden",
@@ -89,13 +119,13 @@ const InputText: Component<InputTextProps> = (props) => {
                             }
                         }}
                         onBlur={() => { 
+                            wasEnterDown = false;
                             if (hasFocus()) {
                                 setHasFocus(false);
                                 merged.onFocusChanged?.(false);
                             }
                         }}
-                        style={props.inputStyle}
-                        use:focusable={props.focusableOpts} />
+                        style={props.inputStyle} />
                 </div>
                 <Show when={props.showClearButton && text().length > 0}>
                     <img onClick={() => {

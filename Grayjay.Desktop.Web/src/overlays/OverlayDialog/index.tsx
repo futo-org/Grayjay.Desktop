@@ -278,9 +278,8 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                     placeholder={(props.dialog?.input as DialogInputText).placeholder}
                     value={output.text}
                     onTextChanged={(newVal) => { output.text = newVal }}
-                    focusableOpts={{
-                      onBack: dialogBack
-                    }}
+                    focusable={true} 
+                    onBack={dialogBack} 
                   />
                 </Show>
 

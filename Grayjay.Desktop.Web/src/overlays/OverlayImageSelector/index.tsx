@@ -130,7 +130,7 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
           <div class={styles.sectionTitle}>Image Url</div>
           <div class={styles.sectionDescription}>Select a image from an url</div>
           <div style="display: flex; justify-content: center;">
-            <InputText placeholder='Enter an image url' style={{"justify-content": "center"}} onTextChanged={(str)=>{setImageUrl(str); selectUrl(str)}} focusableOpts={{ onBack: globalBack }} />
+            <InputText placeholder='Enter an image url' style={{"justify-content": "center"}} onTextChanged={(str)=>{setImageUrl(str); selectUrl(str)}} focusable={true} onBack={globalBack}  />
             
           </div>
           <div class={styles.sectionTitle}>Creator Thumbnails</div>
