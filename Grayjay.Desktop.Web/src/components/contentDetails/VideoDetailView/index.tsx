@@ -1652,7 +1652,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                                             style={{
                                                                 "padding-left": "40px",
                                                                 "padding-right": "40px",
-                                                                "padding-top": "32px"
+                                                                "padding-top": "16px",
+                                                                "padding-bottom": "16px"
                                                             }}
                                                             editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
                                                             comment={item()?.object}
