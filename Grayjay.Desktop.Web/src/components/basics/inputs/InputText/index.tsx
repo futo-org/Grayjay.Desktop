@@ -58,8 +58,15 @@ const InputText: Component<InputTextProps> = (props) => {
         }
     };
 
+    const clear = () => {
+        if ((text()?.length ?? 0) > 0) {
+            setText("");
+            props.onSubmit?.("");
+        }
+    };
+
     return (
-        <div ref={rootElement} style={{
+        <div ref={rootElement} class={styles.rootElement} style={{
             "width": "100%",
             "display": "flex",
             "flex-direction": "column",
@@ -80,8 +87,7 @@ const InputText: Component<InputTextProps> = (props) => {
                 return props.onBack?.(el, inputSource);
             },
             onAction: () => {
-                setText("");
-                props.onSubmit?.("");
+                clear();
             },
             onActionLabel: "Clear"
         } : undefined}>
@@ -128,10 +134,7 @@ const InputText: Component<InputTextProps> = (props) => {
                         style={props.inputStyle} />
                 </div>
                 <Show when={props.showClearButton && text().length > 0}>
-                    <img onClick={() => {
-                        setText("");
-                        props.onSubmit?.("");
-                    }} src={close} class={styles.iconClear} alt="clear" />
+                    <img onClick={clear} src={close} class={styles.iconClear} alt="clear" />
                 </Show>
             </div>
             <Show when={touched() && props.error}>
