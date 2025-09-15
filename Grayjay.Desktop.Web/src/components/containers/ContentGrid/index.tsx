@@ -233,7 +233,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     addedItems={props.pager?.addedFilteredItemsEvent}
                     modifiedItems={props.pager?.modifiedFilteredItemsEvent}
                     removedItems={props.pager?.removedFilteredItemsEvent}
-                    itemWidth={305}
+                    itemWidth={300}
                     overscan={2}
                     calculateHeight={(width) => {
                         const aspectRatio = 16 / 9;
