@@ -8,7 +8,7 @@ interface ControllerOverlayProps {
 }
 
 const ControllerOverlay: Component<ControllerOverlayProps> = (props) => {
-    const colorAction = "#FFC857";
+    const colorAction = "#efde1e";
     const colorPress = "#77f62b";
     const colorBack = "#ed412a";
     const colorOptions = "#1db3ee";

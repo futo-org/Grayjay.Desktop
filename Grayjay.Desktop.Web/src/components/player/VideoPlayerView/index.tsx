@@ -1166,7 +1166,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 return false;
             },
-            onDirectionLabel: "DU: Toggle Fullscreen  LR: Seek"
+            onDirectionLabel: "(DU: Toggle Fullscreen  LR: Seek)"
         };
     });
 

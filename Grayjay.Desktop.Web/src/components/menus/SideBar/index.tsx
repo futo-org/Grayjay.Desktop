@@ -35,8 +35,9 @@ import { createResourceDefault } from '../../../utility';
 import { LocalBackend } from '../../../backend/LocalBackend';
 import { Portal } from 'solid-js/web';
 import { FocusableOptions } from '../../../nav';
-import { focusable } from "../../../focusable";import { useFocus } from '../../../FocusProvider';
- void focusable;
+import { focusScope } from '../../../focusScope'; void focusScope;
+import { focusable } from "../../../focusable"; void focusable;
+import { useFocus } from '../../../FocusProvider';
 
 export interface SideBarProps {
   alwaysMinimized?: boolean;
@@ -348,6 +349,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           }} onMouseMove={(ev) => {
             ev.preventDefault();
             ev.stopPropagation();
+          }} use:focusScope={{
+            initialMode: 'trap'
           }}>
             <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
               <For each={topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$())}>
