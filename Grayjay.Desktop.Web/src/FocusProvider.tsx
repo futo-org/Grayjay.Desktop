@@ -829,45 +829,78 @@ export function FocusProvider(props: { children: JSX.Element }) {
     function onKeyDown(e: KeyboardEvent) {
         ensureFocusInActiveScope();
         const trap = topTrap();
+        const target = e.target as HTMLElement | null;
         const editable = isEditable(e.target);
+
+        const isNavKey =
+            e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+            e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+            e.key === 'Tab' || e.key === 'Escape';
+
+        if (editable && isNavKey && !editableWantsKey(e, !!trap)) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const owner = findNodeFromElement(target!);
+            if (owner) {
+                focusNode(owner);
+            } else {
+                target?.blur?.();
+            }
+
+            if (e.key === 'Escape') { press('back', "keyboard"); return; }
+            if (e.key === 'Tab') { navigateDirection(e.shiftKey ? 'prev' : 'next', "keyboard"); return; }
+
+            const dir = e.key === 'ArrowUp' 
+                ? 'up' 
+                : e.key === 'ArrowDown' 
+                    ? 'down' 
+                    : e.key === 'ArrowLeft' 
+                        ? 'left' 
+                        : 'right';
+
+            navigateDirection(dir as Direction, "keyboard");
+            return;
+        }
 
         if (e.key === 'Tab' && trap) {
             navigateDirection(e.shiftKey ? 'prev' : 'next', "keyboard");
             e.preventDefault();
+            e.stopPropagation();
             return;
         }
 
         if (editable && editableWantsKey(e, !!trap)) return;
 
         switch (e.key) {
-            case 'ArrowUp': navigateDirection('up', "keyboard"); e.preventDefault(); break;
-            case 'ArrowDown': navigateDirection('down', "keyboard"); e.preventDefault(); break;
-            case 'ArrowLeft': navigateDirection('left', "keyboard"); e.preventDefault(); break;
-            case 'ArrowRight': navigateDirection('right', "keyboard"); e.preventDefault(); break;
+            case 'ArrowUp': navigateDirection('up', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
+            case 'ArrowDown': navigateDirection('down', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
+            case 'ArrowLeft': navigateDirection('left', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
+            case 'ArrowRight': navigateDirection('right', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
             case 'Enter':
             case ' ':
                 press('press', "keyboard");
                 e.preventDefault();
+                e.stopPropagation();
                 break;
             case 'Escape':
-                if (press('back', "keyboard")) e.preventDefault(); break;
+                if (press('back', "keyboard")) e.preventDefault(); e.stopPropagation(); break;
             case 'o':
-                if (!editable && !e.altKey && !e.metaKey) { if (press('options', "keyboard")) e.preventDefault(); }
+                if (!editable && !e.altKey && !e.metaKey) { if (press('options', "keyboard")) e.preventDefault(); e.stopPropagation(); }
                 break;
             case 'p':
-                if (!editable && !e.altKey && !e.metaKey) { if (press('action', "keyboard")) e.preventDefault(); }
+                if (!editable && !e.altKey && !e.metaKey) { if (press('action', "keyboard")) e.preventDefault(); e.stopPropagation(); }
                 break;
             default:
                 if (!editable) {
-                    if (e.key === 'w') { navigateDirection('up', "keyboard"); e.preventDefault(); }
-                    else if (e.key === 's') { navigateDirection('down', "keyboard"); e.preventDefault(); }
-                    else if (e.key === 'a') { navigateDirection('left', "keyboard"); e.preventDefault(); }
-                    else if (e.key === 'd') { navigateDirection('right', "keyboard"); e.preventDefault(); }
+                    if (e.key === 'w') { navigateDirection('up', "keyboard"); e.preventDefault(); e.stopPropagation(); }
+                    else if (e.key === 's') { navigateDirection('down', "keyboard"); e.preventDefault(); e.stopPropagation(); }
+                    else if (e.key === 'a') { navigateDirection('left', "keyboard"); e.preventDefault(); e.stopPropagation(); }
+                    else if (e.key === 'd') { navigateDirection('right', "keyboard"); e.preventDefault(); e.stopPropagation(); }
                 }
                 break;
         }
     }
-
 
     let raf = 0;
     const initialDelay = 220; // ms before repeat
