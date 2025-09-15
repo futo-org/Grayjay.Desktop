@@ -22,6 +22,7 @@ import iconDocument from '../../assets/icons/ic_document_detailed.svg'
 import { focusScope } from '../../focusScope'; void focusScope;
 import { focusable } from "../../focusable"; void focusable;
 import { Navigator, useNavigate } from '@solidjs/router';
+import ScrollContainer from '../../components/containers/ScrollContainer';
 
 export interface OverlayImportSelectDialogProps {
   
@@ -44,7 +45,7 @@ const OverlayImportSelectDialog: Component<OverlayImportSelectDialogProps> = (pr
             <img src={iconClose} />
           </div>
         </div>
-          <div>
+          <ScrollContainer scrollStyle={{"max-height": "400px"}}>
             <div style="margin-bottom: 10px;">
               <DescriptorButton icon={iconPlatforms} text='Import from platform' disabled={true} onClick={()=>{UIOverlay.dismiss();}} style={{"width": "100%"}}
                 description='Import your data from a specific source' />
@@ -73,13 +74,13 @@ const OverlayImportSelectDialog: Component<OverlayImportSelectDialogProps> = (pr
                   onBack: globalBack
                 }} />
             </div>
-            <div>
-              <Button text='Cancel' color='transparant' onClick={()=>UIOverlay.dismiss()} style={{"width": "100%"}}
-                focusableOpts={{
-                  onPress: globalBack,
-                  onBack: globalBack
-                }} />
-            </div>
+          </ScrollContainer>
+          <div>
+            <Button text='Cancel' color='transparant' onClick={()=>UIOverlay.dismiss()} style={{"width": "100%"}}
+              focusableOpts={{
+                onPress: globalBack,
+                onBack: globalBack
+              }} />
           </div>
       </div>
     );
