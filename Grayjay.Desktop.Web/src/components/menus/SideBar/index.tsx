@@ -232,8 +232,6 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   }
 
   const rowFocus = (order: number, onPress: () => void, onBack?: () => boolean): FocusableOptions => ({
-    roving: true,
-    order,
     onPress: () => onPress(),
     onBack
   });
@@ -250,18 +248,18 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   return (
     <div class={styles.sidebar} style={props.style} classList={{ [styles.collapsed]: isCollapsed(), ... props.classList }}>
       <div class={styles.buttonList}>
-        <div class={styles.containerCollapse}>
-          <Show when={canToggleCollapse()}>
+        <Show when={canToggleCollapse()}>
+          <div class={styles.containerCollapse}>
             <img
               src={isCollapsed() ? ic_sidebarOpen : ic_sidebarClose}
               class={styles.collapse}
               alt=""
               role="button"
-              use:focusable={{ onPress: handleCollapse, roving: true, order: -1000 }}
+              use:focusable={{ onPress: handleCollapse }}
               onClick={handleCollapse}
             />
-          </Show>
-        </div>
+          </div>
+        </Show>
         <div class={styles.grayjay} oncontextmenu={()=>setDevClicked(devClicked$() + 1)}>
           <img src={grayjay} />
           <Show when={!isCollapsed()}>

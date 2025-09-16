@@ -87,7 +87,7 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
 
     return (
       <OverlayCustomDialog hideHeader={true} hideDialog={props.dialog.data$().Status == "importing" || props.dialog.data$().Status == "finished"}
-              onRootClick={(ev)=> props.dialog.data$().Status == "importing" && ev.stopPropagation()} focusScope={true}>        
+              onRootClick={()=> props.dialog.data$().Status == "importing"} focusScope={true}>        
             <>
               <Show when={props.dialog.data$().Status == 'choice'}>
               <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
