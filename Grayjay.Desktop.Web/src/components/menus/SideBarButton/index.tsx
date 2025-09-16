@@ -12,6 +12,8 @@ interface SideBarButtonProps {
     onClick?: (event: MouseEvent) => void;
     onRightClick?: (event: MouseEvent) => void;
     focusableOpts?: FocusableOptions;
+    onFocus?: () => void;
+    onBlur?: () => void;
 }
 
 const SideBarButton: Component<SideBarButtonProps> = (props) => {
@@ -27,7 +29,10 @@ const SideBarButton: Component<SideBarButtonProps> = (props) => {
   };
 
   return (
-    <div use:focusable={props.focusableOpts} onClick={handleClick} onContextMenu={handleRightClick} class={styles.sideBarButton} classList={{[styles.selected]: props.selected, [styles.collapsed]: props.collapsed}}>
+    <div use:focusable={props.focusableOpts} onClick={handleClick} onContextMenu={handleRightClick} class={styles.sideBarButton} classList={{[styles.selected]: props.selected, [styles.collapsed]: props.collapsed}} onFocus={() => {
+      console.info("sidebarbutton onFocus");
+      props.onFocus?.();
+    }} onBlur={props.onBlur}>
       <Show when={props.icon}>
         <img src={props.icon} class={styles.icon} alt="logo" />
       </Show>

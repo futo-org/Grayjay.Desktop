@@ -69,6 +69,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
     const index = createIndex();
     const [activeScope, setActiveScope] = createSignal<string | null>(null);
     const [lastInputSource, setLastInputSource] = createSignal<InputSource>("pointer");
+    createEffect(() => console.info("lastInputSource changed", lastInputSource()));
     const [focusedNode, setFocusedNode] = createSignal<NodeEntry | undefined>(undefined);
     const trapStack: string[] = [];
 
@@ -577,13 +578,13 @@ export function FocusProvider(props: { children: JSX.Element }) {
 
         const trappingId = topTrap();
         const trapActive = !!trappingId;
-
+        
+        setLastInputSource(inputSource);
         if (!focused) {
             focusFirstInScope(scope.id, false);
             return;
         }
 
-        setLastInputSource(inputSource);
         if ((focused.opts.onDirection?.(focused.el, dir, inputSource) ?? false) === true) {
             return;
         }

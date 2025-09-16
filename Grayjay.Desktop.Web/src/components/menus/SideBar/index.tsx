@@ -64,6 +64,14 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const handleCollapse = () => {
     setCollapsed(!collapsed());
   };
+  const [sidebarFocused$, setSidebarFocused] = createSignal(false);
+  const isCollapsed = createMemo(() => {
+    const inputSource = focus?.lastInputSource?.() ?? 'pointer';
+    const hasSidebarFocus = sidebarFocused$();
+    const base = collapsed();
+    return !canToggleCollapse() && inputSource !== 'pointer' && hasSidebarFocus ? false : base;
+  });
+  createEffect(() => console.info("sidebar collapse", { isCollapsed: isCollapsed(), sidebarFocused: sidebarFocused$(), collapsed: collapsed() }));
 
   const [expand$, setExpand] = createSignal(true);
   const [expandType$, setExpandType] = createSignal("subs");
@@ -229,14 +237,23 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
     onPress: () => onPress(),
     onBack
   });
-  
+
+  const globalFocus = () => {
+    console.info("sidebar globalFocus");
+    setSidebarFocused(true);
+  };
+  const globalBlur = () => {
+    console.info("sidebar globalBlur");
+    setSidebarFocused(false);
+  };
+
   return (
-    <div class={styles.sidebar} style={props.style} classList={{ [styles.collapsed]: collapsed(), ... props.classList }}>
+    <div class={styles.sidebar} style={props.style} classList={{ [styles.collapsed]: isCollapsed(), ... props.classList }}>
       <div class={styles.buttonList}>
         <div class={styles.containerCollapse}>
           <Show when={canToggleCollapse()}>
             <img
-              src={collapsed() ? ic_sidebarOpen : ic_sidebarClose}
+              src={isCollapsed() ? ic_sidebarOpen : ic_sidebarClose}
               class={styles.collapse}
               alt=""
               role="button"
@@ -247,17 +264,17 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         </div>
         <div class={styles.grayjay} oncontextmenu={()=>setDevClicked(devClicked$() + 1)}>
           <img src={grayjay} />
-          <Show when={!collapsed()}>
+          <Show when={!isCollapsed()}>
             <div style="font-size: 20px; top: 2px; left: 60px; position: absolute;">
             Grayjay
             </div>
           </Show>
-          <Show when={!collapsed()}>
+          <Show when={!isCollapsed()}>
             <div style="font-size: 12px; top: 25px; left: 60px; position: absolute;">
               Alpha
             </div>
           </Show>
-          <Show when={collapsed()}>
+          <Show when={isCollapsed()}>
             <div style="font-size: 12px; top: 45px; left: 0px; position: absolute; width: 50px; text-align: center;">
               Alpha
             </div>
@@ -268,29 +285,33 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             const press = () => btn.action ? btn.action() : navigateTo(btn.path!, options);
             return (
               <SideBarButton
-                collapsed={collapsed()}
+                collapsed={isCollapsed()}
                 icon={btn.icon}
                 name={btn.name}
                 selected={btn.getSelected()}
                 onClick={press}
                 onRightClick={btn.onRightClick}
                 focusableOpts={rowFocus(i(), press)}
+                onFocus={globalFocus}
+                onBlur={globalBlur}
               />
             );
           }}
         </For>
         <Show when={moreTopButtonCount$() > 0}>
           <SideBarButton
-            collapsed={collapsed()}
+            collapsed={isCollapsed()}
             icon={ic_more}
             name={"More"}
             selected={false}
             onClick={() => { props?.onMoreOpened?.(); setMoreOverlayVisible(true); }}
             focusableOpts={rowFocus(9999, () => { props?.onMoreOpened?.(); setMoreOverlayVisible(true); })}
+            onFocus={globalFocus}
+            onBlur={globalBlur}
           />
         </Show>
       </div>
-      <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200 && focus?.lastInputSource() === "pointer"} fallback={<div style="flex-grow:1"></div>}>
+      <Show when={!isCollapsed() && subscriptions$()?.length && remainingSpace$() > 200 && focus?.lastInputSource() === "pointer"} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())} 
             use:focusable={{ onPress: () => setExpand(!expand$()) }}>
@@ -328,12 +349,14 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             const press = () => btn.action ? btn.action() : navigateTo(btn.path!, options);
             return (
               <SideBarButton
-                collapsed={collapsed()}
+                collapsed={isCollapsed()}
                 icon={btn.icon}
                 name={btn.name}
                 selected={btn.getSelected()}
                 onClick={press}
                 focusableOpts={rowFocus(30000 + i(), press)}
+                onFocus={globalFocus}
+                onBlur={globalBlur}
               />
             );
           }}
@@ -380,6 +403,8 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
                         }
                       }}
                       data-more-first={i() === 0 ? "1" : undefined}
+                      onFocus={globalFocus}
+                      onBlur={globalBlur}
                     />
                   );
                 }}
