@@ -1,6 +1,7 @@
 ﻿using DotCef;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Browser;
+using Grayjay.ClientServer.Dialogs;
 using Grayjay.Desktop.POC;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using System;
@@ -46,17 +47,61 @@ namespace Grayjay.Desktop.CEF
         }
 
 
-        public async Task<string> ShowDirectoryDialogAsync(CancellationToken cancellationToken = default)
+        public async Task<string?> ShowDirectoryDialogAsync(CancellationToken cancellationToken = default)
         {
-            return await _cef.PickDirectoryAsync(cancellationToken);
+            var taskCompletionSource = new TaskCompletionSource<string?>();
+            try
+            {
+                var dialog = FilePickerDialog.OpenFolderPicker((v) => taskCompletionSource.SetResult(v.FirstOrDefault()), false, null);
+                await dialog.Show();
+                return await taskCompletionSource.Task;
+            }
+            catch (Exception e)
+            {
+                taskCompletionSource.SetException(e);
+                throw;
+            }
+            //return await _cef.PickDirectoryAsync(cancellationToken);
         }
-        public async Task<string> ShowFileDialogAsync((string name, string pattern)[] filters, CancellationToken cancellationToken = default)
+        public async Task<string?> ShowFileDialogAsync((string name, string pattern)[] filters, CancellationToken cancellationToken = default)
         {
-            return (await _cef.PickFileAsync(false, filters, cancellationToken)).First();
+            var taskCompletionSource = new TaskCompletionSource<string?>();
+            try
+            {
+                var dialog = FilePickerDialog.OpenFilePicker((v) => taskCompletionSource.SetResult(v.FirstOrDefault()), false, filters.Select(v => new FilePickerDialog.Filter()
+                {
+                    Name = v.name,
+                    Pattern = v.pattern
+                }).ToArray());
+                await dialog.Show();
+                return await taskCompletionSource.Task;
+            }
+            catch (Exception e)
+            {
+                taskCompletionSource.SetException(e);
+                throw;
+            }
+            //return (await _cef.PickFileAsync(false, filters, cancellationToken)).First();
         }
-        public async Task<string> ShowSaveFileDialogAsync(string defaultName, (string name, string pattern)[] filters, CancellationToken cancellationToken = default)
+        public async Task<string?> ShowSaveFileDialogAsync(string defaultName, (string name, string pattern)[] filters, CancellationToken cancellationToken = default)
         {
-            return (await _cef.SaveFileAsync(defaultName, filters, cancellationToken));
+            var taskCompletionSource = new TaskCompletionSource<string?>();
+            try
+            {
+                var dialog = FilePickerDialog.SaveFilePicker((v) => taskCompletionSource.SetResult(v.FirstOrDefault()), defaultName, filters.Select(v => new FilePickerDialog.Filter()
+                {
+                    Name = v.name,
+                    Pattern = v.pattern
+                }).ToArray());
+                await dialog.Show();
+                return await taskCompletionSource.Task;
+            }
+            catch (Exception e)
+            {
+                taskCompletionSource.SetException(e);
+                throw;
+            }
+            //return (await _cef.SaveFileAsync(defaultName, filters, cancellationToken));
         }
 
         private string EvaluateScriptParameter(string source)

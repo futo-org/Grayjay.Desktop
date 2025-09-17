@@ -14,8 +14,6 @@ export interface OverlayCustomDialogProps {
   focusScope?: boolean
 };
 const OverlayCustomDialog: Component<OverlayCustomDialogProps> = (props: OverlayCustomDialogProps) => {
-
-
     return (
       <div use:focusScope={props.focusScope ? {
           initialMode: 'trap'

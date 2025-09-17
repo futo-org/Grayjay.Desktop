@@ -19,6 +19,7 @@ import OverlaySyncConfirmDialog from '../OverlaySyncConfirmDialog';
 import { OverlayRequest } from '../OverlayModals';
 import OverlayImportPlaylistsDialog from '../OverlayImportPlaylistsDialog';
 import OverlayToasts from '../OverlayToasts';
+import OverlayRemoteFilePicker from '../OverlayRemoteFilePicker';
 
 
 export interface OverlayContext {
@@ -129,6 +130,9 @@ const OverlayRoot: Component<OverlayRootProps> = (props: OverlayRootProps) => {
               break;
             case "syncStatus":
               ui = () => <OverlaySyncStatusDialog dialog={dialogLocal}></OverlaySyncStatusDialog>
+              break;
+            case "filePicker":
+              ui = () => <OverlayRemoteFilePicker dialog={dialogLocal}></OverlayRemoteFilePicker>
               break;
             default:
               throw Error('Unrecognized dialog type: ' + dialogLocal.name);
