@@ -22,17 +22,7 @@ const HomePage: Component = () => {
   const homePager = StateGlobal.home$;
 
   const nav = useNavigate();
-
-  onMount(() => {
-    UIOverlay.overlaySaveFilePicker((result) => {
-      console.info("pick result", result);
-    }, "test.mp4", [
-      { name: "Zip (*.zip)", pattern: "*.zip" },
-      { name: "JSON (*.json)", pattern: "*.json" },
-      { name: "All files (*.*)", pattern: "*.*" },
-    ]);
-  });
-
+  
   //createResource(async () => await HomeBackend.homePagerLazy());
   const lastHomeMillis = Math.abs(StateGlobal.lastHomeTime$()?.diffNow().toMillis());
   if((lastHomeMillis ?? 0) > 2 * 60 * 1000) {
