@@ -15,8 +15,10 @@ export interface DropdownProps {
     anchorStyle?: AnchorStyle;
     label?: string;
     style?: JSX.CSSProperties;
+    selectStyle?: JSX.CSSProperties;
     focusable?: boolean;
     onBack?: () => boolean;
+    direction?: "up" | "down";
 };
 
 const Dropdown: Component<DropdownProps> = (props) => {    
@@ -57,7 +59,7 @@ const Dropdown: Component<DropdownProps> = (props) => {
     
     return (
         <div class={styles.selectContainer} onClick={() => toggleShow("pointer")} style={props.style} use:focusable={{ onPress: () => toggleShow("gamepad"), onBack: props.onBack }}>
-            <div ref={refSelectElement} class={styles.select}>
+            <div ref={refSelectElement} class={styles.select} style={props.selectStyle}>
                 <div class={styles.selectText}>
                     <div style={{"display": "flex", "flex-direction": "column"}}>
                         <Show when={props.label}>
@@ -72,7 +74,10 @@ const Dropdown: Component<DropdownProps> = (props) => {
                 </div>
             </div>
             <Show when={showOptions$().show}>
-                <div class={styles.optionsContainer} ref={optionsElement} use:focusScope={{
+                <div classList={{
+                        [styles.optionsContainer]: true,
+                        [styles.upwards]: props.direction === "up"
+                    }} ref={optionsElement} use:focusScope={{
                     id: "dropdown",
                     initialMode: 'trap'
                 }}>

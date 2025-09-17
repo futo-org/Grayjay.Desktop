@@ -39,7 +39,7 @@ namespace Grayjay.ClientServer.Controllers
                 throw DialogException.FromException("Import not supported in server-mode", new Exception("For import support, run the application in ui mode, server support might be added at a later time"));
 
             var file = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowFileDialogAsync([ 
-                ("Zip (*.zip)", "*.zip") 
+                ("Zip (*.zip)", "*.zip")
             ]);
 
             if (!string.IsNullOrEmpty(file))

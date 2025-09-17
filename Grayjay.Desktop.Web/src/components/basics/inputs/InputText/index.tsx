@@ -38,23 +38,28 @@ const InputText: Component<InputTextProps> = (props) => {
 
     const [hasFocus, setHasFocus] = createSignal(false);
     const [touched, setTouched] = createSignal(false);
+    const [isComposing, setIsComposing] = createSignal(false);
     let wasEnterDown = false;
 
     createEffect(() => {
         merged.onTextChanged?.(text());
     });
 
-    const onKey = (ev: KeyboardEvent, isUp: Boolean) => {
-        console.info("onKey", {ev, isUp, activeElement: document.activeElement, inputElement});
-        if (document.activeElement === inputElement && ev.key === 'Enter') {
-            if (isUp) {
-                if (wasEnterDown) {
-                    merged.onSubmit?.(text());
-                    wasEnterDown = false;
-                }
-            } else {
-                wasEnterDown = true;
-            }
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (
+            e.key === "Enter" &&
+            !isComposing() &&
+            !(e as any).isComposing &&
+            !e.repeat &&
+            !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
+        ) {
+            e.preventDefault();
+            props.onSubmit?.(text());
+        }
+
+        if (e.key === "Escape" && !isComposing() && props.showClearButton) {
+            e.preventDefault();
+            clear();
         }
     };
 
@@ -116,8 +121,7 @@ const InputText: Component<InputTextProps> = (props) => {
                             setTouched(true);
                             setText(e.target.value);
                         }} 
-                        onKeyDown={e => onKey(e, false)}
-                        onKeyUp={e => onKey(e, true)}
+                        onKeyDown={handleKeyDown}
                         onFocus={() => { 
                             if (!hasFocus()) {
                                 setHasFocus(true);
@@ -131,6 +135,8 @@ const InputText: Component<InputTextProps> = (props) => {
                                 merged.onFocusChanged?.(false);
                             }
                         }}
+                        onCompositionStart={() => setIsComposing(true)}
+                        onCompositionEnd={() => setIsComposing(false)}
                         style={props.inputStyle} />
                 </div>
                 <Show when={props.showClearButton && text().length > 0}>

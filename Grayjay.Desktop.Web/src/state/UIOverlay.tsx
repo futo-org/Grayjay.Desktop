@@ -34,6 +34,7 @@ import OverlayDownloadMultipleDialog from "../overlays/OverlayDownloadMultipleDi
 import OverlayImage from "../overlays/OverlayImage";
 import IPluginPrompt from "../backend/models/plugin/IPluginPrompt";
 import StateGlobal from "./StateGlobal";
+import OverlayFilePicker, { PickerSelectionMode } from "../overlays/OverlayFilePicker";
 
 export interface IExceptionDialogHandlers {
   back?: () => void,
@@ -119,6 +120,20 @@ export interface UIOverlay {
         this.overlay({
           custom: () => (
             <OverlayImage img={img} />
+          )
+        })
+      },
+      overlayOpenFilePicker(onPick?: (paths: string[]) => void, selectionMode?: PickerSelectionMode, allowMultiple?: boolean, filters?: { name: string, pattern: string }[]) {
+        this.overlay({
+          custom: () => (
+            <OverlayFilePicker allowMultiple={allowMultiple} selectionMode={selectionMode} onPick={onPick} mode="open" filters={filters} />
+          )
+        })
+      },
+      overlaySaveFilePicker(onPick?: (paths: string[]) => void, defaultFileName?: string, filters?: { name: string, pattern: string }[]) {
+        this.overlay({
+          custom: () => (
+            <OverlayFilePicker defaultFileName={defaultFileName} onPick={onPick} mode="save" filters={filters} />
           )
         })
       },

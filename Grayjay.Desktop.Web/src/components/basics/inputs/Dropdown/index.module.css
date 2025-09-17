@@ -48,6 +48,11 @@
   z-index: 999;
 }
 
+.optionsContainer.upwards {
+  top: auto;
+  bottom: 100%;
+}
+
 .optionsContainer::-webkit-scrollbar {
   width: 10px;
 }

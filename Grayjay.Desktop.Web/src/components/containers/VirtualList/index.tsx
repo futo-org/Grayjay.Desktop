@@ -99,16 +99,7 @@ const VirtualList: Component<VirtualListProps> = (props) => {
     });
 
     const getFreePoolItem = () => {
-        const range = visibleRange();
-        const p = pool();
-        if (range) {
-            return p.find(item => {
-                const index = item.index();
-                return index === undefined || index < range.startIndex || index > range.endIndex;
-            });
-        } else {
-            return p.find(item => item.index() === undefined);
-        }
+        return pool().find(item => item.index() === undefined);
     };
 
     let lastAddedItems: Event1<{ startIndex: number, endIndex: number }> | undefined;

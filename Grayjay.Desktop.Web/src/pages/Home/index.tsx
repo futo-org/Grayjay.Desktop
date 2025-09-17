@@ -1,4 +1,4 @@
-import { createResource, type Component, Show } from 'solid-js';
+import { createResource, type Component, Show, onMount } from 'solid-js';
 
 import styles from './index.module.css';
 import { HomeBackend } from '../../backend/HomeBackend';
@@ -16,11 +16,22 @@ import { useNavigate } from '@solidjs/router';
 import EmptyContentView from '../../components/EmptyContentView';
 import { focusable } from '../../focusable'; void focusable;
 import LiveChatWindow from '../../components/LiveChatWindow';
+import UIOverlay from '../../state/UIOverlay';
 
 const HomePage: Component = () => {
   const homePager = StateGlobal.home$;
 
   const nav = useNavigate();
+
+  onMount(() => {
+    UIOverlay.overlaySaveFilePicker((result) => {
+      console.info("pick result", result);
+    }, "test.mp4", [
+      { name: "Zip (*.zip)", pattern: "*.zip" },
+      { name: "JSON (*.json)", pattern: "*.json" },
+      { name: "All files (*.*)", pattern: "*.*" },
+    ]);
+  });
 
   //createResource(async () => await HomeBackend.homePagerLazy());
   const lastHomeMillis = Math.abs(StateGlobal.lastHomeTime$()?.diffNow().toMillis());

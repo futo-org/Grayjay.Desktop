@@ -124,9 +124,6 @@ const App: Component<RouteSectionProps> = (props) => {
               {props.children}
             </div>
           </Show>
-          <div style="position: absolute; bottom: 8px; right: 20px;">
-            <ControllerOverlay />
-          </div>
           <VideoDetailView />
         <OverlayCasting />
       </CastingProvider>
@@ -140,6 +137,9 @@ const App: Component<RouteSectionProps> = (props) => {
         </div>
       </Show>
       <GlobalContextMenu />
+      <div style="position: absolute; bottom: 8px; right: 20px; z-index: 5;">
+        <ControllerOverlay />
+      </div>
     </div>;
   };
 
