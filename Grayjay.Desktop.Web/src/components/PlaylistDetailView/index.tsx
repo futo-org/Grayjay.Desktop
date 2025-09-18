@@ -25,6 +25,7 @@ import { useNavigate } from '@solidjs/router';
 import InputText from '../basics/inputs/InputText';
 import Dropdown from '../basics/inputs/Dropdown';
 import ic_search from '../../assets/icons/search.svg';
+import { OpenIntent } from '../../nav';
 
 interface PlaylistDetailViewProps {
   type: string;
@@ -46,6 +47,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
   const navigate = useNavigate();
 
   const [settingsContent$, setSettingsContent] = createSignal<IPlatformVideo>();
+  const [settingsOpenIntent$, setSettingsOpenIntent] = createSignal<OpenIntent>();
   const settingsMenu$ = createMemo(() => {
     const content = settingsContent$();
     if (!content) {
@@ -79,11 +81,12 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
 
   const [show$, setShow] = createSignal<boolean>(false);
   const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-  function onSettingsClicked(element: HTMLElement, content?: IPlatformVideo) {
+  function onSettingsClicked(element: HTMLElement, openIntent: OpenIntent, content?: IPlatformVideo) {
     contentAnchor.setElement(element);
 
     batch(() => {
       setSettingsContent(content);
+      setSettingsOpenIntent(openIntent);
       setShow(true);
     });
   }
@@ -128,7 +131,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
           <div style="flex-grow: 1"></div>
           <Show when={props.id}>
             <img src={iconSettings} style="width: 24px; height: 100%; margin-left: 16px; margin-right: 16px; padding-left: 16px; padding-right: 16px; cursor: pointer;" onClick={(ev) => {
-              onSettingsClicked(ev.target as HTMLElement, undefined);
+              onSettingsClicked(ev.target as HTMLElement, OpenIntent.Pointer, undefined);
             }} />
           </Show>
           <CustomButton
@@ -161,7 +164,8 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               }}
               onTextChanged={(v) => {
                 setFilterText(v);
-              }} />
+              }}
+              focusableOpts={{}} />
           </div>
 
           <VirtualDragDropList outerContainerRef={scrollContainerRef}
@@ -190,7 +194,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                   onSettings={(el) => {
                     const v = video();
                     if (!v) return;
-                    onSettingsClicked(el, v);
+                    onSettingsClicked(el, OpenIntent.Pointer, v);
                   }} 
                   onDragStart={(e, el) => {
                     startDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, el);
@@ -201,13 +205,25 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                     const v = video();
                     if (!v) return;
                     props.onPlay(v);
+                  }}
+                  focusableOpts={{
+                    onPress: () => {
+                      const v = video();
+                      if (!v) return;
+                      props.onPlay(v);
+                    },
+                    onOptions: (el, openIntent) => {
+                      const v = video();
+                      if (!v) return;
+                      onSettingsClicked(el, openIntent, v);
+                    }
                   }} />
               );
             }} />
         </ScrollContainer>
       </LoaderContainer>
       <Portal>
-        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} />
+        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} openIntent={settingsOpenIntent$()} />
       </Portal>
     </div>
   );

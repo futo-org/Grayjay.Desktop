@@ -9,12 +9,15 @@ import { useNavigate } from '@solidjs/router';
 import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { IPlatformPost } from '../../../backend/models/content/IPlatformPost';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface PostProps {
   post?: IPlatformPost;
   onClick: () => void;
   onSettings?: (element: HTMLDivElement, content: IPlatformPost) => void;
   style?: JSX.CSSProperties;
+  focusableOpts?: FocusableOptions;
 }
 
 const PostThumbnailView: Component<PostProps> = (props) => {
@@ -47,7 +50,7 @@ const PostThumbnailView: Component<PostProps> = (props) => {
 
   const showAuthorThumbnail$ = createMemo(() => props.post?.author.thumbnail && props.post?.author.thumbnail.length);
   return (
-    <div class={styles.container} style={props.style}>
+    <div class={styles.container} style={props.style} use:focusable={props.focusableOpts}>
         <div class={styles.title} onClick={props.onClick} onDragStart={startDrag} draggable={true}>{props.post?.name}</div>
         <div class={styles.description} onClick={props.onClick} style={{height: !hasThumbnails$() ? "calc(100% - 140px)" : "calc(100% - 240px)"}}>
           {props.post?.description}

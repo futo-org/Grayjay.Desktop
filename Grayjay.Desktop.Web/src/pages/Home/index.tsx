@@ -39,7 +39,7 @@ const HomePage: Component = () => {
         <Show when={homePager.state == 'ready'}>
           <Show when={homePager() && homePager()!.data.length > 0}>
             <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={homePager()} outerContainerRef={scrollContainerRef} />
+              <ContentGrid pager={homePager()} outerContainerRef={scrollContainerRef} openChannelButton={true} />
             </ScrollContainer>
           </Show>
           <Show when={homePager() && homePager()!.data.length == 0}>

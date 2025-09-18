@@ -89,18 +89,23 @@ const CreatorsPage: Component = () => {
   const hideSubscriptionSettings = () => {
     const subscription = subscriptionMenu$().subscription;
     if (!subscription) {
-      return;
+      return false;
     }
 
     const subscriptionSettings = subscriptionMenu$().subscriptionSettings;
     if (!subscriptionSettings) {
-      return;
+      return false;
     }
 
     console.log("subscriptionSettings", subscriptionSettings);
-
     SubscriptionsBackend.updateSubscriptionSettings(subscription.channel.url, subscriptionSettings);
+
+    if (!showSettings$()) {
+      return false;
+    }
+
     setShowSettings(false);
+    return true;
   };
 
   const valueString$ = createMemo(() => {
@@ -130,7 +135,7 @@ const CreatorsPage: Component = () => {
                     setDisabledSources([... disabledSources(), i.id]);
                 }
               })) ?? []
-            }} />
+            }} focusable={true} />
             <InputText icon={ic_search} placeholder={"Search subscriptions"}
               value={filterText()}
               showClearButton={true}
@@ -140,7 +145,8 @@ const CreatorsPage: Component = () => {
               }}
               onTextChanged={(v) => {
                 setFilterText(v);
-              }} />
+              }}
+              focusableOpts={{}} />
             <Dropdown label="Sort by" onSelectedChanged={(v) => setSortBy(v)} value={sortBy()} options={sortOptions} anchorStyle={AnchorStyle.BottomLeft} style={{"width": "230px"}} />
           </div>
 
@@ -172,7 +178,16 @@ const CreatorsPage: Component = () => {
                   showSubscriptionSettings(el, item());
                 }}
                 subscription={item()}
-                isSubscribedInitialState={true} />
+                isSubscribedInitialState={true}
+                focusableOpts={item() ? {
+                    onPress: () => {
+                    const url = item()?.channel?.url;
+                    if(url)
+                      navigate("/web/channel?url=" + encodeURIComponent(url), { state: { author: item()?.channel } })
+                    },
+                    onOptions: (e, openIntent) => showSubscriptionSettings(e, item()),
+                    onBack: () => hideSubscriptionSettings()
+                } : undefined} />
             } />
         </ScrollContainer>
       </Show>

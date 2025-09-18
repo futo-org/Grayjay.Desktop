@@ -39,6 +39,7 @@ import { useNavigate } from '@solidjs/router';
 import EmptyContentView from '../../components/EmptyContentView';
 import { DialogButton, DialogDescriptor, IDialogOutput } from '../../overlays/OverlayDialog';
 import { SettingsBackend } from '../../backend/SettingsBackend';
+import { focusable } from '../../focusable'; void focusable;
 
 //const subs = await SubscriptionsBackend.subscriptions();
 //const subPager = await SubscriptionsBackend.subscriptionPager();
@@ -237,7 +238,7 @@ const SubscriptionsPage: Component = () => {
   }
 
   const [subGroupsExpanded$, setSubGroupsExpanded] = createSignal(false);
-  function newSubscriptionGroup(){
+  function newSubscriptionGroup() {
     UIOverlay.overlayNewSubscriptionGroup((group)=>{
       subGroupsResource.refetch();
     });
@@ -280,13 +281,20 @@ const SubscriptionsPage: Component = () => {
       <NavigationBar isRoot={true} childrenAfter={
           <img src={iconRefresh} style={{"margin-left": "24px", "cursor": "pointer", "height": "30px", "width": "30px" }}
             ref={setReloadButtonRef}
+            use:focusable={{ onPress: () => setShowReloadMenu(true) }}
             onClick={()=>{ setShowReloadMenu(true) }} />
       } />
-      <Show when={subs$() && subs$()!.length > 0}>
-        <div style="flex-shrink: 0; position: relative;">
-          <div class={styles.subBar}>
-            <For each={subs$()}>{(sub, i) =>
-              <div class={styles.channel} onClick={()=>toggleCreator(sub.channel.url)} classList={{[styles.active]: selectedCreators$().indexOf(sub.channel.url) >= 0}}>
+      <ScrollContainer ref={scrollContainerRef}>
+        <Show when={subs$() && subs$()!.length > 0}>
+          <div style="flex-shrink: 0; position: relative;">
+            <div class={styles.subBar}>
+              <For each={subs$()}>{(sub, i) =>
+                <div 
+                  class={styles.channel} 
+                  onClick={() => toggleCreator(sub.channel.url)} 
+                  classList={{[styles.active]: selectedCreators$().indexOf(sub.channel.url) >= 0}} 
+                  use:focusable={{ onPress: () => toggleCreator(sub.channel.url) }}
+                >
                   <div>
                     <img src={sub.channel.thumbnail} class={styles.channelImg} />
                     <div class={styles.sourceIcon}>
@@ -296,113 +304,130 @@ const SubscriptionsPage: Component = () => {
                   <div class={styles.channelText}>
                     {sub.channel.name}
                   </div>
-              </div>
-            }</For>
-          </div>
-          <Show when={!hasSubGroups$() && StateGlobal.settings$().object.subscriptions?.showSubscriptionGroups}>
-            <div class={styles.subgroupBanner}>
-              <div class={styles.bannerText}>
-                <div class={styles.bannerTitle}>
-                  Stay organized with Subscription Groups
-                </div>
-                <div class={styles.bannerDescription}>
-                  Subscription groups are your personalized way to organize and enjoy content from multiple creators.
-                </div>
-              </div>
-              <div style="flex-grow: 1"></div>
-              <div class={styles.bannerButtons}>
-                <Button text="Create a subscription group" color="linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)"
-                  onClick={()=>newSubscriptionGroup()} />
-                <Button text="Dismiss" color="transparant" style={{ border: "1px solid rgba(1, 155, 231, 0)", "margin-left": "16px" }} 
-                  onClick={()=>dismissSubscriptionGroups()} />
-              </div>
-            </div>
-          </Show>
-          <Show when={hasSubGroups$()}>
-              <div class={styles.subgroups} style={{
-                height: subGroupsExpanded$() ? undefined : '82px',
-                overflow: 'hidden'
-              }}>
-                <div class={styles.subGroupExpand} onClick={()=>setSubGroupsExpanded(!subGroupsExpanded$())}>
-                  <Show when={subGroupsExpanded$()}>
-                    <img src={iconChevUp} />
-                  </Show>
-                  <Show when={!subGroupsExpanded$()}>
-                    <img src={iconChevDown} />
-                  </Show>
-                </div>
-                <For each={subGroups$()}>{(subGroup: ISubscriptionGroup, i) =>
-                  <div class={styles.subgroup} classList={{[styles.active]: subGroup.id == selectedGroup$() }} 
-                      onClick={()=>(subGroup.id == selectedGroup$()) ? setSelectedGroup(undefined) : setSelectedGroup(subGroup.id)}>
-                    <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(subGroup.image) + ")"}} />
-                    
-                    <img class={styles.editIcon} src={iconEdit} onClick={(ev)=>{ UIOverlay.overlayEditSubscriptionGroup(subGroup); ev.stopPropagation()}} />
-                    <div class={styles.name}>
-                      {subGroup.name}
-                    </div>
-                  </div>
-                }</For>
-                <div class={styles.subgroup} style="cursor: pointer" onClick={()=>newSubscriptionGroup()}>
-                  <div class={styles.image} style={{"background": "#222"}} />
-                  <div class={styles.centerText}>
-                    New Group
-                  </div>
-                </div>
-              </div>
-          </Show>
-          <Show when={!!filters}>
-            <div class={styles.filters}>
-              <For each={filters}>{(filter, i) =>
-                <div class={styles.filter} classList={{[styles.active]: filter.active[0]()}} onClick={()=>toggleFilter(i())}>
-                  <div class={styles.name}>
-                    {filter.name}
-                  </div>
                 </div>
               }</For>
             </div>
-          </Show>
-          <Show when={subProgress$() > 0 && subProgress$() < 1}>
-              <div style={{height: "2px", width: (subProgress$() * 100) + "%", position: "absolute", bottom: "1px", background: "linear-gradient(267deg, rgb(1, 214, 230) -100.57%, rgb(1, 130, 231) 90.96%)"}}>
+            <Show when={!hasSubGroups$() && StateGlobal.settings$().object.subscriptions?.showSubscriptionGroups}>
+              <div class={styles.subgroupBanner}>
+                <div class={styles.bannerText}>
+                  <div class={styles.bannerTitle}>
+                    Stay organized with Subscription Groups
+                  </div>
+                  <div class={styles.bannerDescription}>
+                    Subscription groups are your personalized way to organize and enjoy content from multiple creators.
+                  </div>
+                </div>
+                <div style="flex-grow: 1"></div>
+                <div class={styles.bannerButtons}>
+                  <Button text="Create a subscription group" color="linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)" focusColor="linear-gradient(267deg, #00eeffff -100.57%, #0091ffff 90.96%)"
+                    onClick={() => newSubscriptionGroup()} focusableOpts={{ onPress: () => newSubscriptionGroup() }} />
+                  <Button text="Dismiss" color="transparant" focusColor="#FFFFFF22" style={{ border: "1px solid rgba(1, 155, 231, 0)", "margin-left": "16px" }} 
+                    onClick={() => dismissSubscriptionGroups()} focusableOpts={{ onPress: () => dismissSubscriptionGroups() }} />
+                </div>
               </div>
             </Show>
-        </div>
-        <Show when={!currentPager$() || (hasSelectedCreator$() && filterPager$.state != "ready")}>
-          <LoaderGrid itemCount={18} />
-        </Show>
-        <Show when={currentPager$() && (!hasSelectedCreator$() || filterPager$.state == "ready")}>
-          <div class={styles.content}>
-            <Portal>
-              <SettingsMenu menu={reloadMenu} show={showReloadMenu$()} anchor={anchor} onHide={()=>setShowReloadMenu(false)} />
-            </Portal>
-            <ScrollContainer ref={scrollContainerRef}>
-              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} useCache={true} />
-            </ScrollContainer>
+            <Show when={hasSubGroups$()}>
+                <div class={styles.subgroups} style={{
+                  height: subGroupsExpanded$() ? undefined : '86px',
+                  overflow: 'hidden'
+                }}>
+                  <div 
+                    class={styles.subGroupExpand} 
+                    onClick={()=>setSubGroupsExpanded(!subGroupsExpanded$())}
+                    use:focusable={{ onPress: () => setSubGroupsExpanded(!subGroupsExpanded$()) }}
+                  >
+                    <Show when={subGroupsExpanded$()}>
+                      <img src={iconChevUp} />
+                    </Show>
+                    <Show when={!subGroupsExpanded$()}>
+                      <img src={iconChevDown} />
+                    </Show>
+                  </div>
+                  <For each={subGroups$()}>{(subGroup: ISubscriptionGroup, i) =>
+                    <div 
+                      class={styles.subgroup} 
+                      classList={{[styles.active]: subGroup.id == selectedGroup$() }} 
+                      onClick={()=>(subGroup.id == selectedGroup$()) ? setSelectedGroup(undefined) : setSelectedGroup(subGroup.id)}
+                      use:focusable={{ onOptions: () => UIOverlay.overlayEditSubscriptionGroup(subGroup), onPress: () => (subGroup.id == selectedGroup$()) ? setSelectedGroup(undefined) : setSelectedGroup(subGroup.id) }}
+                    >
+                      <div class={styles.image} style={{"background-image": "url(" + proxyImageVariable(subGroup.image) + ")"}} />
+                      
+                      <img class={styles.editIcon} src={iconEdit} onClick={(ev)=>{ UIOverlay.overlayEditSubscriptionGroup(subGroup); ev.stopPropagation()}} />
+                      <div class={styles.name}>
+                        {subGroup.name}
+                      </div>
+                    </div>
+                  }</For>
+                  <div 
+                    class={styles.subgroup} 
+                    style="cursor: pointer" 
+                    onClick={()=>newSubscriptionGroup()}
+                    use:focusable={{ onPress: () => newSubscriptionGroup() }}
+                  >
+                    <div class={styles.image} style={{"background": "#222"}} />
+                    <div class={styles.centerText}>
+                      New Group
+                    </div>
+                  </div>
+                </div>
+            </Show>
+            <Show when={!!filters}>
+              <div class={styles.filters}>
+                <For each={filters}>{(filter, i) =>
+                  <div 
+                    class={styles.filter}
+                    classList={{[styles.active]: filter.active[0]()}}
+                    onClick={()=>toggleFilter(i())}
+                    use:focusable={{ onPress: () => toggleFilter(i()) }}
+                  >
+                    <div class={styles.name}>
+                      {filter.name}
+                    </div>
+                  </div>
+                }</For>
+              </div>
+            </Show>
+            <Show when={subProgress$() > 0 && subProgress$() < 1}>
+                <div style={{height: "2px", width: (subProgress$() * 100) + "%", position: "absolute", bottom: "1px", background: "linear-gradient(267deg, rgb(1, 214, 230) -100.57%, rgb(1, 130, 231) 90.96%)"}}>
+                </div>
+              </Show>
           </div>
+          <Show when={!currentPager$() || (hasSelectedCreator$() && filterPager$.state != "ready")}>
+            <LoaderGrid itemCount={18} />
+          </Show>
+          <Show when={currentPager$() && (!hasSelectedCreator$() || filterPager$.state == "ready")}>
+            <div class={styles.content}>
+              <Portal>
+                <SettingsMenu menu={reloadMenu} show={showReloadMenu$()} anchor={anchor} onHide={()=>setShowReloadMenu(false)} />
+              </Portal>
+              <ContentGrid pager={currentPager$()} outerContainerRef={scrollContainerRef} useCache={true} openChannelButton={true} />
+            </div>
+          </Show>
         </Show>
-      </Show>
-      <Show when={(!subs$() || subs$()!.length == 0) && !subs$.loading}>
+        <Show when={(!subs$() || subs$()!.length == 0) && !subs$.loading}>
 
-        <EmptyContentView 
-          icon={iconSubscriptions}
-          title='You have no subscriptions'
-          description='Subscribe to some creators or import them from elsewhere.'
-          actions={[
-            {
-              icon:iconSubscriptions,
-              title: "Import Subscriptions",
-              action: ()=>{UIOverlay.dismiss(); UIOverlay.overlayImportSelect()}
-            },
-            {
-              icon: iconSearch,
-              title: "Search Creators",
-              color: "#019BE7",
-              action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
-            }
-          ]} />
-      </Show>
-      <Show when={(!subs$() || subs$()!.length == 0) && subs$.loading}>
-        <LoaderGrid />
-      </Show>
+          <EmptyContentView 
+            icon={iconSubscriptions}
+            title='You have no subscriptions'
+            description='Subscribe to some creators or import them from elsewhere.'
+            actions={[
+              {
+                icon:iconSubscriptions,
+                title: "Import Subscriptions",
+                action: ()=>{UIOverlay.dismiss(); UIOverlay.overlayImportSelect()}
+              },
+              {
+                icon: iconSearch,
+                title: "Search Creators",
+                color: "#019BE7",
+                action: ()=>{navigate("/web/search?type=" + ContentType.CHANNEL)}
+              }
+            ]} />
+        </Show>
+        <Show when={(!subs$() || subs$()!.length == 0) && subs$.loading}>
+          <LoaderGrid />
+        </Show>
+      </ScrollContainer>
     </div>
   );
 };

@@ -10,6 +10,8 @@ import { useNavigate } from '@solidjs/router';
 import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import AnimatedImage from '../../basics/AnimatedImage';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface VideoProps {
   video?: IPlatformVideo;
@@ -19,6 +21,7 @@ interface VideoProps {
   style?: JSX.CSSProperties;
   imageStyle?: JSX.CSSProperties;
   useCache?: boolean;
+  focusableOpts?: FocusableOptions;
 }
 
 const VideoThumbnailView: Component<VideoProps> = (props) => {
@@ -27,7 +30,6 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
   })
   var progress$ = createMemo(()=>{
     let videoAny = props.video as any;
-    console.log(videoAny?.metadata, props.video?.duration);
     return (videoAny?.metadata?.position && props.video?.duration && props.video.duration > 0) ? (videoAny?.metadata?.position / props.video!.duration) : 0;
   })
   
@@ -56,15 +58,20 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
       props.onClick();
   }
 
+  function openMoreOverlay() {
+    props.onSettings?.(refMoreButton!, props.video!)
+  }
+
   const showAuthorThumbnail$ = createMemo(() => props.video?.author?.thumbnail && props.video?.author.thumbnail.length);
   return (
-    <div class={styles.container} style={props.style}>
+    <div class={styles.container} style={props.style} use:focusable={props.focusableOpts}>
         <div class={styles.videoThumbnail} 
           style={{... props.imageStyle}} 
           draggable={true}
           onDragStart={startDrag}
           onClick={onClicked}>
-            <AnimatedImage class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
+          
+          <AnimatedImage class={styles.image} src={(!props.useCache) ? bestThumbnail$()?.url?.replace("u0026", "&") : "/Images/CachePassthrough?url=" + encodeURIComponent(bestThumbnail$()?.url?.replace("u0026", "&") ?? "")} referrerPolicy='no-referrer' />
 
           <Show when={pluginIconUrl()}>
             <img src={pluginIconUrl()} class={styles.sourceIcon} />
@@ -107,7 +114,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
             </Show>
             
             <Show when={props.onSettings}>
-              <IconButton icon={more} ref={refMoreButton} onClick={() => props.onSettings?.(refMoreButton!, props.video!)} />
+              <IconButton icon={more} ref={refMoreButton} onClick={() => openMoreOverlay()} />
             </Show>
         </div>
     </div>

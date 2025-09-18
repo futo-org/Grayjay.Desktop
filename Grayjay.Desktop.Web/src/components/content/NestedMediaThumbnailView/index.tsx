@@ -9,12 +9,15 @@ import { useNavigate } from '@solidjs/router';
 import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { IPlatformNestedMedia } from '../../../backend/models/content/IPlatformNestedMedia';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface NestedMediaProps {
   video?: IPlatformNestedMedia;
   onClick: () => void;
   onSettings?: (element: HTMLDivElement, content: IPlatformNestedMedia) => void;
   style?: JSX.CSSProperties;
+  focusableOpts?: FocusableOptions;
 }
 
 const NestedMediaThumbnailView: Component<NestedMediaProps> = (props) => {
@@ -48,7 +51,7 @@ const NestedMediaThumbnailView: Component<NestedMediaProps> = (props) => {
 
   const showAuthorThumbnail$ = createMemo(() => props.video?.author.thumbnail && props.video?.author.thumbnail.length);
   return (
-    <div class={styles.container} style={props.style}>
+    <div class={styles.container} style={props.style} use:focusable={props.focusableOpts}>
         <div class={styles.videoThumbnail} 
           style={{"background-image": "url(" + bestThumbnail$()?.url?.replace("u0026", "&") + ")"}} 
           draggable={true}

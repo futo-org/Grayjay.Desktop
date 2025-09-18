@@ -11,6 +11,7 @@ interface SubscribeButtonProps {
     style?: JSX.CSSProperties;
     onIsSubscribedChanged?: (isSubscribed: boolean) => void;
     isSubscribedInitialState?: boolean;
+    focusable?: boolean;
 }
 
 const SubscribeButton: Component<SubscribeButtonProps> = (props) => {    
@@ -47,14 +48,26 @@ const SubscribeButton: Component<SubscribeButtonProps> = (props) => {
                     const url = props.author;
                     if (url)
                         unsubscribe(url);
-                }} />
+                }} focusableOpts={props.focusable === true ? {
+                    onPress: () => {
+                        const url = props.author;
+                        if (url)
+                            unsubscribe(url);
+                    }
+                } : undefined} />
             </Show>
             <Show when={!isSubscribing$() && (isSubscribed$() === false || (isSubscribed$() === undefined && props.isSubscribedInitialState === false))}>
                 <ButtonFlex style={{ width: "170px", ... props.style }} small={props.small} text="Subscribe" color="#019BE7" onClick={ () => {
                     const url = props.author;
                     if (url)
                         subscribe(url);
-                }} />
+                }} focusableOpts={props.focusable === true ? {
+                    onPress: () => {
+                        const url = props.author;
+                        if (url)
+                            subscribe(url);
+                    }
+                } : undefined} />
             </Show>
             <Show when={isSubscribing$()}>
                 <LoadingButton style={{ width: "170px", ... props.style }} small={props.small} text="" color="#019BE7" onClick={ () => {

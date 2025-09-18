@@ -13,7 +13,6 @@ import SearchPage from './pages/Search';
 import StateGlobal from './state/StateGlobal';
 import DownloadsPage from './pages/Downloads';
 import HistoryPage from './pages/History';
-import SettingsPage from './pages/Settings';
 import OverlayModals from './overlays/OverlayModals';
 import OverlayRoot from './overlays/OverlayRoot';
 import OverlayCasting from './components/casting/OverlayCasting';
@@ -21,15 +20,14 @@ import { CastingProvider } from './contexts/Casting';
 import WatchLaterPage from './pages/WatchLater';
 import RemotePlaylistPage from './pages/RemotePlaylist';
 import SyncPage from './pages/Sync';
-import { HandlingBackend } from './backend/HandlingBackend';
 import Globals from './globals';
 import PostDetailView from './components/contentDetails/PostDetailsView';
 import StateWebsocket from './state/StateWebsocket';
 import GlobalContextMenu from './components/GlobalContextMenu';
 import BuyPage from './pages/BuyPage';
-import UIOverlay from './state/UIOverlay';
-import ExceptionModel from './backend/exceptions/ExceptionModel';
 import LoaderGameExamplePage from './pages/LoaderGameExamplePage';
+import { FocusProvider } from './FocusProvider';
+import { focusScope } from './focusScope'; void focusScope;
 
 const HomePage = lazy(() => import('./pages/Home'));
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'));
@@ -65,7 +63,6 @@ StateWebsocket.registerHandlerNew("OpenUrl", (packet)=>{
 const App: Component<RouteSectionProps> = (props) => {
   const [isDropping$, setIsDropping] = createSignal<boolean>();
 
-  let mvEvent: ((a:any)=>void) | null = null;
   function dragOver(ev: any){
     setIsDropping(true);
     if(ev.dataTransfer?.types?.includes("prevent-drag") ?? false)
@@ -118,7 +115,7 @@ const App: Component<RouteSectionProps> = (props) => {
       }
     }
 
-    return <div class="root-container">
+    return <div class="root-container" use:focusScope={{ id: 'content-grid', orientation: 'spatial' }}>
       <CastingProvider>
         <SideBar />
           <Show when={useVideo()?.state() !== VideoState.Maximized}>
@@ -144,7 +141,9 @@ const App: Component<RouteSectionProps> = (props) => {
 
   return <>  
     <VideoProvider>
-      {renderContent()}
+      <FocusProvider>
+        {renderContent()}
+      </FocusProvider>
     </VideoProvider>
   </>
 };

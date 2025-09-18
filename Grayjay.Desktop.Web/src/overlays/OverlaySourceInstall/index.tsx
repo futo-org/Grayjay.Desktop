@@ -20,7 +20,7 @@ export interface OverlaySourceInstallProps {
 const OverlayDialog: Component<OverlaySourceInstallProps> = (props: OverlaySourceInstallProps) => {
 
     return (
-      <OverlayCustomDialog>
+      <OverlayCustomDialog onRootClick={()=>{UIOverlay.dismiss();}} onCloseClick={()=>UIOverlay.dismiss()}>
         <div style="margin-top: -90px; width: 750px" onClick={(ev)=>ev.stopPropagation()}>
           <div class={styles.header}>
             <div class={styles.icon}>

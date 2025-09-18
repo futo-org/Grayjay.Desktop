@@ -9,6 +9,7 @@ import TransparentIconButton from '../../buttons/TransparentIconButton';
 import SearchBar from '../SearchBar';
 import { useCasting } from '../../../contexts/Casting';
 import { ContentType } from '../../../backend/models/ContentType';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface NavigationBarProps {
   initialText?: string;
@@ -39,7 +40,9 @@ const NavigationBar: Component<NavigationBarProps> = (props) => {
         {props.childrenAfter}
       </Show>
 
-      <img src={cast} style={{"margin-left": "24px", "cursor": "pointer" }} onClick={() => casting?.actions.open()} />
+      <img src={cast} style={{"margin-left": "24px", "cursor": "pointer" }} onClick={() => casting?.actions.open()} use:focusable={{
+        onPress: () => casting?.actions.open()
+      }} />
     </div>
   );
 };

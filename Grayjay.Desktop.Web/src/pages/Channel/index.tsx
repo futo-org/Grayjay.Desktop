@@ -117,12 +117,12 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
             <Show when={subscription$()}>
               <TransparentIconButton ref={moreElement} icon={more} style={{"width": "42px", "height": "42px"}} onClick={(ev) => showSubscriptionSettings(ev.target as HTMLElement, subscription$()!)} />
             </Show>
-            <SubscribeButton small={true} author={props.authorUrl} style={{"width": "110px"}} onIsSubscribedChanged={() => subscriptionResource.refetch()} />
+            <SubscribeButton small={true} author={props.authorUrl} style={{"width": "110px"}} onIsSubscribedChanged={() => subscriptionResource.refetch()} focusable={true} />
           </div>
         </div>
         <div class={styles.containerTabButtons}>
           <ButtonGroup defaultSelectedItem="Videos" items={["Videos"/*, "Channels", "Support"*/, "About"]}
-          style={{opacity: 1 - p(), "flex-shrink": 0}} onItemChanged={(item) => props.onActiveTabChanged?.(item)} />
+          style={{opacity: 1 - p(), "flex-shrink": 0}} onItemChanged={(item) => props.onActiveTabChanged?.(item)} focusableOpts={{}} />
         </div>
       </div>
       <Portal>
@@ -257,7 +257,8 @@ const ChannelPage: Component = () => {
                   onSubmit={() => {
                     console.log("Channel Search Submit");
                     updatePager(query$(), channel$()?.url ?? params.url)
-                    }} />
+                    }} 
+                  focusableOpts={{}} />
                 </Show>
                       
                 <Show when={error$()}>

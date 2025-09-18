@@ -33,6 +33,7 @@ import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
 import InputText from '../../components/basics/inputs/InputText';
 import Dropdown from '../../components/basics/inputs/Dropdown';
 import ic_search from '../../assets/icons/search.svg';
+import { OpenIntent } from '../../nav';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -71,9 +72,9 @@ const PlaylistsPage: Component = () => {
   };
 
   const [settingsContent$, setSettingsContent] = createSignal<IPlatformVideo | IPlaylist>();
+  const [settingsOpenIntent$, setSettingsOpenIntent] = createSignal<OpenIntent>();
   const settingsMenu$ = createMemo(() => {
     const content = settingsContent$();
-
     const itemsArray = [
       ((content as any)?.contentType === ContentType.MEDIA ? addMediaMenuItems(content as IPlatformVideo) : []),
       !(content as any)?.contentType && (content as any)?.id ? Menus.getPlaylistItems((content as IPlaylist).id, () => {
@@ -96,7 +97,7 @@ const PlaylistsPage: Component = () => {
 
   const [show$, setShow] = createSignal<boolean>(false);
   const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
-  function onSettingsClicked(element: HTMLElement, content: IPlatformVideo | IPlaylist) {
+  function onSettingsClicked(element: HTMLElement, content: IPlatformVideo | IPlaylist, openIntent: OpenIntent) {
     contentAnchor.setElement(element);
 
     batch(() => {
@@ -254,7 +255,10 @@ const PlaylistsPage: Component = () => {
                 style={{
                   "margin-right": "48px"
                 }}
-                onClick={() =>createPlaylist()} />
+                onClick={() =>createPlaylist()}
+                focusableOpts={{
+                  onPress: () => createPlaylist()
+                }} />
             </div>
 
             <div class={styles.containerFilters}>
@@ -267,7 +271,8 @@ const PlaylistsPage: Component = () => {
                 }}
                 onTextChanged={(v) => {
                   setFilterText(v);
-                }} />
+                }}
+                focusableOpts={{}} />
               <Dropdown label="Sort by" onSelectedChanged={(v) => setSortBy(v)} value={sortBy()} options={sortOptions} anchorStyle={AnchorStyle.BottomLeft} style={{"width": "280px"}} />
             </div>
             
@@ -303,12 +308,26 @@ const PlaylistsPage: Component = () => {
                           navigate("/web/playlist?id=" + playlist.id);
                         }
                       }}
-                      onSettings={(e) => {
+                      onSettings={(e, openIntent) => {
                         const playlist = item();
                         if (playlist) {
-                          onSettingsClicked(e, playlist);
+                          onSettingsClicked(e, playlist, openIntent);
                         }
-                      }} />
+                      }}
+                      focusableOpts={item() ? {
+                        onPress: () => {
+                          const playlist = item();
+                          if (item()) {
+                            navigate("/web/playlist?id=" + playlist.id);
+                          }
+                        },
+                        onOptions: (el, openIntent) => {
+                          const playlist = item();
+                          if (playlist) {
+                            onSettingsClicked(e, playlist, openIntent);
+                          }
+                        }
+                      } : undefined} />
                   );
                 }} />
             </Show>
@@ -338,7 +357,7 @@ const PlaylistsPage: Component = () => {
         </ScrollContainer>
       
       <Portal>
-        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} />
+        <SettingsMenu menu={settingsMenu$()} show={show$()} onHide={() => onSettingsHidden()} anchor={contentAnchor} openIntent={settingsOpenIntent$()} />
       </Portal>
     </div>
   );

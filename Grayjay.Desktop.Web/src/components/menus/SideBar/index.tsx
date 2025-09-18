@@ -1,4 +1,4 @@
-import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on } from 'solid-js';
+import { createSignal, type Component, Show, Switch, Match, createResource, createEffect, onMount, onCleanup, batch, JSX, createMemo, on, For, Accessor } from 'solid-js';
 
 import styles from './index.module.css';
 import SideBarButton from '../SideBarButton';
@@ -33,6 +33,8 @@ import StateGlobal from '../../../state/StateGlobal';
 import { createResourceDefault } from '../../../utility';
 import { LocalBackend } from '../../../backend/LocalBackend';
 import { Portal } from 'solid-js/web';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from "../../../focusable"; void focusable;
 
 export interface SideBarProps {
   alwaysMinimized?: boolean;
@@ -73,57 +75,43 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
     console.log("Subs loaded: " + !!subs);
   });
 
+  type ButtonItem = {
+    icon: string;
+    name: string;
+    getSelected: Accessor<boolean>;
+    path?: string;
+    action?: () => any;
+    onRightClick?: () => void;
+  };
+  
+  const homeBtn: ButtonItem = { icon: home, name: 'Home', path: '/web/home', getSelected: createMemo(() => location.pathname === '/web/home' || location.pathname === '/web/index.html') };
+  const subscriptionsBtn: ButtonItem = { icon: subscriptions, name: 'Subscriptions', path: '/web/subscriptions', getSelected: createMemo(() => location.pathname === '/web/subscriptions') };
+  const creatorsBtn: ButtonItem = { icon: creators, name: 'Creators', path: '/web/creators', getSelected: createMemo(() => location.pathname === '/web/creators') };
+  const playlistsBtn: ButtonItem = { icon: playlists, name: 'Playlists', path: '/web/playlists', getSelected: createMemo(() => location.pathname === '/web/playlists') };
+  const watchLaterBtn: ButtonItem = { icon: iconWatchLater, name: 'Watch Later', path: '/web/watchLater', getSelected: createMemo(() => location.pathname === '/web/watchLater') };
+  const sourcesBtn: ButtonItem = { icon: iconSources, name: 'Sources', path: '/web/sources', getSelected: createMemo(() => location.pathname === '/web/sources') };
+  const downloadsBtn: ButtonItem = { icon: download, name: 'Downloads', path: '/web/downloads', getSelected: createMemo(() => location.pathname === '/web/downloads') };
+  const historyBtn: ButtonItem = { icon: history, name: 'History', path: '/web/history', getSelected: createMemo(() => location.pathname === '/web/history') };
+  const syncBtn: ButtonItem = { icon: iconSync, name: 'Sync', path: '/web/sync', getSelected: createMemo(() => location.pathname === '/web/sync') };
+  const newWindowBtn: ButtonItem = { icon: iconPlus, name: 'New Window', action: () => WindowBackend.startWindow(), getSelected: createMemo(() => false) };
+  const delayBtn: ButtonItem = { icon: iconPlus, name: 'Delay', action: () => { WindowBackend.echo('test'); WindowBackend.delay(10000); }, getSelected: createMemo(() => false) };
+  const developerBtn: ButtonItem = { icon: iconLink, name: 'Developer', path: '/Developer/Index', getSelected: createMemo(() => location.pathname === '/Developer/Index'), onRightClick: () => LocalBackend.open(`http://${window.location.host}/Developer/Index`) };
+
   const topButtons$ = createMemo(() => {
-    const list: Array<{
-      icon: string,
-      name: string,
-      selected: boolean,
-      path?: string,
-      action?: () => void,
-      onRightClick?: () => void
-    }> = [
-      { icon: home,          name: 'Home',          path: '/web/home',          selected: location.pathname === '/web/home' || location.pathname === '/web/index.html' },
-      { icon: subscriptions, name: 'Subscriptions',  path: '/web/subscriptions', selected: location.pathname === '/web/subscriptions' },
-      { icon: creators,      name: 'Creators',       path: '/web/creators',      selected: location.pathname === '/web/creators' },
-      { icon: playlists,     name: 'Playlists',      path: '/web/playlists',     selected: location.pathname === '/web/playlists' },
-      //{ icon: playlists,     name: 'Loader Game',      path: '/web/loaderGame',     selected: location.pathname === '/web/loaderGame' },
-    ];
+    let list: ButtonItem[] = [homeBtn, subscriptionsBtn, creatorsBtn, playlistsBtn];
   
     if (video?.watchLater()?.length) {
-      list.push({
-        icon: iconWatchLater,
-        name: 'Watch Later',
-        path: '/web/watchLater',
-        selected: location.pathname === '/web/watchLater'
-      });
+      list.push(watchLaterBtn);
     }
   
-    list.push(
-      { icon: iconSources, name: 'Sources',   path: '/web/sources',   selected: location.pathname === '/web/sources' },
-      { icon: download,    name: 'Downloads', path: '/web/downloads', selected: location.pathname === '/web/downloads' },
-      { icon: history,     name: 'History',   path: '/web/history',   selected: location.pathname === '/web/history' },
-      { icon: iconSync,    name: 'Sync',      path: '/web/sync',      selected: location.pathname === '/web/sync' },
-      { icon: iconPlus,    name: 'New Window', action: () => WindowBackend.startWindow(), selected: false }
-    );
+    list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn, newWindowBtn]);
   
     if (devClicked$() > 5) {
-      list.push({
-        icon: iconPlus,
-        name: 'Delay',
-        action: () => { WindowBackend.echo('test'); WindowBackend.delay(10000); },
-        selected: false
-      });
+      list.push(delayBtn);
     }
   
     if (StateGlobal.isDeveloper$()) {
-      const host = window.location.host;
-      list.push({
-        icon: iconLink,
-        name: 'Developer',
-        path: '/Developer/Index',
-        selected: location.pathname === '/Developer/Index',
-        onRightClick: () => LocalBackend.open(`http://${host}/Developer/Index`)
-      });
+      list.push(developerBtn);
     }
   
     return list;
@@ -134,24 +122,17 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const [remainingSpace$, setRemainingSpace] = createSignal<number>(0);
   const [topButtonListHeight$, setTopButtonListHeight] = createSignal<number>(0);
   
+  const buyBtn: ButtonItem = { icon: iconBuy, name: 'Buy Grayjay', path: '/web/buy', getSelected: createMemo(() => location.pathname === '/web/buy') };
+  const settingsBtn: ButtonItem = { icon: iconSettings, name: 'Settings', action: () => UIOverlay.overlaySettings(), getSelected: createMemo(() => location.pathname === '/web/settings') };
+
   const bottomButtons$ = createMemo(() => {
-    const list: Array<{ icon: string, name: string, selected: boolean, path?: string, action?: () => void }> = [];
+    const list: ButtonItem[] = [];
   
     if (!StateGlobal.didPurchase$()) {
-      list.push({
-        icon: iconBuy,
-        name: 'Buy Grayjay',
-        path: '/web/buy',
-        selected: location.pathname === '/web/buy'
-      });
+      list.push(buyBtn);
     }
   
-    list.push({
-      icon: iconSettings,
-      name: 'Settings',
-      action: () => UIOverlay.overlaySettings(),
-      selected: location.pathname === '/web/settings'
-    });
+    list.push(settingsBtn);
   
     return list;
   });
@@ -232,12 +213,26 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
     navigate(to, options);
   }
 
+  const rowFocus = (order: number, onPress: () => void, onBack?: () => boolean): FocusableOptions => ({
+    roving: true,
+    order,
+    onPress: () => onPress(),
+    onBack
+  });
+  
   return (
     <div class={styles.sidebar} style={props.style} classList={{ [styles.collapsed]: collapsed(), ... props.classList }}>
       <div class={styles.buttonList}>
         <div class={styles.containerCollapse}>
           <Show when={canToggleCollapse()}>
-            <img src={collapsed() ? ic_sidebarOpen : ic_sidebarClose} class={styles.collapse} onClick={handleCollapse} />
+            <img
+              src={collapsed() ? ic_sidebarOpen : ic_sidebarClose}
+              class={styles.collapse}
+              alt=""
+              role="button"
+              use:focusable={{ onPress: handleCollapse, roving: true, order: -1000 }}
+              onClick={handleCollapse}
+            />
           </Show>
         </div>
         <div class={styles.grayjay} oncontextmenu={()=>setDevClicked(devClicked$() + 1)}>
@@ -258,32 +253,37 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             </div>
           </Show>
         </div>
-        {topButtons$().slice(0, visibleTopButtonCount$()).map(btn => (
-          <SideBarButton
-            collapsed={collapsed()}
-            icon={btn.icon}
-            name={btn.name}
-            selected={btn.selected}
-            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-            onRightClick={btn.onRightClick}
-          />
-        ))}
+        <For each={topButtons$().slice(0, visibleTopButtonCount$())}>
+          {(btn, i) => {
+            const press = () => btn.action ? btn.action() : navigateTo(btn.path!, options);
+            return (
+              <SideBarButton
+                collapsed={collapsed()}
+                icon={btn.icon}
+                name={btn.name}
+                selected={btn.getSelected()}
+                onClick={press}
+                onRightClick={btn.onRightClick}
+                focusableOpts={rowFocus(i(), press)}
+              />
+            );
+          }}
+        </For>
         <Show when={moreTopButtonCount$() > 0}>
           <SideBarButton
-              collapsed={collapsed()}
-              icon={ic_more}
-              name={"More"}
-              selected={false}
-              onClick={() => {
-                props?.onMoreOpened?.();
-                setMoreOverlayVisible(true);
-              }}
-            />
+            collapsed={collapsed()}
+            icon={ic_more}
+            name={"More"}
+            selected={false}
+            onClick={() => { props?.onMoreOpened?.(); setMoreOverlayVisible(true); }}
+            focusableOpts={rowFocus(9999, () => { props?.onMoreOpened?.(); setMoreOverlayVisible(true); })}
+          />
         </Show>
       </div>
       <Show when={!collapsed() && subscriptions$()?.length && remainingSpace$() > 200} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
-          <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())}>
+          <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())} 
+            use:focusable={{ onPress: () => setExpand(!expand$()) }}>
               Subscriptions
               <div class={styles.toggle}>
                   <img src={iconChevronDown} />
@@ -313,15 +313,21 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
         </div>
       </Show>
       <div class={styles.buttonListBottom}>
-        {bottomButtons$().map(btn => (
-          <SideBarButton
-            collapsed={collapsed()}
-            icon={btn.icon}
-            name={btn.name}
-            selected={btn.selected}
-            onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-          />
-        ))}
+        <For each={bottomButtons$()}>
+          {(btn, i) => {
+            const press = () => btn.action ? btn.action() : navigateTo(btn.path!, options);
+            return (
+              <SideBarButton
+                collapsed={collapsed()}
+                icon={btn.icon}
+                name={btn.name}
+                selected={btn.getSelected()}
+                onClick={press}
+                focusableOpts={rowFocus(30000 + i(), press)}
+              />
+            );
+          }}
+        </For>
       </div>
       <Portal>
         <Show when={moreTopButtonCount$() > 0 && moreOverlayVisible$()}>
@@ -334,21 +340,40 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
             ev.preventDefault();
             ev.stopPropagation();
           }}>
-            <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex;
-    flex-direction: column; align-items: center; gap: 6px;">
-              {topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$()).map(btn => (
-                  <SideBarButton
-                    collapsed={false}
-                    icon={btn.icon}
-                    name={btn.name}
-                    selected={btn.selected}
-                    onClick={() => btn.action ? btn.action() : navigateTo(btn.path!, options)}
-                    onRightClick={btn.onRightClick}
-                  />
-                ))}
+            <div style="background-color: #141414; width: 200px; height: calc(100% - 20px); border-right: #2a2a2a 1px solid; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <For each={topButtons$().slice(visibleTopButtonCount$(), visibleTopButtonCount$() + moreTopButtonCount$())}>
+                {(btn, i) => {
+                  const press = () => {
+                    props?.onMoreClosed?.();
+                    setMoreOverlayVisible(false);
+                    btn.action ? btn.action() : navigateTo(btn.path!, options);
+                  };
+                  return (
+                    <SideBarButton
+                      collapsed={false}
+                      icon={btn.icon}
+                      name={btn.name}
+                      selected={btn.getSelected()}
+                      onClick={press}
+                      onRightClick={btn.onRightClick}
+                      focusableOpts={{
+                        onPress: press,
+                        onBack: () => {
+                          if (moreOverlayVisible$()) {
+                            props?.onMoreClosed?.(); 
+                            setMoreOverlayVisible(false); 
+                            return true;
+                          }
+                          return false;
+                        }
+                      }}
+                      data-more-first={i() === 0 ? "1" : undefined}
+                    />
+                  );
+                }}
+              </For>
             </div>
           </div>
-
         </Show>
       </Portal>
     </div>

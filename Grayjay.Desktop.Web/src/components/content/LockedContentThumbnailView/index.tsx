@@ -10,12 +10,15 @@ import StateGlobal from '../../../state/StateGlobal';
 import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { IPlatformNestedMedia } from '../../../backend/models/content/IPlatformNestedMedia';
 import { IPlatformLockedContent } from '../../../backend/models/content/IPlatformLockedContent';
+import { FocusableOptions } from '../../../nav';
+import { focusable } from '../../../focusable'; void focusable;
 
 interface LockedContentProps {
   content?: IPlatformLockedContent;
   onClick: () => void;
   onSettings?: (element: HTMLDivElement, content: IPlatformLockedContent) => void;
   style?: JSX.CSSProperties;
+  focusableOpts?: FocusableOptions;
 }
 
 const LockedContentThumbnailView: Component<LockedContentProps> = (props) => {
@@ -49,7 +52,7 @@ const LockedContentThumbnailView: Component<LockedContentProps> = (props) => {
 
   const showAuthorThumbnail$ = createMemo(() => props.content?.author.thumbnail && props.content?.author.thumbnail.length);
   return (
-    <div class={styles.container} style={props.style}>
+    <div class={styles.container} style={props.style} use:focusable={props.focusableOpts}>
         <div class={styles.videoThumbnail} 
           style={{"background-image": "url(" + bestThumbnail$()?.url?.replace("u0026", "&") + ")"}} 
           draggable={true}

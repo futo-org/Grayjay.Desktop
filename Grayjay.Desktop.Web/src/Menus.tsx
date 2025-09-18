@@ -4,6 +4,7 @@ import ic_notifications from './assets/icons/notifications.svg';
 import ic_streams from './assets/icons/streams.svg';
 import ic_videos from './assets/icons/videos.svg';
 import ic_addToPlaylist from './assets/icons/icon_add_to_playlist.svg';
+import ic_subscriptions from './assets/icons/icon_nav_subscriptions.svg';
 import ic_download from './assets/icons/icon24_download.svg';
 import ic_trash from './assets/icons/icon_trash.svg';
 
@@ -11,6 +12,7 @@ import { ISourceConfigState } from "./backend/models/plugin/ISourceConfigState";
 import UIOverlay from "./state/UIOverlay";
 import { PlaylistsBackend } from "./backend/PlaylistsBackend";
 import { IPlaylist } from "./backend/models/IPlaylist";
+import { SubscriptionsBackend } from "./backend/SubscriptionsBackend";
 
 export class Menus {
     static getSubscriptionMenu(subscription: ISubscription, subscriptionSettings: ISubscriptionSettings, sourceState?: ISourceConfigState) {
@@ -25,6 +27,15 @@ export class Menus {
             menu: {
                 title: "",
                 items: [
+                    new MenuItemButton("Unsubscribe", ic_subscriptions, undefined, async () => {
+                        /*UIOverlay.overlayConfirm({
+                            yes: async () => {
+                                await SubscriptionsBackend.unsubscribe(subscription.channel.url);
+                            }
+                        }, "Are you sure you want to unsubscribe?");*/
+                        await SubscriptionsBackend.unsubscribe(subscription.channel.url);
+                    }),
+                    new MenuSeperator(),
                     new MenuItemToggle({
                         icon: ic_notifications,
                         name: "Enable notifications",

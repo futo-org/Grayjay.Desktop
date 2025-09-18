@@ -55,6 +55,28 @@
     height: 24px;
     padding: 16px;
     cursor: pointer;
+    border-radius: 6px;
+}
+
+.collapse:hover {
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.collapse.selected:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.collapse:focus {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.width.selected:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.width:focus {
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .containerCollapse {

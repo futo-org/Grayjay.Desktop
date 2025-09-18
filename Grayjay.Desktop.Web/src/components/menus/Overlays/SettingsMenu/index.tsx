@@ -1,13 +1,14 @@
 
-import { Component, For, JSX, Match, Show, Signal, Switch, batch, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { Accessor, Component, For, JSX, Match, Show, Signal, Switch, batch, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import styles from './index.module.css';
 import chevron_right from '../../../../assets/icons/icon_chevron_right.svg';
 import StateGlobal from '../../../../state/StateGlobal';
-import { Event1 } from '../../../../utility/Event';
 import Toggle from '../../../basics/inputs/Toggle';
 import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
-import Checkbox from '../../../basics/inputs/Checkbox';
 import CheckboxFlex from '../../../basics/inputs/CheckboxFlex';
+import { focusScope } from '../../../../focusScope'; void focusScope;
+import { focusable } from "../../../../focusable"; void focusable;
+import { OpenIntent } from '../../../../nav';
 
 export interface MenuItem {
   type?: string
@@ -141,8 +142,9 @@ export interface SettingsMenuProps {
   anchor?: Anchor,
   show: boolean,
   style?: JSX.CSSProperties,
-  onHide?: ()=>void,
-  ignoreGlobal?: (HTMLElement|undefined)[]
+  onHide?: () => void,
+  ignoreGlobal?: (HTMLElement | undefined)[],
+  openIntent?: OpenIntent
 };
 const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) => {
     let containerRef: HTMLDivElement | undefined;
@@ -152,7 +154,6 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
     const [menu$, setMenu] = createSignal<Menu>(props.menu);
     const [menuStack$, setMenuStack] = createSignal<Menu[]>([]);
     const id = Math.random() * 100000;
-
 
     createEffect(() => {
       setMenu(props.menu);
@@ -207,13 +208,22 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           props.onHide();
     }
 
-    const renderToggle = (item: MenuItemToggle): JSX.Element => {
+    const renderToggle = (item: MenuItemToggle, index: Accessor<number>, onBack: () => boolean): JSX.Element => {
       const [value$, setValue] = createSignal(item.isSelected);
       return (
         <div class={styles.menuToggle} onClick={(ev) => {
           const v = !value$();
           item.onToggle?.(v);
           setValue(!value$());
+        }}
+        use:focusable={{
+          focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+          onPress: () => {
+            const v = !value$();
+            item.onToggle?.(v);
+            setValue(v);
+          },
+          onBack: onBack,
         }}>
           <Show when={item.icon}>
             <img src={item.icon} class={styles.icon} />
@@ -239,13 +249,22 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
       );
     };
 
-    const renderCheckbox = (item: MenuItemCheckbox): JSX.Element => {
+    const renderCheckbox = (item: MenuItemCheckbox, index: Accessor<number>, onBack: () => boolean): JSX.Element => {
       const [value$, setValue] = createSignal(item.isSelected);
       return (
         <div class={styles.menuToggle} onClick={(ev) => {
           const v = !value$();
           item.onToggle?.(v);
           setValue(!value$());
+        }}
+        use:focusable={{
+          focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+          onPress: () => {
+            const v = !value$();
+            item.onToggle?.(v);
+            setValue(v);
+          },
+          onBack: onBack,
         }}>
           <Show when={item.icon}>
             <img src={item.icon} class={styles.icon} />
@@ -340,80 +359,124 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
 
       return props.anchor?.style$();
     });
+
+    const settingsMenuBack = () => {
+      if (props.show) {
+        props.onHide?.();
+        return true;
+      } 
+      return false;
+    };
   
     return (
       <Show when={props.show}>
-      <div class={styles.menu}  ref={containerRef} style={{ ...(anchorStyle$() ?? {}), ...props.style }}>
+      <div 
+        class={styles.menu} 
+        ref={containerRef} 
+        style={{ ...(anchorStyle$() ?? {}), ...props.style }}
+        use:focusScope={{
+          trap: true,
+          wrap: true,
+          orientation: "vertical"
+        }}
+      >
         <Show when={menu$()?.title}>
           <div class={styles.title}>
             {menu$()?.title}
           </div>
         </Show>
-        <For each={menu$()?.items?.filter(x=>x)}>{ item =>
-          <Switch fallback={
-            <div></div>
-          }>
-            <Match when={item.type == "seperator"}>
-              <div style="width: calc(100%); height: 1px; background: #2E2E2E; margin-top: 3px; margin-bottom: 3px;"></div>
-            </Match>
-            <Match when={item.type == "group"}>
-              <div class={styles.menuItem} onClick={()=>openGroup(item as IMenuItemGroup)} classList={{[styles.isGroup]: true}}>
-                <div class={styles.key}>
-                  {(item as IMenuItemGroup).key}
+        <For each={menu$()?.items?.filter(x => x)}>
+          {(item, index) => (
+            <Switch fallback={
+              <div></div>
+            }>
+              <Match when={item.type == "seperator"}>
+                <div style="width: calc(100%); height: 1px; background: #2E2E2E; margin-top: 3px; margin-bottom: 3px;"></div>
+              </Match>
+              <Match when={item.type == "group"}>
+                <div 
+                  class={styles.menuItem} 
+                  onClick={()=>openGroup(item as IMenuItemGroup)} 
+                  classList={{[styles.isGroup]: true}}
+                  use:focusable={{
+                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    onPress: () => openGroup(item as IMenuItemGroup),
+                    onBack: settingsMenuBack,
+                  }}
+                >
+                  <div class={styles.key}>
+                    {(item as IMenuItemGroup).key}
+                  </div>
+                  <div class={styles.value}>
+                    {(item as IMenuItemGroup).value}
+                  </div>
+                  <div class={styles.expander}>
+                    <img src={chevron_right} />
+                  </div>
                 </div>
-                <div class={styles.value}>
-                  {(item as IMenuItemGroup).value}
+              </Match>
+              <Match when={item.type == "option"}>
+                <div 
+                  class={styles.menuItem} 
+                  classList={{[styles.option]: true}} 
+                  onClick={()=>selectOption(item as IMenuItemOption)}
+                  use:focusable={{
+                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    onPress: () => selectOption(item as IMenuItemOption),
+                    onBack: settingsMenuBack,
+                  }}
+                >
+                  <div class={styles.name} style={{
+                    "font-weight": ((item as IMenuItemOption).isSelected) ? "bold" : "regular", 
+                    color: ((item as IMenuItemOption).isSelected) ? "#FFFFFF" : "#AAAAAA"
+                  }}>
+                    {(item as IMenuItemOption).name}
+                  </div>
                 </div>
-                <div class={styles.expander}>
-                  <img src={chevron_right} />
-                </div>
-              </div>
-            </Match>
-            <Match when={item.type == "option"}>
-              <div class={styles.menuItem} classList={{[styles.option]: true}} onClick={()=>selectOption(item as IMenuItemOption)}>
-                <div class={styles.name} style={{
-                  "font-weight": ((item as IMenuItemOption).isSelected) ? "bold" : "regular", 
-                  color: ((item as IMenuItemOption).isSelected) ? "#FFFFFF" : "#AAAAAA"
-                }}>
-                  {(item as IMenuItemOption).name}
-                </div>
-              </div>
-            </Match>
-            <Match when={item.type == "toggle"}>
-              {renderToggle(item as MenuItemToggle)}
-            </Match>
-            <Match when={item.type == "checkbox"}>
-              {renderCheckbox(item as MenuItemCheckbox)}
-            </Match>
-            <Match when={item.type == "header"}>
-              {renderHeader(item as MenuItemHeader)}
-            </Match>
-            <Match when={item.type == "button"}>
-              <div class={styles.menuButton} onClick={()=>clickButton(item as IMenuButton)}>
-                <Show when={(item as IMenuButton).icon}>
-                  <img class={styles.icon} src={(item as IMenuButton).icon} />
-                </Show>
-                  <Show when={(item as IMenuButton).description} fallback={
-                    <div class={styles.text}>
-                      <div class={styles.name}>
-                        {(item as IMenuButton).name}
-                      </div>
-                    </div>
-                  }>
-                    <div class={styles.text}>
-                      <div class={styles.nameWithDescription}>
-                        {(item as IMenuButton).name}
-                      </div>
-                      <div class={styles.description}>
-                        {(item as IMenuButton).description}
-                      </div>
-                    </div>
+              </Match>
+              <Match when={item.type == "toggle"}>
+                {renderToggle(item as MenuItemToggle, index, settingsMenuBack)}
+              </Match>
+              <Match when={item.type == "checkbox"}>
+                {renderCheckbox(item as MenuItemCheckbox, index, settingsMenuBack)}
+              </Match>
+              <Match when={item.type == "header"}>
+                {renderHeader(item as MenuItemHeader)}
+              </Match>
+              <Match when={item.type == "button"}>
+                <div 
+                  class={styles.menuButton} 
+                  onClick={()=>clickButton(item as IMenuButton)}
+                  use:focusable={{
+                    focusInert: createMemo(() => props.openIntent === OpenIntent.Pointer),
+                    onPress: () => clickButton(item as IMenuButton),
+                    onBack: settingsMenuBack,
+                  }}
+                >
+                  <Show when={(item as IMenuButton).icon}>
+                    <img class={styles.icon} src={(item as IMenuButton).icon} />
                   </Show>
-              </div>
-            </Match>
-          </Switch>
-
-        }</For>
+                    <Show when={(item as IMenuButton).description} fallback={
+                      <div class={styles.text}>
+                        <div class={styles.name}>
+                          {(item as IMenuButton).name}
+                        </div>
+                      </div>
+                    }>
+                      <div class={styles.text}>
+                        <div class={styles.nameWithDescription}>
+                          {(item as IMenuButton).name}
+                        </div>
+                        <div class={styles.description}>
+                          {(item as IMenuButton).description}
+                        </div>
+                      </div>
+                    </Show>
+                </div>
+              </Match>
+            </Switch>
+          )}
+        </For>
       </div>
       </Show>
     );
