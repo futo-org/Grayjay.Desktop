@@ -64,7 +64,7 @@ const CommentView: Component<CommentViewProps> = (props) => {
           <div style="display: flex; flex-direction: row; align-items: center;">
             <div class={styles.authorName}>{props.comment?.author.name}</div>
             <Show when={props.comment?.date}>
-              <div class={styles.metadata}>{toHumanNowDiffString(props.comment?.date)}</div>
+              <div class={styles.metadata} title={props.comment?.date}>{toHumanNowDiffString(props.comment?.date)}</div>
             </Show>
           </div>
           <pre class={styles.text} innerHTML={message()} ondragstart={(ev)=>preventDragDrop(ev)} />
