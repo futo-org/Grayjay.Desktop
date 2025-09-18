@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Xml;
 using Futo.PlatformPlayer.States;
+using Grayjay.ClientServer.Constants;
 using Grayjay.ClientServer.Developer;
 using Grayjay.ClientServer.Dialogs;
 using Grayjay.ClientServer.Settings;
@@ -23,6 +24,7 @@ using Grayjay.Engine.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ClearScript;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using static Grayjay.Engine.Packages.PackageHttp;
 
 using Logger = Grayjay.Desktop.POC.Logger;
@@ -34,6 +36,7 @@ namespace Grayjay.ClientServer.Controllers
     {
         private static ManagedHttpClient _client = new ManagedHttpClient();
         private static GrayjayPlugin _testPlugin = null;
+        private static GrayjayTestSystem _testSystem = null;
         private static (string, SourceAuth) _testPluginAuth = (null, null);
         private static GrayjayPlugin TestPluginOrThrow => _testPlugin ?? throw new InvalidOperationException("Attempted to use test plugin without plugin");
         private static Dictionary<string, V8RemoteObject> _testPluginVariables = new Dictionary<string, V8RemoteObject>();
@@ -78,7 +81,9 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (!IsDeveloperMode())
                 return NotFound();
-            var html = Encoding.UTF8.GetString(ReadResource("Grayjay.ClientServer.Developer.Embed.index.html"));
+            var html = (System.IO.File.Exists(Path.Combine(Directories.Base, "Developer", "Embed", "index.html"))) ?
+                System.IO.File.ReadAllText(Path.Combine(Directories.Base, "Developer", "Embed", "index.html")) :
+                Encoding.UTF8.GetString(ReadResource("Grayjay.ClientServer.Developer.Embed.index.html"));
             html = html
                 .Replace("SUPPORT_INTEGRATION: true", "SUPPORT_INTEGRATION: true");
             if (!string.IsNullOrEmpty(lastDevUrl.Value))
@@ -101,6 +106,23 @@ namespace Grayjay.ClientServer.Controllers
             return File(Encoding.UTF8.GetBytes(Grayjay.Engine.Resources.ScriptSource), "application/javascript");
         }
 
+        [HttpGet]
+        public IActionResult GetDevTestSystemStates()
+        {
+            if (!IsDeveloperMode())
+                return NotFound();
+            return Ok(_testSystem.GetDescriptorState());
+        }
+        [HttpPost]
+        public IActionResult QueueTestSystem(string name)
+        {
+            Dictionary<string, object> metadata = new Dictionary<string, object>();
+            //foreach(var kv in args)
+            //    metadata.Add(kv.Key, JToken.Parse(kv.Value));
+
+            _testSystem.QueueTestAsync(name, metadata);
+            return Ok(true);
+        }
 
 
         [HttpGet]
@@ -157,8 +179,10 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     Logger.e(nameof(DeveloperController), ex.Message, ex);
                     _testPlugin = null;
+                    _testSystem = null;
                     throw;
                 }
+                _testSystem = _testPlugin?.GetTestSystem();
                 return Ok(_testPlugin?.GetPackageVariables());
             }
             catch(Exception ex)

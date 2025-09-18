@@ -269,6 +269,34 @@
 				font-size: 14px;
 				color: #AAA;
 			}
+
+
+
+            .testSystem_status {
+                border-radius: 5px;
+                width: 80px;
+                height: 30px;
+                display: inline-block;
+                text-align: center;
+                font-size: 14px;
+                line-height: 30px;
+                margin-top: 3px;
+                vertical-align: top;
+                margin-right: 10px;
+            }
+            .testSystem_test {
+                background-color: #151515;
+                padding: 5px;
+                padding-top: 15px;
+                border-radius: 5px;
+                padding-left: 25px;
+                padding-right: 15px;
+                margin-bottom: 5px;
+                position: relative;
+            }
+			.testSystem_test:hover {
+				cursor: pointer;
+			}
 		</style>
 	</head>
 	<body>
@@ -279,47 +307,50 @@
 				First load may take longer
 			</div>
 		  <v-main v-cloak>
-			<div id="topMenu">
-				<div style="height: 100%; display: inline-block; padding-left: 10px; padding-right: 20px;">
-					<img src="./dependencies/FutoMainLogo.svg"
-						style="margin-top: 20px;" />
-				</div>
-				<div class="menuTab" :class="{ 'active': page == 'Plugin' }" @click="page = 'Plugin'">
-					Overview
-				</div>
-				<div class="menuTab" :class="{ 'active': page == 'Testing' }" @click="page = 'Testing'">
-					Testing
-				</div>
-				<div class="menuTab" :class="{ 'active': page == 'Integration' }" @click="page = 'Integration'" v-if="support.SUPPORT_INTEGRATION">
-					Integration
-				</div>
-				<div class="menuTab" :class="{ 'active': page == 'Settings' }" @click="page = 'Settings'">
-					Settings
-				</div>
-				<div style="right: 370px; top: 15px; position: absolute" v-if="Plugin?.currentPlugin?.authentication">
-					<v-btn @click="loginTestPlugin()" v-if="!Plugin.isLoggedIn">
-						Login
-					</v-btn>
-					<v-btn @click="logoutTestPlugin()" v-if="Plugin.isLoggedIn">
-						Logout
-					</v-btn>
-				</div>
-				<img v-if="Plugin.currentPlugin"
-					 :src="Plugin.currentPluginIcon"
-					 style="right: 300px; top: 10px; width: 50px; width: 50px; position: absolute;" />
-				<div v-if="Plugin.currentPlugin" style="position: absolute; right: 100px; top: 12px; width: 180px;">
-					<div>
-						{{Plugin.currentPlugin.name}}
-					</div>
-					<div>
-						Last updated: {{Plugin.lastLoadTime}}
-					</div>
-				</div>
-				<v-btn class="mx-2" fab dark color="#140a4a" style="position: absolute; right: 10px; top: 5px;"
-					@click="reloadPlugin()" v-if="Plugin.currentPluginUrl">
-					<v-icon dark>mdi-refresh</v-icon>
-				</v-btn>
-			</div>
+			  <div id="topMenu">
+				  <div style="height: 100%; display: inline-block; padding-left: 10px; padding-right: 20px;">
+					  <img src="./dependencies/FutoMainLogo.svg"
+				 style="margin-top: 20px;" />
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'Plugin' }" @click="page = 'Plugin'">
+					  Overview
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'Testing' }" @click="page = 'Testing'">
+					  Testing
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'Integration' }" @click="page = 'Integration'" v-if="support.SUPPORT_INTEGRATION">
+					  Integration
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'TestSystem' }" @click="page = 'TestSystem'">
+					  TestSystem
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'Settings' }" @click="page = 'Settings'">
+					  Settings
+				  </div>
+				  <div style="right: 370px; top: 15px; position: absolute" v-if="Plugin?.currentPlugin?.authentication">
+					  <v-btn @click="loginTestPlugin()" v-if="!Plugin.isLoggedIn">
+						  Login
+					  </v-btn>
+					  <v-btn @click="logoutTestPlugin()" v-if="Plugin.isLoggedIn">
+						  Logout
+					  </v-btn>
+				  </div>
+				  <img v-if="Plugin.currentPlugin"
+			   :src="Plugin.currentPluginIcon"
+			   style="right: 300px; top: 10px; width: 50px; width: 50px; position: absolute;" />
+				  <div v-if="Plugin.currentPlugin" style="position: absolute; right: 100px; top: 12px; width: 180px;">
+					  <div>
+						  {{Plugin.currentPlugin.name}}
+					  </div>
+					  <div>
+						  Last updated: {{Plugin.lastLoadTime}}
+					  </div>
+				  </div>
+				  <v-btn class="mx-2" fab dark color="#140a4a" style="position: absolute; right: 10px; top: 5px;"
+				 @click="reloadPlugin()" v-if="Plugin.currentPluginUrl">
+					  <v-icon dark>mdi-refresh</v-icon>
+				  </v-btn>
+			  </div>
 			<div id="mainContainer">
 				<div class="page" v-if="page == 'Plugin'">
 					<div v-if="!Plugin.currentPlugin && !Plugin.currentScript">
@@ -508,9 +539,9 @@
 									<span>{{req.title}}</span>
 								</div>
 								<!--
-								<div v-if="req.title == 'enable'" style="position: absolute; top:3px; right: 18px">
-									<v-checkbox v-model="Plugin.enableOnReload" label="Enable on Refresh" />
-								</div> -->
+					<div v-if="req.title == 'enable'" style="position: absolute; top:3px; right: 18px">
+						<v-checkbox v-model="Plugin.enableOnReload" label="Enable on Refresh" />
+					</div> -->
 								<div class="description">
 									{{req.description}}
 								</div>
@@ -680,12 +711,155 @@
 					</v-card>
 				</div>
 
+				<div class="page" v-if="page == 'TestSystem'">
+					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						<v-card-title>
+							Test System
+						</v-card-title>
+						<v-card-text>
+							<div>
+								<div style="margin-bottom: 10px;">
+									The TestSystem can be used to run tests within the plugin system in its native environment. Similar to unittests. It gives test methods access to native callers through the TestContext parameter (first arg in test functions).
+								</div>
+							</div>
+						</v-card-text>
+					</v-card>
+					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						<v-card-title>
+							Tests
+						</v-card-title>
+						<v-card-text>
+							<div v-if="TestSystem.tests && TestSystem.tests.length > 0">
+								<div class="testSystem_test" v-for="test in TestSystem.tests">
+									<div @click="TestSystem.selected = test.test.variable">
+										<div style="font-size: 20px; color: #EEE; margin-top: 5px; margin-bottom: 3px; display: inline-block; width: calc(100% - 350px); text-overflow: ellipsis;">
+											{{test.test.name}}
+										</div>
+										<div style="float: right;">
+											<div v-if="test.status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
+												Unknown
+											</div>
+											<div v-if="test.status == 1" class="testSystem_status" style="background-color: #ef9c1b">
+												Queued
+											</div>
+											<div v-if="test.status == 2" class="testSystem_status" style="background-color: #0859f1">
+												Running
+											</div>
+											<div v-if="test.status == 3" class="testSystem_status" style="background-color: #1c7f00">
+												Success
+											</div>
+											<div v-if="test.status == 4" class="testSystem_status" style="background-color: #800606">
+												Failure
+											</div>
+											<div style="display: inline-block;">
+												<v-btn @click="queueTestSystem(test.test.variable, {})" v-show="test.status != 1 && test.status != 2">Queue Test</v-btn>
+											</div>
+										</div>
+									</div>
+									<div style="font-size: 15px; color: #BBB; margin-bottom: 10px;" @click="TestSystem.selected = test.test.variable">
+										{{test.test.description}}
+									</div>
+									<div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="test.status == 2">
+										<v-progress-linear indeterminate></v-progress-linear>
+									</div>
+								</div>
+							</div>
+							<div v-if="!TestSystem.states || TestSystem.states.length <= 0" style="color: orangered">
+								No tests found, define your tests in a GrayjayTests variable.
+							</div>
+						</v-card-text>
+						<v-card-actions>
+							<v-spacer></v-spacer>
+							<v-btn @click="queueTestSystemAll()">Run All</v-btn>
+						</v-card-actions>
+					</v-card>
+					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						<v-card-text>
+							<div>
+								<div style="margin-bottom: 10px;">
+									Here is an example test function:
+								</div>
+								<div>
+<pre style="background-color: #222; border-radius: 8px;"><code style="background:none; font-size: 11px; line-height: 15px;">var GrayjayTests = {
+	Example_Test: {
+		Name: "Example Test",
+		Description: "Description of a test",
+		Test(testContext) {
+			testContext.RunSourceMethod("getContentDetails", [
+				JSON.stringify("https://someDetailsUrl.com/example");
+			]);
+		}
+	},
+	Example_Test_Shortform(testContext) {
+		//Example of shortform test
+	}
+}</code></pre>
+								</div>
+							</div>
+						</v-card-text>
+					</v-card>
+					<div style="position: fixed; top: 90px; right: 30px; width: calc(100% - 1070px); height: calc(100% - 110px); overflow-y: auto">
+						<v-card style="width: 100%;">
+							<v-card-title>
+								Result
+							</v-card-title>
+							<v-card-text>
+								<div v-if="!TestSystem.states[TestSystem.selected] || !TestSystem.states[TestSystem.selected].test">
+									No test selected
+								</div>
+								<div v-if="TestSystem.states[TestSystem.selected] && TestSystem.states[TestSystem.selected].test">
+									<div style="font-size: 25px; color: white;">
+										<span style="font-weight: bold; color: #999;">Test:</span> {{TestSystem.states[TestSystem.selected].test.name}}
+									</div>
+									<div style="position: absolute; top: 20px; right: 10px;">
+										<div v-if="TestSystem.states[TestSystem.selected].status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
+											Unknown
+										</div>
+										<div v-if="TestSystem.states[TestSystem.selected].status == 1" class="testSystem_status" style="background-color: #ef9c1b">
+											Queued
+										</div>
+										<div v-if="TestSystem.states[TestSystem.selected].status == 2" class="testSystem_status" style="background-color: #0859f1">
+											Running
+										</div>
+										<div v-if="TestSystem.states[TestSystem.selected].status == 3" class="testSystem_status" style="background-color: #1c7f00">
+											Success
+										</div>
+										<div v-if="TestSystem.states[TestSystem.selected].status == 4" class="testSystem_status" style="background-color: #800606">
+											Failure
+										</div>
+									</div>
+									<div style="font-size: 18px; color: #777; margin-top: 10px;">
+										{{TestSystem.states[TestSystem.selected].test.description}}
+									</div>
+									<div v-if="TestSystem.states[TestSystem.selected].result" style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
+										Result
+									</div>
+									<div v-if="TestSystem.states[TestSystem.selected].result" class="testResult" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].result}}</div>
+									<div v-if="TestSystem.states[TestSystem.selected].exception" class="testResult exception" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].exception}}</div>
+
+									<div v-if="TestSystem.states[TestSystem.selected].logs && TestSystem.states[TestSystem.selected].logs.length > 0">
+										<div style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
+											Logs
+										</div>
+										<div style="background-color:rgba(0,0,0,.5); border-radius: 5px; padding: 5px; margin-top: 5px;" v-for="log in TestSystem.states[TestSystem.selected].logs">
+											{{log}}
+										</div>
+									</div>
+
+									<div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="TestSystem.states[TestSystem.selected].status == 2">
+										<v-progress-linear indeterminate></v-progress-linear>
+									</div>
+								</div>
+							</v-card-text>
+						</v-card>
+					</div>
+				</div>
+
 				<div class="page" v-if="page == 'Settings'">
 					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;">
 						<v-card-title>
 							Settings
 						</v-card-title>
-						</v-card-header>
 						<v-card-text>
 							<div>
 								<div style="height: 30px;">
@@ -754,6 +928,11 @@
 				didInitialLoad: false,
 				enableOnReload: false,
 				isLoggedIn: false
+			  },
+			TestSystem: {
+				tests: [],
+				states: {},
+				selected: {}
 			},
 			Testing: {
 				requests: sourceDocs.map(x=>{
@@ -837,6 +1016,16 @@
 								}
 							});
 						});
+					}
+					if (this.page == "TestSystem") {
+						getDevTestSystemStates((states) => {
+							Vue.nextTick(() => {
+								this.TestSystem.tests = states.tests;
+								for (let test of states.tests) {
+									this.TestSystem.states[test.test.variable] = test;
+								}
+							});
+						})
 					}
 				}
 				catch(ex) {
@@ -1089,7 +1278,15 @@
 						this.Testing.lastResultError = "//Results [" + name + "]\n\n" +
 							"Error: " + ex;
 				}
-			},
+			  },
+			  queueTestSystem(name, metadata) {
+				  queueTestSystem(name, metadata);
+              },
+			  queueTestSystemAll() {
+                  for (let test of this.TestSystem.tests) {
+					  queueTestSystem(test.test.variable, {});
+				  }
+              },
 			testSourceRemotely(req) {
 				const name = req.title;
 				const parameterVals = req.parameters.map(x=>{

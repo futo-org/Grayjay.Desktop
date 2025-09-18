@@ -269,6 +269,26 @@ function getDevHttpExchanges(cb) {
         .then(x=>x.json())
         .then(y=> cb && cb(y));
 }
+function getDevTestSystemStates(cb) {
+    fetch("/Developer/getDevTestSystemStates", {
+        timeout: 1000
+    })
+        .then(x => x.json())
+        .then(y => cb && cb(y));
+}
+function queueTestSystem(name, metadata) {
+    fetch("/Developer/QueueTestSystem?name=" + name, {
+        method: "POST",
+        timeout: 1000,
+        body: JSON.stringify(metadata),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+        .then(x => x.json())
+        .then(y => cb && cb(y));
+}
+
 function setDevHttpProxy(url, port) {
     return fetch("/dev/setDevProxy?url=" + encodeURIComponent(url) + "&port=" + port)
         .then(x=>x.json());
