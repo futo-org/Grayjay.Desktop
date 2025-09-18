@@ -236,7 +236,7 @@ namespace Grayjay.Desktop.POC
             }
         }
 
-        public static void Debug<T>(string message, Exception? ex = null) => _staticLogger.Verbose<T>(message, ex);
+        public static void Debug<T>(string message, Exception? ex = null) => _staticLogger.Debug<T>(message, ex);
         public static void Verbose<T>(string message, Exception? ex = null) => _staticLogger.Verbose<T>(message, ex);
         public static void Info<T>(string message, Exception? ex = null) => _staticLogger.Info<T>(message, ex);
         public static void Warning<T>(string message, Exception? ex = null) => _staticLogger.Warning<T>(message, ex);

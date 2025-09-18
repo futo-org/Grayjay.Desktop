@@ -43,7 +43,7 @@ const OverlayModals: Component = () => {
       if (!overlayCurrent || overlayCurrent.id !== id) return;
       loadNextRequest();
     });
-
+      
     onCleanup(() => globalDismissEvent.unregister('onCurrentGlobalDismiss'));
 
     function swapContent(next?: OverlayRequest) {
