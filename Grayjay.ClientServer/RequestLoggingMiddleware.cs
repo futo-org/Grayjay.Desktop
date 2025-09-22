@@ -16,7 +16,7 @@ namespace Grayjay.ClientServer
         {
             var requestId = Guid.NewGuid();
             var stopwatch = Stopwatch.StartNew();
-            Logger.v<RequestLoggingMiddleware>($"Request started ({requestId}): {context.Request.Method} {context.Request.Path}");
+            Logger.Debug<RequestLoggingMiddleware>($"Request started ({requestId}): {context.Request.Method} {context.Request.Path}");
 
             try
             {
@@ -26,7 +26,7 @@ namespace Grayjay.ClientServer
             {
                 stopwatch.Stop();
 
-                Logger.v<RequestLoggingMiddleware>($"Request ended ({requestId}): {context.Request.Method} {context.Request.Path}, " +
+                Logger.Debug<RequestLoggingMiddleware>($"Request ended ({requestId}): {context.Request.Method} {context.Request.Path}, " +
                     $"Status: {context.Response.StatusCode}, " +
                     $"Duration: {stopwatch.ElapsedMilliseconds}ms");
             }

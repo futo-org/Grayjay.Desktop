@@ -24,7 +24,7 @@ namespace Grayjay.ClientServer.Developer
         public string DevID { get; set; }
         public string DevScript { get; set; }
 
-        public DevGrayjayPlugin(PluginDescriptor descriptor, string originalId, string script, string? savedState = null, PluginHttpClient client = null, PluginHttpClient clientAuth = null, string devID = null) : base(descriptor, script, savedState, client, clientAuth)
+        public DevGrayjayPlugin(PluginDescriptor descriptor, string originalId, string script, string? savedState = null, PluginHttpClient client = null, PluginHttpClient clientAuth = null, string devID = null, Options options = null) : base(descriptor, script, savedState, client, clientAuth, options)
         {
             OriginalID = originalId;
             DevScript = script;
@@ -43,7 +43,7 @@ namespace Grayjay.ClientServer.Developer
             };
         }
 
-        public DevGrayjayPlugin(PluginConfig config, string originalId, string script, Dictionary<string, string?>? settings = null, string savedState = null, string devID = null) : base(config, script, settings, savedState)
+        public DevGrayjayPlugin(PluginConfig config, string originalId, string script, Dictionary<string, string?>? settings = null, string savedState = null, string devID = null, Options options = null) : base(config, script, settings, savedState, options)
         {
             OriginalID = originalId;
             DevScript = script;
@@ -59,7 +59,7 @@ namespace Grayjay.ClientServer.Developer
             };
         }
 
-        public override GrayjayPlugin GetCopy(bool privateCopy = false)
+        public override GrayjayPlugin GetCopy(bool privateCopy = false, Options options = null)
         {
             if(!privateCopy)
                 return new DevGrayjayPlugin(Descriptor, OriginalID, DevScript, GetSavedState(), null, null, DevID);
