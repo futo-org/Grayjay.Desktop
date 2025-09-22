@@ -1,7 +1,6 @@
 
 .downloadingCard {
     width: calc(100% - 20px);
-    height: 250px;
     display: inline-block;
     margin: 10px;
 }
@@ -66,7 +65,7 @@
     right: 10px;
     bottom: 10px;
     color: #D9D9D9;
-
+    display: flex;
     
     text-edge: cap;
     font-family: Inter;

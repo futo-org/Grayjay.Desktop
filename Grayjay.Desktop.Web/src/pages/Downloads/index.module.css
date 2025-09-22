@@ -187,54 +187,22 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    
+    gap: 8px;
+    align-items: center;
 }
 
 .downloadFilterBar .filters {
     display: flex;
     flex-grow: 1;
+    flex-shrink: 0;
     align-content: center;;
     justify-content: center;
     flex-wrap: wrap;
-}
-.downloadFilterBar .searchBar {
-    display: flex;
-    flex-grow: 1;
-    position: relative;
-    margin-left: 1px;
-    min-width: 100px;
 }
 .downloadFilterBar .viewTypes {
     display: flex;
     flex-shrink: 0;
 }
-
-.downloadFilterBar .searchBar img {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    top: 14px;
-    left: 14px;
-}
-.downloadFilterBar .searchBar input {
-    width: 100%;
-    height: 32px;
-    margin-top: 4px;
-    padding-left: 40px;
-    padding-right: 8px;
-    align-items: center;
-    border-radius: 6px;
-    border: 1px solid #454545;
-    font-family: Inter;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 22px; /* 157.143% */
-    background: #212121;
-    color: white;
-}
-
-
 .selectedButton {
     height: 38px;
     margin: 4px;

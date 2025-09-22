@@ -594,7 +594,9 @@ const DownloadsPage: Component = () => {
             <h2>Downloading</h2>
             <Show when={isDownloadingRetryable$()}>
               <div style="position: absolute; right: 16px; top: 16px">
-                <Button text='Retry' style={{"height": "42px", "padding-top": "10px"}} onClick={()=>{DownloadBackend.downloadCycle()}} />
+                <Button text='Retry' style={{"height": "42px", "padding-top": "10px"}} onClick={()=>{DownloadBackend.downloadCycle()}} focusableOpts={{
+                  onPress: () => DownloadBackend.downloadCycle()
+                }} />
               </div>
             </Show>
             <div>
@@ -609,10 +611,7 @@ const DownloadsPage: Component = () => {
           <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
             <h2 style="margin-bottom: 5px;">Downloaded</h2>
             <div class={styles.downloadFilterBar}>
-              <div class={styles.searchBar}>
-                <img src={searchIcon} />
-                <input class={styles.input} oninput={(e) => setVideoSearch(e.target.value)} placeholder='Search' use:focusable={{}} />
-              </div>
+              <InputText placeholder='Search' onTextChanged={(v) => setVideoSearch(v)} focusable={true} inputContainerStyle={{ 'height': '38px' }} />
               <div class={styles.filters}>
                   <TogglePill name='Media' value={videoType$() == "media"} onToggle={()=>{setVideoType("media")}} focusableOpts={{}} />
                   <TogglePill name='Videos' value={videoType$() == "video"} onToggle={()=>{setVideoType("video")}} focusableOpts={{}} />

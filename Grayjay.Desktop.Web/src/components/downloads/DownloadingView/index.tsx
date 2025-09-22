@@ -15,6 +15,7 @@ import iconDownloadError from '../../../assets/icons/icon_error.svg'
 import iconClose from '../../../assets/icons/icon24_close.svg'
 import UIOverlay from '../../../state/UIOverlay';
 import { DialogButton, DialogDescriptor } from '../../../overlays/OverlayDialog';
+import { focusable } from '../../../focusable'; void focusable;
 import { DownloadBackend } from '../../../backend/DownloadBackend';
 
 interface CreatorViewProps {
@@ -111,7 +112,11 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
 
   return (
     <div class={styles.downloadingCard} style="position: relative;">
-        <div class={styles.downloadThumbnail} style={{"background-image": "url(" + getBestThumbnail(downloading$().video.thumbnails)?.url + ")"}} onClick={clicked}>
+        <div class={styles.downloadThumbnail} style={{"background-image": "url(" + getBestThumbnail(downloading$().video.thumbnails)?.url + ")"}} onClick={clicked} use:focusable={{
+          onPress: clicked,
+          onAction: cancel,
+          onActionLabel: "Cancel"
+        }}>
           <div class={styles.badgeStatus}>
             <div>
               <Show when={downloading$().state < 3}>

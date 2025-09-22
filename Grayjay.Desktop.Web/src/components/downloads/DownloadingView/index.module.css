@@ -47,7 +47,6 @@
 
 .downloadingCard {
     width: 270px;
-    height: 230px;
     display: inline-block;
     margin-right: 20px;
 }
@@ -112,7 +111,7 @@
     vertical-align: top;
 }
 .downloadingCard .badgeStatus {
-    display: inline-block;
+    display: flex;
     border-radius: 3px;
     background: #000;
     position: absolute;
