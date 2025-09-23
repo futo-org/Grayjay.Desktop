@@ -66,7 +66,7 @@ const PlaylistView: Component<PlaylistViewProps> = (props) => {
             <div class={styles.metadata}>{props.itemCount ?? 0} items</div>
           </div>
 
-          <Show when={props.onSettings && focus?.lastInputSource() === "pointer"}>
+          <Show when={props.onSettings && focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>
             <IconButton icon={more} 
               ref={refMoreButton} 
               onClick={(e) => {

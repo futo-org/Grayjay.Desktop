@@ -1,5 +1,6 @@
 import { Accessor, JSX, Setter, createEffect, createMemo, createSignal } from "solid-js";
 import { observePosition } from "../utility";
+import { useFocus } from "../FocusProvider";
 
 
 export enum AnchorStyle {
@@ -29,22 +30,27 @@ export enum AnchorFlags {
 export default class Anchor {
     element: HTMLElement | null;
     anchorType: AnchorStyle;
+    private anchorEl: HTMLElement | null;
+    private useChildAnchor: boolean;
 
     bounding$: Accessor<DOMRect>;
     style$: Accessor<JSX.CSSProperties>;
     styleFlipped$: Accessor<JSX.CSSProperties>;
 
-    condition$?: Accessor<Boolean>;
+    condition$?: Accessor<boolean>;
 
     private setBounding: Setter<DOMRect>;
     private destroyListener: (()=>void) | undefined = undefined;
 
-    constructor(element: HTMLElement | null, condition: Accessor<boolean> | undefined = undefined, anchorStyle: AnchorStyle = AnchorStyle.BottomLeft, anchorFlags: AnchorFlags[] = []) {
+    constructor(element: HTMLElement | null, condition: Accessor<boolean> | undefined = undefined, anchorStyle: AnchorStyle = AnchorStyle.BottomLeft, anchorFlags: AnchorFlags[] = [], useChildAnchor: boolean = false) {
         this.element = element;
+        this.useChildAnchor = useChildAnchor;
         this.anchorType = anchorStyle;
-        const [bounding$, setBounding] = createSignal<DOMRect>(element?.getBoundingClientRect() ?? new DOMRect());
+        this.anchorEl = this.resolveAnchorEl(element);
+
+        const [bounding$, setBounding] = createSignal<DOMRect>(this.anchorEl?.getBoundingClientRect() ?? new DOMRect());
         this.bounding$ = bounding$;
-        this.styleFlipped$ = createMemo<JSX.CSSProperties>(()=>{
+        this.styleFlipped$ = createMemo<JSX.CSSProperties>(() => {
             const bounds = this.bounding$();
             let style: JSX.CSSProperties;
 
@@ -148,20 +154,63 @@ export default class Anchor {
             if(condition())
                 this.start();
         }
-    }
-    
+    };
+
+    private resolveAnchorEl = (el: HTMLElement | null): HTMLElement | null => {
+        if (!el) return null;
+        if (!this.useChildAnchor) return el;
+        const child = el.querySelector(".menu-anchor") as HTMLElement | null;
+        return child ?? el;
+    };
+        
     setElement = (el: HTMLElement) => {
         console.log("Anchor element changed");
         this.element = el;
-        this.setBounding(el.getBoundingClientRect());
-    }
+        this.anchorEl = this.resolveAnchorEl(el);
+        if (this.anchorEl) this.setBounding(this.anchorEl.getBoundingClientRect());
+        if (this.destroyListener) {
+            this.stop();
+            this.start();
+        }
+    };
+    
+    setUseChildAnchor = (use: boolean) => {
+        if (this.useChildAnchor === use) return;
+        this.useChildAnchor = use;
+
+        const prev = this.anchorEl;
+        this.anchorEl = this.resolveAnchorEl(this.element);
+
+        if (this.anchorEl !== prev) {
+            if (this.destroyListener) this.stop();
+            if (this.anchorEl) {
+                this.setBounding(this.anchorEl.getBoundingClientRect());
+                if (this.condition$ ? this.condition$() : true) this.start();
+            }
+        }
+    };
+    
+    refreshAnchor = () => {
+        const prev = this.anchorEl;
+        this.anchorEl = this.resolveAnchorEl(this.element);
+        if (this.anchorEl !== prev) {
+            if (prev && this.destroyListener) {
+                this.stop();
+            }
+            if (this.anchorEl) {
+                this.setBounding(this.anchorEl.getBoundingClientRect());
+                if (this.condition$ ? this.condition$() : true) this.start();
+            }
+        }
+    };
 
     start = () => {
-        if(!this.destroyListener && this.element) {
-            this.destroyListener = observePosition(this.element, this.handleChange);
-            this.handleChange(this.element);
+        if(!this.destroyListener && this.anchorEl) {
+            this.destroyListener = observePosition(this.anchorEl, this.handleChange);
+            this.handleChange(this.anchorEl);
         }
-    }
+    };
+    
     stop = () => {
         if(this.destroyListener) {
             this.destroyListener();
@@ -169,14 +218,16 @@ export default class Anchor {
         }
     }
 
-    handleChange = (element: HTMLElement) => {
+    handleChange = (element?: HTMLElement) => {
+        const target = element ?? this.anchorEl;
+        if (!target) return;
         const oldBox = this.bounding$();
-        const newBox = element.getBoundingClientRect();
-        if(newBox.x != oldBox.x || newBox.y != oldBox.y) {
+        const newBox = target.getBoundingClientRect();
+        if (newBox.x !== oldBox.x || newBox.y !== oldBox.y) {
             console.log("New position:", newBox);
             this.setBounding(newBox);
         }
-    }
+    };
 
     dispose() {
         this.stop();

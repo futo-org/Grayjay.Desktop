@@ -170,7 +170,8 @@ const HistoryPage: Component = () => {
       } as Menu;
   });
   const [show$, setShow] = createSignal<boolean>(false);
-  const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
+  const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight, undefined, true);
+  createEffect(() => contentAnchor.setUseChildAnchor(focus?.isControllerMode() === true));
 
   onMount(() => {
     updateHistoryPager();
@@ -320,7 +321,7 @@ const HistoryPage: Component = () => {
                       </div>
                     </div>
                     <div style="flex-grow: 1"></div>
-                    <Show when={focus?.lastInputSource() === "pointer"}>
+                    <Show when={focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>
                       <IconButton icon={ic_more}
                         style={{"flex-shrink": 0}}
                         ref={refMoreButton} 

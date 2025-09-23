@@ -39,6 +39,7 @@ import { IPlatformLockedContent } from "../../../backend/models/content/IPlatfor
 import { LocalBackend } from "../../../backend/LocalBackend";
 import { Event0, Event1 } from "../../../utility/Event";
 import { focusable } from "../../../focusable";import { InputSource } from "../../../nav";
+import { useFocus } from "../../../FocusProvider";
  void focusable;
 
 export interface ContentGridProps {
@@ -50,6 +51,7 @@ export interface ContentGridProps {
 
 const ContentGrid: Component<ContentGridProps> = (props) => {
     const video = useVideo();
+    const focus = useFocus();
     const navigate = useNavigate();
 
     let isLoading = false;
@@ -117,7 +119,9 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
         } as Menu;
     });
     const [show$, setShow] = createSignal<boolean>(false);
-    const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight);
+    const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight, undefined, focus?.isControllerMode() === true);
+    createEffect(() => contentAnchor.setUseChildAnchor(focus?.isControllerMode() === true));
+
     function onSettingsClicked(element: HTMLElement, content: IPlatformContent, inputSource: InputSource) {
         contentAnchor.setElement(element);
         
@@ -275,7 +279,9 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                             if (url)
                                                 video?.actions.openVideo(item() as IPlatformVideo, undefined, VideoState.Fullscreen);
                                         },
-                                        onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
+                                        onOptions: (e, inputSource) => {
+                                            onSettingsClicked(e, item(), inputSource);
+                                        },
                                         onBack: () => onBackContentGrid()
                                     } : undefined}
                                     onClick={() => {

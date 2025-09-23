@@ -38,7 +38,7 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
     <div style="display: flex; flex-direction: row; align-items: center; width: 100%; height: 100%; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid #2E2E2E; box-sizing: border-box; background-color: #141414" onClick={() => {{
       props.onPlay?.();
     }}} use:focusable={props.focusableOpts}>
-      <Show when={props.onDragStart && editable$() && focus?.lastInputSource() === "pointer"} fallback={<div style="width: 12px"></div>}>
+      <Show when={props.onDragStart && editable$() && focus?.isControllerMode() !== true} fallback={<div style="width: 12px"></div>}>
         <img src={iconDrag} style="width: 24px; height: 24px; padding: 20px; cursor: pointer;" onMouseDown={(e) => props.onDragStart?.(e, e.target as HTMLElement)} />
       </Show>
       <img src={bestThumbnail$()?.url} style="width: auto; height: 100%; border-radius: 6px; aspect-ratio: 16/9; background-size: cover; cursor: pointer;" referrerPolicy='no-referrer' />
@@ -64,14 +64,14 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
           </div>
         </div>
       </div>
-      <Show when={editable$() && focus?.lastInputSource() === "pointer"}>
+      <Show when={editable$() && focus?.isControllerMode() !== true}>
         <IconButton icon={iconClose} style={{ "margin-left": "16px" }} onClick={(e) => {
           props.onRemove?.();
           e.preventDefault();
           e.stopPropagation();
         }} />
       </Show>
-      <Show when={focus?.lastInputSource() === "pointer"}>
+      <Show when={focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>
         <IconButton ref={moreElement} icon={iconMore} style={{ "margin-left": "16px", "margin-right": "16px" }} onClick={(e) => {
           props.onSettings?.(e.target as HTMLElement);
           e.preventDefault();

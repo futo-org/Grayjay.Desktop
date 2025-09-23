@@ -158,7 +158,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
         }}
         onTextChanged={(v) => setQuery(v)}
         onSubmit={async (v) => await searchFor(v, searchType$())} />
-        <Show when={suggestionsVisible$() && focus?.lastInputSource() === "pointer"}>
+        <Show when={suggestionsVisible$() && focus?.isControllerMode() !== true}>
           <div class={styles.suggestionsContainer} onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();

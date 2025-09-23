@@ -70,7 +70,7 @@ const CreatorView: Component<CreatorViewProps> = (props) => {
           {watchTimeData$()}
         </div>
       </Show>
-      <Show when={focus?.lastInputSource() === "pointer"}>
+      <Show when={focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>
         <div style={{"display": "flex", "flex-direction": "row", "align-items": "end"}}>
           <SubscribeButton style={{"margin-top": "12px", "width": "100%"}} small={true} author={props.url} isSubscribedInitialState={props.isSubscribedInitialState} />
           <Show when={props.onSettingsClick}>

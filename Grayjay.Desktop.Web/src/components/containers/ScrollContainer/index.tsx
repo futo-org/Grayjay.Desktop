@@ -62,7 +62,7 @@ const ScrollContainer: Component<ScrollContainerProps> = (p) => {
             <div class={styles.scrollWrapper} style={props.wrapperStyle}>
                 <div ref={props.ref} class={styles.containerScroll} onScroll={handleScroll} style={props.scrollStyle}>
                     {props.children}
-                    <Show when={buttonVisible() && focus?.lastInputSource() === "pointer"}>
+                    <Show when={buttonVisible() && focus?.isControllerMode() !== true}>
                         <div class={styles.scrollButton} onClick={handleButtonClick}>
                             <IconButton
                                 icon={props.scrollToTopButton ? ic_arrowUp : ic_arrowDown}

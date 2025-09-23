@@ -109,14 +109,14 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
             </div>
             
 
-            <Show when={props.onAddtoQueue && focus?.lastInputSource() === "pointer"}>
+            <Show when={props.onAddtoQueue && focus?.isControllerMode() !== true}>
               <IconButton icon={addToQueueIcon} 
                 style={{"margin-right": "7px", "margin-top": "4px"}}
                 iconPadding='3px'
                 height={"22px"} width={"22px"} ref={refAddToQueueButton} onClick={() => props.onAddtoQueue?.(refAddToQueueButton!, props.video!)} />
             </Show>
             
-            <Show when={props.onSettings && focus?.lastInputSource() === "pointer"}>
+            <Show when={props.onSettings && focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>
               <IconButton icon={more} ref={refMoreButton} onClick={() => openMoreOverlay()} />
             </Show>
         </div>

@@ -118,7 +118,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
     }
   
     list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn]);
-    if (focus?.lastInputSource() === "pointer") {
+    if (focus?.isControllerMode() !== true) {
       list.push(newWindowBtn);
     } else {
       list.push(closeWindowBtn);
@@ -309,7 +309,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
           />
         </Show>
       </div>
-      <Show when={!isCollapsed() && subscriptions$()?.length && remainingSpace$() > 200 && focus?.lastInputSource() === "pointer"} fallback={<div style="flex-grow:1"></div>}>
+      <Show when={!isCollapsed() && subscriptions$()?.length && remainingSpace$() > 200 && focus?.isControllerMode() !== true} fallback={<div style="flex-grow:1"></div>}>
         <div class={styles.buttonListFill}>
           <div classList={{[styles.expandHeader]: true, [styles.expanded]: expand$()}} onClick={()=>setExpand(!expand$())} 
             use:focusable={{ onPress: () => setExpand(!expand$()) }}>

@@ -4,6 +4,10 @@ import styles from './index.module.css';
 import ic_minimize from '../../../assets/icons/icon24_chevron_down.svg';
 import add from '../../../assets/icons/icon24_add.svg';
 import ic_sync from '../../../assets/icons/ic_sync.svg';
+import ic_volume from '../../../assets/icons/ic_volume.svg';
+import ic_mute from '../../../assets/icons/ic_mute.svg';
+import ic_fullscreen from '../../../assets/icons/icon_32_fullscreen.svg';
+import ic_cast from '../../../assets/icons/icon_32_cast.svg';
 import error from '../../../assets/icons/icon_error.svg';
 import iconDownload from '../../../assets/icons/icon24_download.svg';
 import share from '../../../assets/icons/icon24_Share.svg';
@@ -12,7 +16,7 @@ import ic_close from '../../../assets/icons/icon24_close.svg';
 import store from '../../../assets/icons/icon24_store.svg';
 import more from '../../../assets/icons/icon_button_more.svg';
 import donate from '../../../assets/icons/icon24_donate.svg';
-import VideoPlayerView from "../../player/VideoPlayerView";
+import VideoPlayerView, { VideoPlayerViewHandle } from "../../player/VideoPlayerView";
 import { VideoMode, VideoState, useVideo } from "../../../contexts/VideoProvider";
 import ScrollContainer from "../../containers/ScrollContainer";
 import VirtualFlexibleArrayList from "../../containers/VirtualFlexibleArrayList";
@@ -78,6 +82,7 @@ import { focusable } from '../../../focusable'; void focusable;
 import LiveChatState, { LiveRaidEvent } from "../../../state/StateLiveChat"
 import { useFocus } from "../../../FocusProvider";
 import ControllerOverlay from "../../ControllerOverlay";
+import { useCasting } from "../../../contexts/Casting";
 
 const SCOPE_ID = "video-detail-view";
 
@@ -109,7 +114,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     let position: Duration | undefined = undefined;
     let errorCounter: number = 0;
     const video = useVideo();
-    const focus = useFocus()!
+    const focus = useFocus()!;
+    const casting = useCasting()!;
 
     const [videoLocal$, setVideoLocal] = createSignal<IVideoLocal | undefined>();
     const currentVideo$ = createMemo(() => {
@@ -170,10 +176,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const [videoSource$, setVideoSource] = createSignal<SourceSelected>();
     const [videoQuality$, setVideoQuality] = createSignal<number>(-1);
     const [playerQuality$, setPlayerQuality] = createSignal<number>(-1);
-    createEffect(()=>{
-        const newPlayerLevel = playerQuality$();
-        updateQualityMenu();
-    });
 
     createEffect(on(currentVideoUrl$, (url) => {
         console.info("Reset error counter because video source changed", { url, errorCounter });
@@ -402,11 +404,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         } as SourceSelected);*/
 
     });
-    createEffect(() => {
-        const videoObj = videoLoaded$();
-        updateQualityMenu();
-    });
-
     let lastProgressUrl: string = "";
     let lastProgressPosition = 0;
     function handleVideoProgress(progress: number) {
@@ -563,7 +560,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         return { width, height };
     });
 
-    const theatrePinned = createMemo(() => video?.theatrePinned() && focus.lastInputSource() === "pointer");
+    const theatrePinned = createMemo(() => video?.theatrePinned() && focus?.lastInputSource() === "pointer");
     const minimumMaximumHeight = createMemo(() => {
         var newMinimumMaximum;
         if (mode() === VideoMode.Theatre) {
@@ -721,11 +718,38 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             "Auto (" + videoSourceQualities$()[playerQuality$()].width + "x" + videoSourceQualities$()[playerQuality$()].height +")" : "Auto");
     }
 
-    const [settingsDialogMenu$, setSettingsDialogMenu] = createSignal<Menu>({ title: "", items: [] });
-    function updateQualityMenu() {
-        setSettingsDialogMenu({
+    const [videoPlayerViewHandle$, setVideoPlayerViewHandle] = createSignal<VideoPlayerViewHandle>();
+    const settingsDialogMenu$ = createMemo(() => {
+        return {
             title: "Playback settings",
-            items: [/*
+            items: [
+                ... focus.lastInputSource() !== "pointer" ? [ 
+                    new MenuItemButton(
+                        video?.repeat() ? "Disable Repeat" : "Enable Repeat",
+                        video?.repeat() ? loop_active : loop_inactive,
+                        undefined,
+                        () => video?.actions?.setRepeat(!video?.repeat())
+                    ),
+                    new MenuItemButton(
+                        (video?.volume() ?? 0) > 0 ? "Mute" : "Unmute",
+                        (video?.volume() ?? 0) > 0 ? ic_volume : ic_mute,
+                        undefined,
+                        () => videoPlayerViewHandle$()?.toggleMute?.()
+                    ),
+                    new MenuItemButton(
+                        video?.state() === VideoState.Fullscreen ? "Exit Fullscreen" : "Enter Fullscreen",
+                        ic_fullscreen,
+                        undefined,
+                        () => videoPlayerViewHandle$()?.toggleFullscreen?.()
+                    ),
+                    new MenuItemButton(
+                        "Cast",
+                        ic_cast,
+                        undefined,
+                        () => openCasting()
+                    )
+                ] : [],
+                /*
                 {
                     key: "Playback speed",
                     value: "1x",
@@ -1028,8 +1052,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                     }
                 } as MenuItem
             ]
-        } as Menu);
-    }
+        } as Menu;
+    });
 
     const mat = 0.15; //minimize animation time
     /*const transition = createMemo(() => {
@@ -1263,6 +1287,14 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         UIOverlay.overlaySelectOnlineSyncDevice("Send to Device", "Select a device to send the video to.", (dev) => sendToDevice(dev));
     };
 
+    function openCasting() {
+        try {
+            casting?.actions?.open?.();
+        } catch (e) {
+            console.warn("Casting picker open failed:", e);
+        }
+    }
+
     return (
         <div ref={containerRef} class={styles.container} style={{
             "top": isMinimized() ? `${minimizedPosition().y}px` : "0px",
@@ -1323,6 +1355,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onVideoDimensionsChanged={handleVideoDimensions} 
                             onIsPlayingChanged={handleIsPlayingChanged}
                             source={videoSource$()}
+                            onReady={setVideoPlayerViewHandle}
                             sourceQuality={videoQuality$()}
                             onPlayerQualityChanged={(number)=>{setPlayerQuality(number)}}
                             onSettingsDialog={(ev) => onShowSettings()} 
@@ -1389,6 +1422,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             }
                             fullscreen={video?.state() === VideoState.Fullscreen}
                             focusable={true}
+                            onOptions={() => {
+                                setShowSettings(true);
+                            }}
                         >
                             <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} />
                             <img src={ic_close} class={styles.close} alt="close" onClick={onClose} />

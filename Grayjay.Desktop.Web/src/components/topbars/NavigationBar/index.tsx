@@ -25,7 +25,7 @@ const NavigationBar: Component<NavigationBarProps> = (props) => {
   const focus = useFocus();
   const navigate = useNavigate();
   const casting = useCasting();
-  const canGoBack$ = createMemo(() => !props.isRoot && history.length > 0 && focus?.lastInputSource() === "pointer");
+  const canGoBack$ = createMemo(() => !props.isRoot && history.length > 0 && focus?.isControllerMode() !== true);
 
   return (
     <div class={styles.containerTopBar} style={{ "margin-left": "24px", "margin-right": "24px", width: "calc(100% - 48px)", ... props.style}}>

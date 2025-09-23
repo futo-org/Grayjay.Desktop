@@ -1,4 +1,4 @@
-import { createContext, useContext, createSignal, onCleanup, createEffect, Accessor, JSX } from "solid-js";
+import { createContext, useContext, createSignal, onCleanup, createEffect, Accessor, JSX, createMemo } from "solid-js";
 import { Direction, Press, FocusableOptions, ScopeOptions, uid, isVisible, isFocusable, InputSource } from "./nav";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useVideo, VideoState } from "./contexts/VideoProvider";
@@ -40,6 +40,7 @@ function createIndex(): Idx {
 
 export interface FocusAPI {
     lastInputSource: Accessor<InputSource>;
+    isControllerMode: Accessor<boolean>;
     registerScope: (el: HTMLElement, opts?: ScopeOptions, parentScopeId?: string) => string;
     unregisterScope: (id: string) => void;
     registerNode: (el: HTMLElement, scopeId: string, opts: FocusableOptions) => string;
@@ -69,6 +70,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
     const index = createIndex();
     const [activeScope, setActiveScope] = createSignal<string | null>(null);
     const [lastInputSource, setLastInputSource] = createSignal<InputSource>("pointer");
+    const isControllerMode = createMemo(() => lastInputSource() !== "pointer");
     createEffect(() => console.info("lastInputSource changed", lastInputSource()));
     const [focusedNode, setFocusedNode] = createSignal<NodeEntry | undefined>(undefined);
     const trapStack: string[] = [];
@@ -1050,6 +1052,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
 
     const api: FocusAPI = {
         lastInputSource,
+        isControllerMode,
         registerScope,
         unregisterScope,
         registerNode,

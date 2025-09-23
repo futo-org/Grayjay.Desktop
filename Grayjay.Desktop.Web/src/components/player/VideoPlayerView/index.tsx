@@ -59,7 +59,14 @@ interface VideoProps {
     loaderUI?: JSX.Element;
     fullscreen?: boolean;
     focusable?: boolean;
+    onOptions?: (el: HTMLElement, inputSource: InputSource) => void;
+    onReady?: (handle: VideoPlayerViewHandle) => void;
 }
+
+export type VideoPlayerViewHandle = {
+    toggleMute: () => void;
+    toggleFullscreen: () => void;
+};
 
 const VideoPlayerView: Component<VideoProps> = (props) => {
     const casting = useCasting()!;
@@ -961,6 +968,32 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }
     });
 
+    const toggleFullscreen = () => {
+        syncFullscreenToDom(!isFullscreen());
+    };
+
+    const toggleVolume = async () => {
+        if (isCasting()) {
+            if (casting?.activeDevice.volume() > 0) {
+                volumeBeforeMute = casting?.activeDevice.volume();
+                await CastingBackend.changeVolume(0);
+            } else if (volumeBeforeMute !== undefined) {
+                await CastingBackend.changeVolume(volumeBeforeMute);
+            } else {
+                await CastingBackend.changeVolume(1);
+            }
+        } else {
+            if (volume() > 0) {
+                volumeBeforeMute = volume();
+                setVolume(0);
+            } else if (volumeBeforeMute !== undefined) {
+                setVolume(volumeBeforeMute);
+            } else {
+                setVolume(1);
+            }
+        }
+    };
+
     onMount(() => {
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         setIsFullscreen(isContainerFullscreen()); 
@@ -998,6 +1031,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }, "videoPlayerView");
 
         createEffect(() => console.info("loaderGameVisible$ changed", loaderGameVisible$()));
+
+        props.onReady?.({
+            toggleFullscreen: toggleFullscreen,
+            toggleMute: toggleVolume
+        });
     });
 
     onCleanup(async () => {
@@ -1015,28 +1053,6 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         StateWebsocket.unregisterHandler("VideoLoader", "videoPlayerView");
         StateWebsocket.unregisterHandler("VideoLoaderFinish", "videoPlayerView");
     });
-
-    const toggleVolume = async () => {
-        if (isCasting()) {
-            if (casting?.activeDevice.volume() > 0) {
-                volumeBeforeMute = casting?.activeDevice.volume();
-                await CastingBackend.changeVolume(0);
-            } else if (volumeBeforeMute !== undefined) {
-                await CastingBackend.changeVolume(volumeBeforeMute);
-            } else {
-                await CastingBackend.changeVolume(1);
-            }
-        } else {
-            if (volume() > 0) {
-                volumeBeforeMute = volume();
-                setVolume(0);
-            } else if (volumeBeforeMute !== undefined) {
-                setVolume(volumeBeforeMute);
-            } else {
-                setVolume(1);
-            }
-        }
-    };
 
     const togglePlay = async () => {
         if(props.onVerifyToggle && !props.onVerifyToggle(paused() || ended()))
@@ -1078,10 +1094,6 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
     const handleDblClick = (e: MouseEvent) => {
         toggleFullscreen();
-    };
-
-    const toggleFullscreen = () => {
-        syncFullscreenToDom(!isFullscreen());
     };
 
     const handleEscape = async () => {
@@ -1135,6 +1147,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         return {
             onPress: togglePlay,
             onPressLabel: "Toggle Playback",
+            onOptions: props.onOptions,
             onDirection: (el, dir, inputSource) => {
                 if (inputSource === "keyboard" && ["left", "right", "up"].indexOf(dir) !== -1) {
                     return true;

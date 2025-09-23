@@ -2,6 +2,7 @@
 import { Accessor, Component, For, JSX, Match, Show, Signal, Switch, batch, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import styles from './index.module.css';
 import chevron_right from '../../../../assets/icons/icon_chevron_right.svg';
+import chevron_back from '../../../../assets/icons/chevron_backward_24dp_FFFFFF_FILL0_wght300_GRAD0_opsz24.svg';
 import StateGlobal from '../../../../state/StateGlobal';
 import Toggle from '../../../basics/inputs/Toggle';
 import Anchor, { AnchorStyle } from '../../../../utility/Anchor';
@@ -362,6 +363,13 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
 
     const settingsMenuBack = () => {
       if (props.show) {
+        const stack = menuStack$();
+        if(stack && stack.length > 1){
+          setMenu(stack[stack.length - 2]);
+          setMenuStack(stack.slice(0, stack.length - 1));
+          return true;
+        }
+
         props.onHide?.();
         return true;
       } 
@@ -378,11 +386,22 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
           initialMode: 'trap'
         }}
       >
-        <Show when={menu$()?.title}>
-          <div class={styles.title}>
-            {menu$()?.title}
-          </div>
-        </Show>
+        <div style={{
+          "display": "flex",
+          "flex-direction": "row",
+          "width": "100%",
+          "align-items": "center",
+          "cursor": (menuStack$().length > 1 ? "pointer" : undefined)
+        }} onClick={menuStack$().length > 1 ? settingsMenuBack : undefined}>
+          <Show when={menuStack$().length > 1}>
+            <img src={chevron_back} style="width: 16px; height: 16px; flex-shrink: 0" />
+          </Show>
+          <Show when={menu$()?.title}>
+            <div class={styles.title}>
+              {menu$()?.title}
+            </div>
+          </Show>
+        </div>
         <For each={menu$()?.items?.filter(x => x)}>
           {(item, index) => (
             <Switch fallback={
