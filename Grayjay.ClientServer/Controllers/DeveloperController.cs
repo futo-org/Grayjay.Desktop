@@ -111,16 +111,16 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (!IsDeveloperMode())
                 return NotFound();
+            if (_testSystem == null)
+                return BadRequest("No test system loaded?");
             return Ok(_testSystem.GetDescriptorState());
         }
         [HttpPost]
         public IActionResult QueueTestSystem(string name)
         {
-            Dictionary<string, object> metadata = new Dictionary<string, object>();
-            //foreach(var kv in args)
-            //    metadata.Add(kv.Key, JToken.Parse(kv.Value));
+            var testingConfig = _testPlugin.Config.GetTestingMetadata();
 
-            _testSystem.QueueTestAsync(name, metadata);
+            _testSystem.QueueTestAsync(name, testingConfig);
             return Ok(true);
         }
 
@@ -164,14 +164,22 @@ namespace Grayjay.ClientServer.Controllers
 
                 var client = new PluginHttpClient(null, null, null);
                 var clientAuth = new PluginHttpClient(null, (_testPluginAuth.Item1 == config.ID) ? _testPluginAuth.Item2 : null, null);
-                _testPlugin = GrayjayPlugin.FromConfig(config);
+                _testPlugin = GrayjayPlugin.FromConfig(config, new GrayjayPlugin.Options()
+                {
+                    CaseInsensitive = false,
+                    IncludeStandardTests = true
+                });
                 try
                 {
                     var script = (IsFileUrl(config.AbsoluteScriptUrl)) ?
                         System.IO.File.ReadAllText(config.AbsoluteScriptUrl.Substring("file:///".Length)) :
                         _client.GET(config.AbsoluteScriptUrl, new Dictionary<string, string>())?.Body?.AsString();
 
-                    _testPlugin = new GrayjayPlugin(new PluginDescriptor(config, encryptedAuth, null, null), script, null, client, clientAuth);
+                    _testPlugin = new GrayjayPlugin(new PluginDescriptor(config, encryptedAuth, null, null), script, null, client, clientAuth, new GrayjayPlugin.Options()
+                    {
+                        CaseInsensitive = false,
+                        IncludeStandardTests = true
+                    });
                     _testPlugin.Initialize();
                     lastDevUrl.Save(config.SourceUrl);
                 }
@@ -324,11 +332,12 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     if (req.Url.StartsWith("file:///"))
                         req.Url = req.Url.Substring("file:///".Length);
+                    var data = System.IO.File.ReadAllText(req.Url);
                     return Ok(new
                     {
                         Url = req.Url,
                         Code = 200,
-                        Body = System.IO.File.ReadAllText(req.Url)
+                        Body = data
                     });
                 }
 
