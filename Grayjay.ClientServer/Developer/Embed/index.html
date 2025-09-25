@@ -297,6 +297,50 @@
 			.testSystem_test:hover {
 				cursor: pointer;
 			}
+
+
+			.plugin_setting {
+				height: 40px;
+				background-color: #111;
+				border-radius: 5px;
+				padding-left: 10px;
+				position: relative;
+				margin-bottom: 5px;
+			}
+			.plugin_setting .label {
+				position: absolute;
+				top: 0px;
+				width: 300px;
+				font-size: 18px;
+				line-height: 40px;
+				padding-left: 20px;
+			}
+                .plugin_setting .value {
+                    position: absolute;
+					top: 0px;
+                    left: 350px;
+					height: 40px;
+                    float: right;
+                    width: calc(100% - 300px);
+                }
+
+			.plugin_setting .header {
+
+			}
+                .plugin_setting .header .title {
+                    font-size: 20px;
+                    color: #CCC;
+                }
+                .plugin_setting .header .description {
+					font-size: 16px;
+					color: #999;
+                }
+                .plugin_setting.header {
+                    height: auto;
+                    background-color: transparent;
+                    margin-top: 40px;
+                    margin-bottom: 15px;
+                }
 		</style>
 	</head>
 	<body>
@@ -323,6 +367,9 @@
 				  </div>
 				  <div class="menuTab" :class="{ 'active': page == 'TestSystem' }" @click="page = 'TestSystem'">
 					  TestSystem
+				  </div>
+				  <div class="menuTab" :class="{ 'active': page == 'Plugin Settings' }" @click="page = 'Plugin Settings'">
+					  Plugin Settings
 				  </div>
 				  <div class="menuTab" :class="{ 'active': page == 'Settings' }" @click="page = 'Settings'">
 					  Settings
@@ -351,435 +398,438 @@
 					  <v-icon dark>mdi-refresh</v-icon>
 				  </v-btn>
 			  </div>
-			<div id="mainContainer">
-				<div class="page" v-if="page == 'Plugin'">
-					<div v-if="!Plugin.currentPlugin && !Plugin.currentScript">
-						<div style="margin-left: auto; margin-right: auto; width: 750px; vertical-align: top; padding-left: 40px;">
-							<v-card style="width: 450px; margin-top: 80px; display: inline-block;">
-								<v-card-text>
-									<div>
-										<v-text-field label="Plugin Config Json Url"
-													  v-model="Plugin.newPluginUrl"></v-text-field>
-										<div style="margin-top: -10px;">
-											<v-switch v-model="Plugin.loadUsingTag"
-													  label="Load using script tag"></v-switch>
-											<div style="font-size: 11px; margin-top: -20px; color: #888888">
-												Loading via script tag might give issues reloading script, as it makes the script part of DOM, but does allow debugging via dev console.
-											</div>
-										</div>
-									</div>
-								</v-card-text>
-								<v-card-actions>
-									<v-spacer></v-spacer>
-									<v-btn @click="loadPlugin(Plugin.newPluginUrl)">Load Plugin</v-btn>
-								</v-card-actions>
-							</v-card>
-							<v-card style="width: 250px; margin-top: 80px; display: inline-block; vertical-align: top;">
-								<v-card-title>
-									Package Overrides
-								</v-card-title>
-								<v-card-text>
-									<div>
-										<div style="font-size: 12px; font-weight: lighter;">
-											Enabling a package override replaces the package with a browser implementation.
-											This generally improves speed, at the cost of test accuracy.
-										</div>
-										<div v-for="(value, name, index) in Plugin.packagesOverridden">
-											<v-switch v-model="Plugin.packagesOverridden[name]" :label="name" :change="saveOverrides()"></v-switch>
-										</div>
-									</div>
-								</v-card-text>
-							</v-card>
-						</div>
+			  <div id="mainContainer">
+				  <div class="page" v-if="page == 'Plugin'">
+					  <div v-if="!Plugin.currentPlugin && !Plugin.currentScript">
+						  <div style="margin-left: auto; margin-right: auto; width: 750px; vertical-align: top; padding-left: 40px;">
+							  <v-card style="width: 450px; margin-top: 80px; display: inline-block;">
+								  <v-card-text>
+									  <div>
+										  <v-text-field label="Plugin Config Json Url"
+									v-model="Plugin.newPluginUrl"></v-text-field>
+										  <div style="margin-top: -10px;">
+											  <v-switch v-model="Plugin.loadUsingTag"
+								  label="Load using script tag"></v-switch>
+											  <div style="font-size: 11px; margin-top: -20px; color: #888888">
+												  Loading via script tag might give issues reloading script, as it makes the script part of DOM, but does allow debugging via dev console.
+											  </div>
+										  </div>
+									  </div>
+								  </v-card-text>
+								  <v-card-actions>
+									  <v-spacer></v-spacer>
+									  <v-btn @click="loadPlugin(Plugin.newPluginUrl)">Load Plugin</v-btn>
+								  </v-card-actions>
+							  </v-card>
+							  <v-card style="width: 250px; margin-top: 80px; display: inline-block; vertical-align: top;">
+								  <v-card-title>
+									  Package Overrides
+								  </v-card-title>
+								  <v-card-text>
+									  <div>
+										  <div style="font-size: 12px; font-weight: lighter;">
+											  Enabling a package override replaces the package with a browser implementation.
+											  This generally improves speed, at the cost of test accuracy.
+										  </div>
+										  <div v-for="(value, name, index) in Plugin.packagesOverridden">
+											  <v-switch v-model="Plugin.packagesOverridden[name]" :label="name" :change="saveOverrides()"></v-switch>
+										  </div>
+									  </div>
+								  </v-card-text>
+							  </v-card>
+						  </div>
 
 
-						<div v-if="pastPluginUrls" style="margin-top: 60px; margin-left: 25px;">
-							<h2 style="font-weight: lighter; text-align: center;">Past Plugins</h2>
-							<div class="pastPluginUrl" v-for="pastPluginUrl in pastPluginUrls" @click="this.Plugin.newPluginUrl = pastPluginUrl; loadPlugin(pastPluginUrl)">
-								{{pastPluginUrl}}
-								<div class="deleteButton" @click="(ev)=>{ev.stopPropagation(); deletePastPlugin(pastPluginUrl)}">
-									X
-								</div>
-							</div>
-						</div>
-					</div>
+						  <div v-if="pastPluginUrls" style="margin-top: 60px; margin-left: 25px;">
+							  <h2 style="font-weight: lighter; text-align: center;">Past Plugins</h2>
+							  <div class="pastPluginUrl" v-for="pastPluginUrl in pastPluginUrls" @click="this.Plugin.newPluginUrl = pastPluginUrl; loadPlugin(pastPluginUrl)">
+								  {{pastPluginUrl}}
+								  <div class="deleteButton" @click="(ev)=>{ev.stopPropagation(); deletePastPlugin(pastPluginUrl)}">
+									  X
+								  </div>
+							  </div>
+						  </div>
+					  </div>
 
-					<v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
-							v-if="Plugin.currentPluginError">
-						<v-card-text>
-							<div>
-								<h2 style="color: red">Errors in Plugin</h2>
-								{{Plugin.currentPluginError}}
-							</div>
-						</v-card-text>
-					</v-card>
-					<v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
-							v-if="Plugin.currentPlugin && Plugin.currentScript">
-						<v-card-text>
-							<div>
-								<h2>Your plugin is loaded</h2>
-								You can now use testing methods available on the webapp. <br /> <br />
-								The information and warnings the user will see when installing the app can be viewed below.
-							</div>
-						</v-card-text>
-					</v-card>
-					<v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
-							v-if="Plugin.currentPlugin && Plugin.currentScript">
-						<v-card-text>
-							<div>
-								<div style="height: 100px;">
-									<img :src="Plugin.currentPluginIcon"
-										 style="width: 100px; position: absolute; top: 0px; left: 0px; margin: 10px;" />
-									<div style="position: absolute; right: 5px; top: 5px;">
-										Last updated: {{Plugin.lastLoadTime}}
-									</div>
-									<div style="width: calc(100% - 100px); height: 100px; position: absolute; top: 0px; right: 0px; padding-top: 40px; padding-left: 40px;">
-										<h2>{{Plugin.currentPlugin.name}}</h2>
-										<div>
-											<span>By </span>
-											<span v-if="!Plugin.currentPlugin.authorUrl">{{Plugin.currentPlugin.author}}</span>
-											<span v-if="Plugin.currentPlugin.authorUrl">
-												<a :href="Plugin.currentPlugin.authorUrl" style="text-decoration: none;">
-													{{Plugin.currentPlugin.author}}
-												</a>
-											</span>
-										</div>
-									</div>
-								</div>
-								<div style="color: #999999">
-									{{Plugin.currentPlugin.description}}
-								</div>
-								<div style="margin-top: 30px;">
-									<div class="property">
-										<div class="key">
-											Version
-										</div>
-										<div class="value">
-											{{Plugin.currentPlugin.version}}
-										</div>
-									</div>
-									<div class="property">
-										<div class="key">
-											Repository URL
-										</div>
-										<div class="value">
-											<a :href="Plugin.currentPlugin.scriptUrl">
-												{{Plugin.currentPlugin.repositoryUrl}}
-											</a>
-										</div>
-									</div>
-									<div class="property">
-										<div class="key">
-											Script URL
-										</div>
-										<div class="value">
-											<a :href="Plugin.currentPlugin.scriptUrl">
-												{{Plugin.currentPlugin.scriptUrl}}
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<a href="/reference_autocomplete.js" download="ref.js" style="text-decoration: none; margin-right: 10px;">
-								<v-btn>Ref.js</v-btn>
-							</a>
-							<a href="/reference_plugin.d.ts" download="plugin.d.ts" style="text-decoration: none; margin-right: 10px;">
-								<v-btn>Plugin.d.ts</v-btn>
-							</a>
-							<v-btn @click="reloadPlugin()">Reload</v-btn>
-						</v-card-actions>
-					</v-card>
-					<div v-if="Plugin.warnings && Plugin.warnings.length > 0">
-						<h2 style="text-align: center; margin-top: 40px;">Warnings</h2>
-						<div style="text-align: center; color: #999999; font-size: 14px;">
-							These are the warnings a user will see when they attempt to install this plugin
-						</div>
-						<v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px; min-height: 130px;"
-								v-for="warning in Plugin.warnings">
-							<v-card-text>
-								<div>
-									<div class="material-symbols-outlined"
-										 style="width: 100px; margin: 10px; color: rgb(194, 83, 83); font-size: 100px; position: absolute; top: 10px; left: 10px;">
-										security
-									</div>
-									<div style="margin-left: 120px;">
-										<div style="font-size: 18px;">
-											{{warning.first ?? warning.title}}
-										</div>
-										<div style="color: #C25353">
-											{{warning.second ?? warning.description}}
-										</div>
-									</div>
-								</div>
-							</v-card-text>
-						</v-card>
-					</div>
-				</div>
-				<div class="page" v-if="page == 'Testing'">
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="!Plugin.currentPlugin">
-						<v-card-title>
-							No Plugin Loaded
-						</v-card-title>
-						</v-card-header>
-						<v-card-text>
-							<div>
-								Load a plugin before doing testing.
-							</div>
-						</v-card-text>
-					</v-card>
-					<div style="width: 50%" v-if="Plugin.currentPlugin">
-						<v-text-field v-model="searchTestMethods" label="Search for source methods.." style="margin-left: 35px; margin-right: 35px;"></v-text-field>
-						<v-card class="requestCard" v-for="req in Testing.requests" v-show="req.title.indexOf(searchTestMethods) >= 0">
-							<v-card-text>
-								<div class="title">
-									<span v-if="req.isOptional">(Optional)</span>
-									<span>{{req.title}}</span>
-								</div>
-								<!--
+					  <v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
+					v-if="Plugin.currentPluginError">
+						  <v-card-text>
+							  <div>
+								  <h2 style="color: red">Errors in Plugin</h2>
+								  {{Plugin.currentPluginError}}
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
+					v-if="Plugin.currentPlugin && Plugin.currentScript">
+						  <v-card-text>
+							  <div>
+								  <h2>Your plugin is loaded</h2>
+								  You can now use testing methods available on the webapp. <br /> <br />
+								  The information and warnings the user will see when installing the app can be viewed below.
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
+					v-if="Plugin.currentPlugin && Plugin.currentScript">
+						  <v-card-text>
+							  <div>
+								  <div style="height: 100px;">
+									  <img :src="Plugin.currentPluginIcon"
+						 style="width: 100px; position: absolute; top: 0px; left: 0px; margin: 10px;" />
+									  <div style="position: absolute; right: 5px; top: 5px;">
+										  Last updated: {{Plugin.lastLoadTime}}
+									  </div>
+									  <div style="width: calc(100% - 100px); height: 100px; position: absolute; top: 0px; right: 0px; padding-top: 40px; padding-left: 40px;">
+										  <h2>{{Plugin.currentPlugin.name}}</h2>
+										  <div>
+											  <span>By </span>
+											  <span v-if="!Plugin.currentPlugin.authorUrl">{{Plugin.currentPlugin.author}}</span>
+											  <span v-if="Plugin.currentPlugin.authorUrl">
+												  <a :href="Plugin.currentPlugin.authorUrl" style="text-decoration: none;">
+													  {{Plugin.currentPlugin.author}}
+												  </a>
+											  </span>
+										  </div>
+									  </div>
+								  </div>
+								  <div style="color: #999999">
+									  {{Plugin.currentPlugin.description}}
+								  </div>
+								  <div style="margin-top: 30px;">
+									  <div class="property">
+										  <div class="key">
+											  Version
+										  </div>
+										  <div class="value">
+											  {{Plugin.currentPlugin.version}}
+										  </div>
+									  </div>
+									  <div class="property">
+										  <div class="key">
+											  Repository URL
+										  </div>
+										  <div class="value">
+											  <a :href="Plugin.currentPlugin.scriptUrl">
+												  {{Plugin.currentPlugin.repositoryUrl}}
+											  </a>
+										  </div>
+									  </div>
+									  <div class="property">
+										  <div class="key">
+											  Script URL
+										  </div>
+										  <div class="value">
+											  <a :href="Plugin.currentPlugin.scriptUrl">
+												  {{Plugin.currentPlugin.scriptUrl}}
+											  </a>
+										  </div>
+									  </div>
+								  </div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <a href="/reference_autocomplete.js" download="ref.js" style="text-decoration: none; margin-right: 10px;">
+								  <v-btn>Ref.js</v-btn>
+							  </a>
+							  <a href="/reference_plugin.d.ts" download="plugin.d.ts" style="text-decoration: none; margin-right: 10px;">
+								  <v-btn>Plugin.d.ts</v-btn>
+							  </a>
+							  <v-btn @click="reloadPlugin()">Reload</v-btn>
+						  </v-card-actions>
+					  </v-card>
+					  <div v-if="Plugin.warnings && Plugin.warnings.length > 0">
+						  <h2 style="text-align: center; margin-top: 40px;">Warnings</h2>
+						  <div style="text-align: center; color: #999999; font-size: 14px;">
+							  These are the warnings a user will see when they attempt to install this plugin
+						  </div>
+						  <v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px; min-height: 130px;"
+					  v-for="warning in Plugin.warnings">
+							  <v-card-text>
+								  <div>
+									  <div class="material-symbols-outlined"
+						 style="width: 100px; margin: 10px; color: rgb(194, 83, 83); font-size: 100px; position: absolute; top: 10px; left: 10px;">
+										  security
+									  </div>
+									  <div style="margin-left: 120px;">
+										  <div style="font-size: 18px;">
+											  {{warning.first ?? warning.title}}
+										  </div>
+										  <div style="color: #C25353">
+											  {{warning.second ?? warning.description}}
+										  </div>
+									  </div>
+								  </div>
+							  </v-card-text>
+						  </v-card>
+					  </div>
+				  </div>
+				  <div class="page" v-if="page == 'Testing'">
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="!Plugin.currentPlugin">
+						  <v-card-title>
+							  No Plugin Loaded
+						  </v-card-title>
+						  </v-card-header>
+						  <v-card-text>
+							  <div>
+								  Load a plugin before doing testing.
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <div style="width: 50%" v-if="Plugin.currentPlugin">
+						  <v-text-field v-model="searchTestMethods" label="Search for source methods.." style="margin-left: 35px; margin-right: 35px;"></v-text-field>
+						  <v-card class="requestCard" v-for="req in Testing.requests" v-show="req.title.indexOf(searchTestMethods) >= 0">
+							  <v-card-text>
+								  <div class="title">
+									  <span v-if="req.isOptional">(Optional)</span>
+									  <span>{{req.title}}</span>
+								  </div>
+								  <!--
 					<div v-if="req.title == 'enable'" style="position: absolute; top:3px; right: 18px">
 						<v-checkbox v-model="Plugin.enableOnReload" label="Enable on Refresh" />
 					</div> -->
-								<div class="description">
-									{{req.description}}
-								</div>
-								<div class="code">
-									{{req.code}}
-								</div>
-								<div class="documentation" v-if="req.docUrl" style="position: absolute; right: 15px; top: 15px;">
-									<a :href="req.docUrl" target="_blank">
-										Documentation
-									</a>
-								</div>
-								<div>
-									<div class="parameter" v-for="parameter in req.parameters">
-										<div class="name">
-											{{parameter.name}}
-										</div>
-										<div class="description">
-											{{parameter.description}}
-										</div>
-										<input type="text" :placeholder="parameter.name + ' value'" v-model="parameter.value" />
-									</div>
-								</div>
-							</v-card-text>
-							<v-card-actions>
-								<v-spacer></v-spacer>
-								<v-btn @click="testSourceRemotely(req)">
-									Test Android
-								</v-btn>
-								<v-btn @click="testSource(req)">
-									Test
-								</v-btn>
-							</v-card-actions>
-						</v-card>
-					</div>
-					<div style="position: fixed; right: 0px; top: 70px;width: 50%; height: 100%; background-color: black;" v-if="Plugin.currentPlugin">
-						<h2 style="padding: 10px; font-weight: lighter;">Results</h2>
-						<div style="position: absolute; top: 10px; right: 10px;">
-							<v-btn @click="copyClipboard(Testing.lastResult)" v-if="Testing.lastResult && !Testing.lastResultError">Copy</v-btn>
-						</div>
-						<div v-if="!Testing.lastResult && !Testing.lastResultError" style="padding: 10px; font-weight: lighter;">
-							No test done yet
-						</div>
-						<div v-if="Testing.lastResult && !Testing.lastResultError" class="testResult">{{Testing.lastResult}}</div>
-						<div v-if="Testing.lastResultError" class="testResult exception">{{Testing.lastResultError}}</div>
-					</div>
-				</div>
+								  <div class="description">
+									  {{req.description}}
+								  </div>
+								  <div class="code">
+									  {{req.code}}
+								  </div>
+								  <div class="documentation" v-if="req.docUrl" style="position: absolute; right: 15px; top: 15px;">
+									  <a :href="req.docUrl" target="_blank">
+										  Documentation
+									  </a>
+								  </div>
+								  <div>
+									  <div class="parameter" v-for="parameter in req.parameters">
+										  <div class="name">
+											  {{parameter.name}}
+										  </div>
+										  <div class="description">
+											  {{parameter.description}}
+										  </div>
+										  <input type="text" :placeholder="parameter.name + ' value'" v-model="parameter.value" />
+									  </div>
+								  </div>
+							  </v-card-text>
+							  <v-card-actions>
+								  <v-spacer></v-spacer>
+								  <v-btn @click="testSourceRemotely(req)">
+									  Test Android
+								  </v-btn>
+								  <v-btn @click="testSource(req)">
+									  Test
+								  </v-btn>
+							  </v-card-actions>
+						  </v-card>
+					  </div>
+					  <div style="position: fixed; right: 0px; top: 70px;width: 50%; height: 100%; background-color: black;" v-if="Plugin.currentPlugin">
+						  <h2 style="padding: 10px; font-weight: lighter;">Results</h2>
+						  <div style="position: absolute; top: 10px; right: 10px;">
+							  <v-btn @click="copyClipboard(Testing.lastResult)" v-if="Testing.lastResult && !Testing.lastResultError">Copy</v-btn>
+						  </div>
+						  <div v-if="!Testing.lastResult && !Testing.lastResultError" style="padding: 10px; font-weight: lighter;">
+							  No test done yet
+						  </div>
+						  <div v-if="Testing.lastResult && !Testing.lastResultError" class="testResult">{{Testing.lastResult}}</div>
+						  <div v-if="Testing.lastResultError" class="testResult exception">{{Testing.lastResultError}}</div>
+					  </div>
+				  </div>
 
-				<div class="page" v-if="page == 'Integration'">
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="!Plugin.currentPlugin">
-						<v-card-title>
-							No Plugin Loaded
-						</v-card-title>
-						</v-card-header>
-						<v-card-text>
-							<div>
-								Load a plugin before doing integration testing.
-							</div>
-						</v-card-text>
-					</v-card>
-					<v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
-							v-if="Plugin.currentPluginError">
-						<v-card-text>
-							<div>
-								<h2 style="color: red">Errors in Plugin</h2>
-								Its best to fix errors before doing any integration testing
-							</div>
-						</v-card-text>
-					</v-card>
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="Plugin.currentPlugin">
-						<v-card-title>
-							Integration Testing
-						</v-card-title>
-						</v-card-header>
-						<v-card-text>
-							<div>
-								<div style="margin-bottom: 10px;">
-									Integration testing allows you to upload your loaded plugin onto your phone, and get logs below to find any exceptions in actual usage.
-								</div>
-								<div v-if="Integration.lastInjectTime">
-									Last Injected: {{Integration.lastInjectTime}} <br />
-									Click Inject Plugin again to update to last version.
-								</div>
-								<div v-if="!Integration.lastInjectTime">
-									Plugin is not yet injected. Click "Inject Plugin" to load the plugin on your phone.
-								</div>
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<v-btn @click="injectDevPlugin()">Inject Plugin</v-btn>
-						</v-card-actions>
-					</v-card>
-					<v-card style="margin: 20px;" v-if="Plugin.currentPlugin">
-						<v-card-title>
-							Device Logs
-						</v-card-title>
-						</v-card-header>
-						<v-card-text>
-							<div class="logContainer">
-								<div class="logLine" v-for="line in Integration.logs" :class="{exception: line.type == 'EXCEPTION', system: line.type == 'SYSTEM'}">
-									<div class="logType" style="vertical-align: top;">
-										[{{line.type}}]
-									</div>
-									<div class="logMsg">{{line.log}}</div>
-								</div>
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<v-btn @click="Integration.logs = []">Clear</v-btn>
-						</v-card-actions>
-					</v-card>
-					<v-card style="margin: 20px;" v-if="Plugin.currentPlugin && Integration.httpExchanges">
-						<v-card-title>
-							Http Logs
-						</v-card-title>
-						</v-card-header>
-						<v-card-text>
-							<div style="position: absolute; top: 0px; right: 15px;">
-								<v-checkbox v-model="Integration.showHttpRequests" label="Show Http Requests"></v-checkbox>
-							</div>
-							<div class="httpContainer" v-if="Integration.showHttpRequests">
-								<div class="httpLine" v-for="exchange of Integration.httpExchanges">
-									<div class="request" @click="toggleHttpExchange(exchange)">
-										<div :class="[{ success: exchange.response.status < 300, warn: exchange.response.status >= 300 && exchange.response.status < 400, error: exchange.response.status >= 400 }, 'status']">
-											{{exchange.response.status}}
-										</div>
-										<div class="method">
-											{{exchange.request.method}}
-										</div>
-										<div class="url">
-											{{exchange.request.url}}
-										</div>
-									</div>
-									<div class="response" v-if="exchange.response.show">
-										<h2>Request Headers</h2>
-										<div class="headers">
-											<div class="header" v-for="(headerValue, header) in exchange.request.headers">
-												<div class="key">
-													{{header}}
-												</div>
-												<div class="value">
-													{{headerValue}}
-												</div>
-											</div>
-										</div>
-										<h2>Response</h2>
-										<div class="headers">
-											<div class="header" v-for="(headerValue, header) in exchange.response.headers">
-												<div class="key">
-													{{header}}
-												</div>
-												<div class="value">
-													{{headerValue}}
-												</div>
-											</div>
-										</div>
-										<div class="body">{{exchange.response.body}}</div>
-									</div>
-								</div>
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<v-btn v-if="Integration.showHttpRequests" @click="Integration.httpExchanges = []">Clear</v-btn>
-						</v-card-actions>
-					</v-card>
-				</div>
+				  <div class="page" v-if="page == 'Integration'">
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="!Plugin.currentPlugin">
+						  <v-card-title>
+							  No Plugin Loaded
+						  </v-card-title>
+						  </v-card-header>
+						  <v-card-text>
+							  <div>
+								  Load a plugin before doing integration testing.
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <v-card style="width: 500px; margin-left: auto; margin-right: auto; margin-top: 20px;"
+					v-if="Plugin.currentPluginError">
+						  <v-card-text>
+							  <div>
+								  <h2 style="color: red">Errors in Plugin</h2>
+								  Its best to fix errors before doing any integration testing
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;" v-if="Plugin.currentPlugin">
+						  <v-card-title>
+							  Integration Testing
+						  </v-card-title>
+						  </v-card-header>
+						  <v-card-text>
+							  <div>
+								  <div style="margin-bottom: 10px;">
+									  Integration testing allows you to upload your loaded plugin onto your phone, and get logs below to find any exceptions in actual usage.
+								  </div>
+								  <div v-if="Integration.lastInjectTime">
+									  Last Injected: {{Integration.lastInjectTime}} <br />
+									  Click Inject Plugin again to update to last version.
+								  </div>
+								  <div v-if="!Integration.lastInjectTime">
+									  Plugin is not yet injected. Click "Inject Plugin" to load the plugin on your phone.
+								  </div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn @click="injectDevPlugin()">Inject Plugin</v-btn>
+						  </v-card-actions>
+					  </v-card>
+					  <v-card style="margin: 20px;" v-if="Plugin.currentPlugin">
+						  <v-card-title>
+							  Device Logs
+						  </v-card-title>
+						  </v-card-header>
+						  <v-card-text>
+							  <div class="logContainer">
+								  <div class="logLine" v-for="line in Integration.logs" :class="{exception: line.type == 'EXCEPTION', system: line.type == 'SYSTEM'}">
+									  <div class="logType" style="vertical-align: top;">
+										  [{{line.type}}]
+									  </div>
+									  <div class="logMsg">{{line.log}}</div>
+								  </div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn @click="Integration.logs = []">Clear</v-btn>
+						  </v-card-actions>
+					  </v-card>
+					  <v-card style="margin: 20px;" v-if="Plugin.currentPlugin && Integration.httpExchanges">
+						  <v-card-title>
+							  Http Logs
+						  </v-card-title>
+						  </v-card-header>
+						  <v-card-text>
+							  <div style="position: absolute; top: 0px; right: 15px;">
+								  <v-checkbox v-model="Integration.showHttpRequests" label="Show Http Requests"></v-checkbox>
+							  </div>
+							  <div class="httpContainer" v-if="Integration.showHttpRequests">
+								  <div class="httpLine" v-for="exchange of Integration.httpExchanges">
+									  <div class="request" @click="toggleHttpExchange(exchange)">
+										  <div :class="[{ success: exchange.response.status < 300, warn: exchange.response.status >= 300 && exchange.response.status < 400, error: exchange.response.status >= 400 }, 'status']">
+											  {{exchange.response.status}}
+										  </div>
+										  <div class="method">
+											  {{exchange.request.method}}
+										  </div>
+										  <div class="url">
+											  {{exchange.request.url}}
+										  </div>
+									  </div>
+									  <div class="response" v-if="exchange.response.show">
+										  <h2>Request Headers</h2>
+										  <div class="headers">
+											  <div class="header" v-for="(headerValue, header) in exchange.request.headers">
+												  <div class="key">
+													  {{header}}
+												  </div>
+												  <div class="value">
+													  {{headerValue}}
+												  </div>
+											  </div>
+										  </div>
+										  <h2>Response</h2>
+										  <div class="headers">
+											  <div class="header" v-for="(headerValue, header) in exchange.response.headers">
+												  <div class="key">
+													  {{header}}
+												  </div>
+												  <div class="value">
+													  {{headerValue}}
+												  </div>
+											  </div>
+										  </div>
+										  <div class="body">{{exchange.response.body}}</div>
+									  </div>
+								  </div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn v-if="Integration.showHttpRequests" @click="Integration.httpExchanges = []">Clear</v-btn>
+						  </v-card-actions>
+					  </v-card>
+				  </div>
 
-				<div class="page" v-if="page == 'TestSystem'">
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
-						<v-card-title>
-							Test System
-						</v-card-title>
-						<v-card-text>
-							<div>
-								<div style="margin-bottom: 10px;">
-									The TestSystem can be used to run tests within the plugin system in its native environment. Similar to unittests. It gives test methods access to native callers through the TestContext parameter (first arg in test functions).
-								</div>
-							</div>
-						</v-card-text>
-					</v-card>
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
-						<v-card-title>
-							Tests
-						</v-card-title>
-						<v-card-text>
-							<div v-if="TestSystem.tests && TestSystem.tests.length > 0">
-								<div class="testSystem_test" v-for="test in TestSystem.tests">
-									<div @click="TestSystem.selected = test.test.variable">
-										<div style="font-size: 20px; color: #EEE; margin-top: 5px; margin-bottom: 3px; display: inline-block; width: calc(100% - 350px); text-overflow: ellipsis;">
-											{{test.test.name}}
-										</div>
-										<div style="float: right;">
-											<div v-if="test.status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
-												Unknown
-											</div>
-											<div v-if="test.status == 1" class="testSystem_status" style="background-color: #ef9c1b">
-												Queued
-											</div>
-											<div v-if="test.status == 2" class="testSystem_status" style="background-color: #0859f1">
-												Running
-											</div>
-											<div v-if="test.status == 3" class="testSystem_status" style="background-color: #1c7f00">
-												Success
-											</div>
-											<div v-if="test.status == 4" class="testSystem_status" style="background-color: #800606">
-												Failure
-											</div>
-											<div style="display: inline-block;">
-												<v-btn @click="queueTestSystem(test.test.variable, {})" v-show="test.status != 1 && test.status != 2">Queue Test</v-btn>
-											</div>
-										</div>
-									</div>
-									<div style="font-size: 15px; color: #BBB; margin-bottom: 10px;" @click="TestSystem.selected = test.test.variable">
-										{{test.test.description}}
-									</div>
-									<div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="test.status == 2">
-										<v-progress-linear indeterminate></v-progress-linear>
-									</div>
-								</div>
-							</div>
-							<div v-if="!TestSystem.states || TestSystem.states.length <= 0" style="color: orangered">
-								No tests found, define your tests in a GrayjayTests variable.
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<v-btn @click="queueTestSystemAll()">Run All</v-btn>
-						</v-card-actions>
-					</v-card>
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
-						<v-card-text>
-							<div>
-								<div style="margin-bottom: 10px;">
-									Here is an example test function:
-								</div>
-								<div>
+				  <div class="page" v-if="page == 'TestSystem'">
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						  <v-card-title>
+							  Test System
+						  </v-card-title>
+						  <v-card-text>
+							  <div>
+								  <div style="margin-bottom: 10px;">
+									  The TestSystem can be used to run tests within the plugin system in its native environment. Similar to unittests. It gives test methods access to native callers through the TestContext parameter (first arg in test functions).
+								  </div>
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						  <v-card-title>
+							  Tests
+						  </v-card-title>
+						  <v-card-text>
+							  <div v-if="TestSystem.tests && TestSystem.tests.length > 0">
+								  <div class="testSystem_test" v-for="test in TestSystem.tests">
+									  <div @click="TestSystem.selected = test.test.variable">
+										  <div style="font-size: 20px; color: #EEE; margin-top: 5px; margin-bottom: 3px; display: inline-block; width: calc(100% - 350px); text-overflow: ellipsis;">
+											  {{test.test.name}}
+										  </div>
+										  <div style="float: right;">
+											  <div v-if="test.status == 3" class="testSystem_status" style="background-color: rgba(0,0,0,.5); max-width: 100px;">
+												  {{test.time}}ms
+											  </div>
+											  <div v-if="test.status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
+												  Unknown
+											  </div>
+											  <div v-if="test.status == 1" class="testSystem_status" style="background-color: #ef9c1b">
+												  Queued
+											  </div>
+											  <div v-if="test.status == 2" class="testSystem_status" style="background-color: #0859f1">
+												  Running
+											  </div>
+											  <div v-if="test.status == 3" class="testSystem_status" style="background-color: #1c7f00">
+												  Success
+											  </div>
+											  <div v-if="test.status == 4" class="testSystem_status" style="background-color: #800606">
+												  Failure
+											  </div>
+											  <div style="display: inline-block;">
+												  <v-btn @click="queueTestSystem(test.test.variable, {})" v-show="test.status != 1 && test.status != 2">Queue Test</v-btn>
+											  </div>
+										  </div>
+									  </div>
+									  <div style="font-size: 15px; color: #BBB; margin-bottom: 10px;" @click="TestSystem.selected = test.test.variable">
+										  {{test.test.description}}
+									  </div>
+									  <div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="test.status == 2">
+										  <v-progress-linear indeterminate></v-progress-linear>
+									  </div>
+								  </div>
+							  </div>
+							  <div v-if="!TestSystem.states || TestSystem.states.length <= 0" style="color: orangered">
+								  No tests found, define your tests in a GrayjayTests variable.
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn @click="queueTestSystemAll()">Run All</v-btn>
+						  </v-card-actions>
+					  </v-card>
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: 20px; margin-right: auto; max-width: 1000px;">
+						  <v-card-text>
+							  <div>
+								  <div style="margin-bottom: 10px;">
+									  Here is an example test function:
+								  </div>
+								  <div>
 <pre style="background-color: #222; border-radius: 8px;"><code style="background:none; font-size: 11px; line-height: 15px;">var GrayjayTests = {
 	Example_Test: {
 		Name: "Example Test",
@@ -794,90 +844,132 @@
 		//Example of shortform test
 	}
 }</code></pre>
-								</div>
-							</div>
-						</v-card-text>
-					</v-card>
-					<div style="position: fixed; top: 90px; right: 30px; width: calc(100% - 1070px); height: calc(100% - 110px); overflow-y: auto">
-						<v-card style="width: 100%;">
-							<v-card-title>
-								Result
-							</v-card-title>
-							<v-card-text>
-								<div v-if="!TestSystem.states[TestSystem.selected] || !TestSystem.states[TestSystem.selected].test">
-									No test selected
-								</div>
-								<div v-if="TestSystem.states[TestSystem.selected] && TestSystem.states[TestSystem.selected].test">
-									<div style="font-size: 25px; color: white;">
-										<span style="font-weight: bold; color: #999;">Test:</span> {{TestSystem.states[TestSystem.selected].test.name}}
-									</div>
-									<div style="position: absolute; top: 20px; right: 10px;">
-										<div v-if="TestSystem.states[TestSystem.selected].status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
-											Unknown
-										</div>
-										<div v-if="TestSystem.states[TestSystem.selected].status == 1" class="testSystem_status" style="background-color: #ef9c1b">
-											Queued
-										</div>
-										<div v-if="TestSystem.states[TestSystem.selected].status == 2" class="testSystem_status" style="background-color: #0859f1">
-											Running
-										</div>
-										<div v-if="TestSystem.states[TestSystem.selected].status == 3" class="testSystem_status" style="background-color: #1c7f00">
-											Success
-										</div>
-										<div v-if="TestSystem.states[TestSystem.selected].status == 4" class="testSystem_status" style="background-color: #800606">
-											Failure
-										</div>
-									</div>
-									<div style="font-size: 18px; color: #777; margin-top: 10px;">
-										{{TestSystem.states[TestSystem.selected].test.description}}
-									</div>
-									<div v-if="TestSystem.states[TestSystem.selected].result" style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
-										Result
-									</div>
-									<div v-if="TestSystem.states[TestSystem.selected].result" class="testResult" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].result}}</div>
-									<div v-if="TestSystem.states[TestSystem.selected].exception" class="testResult exception" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].exception}}</div>
+								  </div>
+							  </div>
+						  </v-card-text>
+					  </v-card>
+					  <div style="position: fixed; top: 90px; right: 30px; width: calc(100% - 1070px); height: calc(100% - 110px); overflow-y: auto">
+						  <v-card style="width: 100%;">
+							  <v-card-title>
+								  Result
+							  </v-card-title>
+							  <v-card-text>
+								  <div v-if="!TestSystem.states[TestSystem.selected] || !TestSystem.states[TestSystem.selected].test">
+									  No test selected
+								  </div>
+								  <div v-if="TestSystem.states[TestSystem.selected] && TestSystem.states[TestSystem.selected].test">
+									  <div style="font-size: 25px; color: white;">
+										  <span style="font-weight: bold; color: #999;">Test:</span> {{TestSystem.states[TestSystem.selected].test.name}}
+									  </div>
+									  <div v-if="TestSystem.states[TestSystem.selected].status == 3" class="testSystem_status" style="background-color: rgba(0,0,0,.5); max-width: 100px; position: absolute; top: 20px; right: 100px;">
+										  {{TestSystem.states[TestSystem.selected].time}}ms
+									  </div>
+									  <div style="position: absolute; top: 20px; right: 10px;">
+										  <div v-if="TestSystem.states[TestSystem.selected].status == 0" class="testSystem_status" style="background-color: rgba(0,0,0,.5)">
+											  Unknown
+										  </div>
+										  <div v-if="TestSystem.states[TestSystem.selected].status == 1" class="testSystem_status" style="background-color: #ef9c1b">
+											  Queued
+										  </div>
+										  <div v-if="TestSystem.states[TestSystem.selected].status == 2" class="testSystem_status" style="background-color: #0859f1">
+											  Running
+										  </div>
+										  <div v-if="TestSystem.states[TestSystem.selected].status == 3" class="testSystem_status" style="background-color: #1c7f00">
+											  Success
+										  </div>
+										  <div v-if="TestSystem.states[TestSystem.selected].status == 4" class="testSystem_status" style="background-color: #800606">
+											  Failure
+										  </div>
+									  </div>
+									  <div style="font-size: 18px; color: #777; margin-top: 10px;">
+										  {{TestSystem.states[TestSystem.selected].test.description}}
+									  </div>
+									  <div v-if="TestSystem.states[TestSystem.selected].result" style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
+										  Result
+									  </div>
+									  <div v-if="TestSystem.states[TestSystem.selected].result" class="testResult" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].result}}</div>
+									  <div v-if="TestSystem.states[TestSystem.selected].exception" class="testResult exception" style="font-size: 13px; margin-top: 10px;">{{TestSystem.states[TestSystem.selected].exception}}</div>
 
-									<div v-if="TestSystem.states[TestSystem.selected].logs && TestSystem.states[TestSystem.selected].logs.length > 0">
-										<div style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
-											Logs
-										</div>
-										<div style="background-color:rgba(0,0,0,.5); border-radius: 5px; padding: 5px; margin-top: 5px;" v-for="log in TestSystem.states[TestSystem.selected].logs">
-											{{log}}
-										</div>
-									</div>
+									  <div v-if="TestSystem.states[TestSystem.selected].logs && TestSystem.states[TestSystem.selected].logs.length > 0">
+										  <div style="font-size: 20px; font-weight: bold; color: white; margin-top: 20px;">
+											  Logs
+										  </div>
+										  <div style="background-color:rgba(0,0,0,.5); border-radius: 5px; padding: 5px; margin-top: 5px;" v-for="log in TestSystem.states[TestSystem.selected].logs">
+											  {{log}}
+										  </div>
+									  </div>
 
-									<div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="TestSystem.states[TestSystem.selected].status == 2">
-										<v-progress-linear indeterminate></v-progress-linear>
-									</div>
-								</div>
-							</v-card-text>
-						</v-card>
-					</div>
-				</div>
+									  <div style="position: absolute; bottom: 0px; left: 0px; width: 100%" v-if="TestSystem.states[TestSystem.selected].status == 2">
+										  <v-progress-linear indeterminate></v-progress-linear>
+									  </div>
+								  </div>
+							  </v-card-text>
+						  </v-card>
+					  </div>
+				  </div>
 
-				<div class="page" v-if="page == 'Settings'">
-					<v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;">
-						<v-card-title>
-							Settings
-						</v-card-title>
-						<v-card-text>
-							<div>
-								<div style="height: 30px;">
-									<v-checkbox label="Enable on Reload" v-model="settings.enableOnReload"></v-checkbox>
-								</div>
-								<div style="height: 30px;">
-									<v-checkbox label="Login on Reload" v-model="settings.loginOnReload">></v-checkbox>
-								</div>
-							</div>
-						</v-card-text>
-						<v-card-actions>
-							<v-spacer></v-spacer>
-							<v-btn @click="saveSettings()">Save</v-btn>
-						</v-card-actions>
-					</v-card>
-				</div>
+				  <div class="page" v-if="page == 'Plugin Settings'">
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; max-width: 1000px;">
+						  <v-card-title>
+							  Plugin Settings
+						  </v-card-title>
+						  <v-card-text>
+							  <div>
+								  <div class="plugin_setting" v-for="setting in Plugin.settings" :class="{header: setting?.type?.toLowerCase() == 'header'}">
+								     <div class="label" v-if="setting?.type?.toLowerCase() != 'header'">
+										 {{setting.name}}
+									 </div>
+									 <div class="value" v-if="setting?.type?.toLowerCase() != 'header'">
+										 <div v-if="setting?.type?.toLowerCase() == 'boolean'">
+											 <v-checkbox v-model="setting.value" style="margin-top: 5px;"></v-checkbox>
+										 </div>
+										 <div v-if="setting?.type?.toLowerCase() == 'dropdown'">
+											 <v-select v-model="setting.options[setting.value]" :items="setting.options" style="margin-top: -10px; width: calc(100% - 100px)">
+											 </v-select>
+										 </div>
+									 </div>
+									  <div class="header" v-if="setting?.type?.toLowerCase() == 'header'">
+										  <div class="title">
+											  {{setting?.name}}
+										  </div>
+										  <div class="description">
+											  {{setting?.description}}
+										  </div>
+									  </div>
+								  </div>
 
-			</div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn @click="savePluginSettings()">Save</v-btn>
+						  </v-card-actions>
+					  </v-card>
+				  </div>
+
+				  <div class="page" v-if="page == 'Settings'">
+					  <v-card style="margin-top: 20px; margin-bottom: 20px; margin-left: auto; margin-right: auto; width: 500px;">
+						  <v-card-title>
+							  Settings
+						  </v-card-title>
+						  <v-card-text>
+							  <div>
+								  <div style="height: 30px;">
+									  <v-checkbox label="Enable on Reload" v-model="settings.enableOnReload"></v-checkbox>
+								  </div>
+								  <div style="height: 30px;">
+									  <v-checkbox label="Login on Reload" v-model="settings.loginOnReload">></v-checkbox>
+								  </div>
+							  </div>
+						  </v-card-text>
+						  <v-card-actions>
+							  <v-spacer></v-spacer>
+							  <v-btn @click="saveSettings()">Save</v-btn>
+						  </v-card-actions>
+					  </v-card>
+				  </div>
+
+			  </div>
 		  </v-main>
 		</v-app>
 	  </div>
@@ -927,7 +1019,8 @@
 				lastLoadTime: "",
 				didInitialLoad: false,
 				enableOnReload: false,
-				isLoggedIn: false
+				isLoggedIn: false,
+				settings: {}
 			  },
 			TestSystem: {
 				tests: [],
@@ -1103,6 +1196,29 @@
 				}
 				this.Plugin.currentPluginIcon = new URL(this.Plugin.currentPlugin.iconUrl, url).href
 
+				var settingsBefore = this.Plugin.settings;
+				if (Object.keys(settingsBefore).length == 0) {
+					this.Plugin.settings = this.Plugin.currentPlugin.settings;
+					for (let settingIndex in this.Plugin.settings) {
+						const setting = this.Plugin.settings[settingIndex];
+						if (setting.value === undefined) {
+							switch (setting.type?.toLowerCase()) {
+								case "dropdown":
+									if (!isNaN(setting.default))
+										setting.value = parseInt(setting.default);
+									break;
+								case "boolean":
+									if (setting.default?.toLowerCase() == "true")
+										setting.value = true;
+									else
+										setting.value = false;
+									break;
+							}
+						}
+					}
+				}
+				console.log("Plugin Settings", this.Plugin.settings);
+
 				let currentPastPlugins = this.pastPluginUrls;
 				currentPastPlugins = currentPastPlugins.filter(x=>x.toLowerCase() != url.toLowerCase());
 				currentPastPlugins.unshift(url);
@@ -1163,7 +1279,7 @@
 							this.Plugin.lastLoadTime =
 								(date.getHours()+"").padStart(2, '0') + ":" +
 								(date.getMinutes()+"").padStart(2, '0') + ":" +
-								(date.getSeconds()+"").padStart(2, '0');
+								(date.getSeconds() + "").padStart(2, '0');
 
 
 							if(this.settings.loginOnReload) {
@@ -1221,21 +1337,24 @@
 				});
 
 
-				let settingsToUse = __DEV_SETTINGS;
-				if (false) {
-					for (let setting of this.Plugin?.currentPlugin?.settings) {
-						if (typeof settingsToUse[setting.variable] == "undefined") {
-							switch (setting?.type?.toLowerCase()) {
-								case "boolean":
-									settingsToUse[setting.variable] = setting.default === 'true';
-									break;
-								case "dropdown":
-									let dropDownIndex = parseInt(setting.default);
-									if (dropDownIndex) {
-										settingsToUse[setting.variable] = setting.options[dropDownIndex];
-									}
-									break;
-							}
+                let settingsToUse = __DEV_SETTINGS;
+				for (let setting of this.Plugin?.currentPlugin?.settings) {
+
+					const settingLocal = this.Plugin.settings.find(x => x.variable == setting.variable);
+					if (settingLocal)
+						settingsToUse[setting.variable] = settingLocal.value;
+
+					if (typeof settingsToUse[setting.variable] == "undefined") {
+						switch (setting?.type?.toLowerCase()) {
+							case "boolean":
+								settingsToUse[setting.variable] = setting.default === 'true';
+								break;
+							case "dropdown":
+								let dropDownIndex = parseInt(setting.default);
+								if (dropDownIndex) {
+									settingsToUse[setting.variable] = setting.options[dropDownIndex];
+								}
+								break;
 						}
 					}
 				}
@@ -1246,9 +1365,9 @@
 					else
 						parameterVals.push(this.Plugin.currentPlugin);
 					if(parameterVals.length > 1)
-						parameterVals[1] = __DEV_SETTINGS;
+                        parameterVals[1] = settingsToUse;
 					else
-						parameterVals.push(__DEV_SETTINGS);
+                        parameterVals.push(settingsToUse);
 				}
 
 				const func = source[name];
@@ -1357,7 +1476,13 @@
 				  	} catch (err) { console.error('Failed to copy', err); }
 				  	document.body.removeChild(textArea);
 				}
-			},
+			  },
+
+			  savePluginSettings() {
+				  var settings = this.Plugin.settings;
+				  console.log(settings);
+				  this.reloadPlugin();
+			  },
 
 			saveSettings() {
 				let settingsStr = JSON.stringify(this.settings);
