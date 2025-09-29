@@ -9,6 +9,7 @@ using Grayjay.Desktop.POC;
 using Grayjay.ClientServer.Settings;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Grayjay.Engine.Packages;
 
 namespace Grayjay.ClientServer
 {
@@ -41,6 +42,8 @@ namespace Grayjay.ClientServer
         public async Task RunServerAsync(string proxyUrl = null, CancellationToken cancellationToken = default)
         {
             Logger.i(nameof(GrayjayServer), $"RunServerAsync: Called with (proxyUrl = {proxyUrl}).");
+
+            PackageBridge.AppVersion = Constants.App.Version;
 
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.ConfigureKestrel(serverOptions =>
