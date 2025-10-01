@@ -1149,12 +1149,6 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
             onPressLabel: "Toggle Playback",
             onOptions: props.onOptions,
             onDirection: (el, dir, inputSource) => {
-                if (inputSource === "keyboard" && ["left", "right", "up"].indexOf(dir) !== -1) {
-                    return true;
-                }
-                if (inputSource !== "gamepad") {
-                    return false;
-                }
                 switch (dir) {
                     case 'left':
                         performSetPosition(Duration.fromMillis(Math.max(Math.min(duration().toMillis(), position().toMillis() - 5000), 0)));
