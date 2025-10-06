@@ -272,7 +272,17 @@ namespace Grayjay.ClientServer.States
                     }
                 }
             });
-
+            _ = ThreadPool.Run(async () =>
+            {
+                try
+                {
+                    await LocalController.GetQuickAccessRows();
+                }
+                catch (Exception ex)
+                {
+                    Logger.e(nameof(StateApp), "getQuickMenu prefetch failed: " + ex.Message, ex);
+                }
+            });
 
             //Temporary workaround for youtube
             ThreadPool.Run(() =>

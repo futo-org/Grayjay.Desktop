@@ -8,7 +8,7 @@
     <OutputType>library</OutputType>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
-    <AssemblyVersion>1.8.0.0</AssemblyVersion>
+    <AssemblyVersion>1.10.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>

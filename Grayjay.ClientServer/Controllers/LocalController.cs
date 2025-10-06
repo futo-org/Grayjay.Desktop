@@ -1,6 +1,8 @@
 ﻿using Grayjay.Desktop.POC;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -57,12 +59,60 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public ActionResult<QuickAccessRow> DefaultPath()
+        public async Task<ActionResult<QuickAccessRow>> DefaultPath()
         {
-            return Ok(GetQuickAccessRows().FirstOrDefault());
+            return Ok((await GetQuickAccessRows()).FirstOrDefault());
         }
 
-        private static List<QuickAccessRow> GetQuickAccessRows()
+
+        private static HashSet<string> _isDiskReadyCache = new HashSet<string>();
+        private static async Task<bool> IsDriveReady(DriveInfo drive)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return drive.IsReady;
+            bool isReadyCached = false;
+            lock(_isDiskReadyCache)
+            {
+                if (_isDiskReadyCache.Contains(drive.Name))
+                    isReadyCached = true;
+            }
+            if (isReadyCached)
+                return drive.IsReady;
+
+            try
+            {
+                CancellationTokenSource source = new CancellationTokenSource();
+                Process proc = Process.Start(new ProcessStartInfo()
+                {
+                    CreateNoWindow = true,
+                    Arguments = $"/c vol {drive.Name.Trim('\\').Trim('/')}",
+                    FileName = "cmd.exe"
+                })!;
+
+                Task delayTask = Task.Delay(500);
+                Task foundTask = await Task.WhenAny(delayTask, proc.WaitForExitAsync(source.Token));
+                if (foundTask == delayTask)
+                {
+                    proc.Kill();
+                    return false;
+                }
+                else
+                {
+                    lock (_isDiskReadyCache)
+                    {
+                        _isDiskReadyCache.Add(drive.Name);
+                    }
+                    return drive.IsReady;
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.e<LocalController>($"Failed to check drive {drive.Name}: " + ex.Message, ex);
+                return false;
+            }
+        }
+
+        public static async Task<List<QuickAccessRow>> GetQuickAccessRows()
         {
             var rows = new List<QuickAccessRow>();
             static void AddIfExists(List<QuickAccessRow> list, string name, string path, string type)
@@ -92,15 +142,15 @@ namespace Grayjay.ClientServer.Controllers
                 AddFolder(rows, "Music", Environment.SpecialFolder.MyMusic, "music");
                 AddFolder(rows, "Pictures", Environment.SpecialFolder.MyPictures, "pictures");
                 AddFolder(rows, "Videos", Environment.SpecialFolder.MyVideos, "videos");
-                AddFolder(rows, "Windows", Environment.SpecialFolder.Windows, "folder");
-                AddFolder(rows, "Program Files", Environment.SpecialFolder.ProgramFiles, "folder");
-                AddFolder(rows, "Program Files (x86)", Environment.SpecialFolder.ProgramFilesX86, "folder");
+                //AddFolder(rows, "Windows", Environment.SpecialFolder.Windows, "folder");
+                //AddFolder(rows, "Program Files", Environment.SpecialFolder.ProgramFiles, "folder");
+                //AddFolder(rows, "Program Files (x86)", Environment.SpecialFolder.ProgramFilesX86, "folder");
 
                 foreach (var d in DriveInfo.GetDrives())
                 {
-                    if ((d.DriveType == DriveType.Fixed || d.DriveType == DriveType.Removable) && d.IsReady)
+                    if ((d.DriveType == DriveType.Fixed || d.DriveType == DriveType.Removable) && await IsDriveReady(d))
                     {
-                        var label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? d.Name.TrimEnd('\\') : $"{d.VolumeLabel} ({d.Name.TrimEnd('\\')})";
+                        var label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? $"Local Disk ({d.Name.TrimEnd('\\')})" : $"{d.VolumeLabel} ({d.Name.TrimEnd('\\')})";
                         AddIfExists(rows, label, d.RootDirectory.FullName, "volume");
                     }
                 }
@@ -145,9 +195,9 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<QuickAccessRow>> QuickAccess()
+        public async Task<ActionResult<IEnumerable<QuickAccessRow>>> QuickAccess()
         {
-            return Ok(GetQuickAccessRows());
+            return Ok(await GetQuickAccessRows());
         }
 
         private static Func<string, string, string> ReadXdgUserDirs(string home)
