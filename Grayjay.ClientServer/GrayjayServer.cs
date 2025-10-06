@@ -43,7 +43,8 @@ namespace Grayjay.ClientServer
         {
             Logger.i(nameof(GrayjayServer), $"RunServerAsync: Called with (proxyUrl = {proxyUrl}).");
 
-            PackageBridge.AppVersion = Constants.App.Version;
+            if (Constants.App.Version > PackageBridge.AppVersion)
+                PackageBridge.AppVersion = Constants.App.Version;
 
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.ConfigureKestrel(serverOptions =>
