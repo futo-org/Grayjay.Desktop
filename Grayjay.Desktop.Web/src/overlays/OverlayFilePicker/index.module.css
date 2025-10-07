@@ -154,6 +154,15 @@
   border: 1px solid #2E2E2E;
 }
 
+.navItemText {
+  padding: 0px;
+  margin: 0px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
 .main {
   display: grid;
   grid-template-rows: auto 1fr;

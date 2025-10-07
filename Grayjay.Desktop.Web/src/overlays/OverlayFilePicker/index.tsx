@@ -1,4 +1,4 @@
-import { Accessor, batch, Component, createEffect, createMemo, createResource, createSignal, For, Index, on, Show, untrack } from 'solid-js';
+import { Accessor, batch, Component, createEffect, createMemo, createResource, createSignal, For, Index, on, onMount, Show, untrack } from 'solid-js';
 import styles from './index.module.css';
 import iconClose from '../../assets/icons/icon24_close.svg';
 import iconBreadcrumbFill from '../../assets/icons/label_important_24dp_FFFFFF_FILL1_wght300_GRAD0_opsz24.svg';
@@ -21,6 +21,7 @@ import { FileRow, LocalBackend, QuickAccessRow } from '../../backend/LocalBacken
 import { useFocus } from '../../FocusProvider';
 import Dropdown from '../../components/basics/inputs/Dropdown';
 import { CustomDialogLocal } from '../OverlayRoot';
+import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 
 export type PickerSelectionMode = 'file' | 'folder';
 export interface OverlayFilePickerProps {
@@ -53,7 +54,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
   const isWindowsDrive = (p: string) => /^[a-zA-Z]:([\\/]|$)/.test(p); // C:\ or C:/
   const isUnc = (p: string) => /^\\\\[^\\\/]+[\\\/][^\\\/]+/.test(p); // \\server\share\...
   const isDevice = (p: string) => /^\\\\\?\\/.test(p); // \\?\C:\...
-  const isWinRootOnly = (p: string) => /^[\\]/.test(p); // \folder => root of current drive
+  const isWinRootOnly = (p: string) => /^\\(?!\\)/.test(p);
   const isPosixRoot = (p: string) => p.startsWith('/');
   const isRooted = (p: string) => isWindowsDrive(p) || isUnc(p) || isDevice(p) || isWinRootOnly(p) || isPosixRoot(p);
   const pickSep = (a: string, b: string) => (/[\\]/.test(a) || /[\\]/.test(b)) ? '\\' : '/';
@@ -66,7 +67,16 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
     return `${b}${sep}${r}`;
   };
 
-  const collapseSlashes = (p: string) => p.replace(/[\\\/]+/g, m => (m.includes('\\') ? '\\' : '/'));
+  const collapseSlashes = (p: string) => {
+    if (!p) return p;
+    if (isDevice(p)) return p;
+    if (p.startsWith('\\\\')) {
+      const tail = p.slice(2).replace(/[\\\/]+/g, m => (m.includes('\\') ? '\\' : '/'));
+      return '\\\\' + tail;
+    }
+
+    return p.replace(/[\\\/]+/g, m => (m.includes('\\') ? '\\' : '/'));
+  };
   const normalizePath = (p: string): string => {
     if (isDevice(p)) return p;
 
@@ -79,8 +89,10 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
       prefix = parts[0].toUpperCase();
       parts.splice(0, 1);
     } else if (isUnc(p)) {
-      prefix = '\\\\' + parts[2] + '\\' + parts[3];
-      parts.splice(0, 4);
+      const server = parts[1] ?? '';
+      const share  = parts[2] ?? '';
+      prefix = '\\\\' + server + '\\' + share;
+      parts.splice(0, 3);
     } else if (isPosixRoot(p) || isWinRootOnly(p)) {
       prefix = sep;
       parts.splice(0, 1);
@@ -159,10 +171,27 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
   }
 
   const dismiss = () => UIOverlay.dismiss();
+
+  const INVALID_FILENAME_CHARS = /[<>:"/\\|?*]/;
+  function validateFileName(inputPathOrName: string): string | undefined {
+    const raw = (inputPathOrName ?? '').trim();
+    if (!raw) return "Enter a file name.";
+    const base = raw.split(/[\\/]+/).pop() ?? '';
+
+    if (!base) return "Enter a file name.";
+    if (base === '.' || base === '..') return "Invalid file name.";
+    if (INVALID_FILENAME_CHARS.test(base)) {
+      return `Invalid characters in file name. Don’t use: < > : " / \\ | ? *`;
+    }
+    return undefined;
+  }
+
   const saveSelected = async () => {
       const dir = currentDirectory() ?? '';
       const raw = (path() ?? '').trim();
       if (!raw) { setErrorMsg("Enter a file name."); return; }
+      const fileNameError = validateFileName(raw);
+      if (fileNameError) { setErrorMsg(fileNameError); return; }
 
       let full = getFullPath(dir, raw);
       try {
@@ -280,11 +309,11 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
       rootPath = rootLabel + sep;
       parts.splice(0, 1);
     } else if (isUnc(dir)) {
-      const server = parts[2] ?? "";
-      const share  = parts[3] ?? "";
+      const server = parts[1] ?? "";
+      const share  = parts[2] ?? "";
       rootLabel = "\\\\" + server + (share ? "\\" + share : "");
       rootPath = rootLabel;
-      parts.splice(0, 4);
+      parts.splice(0, 3);
     } else if ((sep === "/" && dir === "/") || (sep === "\\" && isWinRootOnly(dir))) {
       rootLabel = sep;
       rootPath = sep;
@@ -428,10 +457,10 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
   let quickAccessScrollContainerRef!: HTMLDivElement;
   let fileScrollContainerRef!: HTMLDivElement;
   return (
-    <div class={styles.root} onClick={() => dismiss()} use:focusScope={{
+    <div class={styles.root} onMouseDown={() => dismiss()} use:focusScope={{
         initialMode: 'trap'
     }}>
-      <div class={styles.dialog} onClick={e => e.stopPropagation()}>
+      <div class={styles.dialog} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
         <div class={styles.dialogHeader}>
           <div class={styles.titleRow}>
             <div class={styles.dialogTitle}>{isSaveMode() ? 'Save' : 'Open'}</div>
@@ -488,35 +517,39 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
 
         <div class={styles.body}>
           <ScrollContainer ref={quickAccessScrollContainerRef}>
-            <VirtualList outerContainerRef={quickAccessScrollContainerRef}
-              items={quickAccess() ?? []}
-              itemHeight={34}
-              builder={(index, item) => {
-                return (
-                  <div
-                    class={styles.navItem}
-                    classList={{ [styles.active]: currentDirectory() === item()?.path }}
-                    onClick={() => {
-                      batch(() => {
-                        setCurrentDirectory(item()?.path);
-                        setErrorMsg();
-                      });
-                    }}
-                    use:focusable={{
-                      onPress: () => {
-                        batch(() => {
-                          setCurrentDirectory(item()?.path);
-                          setErrorMsg();
-                        });
-                      },
-                      onBack: globalBack
-                    }}
-                  >
-                    <img src={getQuickAccessIconMemo(item)()} style="height: 16px; width: 16x;" />
-                    {item()?.name}
-                  </div>
-                );
-              }} />
+            <Show when={!quickAccess.loading} fallback={<CenteredLoader />}>
+              <VirtualList outerContainerRef={quickAccessScrollContainerRef}
+                items={quickAccess() ?? []}
+                itemHeight={34}
+                builder={(index, item) => {
+                  return (
+                    <Show when={item()?.type !== "divider"} fallback={<div style="width: 100%; height: 34px; display: flex; align-items: center; justify-content: center;"><div style="width: 100%; height: 1px; background-color: #2A2A2A"></div></div>}>
+                      <div
+                        class={styles.navItem}
+                        classList={{ [styles.active]: currentDirectory() === item()?.path }}
+                        onClick={() => {
+                          batch(() => {
+                            setCurrentDirectory(item()?.path);
+                            setErrorMsg();
+                          });
+                        }}
+                        use:focusable={{
+                          onPress: () => {
+                            batch(() => {
+                              setCurrentDirectory(item()?.path);
+                              setErrorMsg();
+                            });
+                          },
+                          onBack: globalBack
+                        }}
+                      >
+                        <img src={getQuickAccessIconMemo(item)()} style="height: 16px; width: 16x; flex-shrink: 0;" />
+                        <p class={styles.navItemText}>{item()?.name}</p>
+                      </div>
+                    </Show>
+                  );
+                }} />
+              </Show>
           </ScrollContainer>
 
           <section class={styles.main}>
@@ -526,75 +559,77 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
             </div>
 
             <ScrollContainer ref={fileScrollContainerRef}>
-              <VirtualList outerContainerRef={fileScrollContainerRef}
-                items={currentFiles}
-                addedItems={addedItemsEvent}
-                modifiedItems={modifiedItemsEvent}
-                removedItems={removedItemsEvent}
-                itemHeight={36}
-                builder={(index, item) => {
-                  const fullPath = createMemo(() => {
-                    const dir = currentDirectory();
-                    const p = item()?.path;
-                    return dir && p ? getFullPath(dir, p) : undefined;
-                  });
+              <Show when={!files.loading} fallback={<CenteredLoader />}>
+                <VirtualList outerContainerRef={fileScrollContainerRef}
+                  items={currentFiles}
+                  addedItems={addedItemsEvent}
+                  modifiedItems={modifiedItemsEvent}
+                  removedItems={removedItemsEvent}
+                  itemHeight={36}
+                  builder={(index, item) => {
+                    const fullPath = createMemo(() => {
+                      const dir = currentDirectory();
+                      const p = item()?.path;
+                      return dir && p ? getFullPath(dir, p) : undefined;
+                    });
 
-                  const onRowClick = (e?: MouseEvent) => {
-                    const it = item();
-                    if (!it) return;
-                    const fp = fullPath();
-                    if (!fp) return;
+                    const onRowClick = (e?: MouseEvent) => {
+                      const it = item();
+                      if (!it) return;
+                      const fp = fullPath();
+                      if (!fp) return;
 
-                    if (allowMultiple() && e?.shiftKey && lastClickedIndex !== null) {
-                      const lci = lastClickedIndex?.();
-                      const i = index();
-                      if (lci && i)
-                        selectRange(lci, i);
-                    } else if (allowMultiple() && (e?.metaKey || e?.ctrlKey)) {
-                      toggleOne(fp);
-                      lastClickedIndex = index;
-                    } else {
-                      selectSingle(fp);
-                      lastClickedIndex = index;
-                    }
+                      if (allowMultiple() && e?.shiftKey && lastClickedIndex !== undefined) {
+                        const lci = lastClickedIndex?.();
+                        const i = index();
+                        if (lci !== undefined && i !== undefined)
+                          selectRange(lci, i);
+                      } else if (allowMultiple() && (e?.metaKey || e?.ctrlKey)) {
+                        toggleOne(fp);
+                        lastClickedIndex = index;
+                      } else {
+                        selectSingle(fp);
+                        lastClickedIndex = index;
+                      }
 
-                    setErrorMsg();
-                  };
+                      setErrorMsg();
+                    };
 
-                  const onRowDblClick = () => {
-                    const it = item();
-                    if (!it) return;
-                    if (it.type === 'folder') {
-                      setCurrentDirectory(it.path);
-                      setSearch('');
-                    } else {
-                      setSelectedPaths([fullPath()!]);
-                      openSelected();
-                    }
-                  };
+                    const onRowDblClick = () => {
+                      const it = item();
+                      if (!it) return;
+                      if (it.type === 'folder') {
+                        setCurrentDirectory(it.path);
+                        setSearch('');
+                      } else {
+                        setSelectedPaths([fullPath()!]);
+                        openSelected();
+                      }
+                    };
 
-                  return (
-                    <div
-                      class={styles.row}
-                      classList={{ [styles.selected]: selectedPaths().some(v => v === fullPath() )}}
-                      onClick={onRowClick}
-                      onDblClick={onRowDblClick}
-                      use:focusable={{
-                        onPress: () => onRowClick(),
-                        onPressLabel: "Select",
-                        onAction: () => onRowDblClick(),
-                        onActionLabel: "Open",
-                        onBack: globalBack
-                      }}
-                    >
-                      <div class={styles.cellName} title={item()?.name}>
-                        <img src={getFileIconMemo(item)()} style="height: 16px; width: 16x;" />
-                        <span class="mono">{item()?.name}</span>
+                    return (
+                      <div
+                        class={styles.row}
+                        classList={{ [styles.selected]: selectedPaths().some(v => v === fullPath() )}}
+                        onClick={onRowClick}
+                        onDblClick={onRowDblClick}
+                        use:focusable={{
+                          onPress: () => onRowClick(),
+                          onPressLabel: "Select",
+                          onAction: () => onRowDblClick(),
+                          onActionLabel: "Open",
+                          onBack: globalBack
+                        }}
+                      >
+                        <div class={styles.cellName} title={item()?.name}>
+                          <img src={getFileIconMemo(item)()} style="height: 16px; width: 16x;" />
+                          <span class="mono">{item()?.name}</span>
+                        </div>
+                        <div class={styles.cellSubtle} title={item()?.date}>{item()?.date}</div>
                       </div>
-                      <div class={styles.cellSubtle} title={item()?.date}>{item()?.date}</div>
-                    </div>
-                  );
-                }} />
+                    );
+                  }} />
+                </Show>
             </ScrollContainer>
           </section>
         </div>
@@ -630,7 +665,13 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
             background: rgba(15,15,15,0.6);
             display:grid; place-items:center; z-index: 3;
           "
-          onClick={() => resolveConfirm(false)}
+          onClick={(e) => {
+            resolveConfirm(false); 
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
           use:focusScope={{ initialMode: "trap" }}
         >
           <div

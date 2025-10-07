@@ -580,3 +580,7 @@ export function getNestedOffsetTop(el: HTMLElement, ancestor: HTMLElement) {
   }
   return offset;
 };
+
+export function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

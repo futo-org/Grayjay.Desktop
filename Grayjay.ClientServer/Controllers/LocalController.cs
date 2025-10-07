@@ -51,9 +51,9 @@ namespace Grayjay.ClientServer.Controllers
         public record class QuickAccessRow
         {
             [JsonPropertyName("name")]
-            public required string Name { get; init; }
+            public string? Name { get; init; }
             [JsonPropertyName("path")]
-            public required string Path { get; init; }
+            public string? Path { get; init; }
             [JsonPropertyName("type")]
             public required string Type { get; init; }
         }
@@ -136,12 +136,13 @@ namespace Grayjay.ClientServer.Controllers
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                AddFolder(rows, "Desktop", Environment.SpecialFolder.Desktop, "desktop");
                 AddFolder(rows, "Documents", Environment.SpecialFolder.MyDocuments, "documents");
+                AddFolder(rows, "Desktop", Environment.SpecialFolder.Desktop, "desktop");
                 AddIfExists(rows, "Downloads", Path.Combine(Home(), "Downloads"), "downloads");
                 AddFolder(rows, "Music", Environment.SpecialFolder.MyMusic, "music");
                 AddFolder(rows, "Pictures", Environment.SpecialFolder.MyPictures, "pictures");
                 AddFolder(rows, "Videos", Environment.SpecialFolder.MyVideos, "videos");
+                rows.Add(new QuickAccessRow() { Type = "divider" });
                 //AddFolder(rows, "Windows", Environment.SpecialFolder.Windows, "folder");
                 //AddFolder(rows, "Program Files", Environment.SpecialFolder.ProgramFiles, "folder");
                 //AddFolder(rows, "Program Files (x86)", Environment.SpecialFolder.ProgramFilesX86, "folder");
@@ -150,7 +151,7 @@ namespace Grayjay.ClientServer.Controllers
                 {
                     if ((d.DriveType == DriveType.Fixed || d.DriveType == DriveType.Removable) && await IsDriveReady(d))
                     {
-                        var label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? $"Local Disk ({d.Name.TrimEnd('\\')})" : $"{d.VolumeLabel} ({d.Name.TrimEnd('\\')})";
+                        var label = string.IsNullOrWhiteSpace(d.VolumeLabel) ? $"({d.Name.TrimEnd('\\')}) Local Disk" : $"({d.Name.TrimEnd('\\')}) {d.VolumeLabel}";
                         AddIfExists(rows, label, d.RootDirectory.FullName, "volume");
                     }
                 }
@@ -169,6 +170,7 @@ namespace Grayjay.ClientServer.Controllers
                 AddIfExists(rows, "Videos", xdg("XDG_VIDEOS_DIR", "Videos"), "videos");
                 AddIfExists(rows, "Public", xdg("XDG_PUBLICSHARE_DIR", "Public"), "folder");
                 AddIfExists(rows, "Templates", xdg("XDG_TEMPLATES_DIR", "Templates"), "folder");
+                rows.Add(new QuickAccessRow() { Type = "divider" });
                 AddIfExists(rows, "File System", "/", "volume");
             }
             // macOS
@@ -183,6 +185,7 @@ namespace Grayjay.ClientServer.Controllers
                 AddFolder(rows, "Music", Environment.SpecialFolder.MyMusic, "music");
                 AddFolder(rows, "Pictures", Environment.SpecialFolder.MyPictures, "pictures");
                 AddFolder(rows, "Videos", Environment.SpecialFolder.MyVideos, "videos");
+                rows.Add(new QuickAccessRow() { Type = "divider" });
                 AddIfExists(rows, "Applications", "/Applications", "folder");
                 AddIfExists(rows, "Volumes", "/Volumes", "folder");
                 AddIfExists(rows, "System Applications", "/System/Applications", "folder");
