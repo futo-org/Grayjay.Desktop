@@ -26,6 +26,7 @@ interface SearchBarProps {
   overlayStyle?: JSX.CSSProperties;
   defaultSearchType?: ContentType;
   onSearch?: (query: string, type?: ContentType) => void;
+  suggestionsVisible?: boolean;
 }
 
 const SearchBar: Component<SearchBarProps> = (props) => {
@@ -158,7 +159,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
         }}
         onTextChanged={(v) => setQuery(v)}
         onSubmit={async (v) => await searchFor(v, searchType$())} />
-        <Show when={suggestionsVisible$() && focus?.isControllerMode() !== true}>
+        <Show when={(props.suggestionsVisible !== undefined ? props.suggestionsVisible : true) && suggestionsVisible$() && focus?.isControllerMode() !== true}>
           <div class={styles.suggestionsContainer} onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();

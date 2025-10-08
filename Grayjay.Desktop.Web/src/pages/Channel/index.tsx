@@ -41,6 +41,7 @@ interface ChannelTopBarProps {
   description?: string;
   activeTab?: string;
   onActiveTabChanged?: (tab: string) => void;
+  suggestionsVisible?: boolean;
 }
 
 const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
@@ -100,7 +101,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
         </Show>
       </div>
       <div class={styles.containerTopBarControls}>
-        <NavigationBar />
+        <NavigationBar suggestionsVisible={props.suggestionsVisible} />
         <div style="flex-grow: 1"></div>
         <div class={styles.containerActions} style={{opacity: 1 - p()}}>
           <div class={styles.containerCreator}>
@@ -142,6 +143,7 @@ const ChannelPage: Component = () => {
   console.log(params);
 
   const [error$, setError] = createSignal<any>(undefined);
+  const [suggestionsVisible$, setSuggestionsVisible] = createSignal(true);
 
 
   const authorSummary$ = createMemo(() => {
@@ -234,14 +236,16 @@ const ChannelPage: Component = () => {
           <ScrollContainer ref={scrollContainerRef}>
             <StickyShrinkOnScrollContainer outerContainerRef={scrollContainerRef}
                 minimumHeight={focus?.lastInputSource() === 'pointer' ? 136 : 540} 
-                maximumHeight={540}>
+                maximumHeight={540}
+                heightChanged={(h) => setSuggestionsVisible(h > 500)}>
               <ChannelTopBar bannerUrl={channel$()?.banner ?? authorSummary$()?.banner} 
                 thumbnailUrl={channel$()?.thumbnail ?? authorSummary$()?.thumbnail}
                 metadata={(((channel$()?.subscribers ?? 0) > 0) ? (toHumanNumber(channel$()?.subscribers) + " subscribers") : "")}
                 name={channel$()?.name ?? authorSummary$()?.name}
                 authorUrl={channel$()?.url ?? authorSummary$()?.url}
                 activeTab={activeTab$()}
-                onActiveTabChanged={(tab) => setActiveTab(tab)} />
+                onActiveTabChanged={(tab) => setActiveTab(tab)}
+                suggestionsVisible={suggestionsVisible$()} />
             </StickyShrinkOnScrollContainer>
             <div>
               <Show when={activeTab$() === "Videos"}>

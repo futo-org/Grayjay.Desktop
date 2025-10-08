@@ -19,6 +19,7 @@ interface NavigationBarProps {
   defaultSearchType?: ContentType;
   children?: JSX.Element | undefined;
   childrenAfter?: JSX.Element | undefined;
+  suggestionsVisible?: boolean;
 }
 
 const NavigationBar: Component<NavigationBarProps> = (props) => {
@@ -32,7 +33,7 @@ const NavigationBar: Component<NavigationBarProps> = (props) => {
       <Show when={canGoBack$()}>
         <TransparentIconButton icon={back} onClick={() => navigate(-1)} style={{"flex-shrink":0}} />
       </Show>
-      <SearchBar style={{ "flex-grow": 1, "max-width": "700px" }} initialText={props.initialText} inputStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} overlayStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} defaultSearchType={props.defaultSearchType} />
+      <SearchBar style={{ "flex-grow": 1, "max-width": "700px" }} initialText={props.initialText} inputStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} overlayStyle={{ "margin-left": !canGoBack$() ? "0px" : "24px" }} defaultSearchType={props.defaultSearchType} suggestionsVisible={props.suggestionsVisible} />
       <Show when={props.children}>
         {props.children}
       </Show>
