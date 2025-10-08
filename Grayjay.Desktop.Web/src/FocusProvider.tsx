@@ -876,12 +876,12 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (editable && editableWantsKey(e, !!trap)) return;
 
         switch (e.key) {
-            case 'ArrowUp': navigateDirection('up', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
+            /*case 'ArrowUp': navigateDirection('up', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
             case 'ArrowDown': navigateDirection('down', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
             case 'ArrowLeft': navigateDirection('left', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
-            case 'ArrowRight': navigateDirection('right', "keyboard"); e.preventDefault(); e.stopPropagation(); break;
+            case 'ArrowRight': navigateDirection('right', "keyboard"); e.preventDefault(); e.stopPropagation(); break;*/
             case 'Enter':
-            case ' ':
+            //case ' ':
                 press('press', "keyboard");
                 e.preventDefault();
                 e.stopPropagation();

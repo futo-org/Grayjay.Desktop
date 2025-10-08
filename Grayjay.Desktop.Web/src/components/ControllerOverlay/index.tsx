@@ -25,7 +25,7 @@ const ControllerOverlay: Component<ControllerOverlayProps> = (props) => {
                     <Show when={focus?.getFocusedNode()?.opts.onOptions !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorOptions}>O</div> {focus?.getFocusedNode()?.opts.onOptionsLabel ?? "Options"}</div></Show>
                     <Show when={focus?.getFocusedNode()?.opts.onAction !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorAction}>P</div> {focus?.getFocusedNode()?.opts.onActionLabel ?? "Action"}</div></Show>
                     <Show when={focus?.getFocusedNode()?.opts.onBack !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorBack}>Esc</div> {focus?.getFocusedNode()?.opts.onBackLabel ?? "Back"}</div></Show>
-                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>WASD/Arrows</div> {focus?.getFocusedNode()?.opts.onDirectionLabel ?? "Direction"}</div></Show>
+                    <Show when={focus?.getFocusedNode()?.opts.onDirection !== undefined}><div class={styles.button}><div class={styles.buttonImage} style={"background: " + colorDirection}>WASD</div> {focus?.getFocusedNode()?.opts.onDirectionLabel ?? "Direction"}</div></Show>
                 </div>
             </Show>
             <Show when={focus?.lastInputSource() === "gamepad"}>

@@ -1173,7 +1173,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 return false;
             },
-            onDirectionLabel: "(DU: Toggle Fullscreen  LR: Seek)"
+            onDirectionLabel: "(WS: Toggle Fullscreen  AD: Seek)"
         };
     });
 

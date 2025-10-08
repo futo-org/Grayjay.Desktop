@@ -473,6 +473,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     createEffect((prev) => {
         const updated = video?.state();
         if (updated === VideoState.Minimized && prev !== updated) {
+            hideReplies();
             repositionMinimize();
         }
     });

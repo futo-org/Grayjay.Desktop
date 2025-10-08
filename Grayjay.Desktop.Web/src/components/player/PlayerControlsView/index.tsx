@@ -297,7 +297,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onInteraction?.();
                 ev.preventDefault();
                 break;
-            /*case "ArrowRight":
+            case "ArrowRight":
                 startSkipping(1);
                 props.onInteraction?.();
                 ev.preventDefault();
@@ -316,7 +316,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 props.onSetVolume?.(Math.max((props.volume ?? 0) - 0.1, 0));
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;*/
+                break;
             case "f":
                 onFullscreen(ev as any);
                 props.onInteraction?.();
@@ -352,12 +352,12 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
 
     const handleKeyUp = (ev: KeyboardEvent) => {
         switch (ev.key) {
-            /*case "ArrowRight":
+            case "ArrowRight":
             case "ArrowLeft":
                 stopSkipping();
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;*/
+                break;
             case "Escape":
                 props.handleEscape?.();
                 props.onInteraction?.();
