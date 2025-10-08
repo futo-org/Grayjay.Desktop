@@ -17,7 +17,7 @@ const OverlayCustomDialog: Component<OverlayCustomDialogProps> = (props: Overlay
     return (
       <div use:focusScope={props.focusScope ? {
           initialMode: 'trap'
-      } : undefined}>
+      } : undefined} onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
         <Show when={!props.hideDialog}>
           <div class={styles.root} onClick={(ev)=>props.onRootClick && props.onRootClick()}>
             <div class={styles.dialog}>

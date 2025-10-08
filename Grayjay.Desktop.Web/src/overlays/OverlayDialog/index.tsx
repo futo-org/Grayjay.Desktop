@@ -214,6 +214,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(ev) => ev.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
         use:focusScope={{
           initialMode: 'trap'
         }}

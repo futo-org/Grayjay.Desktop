@@ -99,7 +99,7 @@ const OverlaySubscriptionGroupEditDialog: Component<OverlaySubscriptionGroupEdit
         <Show when={stateView$() == 3}>
           <div class={styles.container} use:focusScope={{
             initialMode: 'trap'
-          }}> 
+          }} onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}> 
             <div class={styles.dialogHeader}>
               <div class={styles.headerText}>
                 Are you sure you want to delete this group?

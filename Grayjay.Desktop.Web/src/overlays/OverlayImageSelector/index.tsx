@@ -80,7 +80,7 @@ const OverlayImageSelector: Component<OverlayImageSelectorDialogProps> = (props:
     return (
       <div class={styles.container} use:focusScope={{
         initialMode: 'trap'
-      }}> 
+      }} onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>
             {props.title}

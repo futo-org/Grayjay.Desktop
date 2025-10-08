@@ -90,7 +90,7 @@ const OverlayImportDialog: Component<OverlayImportDialogProps> = (props: Overlay
               onRootClick={()=> props.dialog.data$().Status == "importing"} focusScope={true}>        
             <>
               <Show when={props.dialog.data$().Status == 'choice'}>
-              <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()}>
+              <div style="width: 500px" onClick={(ev)=>ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
                 <div style="text-align: center;">
                   <div class={styles.dialogTitle}>Import</div>
                   <div class={styles.dialogSubtitle}>
