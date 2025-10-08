@@ -12,7 +12,7 @@ import Tooltip from '../../components/tooltip';
 import ScrollContainer from '../../components/containers/ScrollContainer';
 import { focusScope } from '../../focusScope'; void focusScope;
 import { focusable } from '../../focusable'; void focusable;
-import { createMutable } from 'solid-js/store';
+import { createMutable, unwrap } from 'solid-js/store';
 import { FocusableOptions } from '../../nav';
 
 export interface DialogDescriptor {
@@ -138,17 +138,26 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
   };
 
   const renderInputCheckboxList = (input: DialogInputCheckboxList, output: IDialogOutput) => {
-    const list = () => Array.isArray(output.selected) ? output.selected as any[] : [];
-    const isChecked = (val: any) => list().includes(val);
+    const [checkedInputs$, setCheckedInputs] = createSignal<any[]>([]);
     const setSelectedFor = (val: any, next: boolean) => {
-      const curr = list();
-      const has = curr.includes(val);
-      if (next && !has) output.selected = [...curr, val];
-      if (!next && has)  output.selected = curr.filter(v => v !== val);
+      let checkedInputs = checkedInputs$();
+      const index = checkedInputs.indexOf(val);
+      let changed = false;
+      if (next && index === -1) {
+        checkedInputs.push(val);
+        changed = true;
+      }
+      if (!next && index >= 0) {
+        checkedInputs.splice(index);
+        changed = true;
+      }
+      output.selected = checkedInputs;
     };
 
-    const toggle = (val: any) => setSelectedFor(val, !isChecked(val));
-
+    const toggle = (val: any) => {
+      setSelectedFor(val, !checkedInputs$().includes(val));
+      setCheckedInputs([ ... checkedInputs$() ]);
+    };
     return (
       <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
         <For each={input.values}>
@@ -162,7 +171,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
                 }}
               >
                 <Checkbox
-                  value={isChecked(item.value)}
+                  value={checkedInputs$().includes(item.value)}
                   onChecked={(next) => {
                     setSelectedFor(item.value, next);
                   }}

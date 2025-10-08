@@ -808,7 +808,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
         if (e.ctrlKey || e.metaKey || e.altKey || isTypingKey(e)) return true;
         if (['w','a','s','d','W','A','S','D'].includes(e.key)) return true;
 
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        /*if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
             const el = t as HTMLInputElement | HTMLTextAreaElement;
             return !caretAtBoundary(el, e.key === 'ArrowLeft' ? 'left' : 'right');
         }
@@ -824,7 +824,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
                 return textareaCanMove(ta, e.key === 'ArrowUp' ? 'up' : 'down');
             }
             return true;
-        }
+        }*/
 
         return true;
     }
