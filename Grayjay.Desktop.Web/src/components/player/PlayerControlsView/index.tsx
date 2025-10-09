@@ -64,7 +64,10 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     let settingsButton: HTMLElement | undefined;
     let containerRef: HTMLDivElement | undefined;
     let scrubbing = false;
+    let seeking = false;
     let changingVolume = false;
+    const [mouseSeekPosition,setMouseSeekPosition]=createSignal<Duration|undefined>();
+    const [mouseSeekOffset,setMouseSeekOffset]=createSignal(0);
 
     const [progressBarChapterHovering$, setProgressBarChapterHovering] = createSignal<number>();
 
@@ -92,11 +95,17 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     };
 
     const scrub = (e: MouseEvent) => {
-        if (scrubbing && progressBar) {
+        if (progressBar) {
             const d = untrack(progressBarDimensions);
+            setMouseSeekOffset(e.x-d.left);
             const positionFraction = (e.x - d.left) / d.width;
-            const scrubPosition = Duration.fromMillis(positionFraction * props.duration.as("milliseconds"));
-            props.onSetPosition?.(scrubPosition);
+            const p=Duration.fromMillis(positionFraction * props.duration.as("milliseconds"));
+            if(seeking){
+                setMouseSeekPosition(p);
+            }
+            if(scrubbing){
+                props.onSetPosition?.(p);
+            }
             props.onInteraction?.();
         }
     };
@@ -133,6 +142,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
     };
 
     const onMouseOut = (e: MouseEvent) => {
+        seeking=false; setMouseSeekPosition(undefined);
         stopScrubbing(e);
         stopChangingVolume(e);
         setProgressBarChapterHovering(-1);
@@ -487,6 +497,22 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             <div class={styles.progressBarBuffer} style={{ width: `${bufferWidth()}px` }} />
             <div class={styles.progressBarProgress} style={{ width: `${progressWidth()}px` }} />
             <div class={styles.progressBarContainer}>
+                <Show when={mouseSeekPosition()!== undefined}>
+                    <div class={styles.label} style={{
+                        position: "absolute",
+                        bottom: "0.5rem",
+                        left: `calc(-4rem + ${mouseSeekOffset()}px)`,
+                        width: "8rem",
+                        "border-radius": "5px",
+                        padding: "0.5rem",
+                        "background-color": "rgb(from var(--black-color-3)  r g b /.8)",
+                        "font-size": "11px",
+                        "text-align": "center",
+                        }}>
+                        <div>{props.chapters? props.chapters[progressBarChapterHovering$()??0]?.name:""}</div>
+                        <div>{mouseSeekPosition()?.toISOTime()}</div>
+                    </div>
+                </Show>
                 <Show when={(props.chapters?.length ?? 0) > 0}>
                     <div class={styles.progressBarChapters}>
                         <Index each={props.chapters}>{ (chapter$, i: number) =>
@@ -500,9 +526,6 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                                     left: `calc(${(Math.max(1, chapter$().timeStart) / (props.duration.milliseconds / 1000)) * 100}% + 2px)`,
                                     width: `calc(${((Math.min((props.duration.milliseconds / 1000), chapter$().timeEnd - chapter$().timeStart)) / (props.duration.milliseconds / 1000)) * 100}% - 2px)`,
                                 }}>
-                                    <div class={styles.label}>
-                                        {chapter$().name}
-                                    </div>
                                     <Show when={progressBarChapterHovering$() == i}>
                                         <div class={styles.hoverBar} 
                                             style={{
@@ -528,7 +551,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 </Show>
             </div>
             <div class={styles.progressBarHandle} style={{ left: `${progressHandleLeft()}px` }} />
-            <div class={styles.progressBarInteractiveArea} onMouseDown={startScrubbing} onMouseOut={onMouseOut} onMouseUp={stopScrubbing} onMouseMove={onMouseMove} />
+            <div class={styles.progressBarInteractiveArea} onMouseEnter={()=>{seeking=true}}onMouseDown={startScrubbing} onMouseOut={onMouseOut} onMouseUp={stopScrubbing} onMouseMove={onMouseMove} />
 
             <div class={styles.leftButtonContainer} style={props.leftButtonContainerStyle}>
                 <img src={play} class={styles.play} alt="play" style={{display: !props.isPlaying ? "block" : "none" }} onClick={(ev)=>onPlay(ev)} onDblClick={(e) => e.stopPropagation()} />
