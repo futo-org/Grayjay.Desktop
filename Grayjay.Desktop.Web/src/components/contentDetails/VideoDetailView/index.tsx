@@ -1469,10 +1469,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             buttons={
                                 <>
                                     <Show when={!isMinimized() && mode() === VideoMode.Theatre && focus.lastInputSource() === "pointer"}>
-                                        <img src={video?.theatrePinned() ? pinned_fill : pinned} class={styles.pinned} alt="pin theatre" onClick={() => video?.actions?.setTheatrePinned(!video?.theatrePinned())} />
+                                        <img src={video?.theatrePinned() ? pinned_fill : pinned} class={styles.pinned} alt="pin theatre" onClick={() => video?.actions?.setTheatrePinned(!video?.theatrePinned())} onDblClick={(e) => e.stopPropagation()} />
                                     </Show>
                                     <Show when={!shouldShowQueue()}>
-                                        <img src={video?.repeat() ? loop_active : loop_inactive} class={styles.loop} alt="loop" onClick={() => video?.actions?.setRepeat(!video?.repeat())} />
+                                        <img src={video?.repeat() ? loop_active : loop_inactive} class={styles.loop} alt="loop" onClick={() => video?.actions?.setRepeat(!video?.repeat())} onDblClick={(e) => e.stopPropagation()} />
                                     </Show>
                                 </>
                             }
@@ -1522,8 +1522,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 setShowSettings(true);
                             }}
                         >
-                            <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} />
-                            <img src={ic_close} class={styles.close} alt="close" onClick={onClose} />
+                            <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} onDblClick={(e) => e.stopPropagation()} />
+                            <img src={ic_close} class={styles.close} alt="close" onClick={onClose} onDblClick={(e) => e.stopPropagation()} />
                             <Show when={isMinimized()}>
                                 <DragArea class={styles.draggable} onDrag={handleDrag} onIsDraggingChanged={handleIsDraggingChanged} />
                                 <ResizeHandle class={styles.resizable} onResize={handleResizeHandleDrag} onIsResizingChanged={handleIsDraggingChanged} />

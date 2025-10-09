@@ -531,11 +531,11 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             <div class={styles.progressBarInteractiveArea} onMouseDown={startScrubbing} onMouseOut={onMouseOut} onMouseUp={stopScrubbing} onMouseMove={onMouseMove} />
 
             <div class={styles.leftButtonContainer} style={props.leftButtonContainerStyle}>
-                <img src={play} class={styles.play} alt="play" style={{display: !props.isPlaying ? "block" : "none" }} onClick={(ev)=>onPlay(ev)} />
-                <img src={pause} class={styles.pause} alt="pause" style={{display: props.isPlaying ? "block" : "none" }} onClick={(ev)=>onPause(ev)} />
-                <img src={props.volume ? ic_volume : ic_mute} class={styles.volume} alt="volume" onClick={(ev)=> onToggleVolume(ev)} />
+                <img src={play} class={styles.play} alt="play" style={{display: !props.isPlaying ? "block" : "none" }} onClick={(ev)=>onPlay(ev)} onDblClick={(e) => e.stopPropagation()} />
+                <img src={pause} class={styles.pause} alt="pause" style={{display: props.isPlaying ? "block" : "none" }} onClick={(ev)=>onPause(ev)} onDblClick={(e) => e.stopPropagation()} />
+                <img src={props.volume ? ic_volume : ic_mute} class={styles.volume} alt="volume" onClick={(ev)=> onToggleVolume(ev)} onDblClick={(e) => e.stopPropagation()} />
                 <Show when={props.volume !== undefined}>
-                    <div style="position: relative; height: 24px; width: 92px; flex-shrink: 0">
+                    <div style="position: relative; height: 24px; width: 92px; flex-shrink: 0" onDblClick={(e) => e.stopPropagation()}>
                         <div ref={volumeBar} class={styles.volumeBar} />
                         <div class={styles.volumeBarProgress} style={{ width: `${volumeWidth()}px` }} />
                         <div class={styles.volumeBarHandle} style={{ left: `${volumeWidth()}px` }} />
@@ -564,13 +564,13 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
 
             <div class={styles.buttonContainer} style={props.rightButtonContainerStyle}>
                 <Show when={props.handleFullscreen}>
-                    <img src={fullscreen} class={styles.fullscreen} alt="fullscreen" onClick={onFullscreen} />
+                    <img src={fullscreen} class={styles.fullscreen} alt="fullscreen" onClick={onFullscreen} onDblClick={(e) => e.stopPropagation()} />
                 </Show>
                 <Show when={props.handleTheatre}>
-                    <img src={iconTheatre} class={styles.theatre} alt="theatre" onClick={onTheatre} />
+                    <img src={iconTheatre} class={styles.theatre} alt="theatre" onClick={onTheatre} onDblClick={(e) => e.stopPropagation()} />
                 </Show>
-                <img src={cast} class={styles.cast} alt="cast" onClick={onCast} />
-                <img ref={(el)=>settingsButton = el} src={settings} class={styles.settings} alt="settings" onClick={(ev)=>onSettings(ev)} />
+                <img src={cast} class={styles.cast} alt="cast" onClick={onCast} onDblClick={(e) => e.stopPropagation()} />
+                <img ref={(el)=>settingsButton = el} src={settings} class={styles.settings} alt="settings" onClick={(ev)=>onSettings(ev)} onDblClick={(e) => e.stopPropagation()} />
                 {props.buttons}
             </div>
             {props.children}
