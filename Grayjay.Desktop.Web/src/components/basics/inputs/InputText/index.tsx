@@ -60,6 +60,7 @@ const InputText: Component<InputTextProps> = (props) => {
 
         if (e.key === "Escape" && !isComposing() && props.showClearButton) {
             e.preventDefault();
+            e.stopPropagation();
             clear();
         }
     };
@@ -112,6 +113,7 @@ const InputText: Component<InputTextProps> = (props) => {
                         </div>
                     </Show>
                     <input type="text"
+                        autocomplete='off'
                         id={props.id}
                         ref={inputElement} 
                         disabled={merged.disabled}
