@@ -36,6 +36,16 @@ export interface PlayerControlsProps {
     handleTheatre?: () => void;
     handleToggleVolume?: () => void;
     onInteraction?: () => void;
+    onToggleSubtitles?: () => void;
+    onOpenSearch?: () => void;
+    onPreviousChapter?: () => void;
+    onNextChapter?: () => void;
+    onPreviousVideo?: () => void;
+    onNextVideo?: () => void;
+    onSingleFrameForward?: () => void;
+    onSingleFrameBackward?: () => void;
+    onIncreasePlaybackSpeed?: () => void;
+    onDecreasePlaybackSpeed?: () => void;
     children: JSX.Element;
     volume?: number;
     buttons?: JSX.Element;
@@ -266,13 +276,13 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
 
     const volumeWidth = createMemo(() => (props.volume ?? 0) * 72);
 
-    const skip = (direction: number) => {
+    const skip = (direction: number, skipAmountMs: number) => {
         let position = props.position.as("milliseconds");
         const duration = props.duration.as("milliseconds");
         if (duration > 0) {
-            position = Math.max(Math.min(duration, position + direction * 5000), 0);
+            position = Math.max(Math.min(duration, position + direction * skipAmountMs), 0);
         } else {
-            position = Math.max(position + direction * 5000, 0);
+            position = Math.max(position + direction * skipAmountMs, 0);
         }
         props.onSetPosition?.(Duration.fromMillis(position));
     };
@@ -286,6 +296,36 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             }
         }
 
+        if (ev.ctrlKey) {
+            switch (ev.key) {
+                case "ArrowLeft":
+                    props.onPreviousChapter?.();
+                    props.onInteraction?.();
+                    ev.preventDefault();
+                    return;
+                case "ArrowRight":
+                    props.onNextChapter?.();
+                    props.onInteraction?.();
+                    ev.preventDefault();
+                    return;
+            }
+        }
+        
+        if (ev.shiftKey) {
+            switch (ev.key.toLowerCase()) {
+                case "n":
+                    props.onNextVideo?.();
+                    props.onInteraction?.();
+                    ev.preventDefault();
+                    return;
+                case "p":
+                    props.onPreviousVideo?.();
+                    props.onInteraction?.();
+                    ev.preventDefault();
+                    return;
+            }
+        }
+
         switch (ev.key) {
             case " ":
             case "k":
@@ -296,57 +336,97 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 }
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "ArrowRight":
-                startSkipping(1);
+                startSkipping(1, 5000);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "ArrowLeft":
-                startSkipping(-1);
+                startSkipping(-1, 5000);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
+            case "l":
+                startSkipping(1, 10000);
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case "j":
+                startSkipping(-1, 10000);
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
             case "ArrowUp":
                 props.onSetVolume?.(Math.min((props.volume ?? 0) + 0.1, 1));
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "ArrowDown":
                 props.onSetVolume?.(Math.max((props.volume ?? 0) - 0.1, 0));
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "f":
                 onFullscreen(ev as any);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "t":
                 onTheatre(ev as any);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "m":
                 onToggleVolume(ev as any);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "Home":
                 props.onSetPosition?.(Duration.fromMillis(0));
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "End":
                 props.onSetPosition?.(props.duration);
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "i":
                 props.handleMinimize?.();
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
+            case "c":
+                props.onToggleSubtitles?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case "/":
+                props.onOpenSearch?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case "<":
+                props.onDecreasePlaybackSpeed?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case ">":
+                props.onIncreasePlaybackSpeed?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case ",":
+                props.onSingleFrameBackward?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
+            case ".":
+                props.onSingleFrameForward?.();
+                props.onInteraction?.();
+                ev.preventDefault();
+                return;
         }
     };
 
@@ -354,27 +434,29 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         switch (ev.key) {
             case "ArrowRight":
             case "ArrowLeft":
+            case "j":
+            case "l":
                 stopSkipping();
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
             case "Escape":
                 props.handleEscape?.();
                 props.onInteraction?.();
                 ev.preventDefault();
-                break;
+                return;
         }
     };
 
     let startSkippingTimeout: NodeJS.Timeout | undefined;
     let skipInterval: NodeJS.Timeout | undefined;
-    const startSkipping = (direction: number) => {
+    const startSkipping = (direction: number, skipAmountMs: number) => {
         stopSkipping();
 
-        skip(direction);
+        skip(direction, skipAmountMs);
         startSkippingTimeout = setTimeout(() => {
             skipInterval = setInterval(() => {
-                skip(direction);
+                skip(direction, skipAmountMs);
             }, 100);
         }, 2000);
     };

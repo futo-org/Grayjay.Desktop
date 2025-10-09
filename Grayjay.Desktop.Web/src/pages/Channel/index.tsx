@@ -101,7 +101,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
         </Show>
       </div>
       <div class={styles.containerTopBarControls}>
-        <NavigationBar suggestionsVisible={props.suggestionsVisible} />
+        <NavigationBar id="" suggestionsVisible={props.suggestionsVisible} />
         <div style="flex-grow: 1"></div>
         <div class={styles.containerActions} style={{opacity: 1 - p()}}>
           <div class={styles.containerCreator}>

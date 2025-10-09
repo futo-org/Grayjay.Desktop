@@ -23,6 +23,7 @@ interface InputTextProps {
     showClearButton?: boolean;
     error?: string | null | undefined;
     focusable?: boolean;
+    id?: string;
     onBack?: (el: HTMLElement, inputSource: InputSource) => boolean;
 }
 
@@ -111,6 +112,7 @@ const InputText: Component<InputTextProps> = (props) => {
                         </div>
                     </Show>
                     <input type="text"
+                        id={props.id}
                         ref={inputElement} 
                         disabled={merged.disabled}
                         class={styles.searchInput} 

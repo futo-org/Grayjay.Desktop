@@ -7,18 +7,14 @@ import { DetailsBackend } from '../../../backend/DetailsBackend';
 import { CastConnectionState, useCasting } from '../../../contexts/Casting';
 import { CastingBackend } from '../../../backend/CastingBackend';
 import { Event0 } from "../../../utility/Event";
-import dashjs, { MediaPlayerErrorEvent } from 'dashjs';
+import * as dashjs from 'dashjs';
 import Hls from 'hls.js';
 import { ChapterType, IChapter } from '../../../backend/models/contentDetails/IChapter';
-import { SettingsBackend } from '../../../backend/SettingsBackend';
-import { IPlatformVideo } from '../../../backend/models/content/IPlatformVideo';
 import { IPlatformVideoDetails } from '../../../backend/models/contentDetails/IPlatformVideoDetails';
-import Loader from '../../basics/loaders/Loader';
 import CircleLoader from '../../basics/loaders/CircleLoader';
 import { formatDuration, uuidv4 } from '../../../utility';
 import { LoaderGame, LoaderGameHandle } from '../../LoaderGame';
 import StateWebsocket from '../../../state/StateWebsocket';
-import StateGlobal from '../../../state/StateGlobal';
 import Globals from '../../../globals';
 import { clearLiveChatOnSeek } from '../../../state/StateLiveChat';
 import { focusable } from '../../../focusable'; void focusable;
@@ -33,11 +29,17 @@ interface VideoProps {
     onPlayerQualityChanged?: (level: number) => void;
     onSettingsDialog?: (event: HTMLElement|undefined) => void;
     onFullscreenChange?: (isFullscreen: boolean) => void;
+    onToggleSubtitles?: () => void;
     onProgress?: (progress: number) => void;
     onEnded?: () => void;
     onError?: (message: string, fatal: boolean) => void;
     onPositionChanged?: (time: Duration) => void;
+    onIncreasePlaybackSpeed?: () => void;
+    onDecreasePlaybackSpeed?: () => void;
+    onOpenSearch?: () => void;
     onIsPlayingChanged?: (isPlaying: boolean) => void;
+    onPreviousVideo?: () => void;
+    onNextVideo?: () => void;
     handleTheatre?: () => void;
     handleEscape?: () => void;
     handleMinimize?: () => void;
@@ -95,6 +97,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const [resumePositionVisible, setResumePositionVisible] = createSignal(false);
     const [endControlsVisible$, setEndControlsVisible] = createSignal(false);
     const [loaderGameVisible$, setLoaderGameVisible] = createSignal<number>();
+    let frameRate: number | undefined = undefined; //TODO: Framerate is currently not accurate, not properly exposed by video,hlsjs,dashjs, would need to feed it in from sources
     let currentUrl: string | undefined;
     let castingEndedEmitted = false;
     let loader: LoaderGameHandle | undefined;
@@ -118,6 +121,30 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     const currentChapter$ = createMemo(()=>{
         return props.chapters?.find(x=>x.timeStart < (position().milliseconds / 1000) && x.timeEnd > (position().milliseconds / 1000));
     });
+    const previousChapter = () => {
+        const chapters = props.chapters;
+        const posSec = position().milliseconds / 1000;
+
+        if (!chapters || chapters.length === 0) return undefined;
+        const previous = chapters
+            .filter(ch => ch.timeEnd <= posSec)
+            .sort((a, b) => b.timeEnd - a.timeEnd)[0];
+
+        return previous;
+    };
+
+    const nextChapter = () => {
+        const chapters = props.chapters;
+        const posSec = position().milliseconds / 1000;
+
+        if (!chapters || chapters.length === 0) return undefined;
+        const next = chapters
+            .filter(ch => ch.timeStart >= posSec)
+            .sort((a, b) => a.timeStart - b.timeStart)[0];
+
+        return next;
+    };
+
     let lastSkip: IChapter | undefined = undefined;
     let skippedOnce: IChapter[] = [];
     createEffect(()=>{
@@ -555,6 +582,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         console.info("changeSource", {sourceUrl, mediaType, shouldResume, startTime});
         setIsAudioOnly(false);
         setIsPlaying(false);
+        frameRate = undefined;
         
         if (currentUrl === sourceUrl) {
             if (startTime) {
@@ -674,8 +702,25 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     
                     //TODO: For buffered position, might need to calculate based on dashPlayer.getBufferLength()
                 });
-            
+
+                const updateFps = () => {
+                    const rep = dashPlayer?.getCurrentRepresentationForType?.('video');
+                    if (!rep) {
+                        frameRate = undefined;
+                        return;
+                    }
+
+                    if (frameRate != rep.frameRate) {
+                        frameRate = rep.frameRate;
+                    }
+                };
+                
+                dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_RENDERED, e => { if (e.mediaType === 'video') updateFps(); });
+                dashPlayer.on(dashjs.MediaPlayer.events.TRACK_CHANGE_RENDERED, updateFps);
+                dashPlayer.on(dashjs.MediaPlayer.events.PERIOD_SWITCH_COMPLETED, updateFps);
+                dashPlayer.on(dashjs.MediaPlayer.events.REPRESENTATION_SWITCH, e => updateFps());
                 dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
+                    updateFps();
                     const videoWidth = videoElement?.videoWidth ?? 0;
                     const videoHeight = videoElement?.videoHeight ?? 0;
                     setIsAudioOnly(videoWidth === 0 && videoHeight === 0);
@@ -859,8 +904,22 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                     onVolumeChanged(videoElement?.volume ?? 1);
                 };
+
+                videoElement
                 
                 hlsPlayer = new Hls();
+
+                //TODO: Framerate
+                /*hlsPlayer.on(Hls.Events.MANIFEST_PARSED, (eventName, data) => {
+                    if (data?.levels?.length) {
+                        const level = data.levels[data.firstLevel ?? 0];
+                        if (level?.details?.framerate || level?.frameRate) {
+                            setFrameRate(level.details?.framerate ?? level.frameRate);
+                            console.info("Detected HLS framerate:", frameRate());
+                        }
+                    }
+                });*/
+
                 hlsPlayer.on(Hls.Events.LEVEL_SWITCHING, function (eventName, data) {
                     console.log("Player changed level to: " + data.level);
                     if(props.onPlayerQualityChanged)
@@ -1224,6 +1283,48 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     onSetPosition={performSetPosition}
                     isPlaying={isPlaying()}
                     onSetVolume={(v) => setVolume(v)}
+                    onToggleSubtitles={props.onToggleSubtitles}
+                    onIncreasePlaybackSpeed={props.onIncreasePlaybackSpeed}
+                    onDecreasePlaybackSpeed={props.onDecreasePlaybackSpeed}
+                    onPreviousChapter={() => {
+                        const chapter = previousChapter();
+                        if (!chapter) {
+                            const currentChapter = currentChapter$();
+                            if (!currentChapter) {
+                                return;
+                            }
+
+                            performSetPosition(Duration.fromMillis(currentChapter.timeStart * 1000));
+                            return;
+                        }
+
+                        performSetPosition(Duration.fromMillis(chapter.timeStart * 1000));
+                    }}
+                    onNextChapter={() => {
+                        const chapter = nextChapter();
+                        if (!chapter) {
+                            const currentChapter = currentChapter$();
+                            if (!currentChapter) {
+                                return;
+                            }
+
+                            performSetPosition(Duration.fromMillis(currentChapter.timeEnd * 1000));
+                            return;
+                        }
+
+                        performSetPosition(Duration.fromMillis(chapter.timeStart * 1000));
+                    }}
+                    onPreviousVideo={props.onPreviousVideo}
+                    onNextVideo={props.onNextVideo}
+                    onOpenSearch={props.onOpenSearch}
+                    onSingleFrameForward={() => {
+                        if (paused())
+                            performSetPosition(Duration.fromMillis(Math.min(duration().milliseconds, position().milliseconds + 1000 / (frameRate ?? 24))));
+                    }}
+                    onSingleFrameBackward={() => {
+                        if (paused())
+                            performSetPosition(Duration.fromMillis(Math.max(0, position().milliseconds - 1000 / (frameRate ?? 24))));
+                    }}
                     isLive={props.source?.isLive}
                     volume={currentVolume$()}
                     handlePause={togglePlay}

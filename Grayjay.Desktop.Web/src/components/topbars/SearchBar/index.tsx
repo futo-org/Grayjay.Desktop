@@ -27,6 +27,7 @@ interface SearchBarProps {
   defaultSearchType?: ContentType;
   onSearch?: (query: string, type?: ContentType) => void;
   suggestionsVisible?: boolean;
+  id?: string;
 }
 
 const SearchBar: Component<SearchBarProps> = (props) => {
@@ -150,6 +151,7 @@ const SearchBar: Component<SearchBarProps> = (props) => {
             setSuggestionsVisible(true);
           }
         }}
+        id={props.id}
         onFocusChanged={async (focus) => {
           if (focus) {
             setSearchHasFocus(true);
