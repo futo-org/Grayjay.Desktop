@@ -255,7 +255,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     duration: untrack(duration),
                     sourceSelected: props.source,
                     speed: 1.0,
-                    tag
+                    tag,
+                    title: props.video?.name
                 });
             } catch (e) {
                 console.info("failed to start casting", e);

@@ -277,6 +277,8 @@ namespace Grayjay.ClientServer.Settings
         {
             [SettingsField("Enabled", SettingsField.TOGGLE, "Enable casting", 0)]
             public bool Enabled { get; set; } = true;
+            [SettingsField("Experimental", SettingsField.TOGGLE, "Enable experimental casting backend. Requires restart", 0)]
+            public bool Experimental { get; set; } = false;
         }
         
 

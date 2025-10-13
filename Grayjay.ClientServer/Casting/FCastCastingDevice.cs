@@ -4,7 +4,7 @@ using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.Casting;
 
-public class FCastCastingDevice : CastingDevice
+public class FCastCastingDevice : CastingDeviceLegacy
 {
     private CancellationTokenSource? _cancellationTokenSource;
     private FCastSession? _session = null;
@@ -44,7 +44,7 @@ public class FCastCastingDevice : CastingDevice
         }, cancellationToken);
     }
 
-    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, double? speed = null, CancellationToken cancellationToken = default)
+    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, String? title, String thumbnailUrl, double? speed = null, CancellationToken cancellationToken = default)
     {
         if (_session == null)
             return;
