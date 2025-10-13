@@ -44,13 +44,7 @@ namespace Grayjay.ClientServer.Controllers
             var pinnedDeviceInfo = StateCasting.Instance.PinnedDevices.FirstOrDefault(x => x.Id == id);
             if (pinnedDeviceInfo != null)
             {
-                castingDevice = pinnedDeviceInfo.Type switch
-                {
-                    CastProtocolType.Chromecast => new ChromecastCastingDevice(pinnedDeviceInfo),
-                    CastProtocolType.Airplay => new AirPlayCastingDevice(pinnedDeviceInfo),
-                    CastProtocolType.FCast => new FCastCastingDevice(pinnedDeviceInfo),
-                    _ => throw new Exception($"Invalid cast protocol type {pinnedDeviceInfo.Type}")
-                };
+                castingDevice = StateCasting.Instance.CreateDevice(pinnedDeviceInfo);
             }
             else
             {
@@ -111,7 +105,7 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> MediaLoad(string streamType, double resumePosition, double duration, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, double? speed = null, CancellationToken cancellationToken = default, string? tag = null)
+        public async Task<ActionResult> MediaLoad(string streamType, double resumePosition, double duration, int videoIndex, int audioIndex, int subtitleIndex, string? title, string thumbnailUrl, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, double? speed = null, CancellationToken cancellationToken = default, string? tag = null)
         {
             var activeDevice = StateCasting.Instance.ActiveDevice;
             if (activeDevice == null)
@@ -119,13 +113,16 @@ namespace Grayjay.ClientServer.Controllers
 
             //TODO: Uncomment
             //var proxyInnerSources = activeDevice is FCastCastingDevice ? false : true;
-            var shouldProxy = activeDevice is FCastCastingDevice ? false : true;
+            var shouldProxy =
+                (activeDevice is FCastCastingDevice || (activeDevice is CastingDeviceExperimentalWrapper expDevice && expDevice.inner.CastingProtocol() == FCast.SenderSDK.ProtocolType.FCast))
+                ? false : true;
             var sourceDescriptor = await DetailsController.GenerateSourceProxy(this.State(), videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(false, shouldProxy, proxyAddress: activeDevice.LocalEndPoint?.Address, exposeLocalAsAny: true), tag, forceReady: true);
-            if (sourceDescriptor.Url.StartsWith("/"))
+            if (sourceDescriptor.Url.StartsWith("/")) {
                 sourceDescriptor.Url = $"http://{activeDevice.LocalEndPoint?.Address.ToUrlAddress()}:{GrayjayCastingServer.Instance.BaseUri!.Port}" + sourceDescriptor.Url;
+            }
 
             Logger.i(nameof(CastingController), $"Started casting '{sourceDescriptor.Url}' with content type '{sourceDescriptor.Type}'.");
-            Task? task = StateCasting.Instance.ActiveDevice?.MediaLoadAsync(streamType, sourceDescriptor.Type, sourceDescriptor.Url, TimeSpan.FromSeconds(resumePosition), TimeSpan.FromSeconds(duration), speed, cancellationToken);
+            Task? task = StateCasting.Instance.ActiveDevice?.MediaLoadAsync(streamType, sourceDescriptor.Type, sourceDescriptor.Url, TimeSpan.FromSeconds(resumePosition), TimeSpan.FromSeconds(duration), title, thumbnailUrl, speed, cancellationToken);
             if (task != null)
                 await task;
             return Ok();

@@ -46,7 +46,7 @@ export abstract class CastingBackend {
         await Backend.GET("/casting/MediaResume");
     }
 
-    static async mediaLoad(obj: { streamType: string, resumePosition: Duration, duration: Duration, sourceSelected: SourceSelected, speed?: number, tag?: string }): Promise<void> {
+    static async mediaLoad(obj: { streamType: string, resumePosition: Duration, duration: Duration, sourceSelected: SourceSelected, speed?: number, tag?: string, title?: string }): Promise<void> {
         await Backend.GET(`/casting/MediaLoad?streamType=${encodeURIComponent(obj.streamType)}` +
             `&resumePosition=${encodeURIComponent(obj.resumePosition.as("seconds"))}` +
             `&duration=${encodeURIComponent(obj.duration.as("seconds"))}` +
@@ -57,8 +57,10 @@ export abstract class CastingBackend {
             `&videoIsLocal=${encodeURIComponent(obj.sourceSelected.videoIsLocal)}` + 
             `&audioIsLocal=${encodeURIComponent(obj.sourceSelected.audioIsLocal)}` + 
             `&subtitleIsLocal=${encodeURIComponent(obj.sourceSelected.subtitleIsLocal)}` + 
+            `&thumbnailUrl=${encodeURIComponent(obj.sourceSelected.thumbnailUrl)}` +
             (obj.speed ? `&speed=${encodeURIComponent(obj.speed!)}` : "") +
-            (obj.tag ? `&tag=${encodeURIComponent(obj.tag!)}` : ""));
+            (obj.tag ? `&tag=${encodeURIComponent(obj.tag!)}` : "") +
+            (obj.title ? `&title=${encodeURIComponent(obj.title!)}` : ""));
     }
 
     static async changeVolume(volume: number): Promise<void> {
