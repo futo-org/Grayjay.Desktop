@@ -175,7 +175,14 @@ namespace Grayjay.ClientServer.Controllers
             }
 
             window = await GrayjayServer.Instance.WindowProvider.CreateInterceptorWindowAsync("Grayjay (Login)", authConfig.LoginUrl, authConfig.UserAgent, 
-                ((authConfig is PluginAuthDesktopConfig dconfig) ? dconfig.UseMobileEmulation : true), 
+                ((authConfig is PluginAuthDesktopConfig dconfig) ? dconfig.UseMobileEmulation : true),
+                (!string.IsNullOrEmpty(authConfig.LoginButton) ? $$"""
+                    (() => {
+                        window.addEventListener("load", (event) => {
+                            setTimeout(()=> document.querySelector("{{authConfig.LoginButton}}")?.click(), 1000)
+                        });
+                    })()
+                """ : null),
                 (InterceptorRequest request) =>
             {
                 try

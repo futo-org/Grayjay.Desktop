@@ -355,6 +355,7 @@ namespace Grayjay.ClientServer.Controllers
 
             window = await GrayjayServer.Instance.WindowProvider.CreateInterceptorWindowAsync("Grayjay (Captcha)", captchaUrl, authConfig.UserAgent, 
                 ((authConfig is PluginCaptchaDesktopConfig dconfig) ? dconfig.UseMobileEmulation : true), 
+                null,
                 (InterceptorRequest request) =>
             {
                 try

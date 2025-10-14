@@ -4,7 +4,7 @@ namespace Grayjay.ClientServer
     public interface IWindowProvider
     {
         Task<IWindow> CreateWindowAsync(string url, string title, int preferredWidth, int preferredHeight, int minimumWidth = 0, int minimumHeight = 0);
-        Task<IWindow> CreateInterceptorWindowAsync(string title, string url, string userAgent, bool useMobileEmulation, Action<InterceptorRequest> handler, CancellationToken cancellationToken = default);
+        Task<IWindow> CreateInterceptorWindowAsync(string title, string url, string userAgent, bool useMobileEmulation, string? injectJs, Action<InterceptorRequest> handler, CancellationToken cancellationToken = default);
         Task<string>? ShowDirectoryDialogAsync(CancellationToken cancellationToken = default);
         Task<string?> ShowFileDialogAsync((string name, string pattern)[] filters, CancellationToken cancellationToken = default);
         Task<string?> ShowSaveFileDialogAsync(string name, (string name, string pattern)[] filters, CancellationToken cancellationToken = default);

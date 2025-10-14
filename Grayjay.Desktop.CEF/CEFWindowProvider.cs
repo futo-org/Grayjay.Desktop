@@ -108,7 +108,7 @@ namespace Grayjay.Desktop.CEF
         {
             return "{ \"source\":" + JsonSerializer.Serialize(source) + "}";
         }
-        public async Task<IWindow> CreateInterceptorWindowAsync(string title, string url, string userAgent, bool useMobileEmulation, Action<InterceptorRequest> handler, CancellationToken cancellationToken = default)
+        public async Task<IWindow> CreateInterceptorWindowAsync(string title, string url, string userAgent, bool useMobileEmulation, string injectJs, Action<InterceptorRequest> handler, CancellationToken cancellationToken = default)
         {
             //userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
             //double scale = 1.25;
@@ -399,8 +399,14 @@ namespace Grayjay.Desktop.CEF
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(injectJs))
+            {
+                await window.ExecuteDevToolsMethodAsync("Page.addScriptToEvaluateOnNewDocument", EvaluateScriptParameter(injectJs));
+            }
+
             if (!string.IsNullOrEmpty(userAgent))
                 await window.ExecuteDevToolsMethodAsync("Network.setUserAgentOverride", "{\"userAgent\": \"" + userAgent + "\"}");
+
             
             await window.LoadUrlAsync(url);
             Logger.i(nameof(CEFWindowProvider), "Window created.");
