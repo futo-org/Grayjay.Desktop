@@ -142,6 +142,7 @@
     position: absolute;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-family: monospace;
     background-color: rgba(0,0,0,.8);
     border-radius: 5px;
     padding: 10px;
@@ -156,6 +157,7 @@
     font-size: 11px;
     text-wrap: nowrap;
     white-space: nowrap;
+    font-family: monospace;
     position: absolute;
     overflow: hidden;
     text-overflow: ellipsis;

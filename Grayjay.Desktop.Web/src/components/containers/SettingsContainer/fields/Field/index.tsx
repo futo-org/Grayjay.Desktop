@@ -30,7 +30,7 @@ const Field: Component<FieldProps> = (props) => {
         if(props.onFieldChanged)
             props.onFieldChanged(field, newVal);
     }
-    function onChangedDirect(field: ISettingsField, newVal: any){
+    function onChangedDirect(field: ISettingsField, newVal: any, onCancel: (() => void) | undefined){
         const oldVal = props.parentObject[props.field.property];
         const oldValBool = parseBool(oldVal);
         const newValBool = parseBool(newVal);
@@ -45,7 +45,8 @@ const Field: Component<FieldProps> = (props) => {
                             title: "Cancel",
                             style: "none",
                             onClick: ()=>{
-
+                                props.parentObject[props.field.property] = oldValBool;
+                                onCancel();
                             }
                         },
                         {

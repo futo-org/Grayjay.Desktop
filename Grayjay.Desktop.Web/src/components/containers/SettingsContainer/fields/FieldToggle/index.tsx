@@ -9,7 +9,7 @@ import { focusable } from '../../../../../focusable'; void focusable;
 
 interface FieldToggleProps {
     field: ISettingsFieldToggle,
-    onFieldChanged?: (field: ISettingsField, newVal: boolean)=>void,
+    onFieldChanged?: (field: ISettingsField, newVal: boolean, onCancel: ()=>void)=>void,
     value: boolean,
     isSubField?: boolean
     onBack?: () => boolean
@@ -21,8 +21,11 @@ const FieldToggle: Component<FieldToggleProps> = (props) => {
 
     function toggle(newVal: boolean) {
         setValue(newVal);
-        if(props.onFieldChanged)
-            props.onFieldChanged(props.field, newVal);
+        if(props.onFieldChanged){
+            props.onFieldChanged(props.field, newVal, ()=>{
+                setValue(!newVal);
+            })
+        }
     }
 
     return (

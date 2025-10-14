@@ -88,7 +88,7 @@ namespace Grayjay.ClientServer.Controllers
                     descriptor.Actions[res.Button].Action(res);
                 completionResult.SetResult(res);
             });
-            GrayjayServer.Instance.WebSocket.Broadcast(descriptor, "Dialog", id).Wait();
+            GrayjayServer.Instance?.WebSocket?.Broadcast(descriptor, "Dialog", id)?.Wait();
             return completionResult.Task;
         }
 

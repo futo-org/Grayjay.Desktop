@@ -135,6 +135,16 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
     function uninstall(){
       SourcesBackend.sourceDelete(sourceResource$()?.config.id ?? "");
     }
+    async function copySettingsToClipboard() {
+      try {
+        const obj = sourceSettings$()?.object;
+        await navigator.clipboard.writeText(JSON.stringify(obj, undefined, "   "));
+        UIOverlay.toast("Settings has been copied");
+      }
+      catch(ex) {
+
+      }
+    }
 
     async function importSubscriptions(id: string) {
         try {
@@ -229,6 +239,9 @@ const SourceDetails: Component<SourceDetailsProps> = (props: SourceDetailsProps)
               
               <Button style={{width: "calc(100% - 54px)", "margin-bottom": "10px", "margin-left": "24px"}} text='Uninstall' color='#550000' onClick={()=>uninstall()} focusableOpts={{
                 onPress: uninstall
+              }}></Button>
+              <Button style={{width: "calc(100% - 54px)", "margin-bottom": "10px", "margin-left": "24px"}} text='Copy Settings to Clipboard' color='#019BE7' onClick={()=>copySettingsToClipboard()} focusableOpts={{
+                onPress: copySettingsToClipboard
               }}></Button>
             </ScrollContainer>
           </div>
