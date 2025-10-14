@@ -40,7 +40,7 @@ namespace Grayjay.ClientServer.Settings
         public SearchSettings Search { get; set; } = new SearchSettings();
         public class SearchSettings
         {
-            [SettingsField("Search history", SettingsField.TOGGLE, "May require restart", 3)]
+            [SettingsField("Search history", SettingsField.TOGGLE, "Disable to stop recording of new search history entries", 3)]
             public bool SearchHistory { get; set; } = true;
 
             //[SettingsField("Preview Feed Items", SettingsField.TOGGLE, "When the preview feedstyle is used, if items should automatically preview.", 5)]
