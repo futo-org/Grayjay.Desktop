@@ -112,12 +112,13 @@ namespace Grayjay.Desktop.CEF
         {
             //userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
             //double scale = 1.25;
+            var useMobileEmulation = true;
             var window = await _cef.CreateWindowAsync(
                 url: "about:blank", 
                 minimumWidth: 385, 
                 minimumHeight: 833, 
-                preferredWidth: 385, 
-                preferredHeight: 833, 
+                preferredWidth: useMobileEmulation ? 385 : 1024, 
+                preferredHeight: useMobileEmulation ? 833 : 800, 
                 title: title, 
                 iconPath: Utilities.FindFile("grayjay.png"), 
                 developerToolsEnabled: true, 
@@ -147,7 +148,9 @@ namespace Grayjay.Desktop.CEF
             if (true)
             {
                 await window.ExecuteDevToolsMethodAsync("Page.enable", "{}");
-                await window.ExecuteDevToolsMethodAsync("Page.addScriptToEvaluateOnNewDocument", EvaluateScriptParameter("""
+                if (useMobileEmulation)
+                {
+                    await window.ExecuteDevToolsMethodAsync("Page.addScriptToEvaluateOnNewDocument", EvaluateScriptParameter("""
                     (() => {
                         const __userAgentData = {
                             architecture: "",
@@ -394,9 +397,10 @@ namespace Grayjay.Desktop.CEF
                         delete window.webkitSpeechRecognitionEvent;
                     })();
                     """));
+                }
             }
 
-            if (!string.IsNullOrEmpty(userAgent))
+            if (useMobileEmulation && !string.IsNullOrEmpty(userAgent))
                 await window.ExecuteDevToolsMethodAsync("Network.setUserAgentOverride", "{\"userAgent\": \"" + userAgent + "\"}");
             
             await window.LoadUrlAsync(url);
