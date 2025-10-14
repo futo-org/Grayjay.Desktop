@@ -360,8 +360,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                             lastVideoLength = length;
                             lastVideoRead = totalRead;
                             DownloadSpeedVideo = speed;
-                            if (VideoFileSize == null)
-                                VideoFileSize = lastVideoLength;
+                            VideoFileSize = lastVideoLength;
 
                             var totalLength = lastVideoLength + lastAudioLength;
                             var total = lastVideoRead + lastAudioRead;
@@ -417,8 +416,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                             lastAudioLength = length;
                             lastAudioRead = totalRead;
                             DownloadSpeedAudio = speed;
-                            if (AudioFileSize == null)
-                                AudioFileSize = lastAudioLength;
+                            AudioFileSize = lastAudioLength;
 
                             var totalLength = lastAudioLength + lastVideoLength;
                             var total = lastVideoRead + lastAudioRead;
@@ -794,8 +792,11 @@ namespace Grayjay.ClientServer.Models.Downloads
                         else
                             segRead = (int)DownloadSourceSequential(client, stream, segment.Url, onProgress);
                         read += segRead;
-                        speedmeter.Activity(read);
-                        onProgress?.Invoke(rep.Segments.Count * (read / (i + 1)) + preRead, read, speedmeter.GetCurrentSpeed());
+                        speedmeter.Activity(segRead);
+
+                        var avgSegmentSize = (long)(read / (i + 1));
+                        var estimatedSize = (rep.Segments.Count * (long)avgSegmentSize + preRead);
+                        onProgress?.Invoke(estimatedSize, (avgSegmentSize * (i + 1) + preRead), speedmeter.GetCurrentSpeed());
                     }
                     return (read, metaData);
                 }

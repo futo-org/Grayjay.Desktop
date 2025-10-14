@@ -1,4 +1,6 @@
-﻿namespace Grayjay.ClientServer.Models.Downloads
+﻿using System.Diagnostics;
+
+namespace Grayjay.ClientServer.Models.Downloads
 {
     public class SpeedMonitor
     {

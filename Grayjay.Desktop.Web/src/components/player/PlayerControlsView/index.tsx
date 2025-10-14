@@ -391,6 +391,32 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         }
     };
 
+    let progressBarContainer!: HTMLDivElement;
+
+    function calculateTranslateX(chapter) {
+        const left = (Math.max(1, chapter.timeStart) / (props.duration.milliseconds / 1000)) * progressBarContainer.offsetWidth + 2;
+        let width = (((Math.min((props.duration.milliseconds / 1000), chapter.timeEnd - chapter.timeStart)) / (props.duration.milliseconds / 1000))) * progressBarContainer.offsetWidth + 2;
+        if(width > progressBarContainer.offsetWidth - 4)
+            width = progressBarContainer.offsetWidth - left;
+        const labelWidth = (11 * (chapter.name.length) / 2);   
+        const leftLabelCenter = left + (width / 2);
+        if((leftLabelCenter - labelWidth/2) > 0) {
+            const overflowWidth = Math.max(0, (leftLabelCenter + labelWidth/2) - (progressBarContainer.offsetWidth));
+            if(overflowWidth > 0) {
+                let percentage = overflowWidth / labelWidth;
+                return -50 - Math.round(percentage * 100) - 1;
+            }
+        }
+        else {
+            const overflowWidth = (leftLabelCenter - labelWidth/2);
+            if(overflowWidth < 0) {
+                let percentage = (overflowWidth) / labelWidth * -1;
+                return -50 + Math.floor(percentage * 100) + 1;
+            }
+        }
+        return -50;
+    }
+
     return (
         <div ref={containerRef} class={styles.container}>
             <Show when={isSkippable$()}>
@@ -404,7 +430,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
             <div ref={progressBar} class={styles.progressBar} />
             <div class={styles.progressBarBuffer} style={{ width: `${bufferWidth()}px` }} />
             <div class={styles.progressBarProgress} style={{ width: `${progressWidth()}px` }} />
-            <div class={styles.progressBarContainer}>
+            <div class={styles.progressBarContainer} ref={progressBarContainer}>
                 <Show when={(props.chapters?.length ?? 0) > 0}>
                     <div class={styles.progressBarChapters}>
                         <Index each={props.chapters}>{ (chapter$, i: number) =>
@@ -418,7 +444,9 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                                     left: `calc(${(Math.max(1, chapter$().timeStart) / (props.duration.milliseconds / 1000)) * 100}% + 2px)`,
                                     width: `calc(${((Math.min((props.duration.milliseconds / 1000), chapter$().timeEnd - chapter$().timeStart)) / (props.duration.milliseconds / 1000)) * 100}% - 2px)`,
                                 }}>
-                                    <div class={styles.label}>
+                                    <div class={styles.label} style={{
+                                        transform: "translateX(" + calculateTranslateX(chapter$()) + "%)"
+                                    }}>
                                         {chapter$().name}
                                     </div>
                                     <Show when={progressBarChapterHovering$() == i}>
