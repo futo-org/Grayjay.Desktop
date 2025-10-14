@@ -113,7 +113,7 @@ namespace Grayjay.ClientServer.Controllers
 
             var descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
             var pluginConfig = descriptor.Config;
-            var authConfig = pluginConfig.Authentication;
+            var authConfig = pluginConfig.GetPlatformAuthentication();
 
             bool urlFound = string.IsNullOrEmpty(authConfig.CompletionUrl);
             Dictionary<string, Dictionary<string, string>> headersFoundMap = new Dictionary<string, Dictionary<string, string>>();
@@ -315,7 +315,7 @@ namespace Grayjay.ClientServer.Controllers
         {
             var descriptor = (id == StateDeveloper.DEV_ID) ? StatePlatform.GetDevClient()?.Descriptor : StatePlugins.GetPlugin(id);
             var pluginConfig = descriptor.Config;
-            var authConfig = pluginConfig.Authentication;
+            var authConfig = pluginConfig.GetPlatformAuthentication();
             if(authConfig != null)
             {
                 descriptor.SetAuth(null);

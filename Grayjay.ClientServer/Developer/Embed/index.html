@@ -1339,7 +1339,7 @@
 
 
                 let settingsToUse = __DEV_SETTINGS;
-				for (let setting of this.Plugin?.currentPlugin?.settings) {
+				for (let setting of this.Plugin?.currentPlugin?.settings ?? []) {
 
 					const settingLocal = this.Plugin.settings.find(x => x.variable == setting.variable);
 					if (settingLocal)
