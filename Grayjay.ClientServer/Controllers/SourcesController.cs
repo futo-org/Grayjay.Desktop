@@ -174,7 +174,9 @@ namespace Grayjay.ClientServer.Controllers
                 }
             }
 
-            window = await GrayjayServer.Instance.WindowProvider.CreateInterceptorWindowAsync("Grayjay (Login)", authConfig.LoginUrl, authConfig.UserAgent, (InterceptorRequest request) =>
+            window = await GrayjayServer.Instance.WindowProvider.CreateInterceptorWindowAsync("Grayjay (Login)", authConfig.LoginUrl, authConfig.UserAgent, 
+                ((authConfig is PluginAuthDesktopConfig dconfig) ? dconfig.UseMobileEmulation : true), 
+                (InterceptorRequest request) =>
             {
                 try
                 {
