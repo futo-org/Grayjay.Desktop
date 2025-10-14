@@ -5,9 +5,11 @@ import styles from './index.module.css';
 interface ToggleProps {
     value: boolean;
     onToggle: (value: boolean) => void;
+    adjustInternally?: boolean;
 }
 
 const Toggle: Component<ToggleProps> = (props) => {
+    const adjustInternally = props.adjustInternally ?? true;
     const [toggle, setToggle] = createSignal(props.value);
     createEffect(() => {
         setToggle(props.value);
@@ -15,7 +17,8 @@ const Toggle: Component<ToggleProps> = (props) => {
 
     function handleToggle(ev: MouseEvent) {
         const newValue = !toggle();
-        setToggle(newValue);
+        if (adjustInternally)
+            setToggle(newValue);
         props.onToggle(newValue);
         ev.preventDefault();
         ev.stopPropagation();

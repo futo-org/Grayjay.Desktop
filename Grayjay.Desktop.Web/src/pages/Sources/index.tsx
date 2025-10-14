@@ -166,7 +166,7 @@ const SourcesPage: Component = () => {
                               {source()!.name}
                             </div>
                             <div class={styles.actions}>
-                              <Toggle onToggle={() => disableSource(source()!)} value={true} />
+                              <Toggle onToggle={() => disableSource(source()!)} value={true} adjustInternally={false} />
                               <img class={styles.chev} src={iconChevRight} />
                             </div>
                           </div>
@@ -192,7 +192,7 @@ const SourcesPage: Component = () => {
                         {source.name}
                       </div>
                       <div class={styles.actions} >
-                        <Toggle onToggle={() => enableSource(source)}value={false} />
+                        <Toggle onToggle={() => enableSource(source)} value={false} adjustInternally={false} />
                         <img class={styles.chev} src={iconChevRight} />
                       </div>
                     </div>

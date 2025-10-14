@@ -918,6 +918,28 @@ export function FocusProvider(props: { children: JSX.Element }) {
     }
 
     let raf = 0;
+    let running = false;
+    let connectedPads = 0;
+
+    function startGamepadLoop() {
+        if (running) return;
+        console.info("gamepadloop started");
+        running = true;
+        raf = requestAnimationFrame(pollGamepads);
+    }
+    function stopGamepadLoop() {
+        if (!running) return;
+        console.info("gamepadloop stopped");
+        running = false;
+        cancelAnimationFrame(raf);
+        raf = 0;
+        resetPadState();
+    }
+    function resetPadState() {
+        padState.dirHeld = undefined;
+        padState.lastFire = undefined;
+        padState.pressed.clear();
+    }
     const initialDelay = 220; // ms before repeat
     const repeatDelay = 90;
     const axisThreshold = 0.45;
@@ -936,6 +958,14 @@ export function FocusProvider(props: { children: JSX.Element }) {
     const padState: PadState = { pressed: new Set() };
 
     function pollGamepads(ts: number) {
+        if (!running) return;
+
+        if (!document.hasFocus() || document.visibilityState === 'hidden') {
+            resetPadState();
+            if (running) raf = requestAnimationFrame(pollGamepads);
+            return;
+        }
+
         const pads = navigator.getGamepads?.() ?? [];
         const gp = pads.find(Boolean);
         if (gp) {
@@ -962,9 +992,9 @@ export function FocusProvider(props: { children: JSX.Element }) {
                     navigateDirection(dir, "gamepad");
                 } else {
                     const delay = padState.lastFire ? (now - padState.lastFire) : Infinity;
-                    if (delay >= (initialDelay)) {
+                    if (delay >= repeatDelay) {
                         navigateDirection(dir, "gamepad");
-                        padState.lastFire = now - (initialDelay - repeatDelay);
+                        padState.lastFire = now;
                     }
                 }
 
@@ -995,7 +1025,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             if (startBtn && !padState.pressed.has(btn.START)) { padState.pressed.add(btn.START); }
             if (!startBtn) padState.pressed.delete(btn.START);
         }
-        raf = requestAnimationFrame(pollGamepads);
+        if (running) raf = requestAnimationFrame(pollGamepads);
     }
 
     function onFocusIn(e: FocusEvent) {
@@ -1036,15 +1066,41 @@ export function FocusProvider(props: { children: JSX.Element }) {
         setLastInputSource("pointer");
     };
 
+    const onGamepadConnected = (_e: GamepadEvent) => {
+        connectedPads++;
+        if (document.hasFocus()) startGamepadLoop();
+    };
+    const onGamepadDisconnected = (_e: GamepadEvent) => {
+        connectedPads = Math.max(0, connectedPads - 1);
+        if (connectedPads === 0) stopGamepadLoop();
+    };
+    const onWindowFocus = () => {
+        if (connectedPads > 0) startGamepadLoop();
+    };
+    const onWindowBlur = () => {
+        stopGamepadLoop();
+    };
+
     createEffect(() => {
         window.addEventListener("keydown", onKeyDown, { capture: true });
         window.addEventListener("focusin", onFocusIn, { capture: true });
         window.addEventListener("pointermove", onPointerMove, { passive: true });
-        raf = requestAnimationFrame(pollGamepads);
+        connectedPads = (navigator.getGamepads?.() ?? []).filter(Boolean).length;
+        if (document.hasFocus() && connectedPads > 0) startGamepadLoop();
+
+        window.addEventListener("gamepadconnected", onGamepadConnected as any);
+        window.addEventListener("gamepaddisconnected", onGamepadDisconnected as any);
+        window.addEventListener("focus", onWindowFocus);
+        window.addEventListener("blur", onWindowBlur);
         onCleanup(() => {
             window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
             window.removeEventListener("focusin", onFocusIn, { capture: true } as any);
-            cancelAnimationFrame(raf);
+            window.removeEventListener("pointermove", onPointerMove as any, { passive: true } as any);
+            window.removeEventListener("gamepadconnected", onGamepadConnected as any);
+            window.removeEventListener("gamepaddisconnected", onGamepadDisconnected as any);
+            window.removeEventListener("focus", onWindowFocus);
+            window.removeEventListener("blur", onWindowBlur);
+            stopGamepadLoop();
         });
     });
 

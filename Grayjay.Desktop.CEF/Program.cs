@@ -153,6 +153,14 @@ namespace Grayjay.Desktop
 
             foreach (var arg in args)
             {
+                bool isHeadless = arg == "--headless";
+                bool isServer = arg == "--server";
+                bool isFullscreen = arg == "--fullscreen";
+                bool isScaleFactor = arg.StartsWith("--scale-factor=");
+
+                if (isHeadless || isServer || isFullscreen || isScaleFactor)
+                    continue;
+
                 if (builder.Length > 0)
                     builder.Append(' ');
 

@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Grayjay.ClientServer.Models;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine.Models;
@@ -83,6 +84,9 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (query == null)
                 return NotFound();
+
+            if (!GrayjaySettings.Instance.Search.SearchHistory)
+                return Ok();
                 
             StateSearch.Instance.AddPreviousSearch(query);
             return Ok();
