@@ -21,7 +21,7 @@ const OverlayDialog: Component<OverlaySourceInstallProps> = (props: OverlaySourc
 
     return (
       <OverlayCustomDialog onRootClick={()=>{UIOverlay.dismiss();}} onCloseClick={()=>UIOverlay.dismiss()}>
-        <div style="margin-top: -90px; width: 750px" onClick={(ev)=>ev.stopPropagation()}>
+        <div style="margin-top: -90px; width: 750px" onClick={(ev)=>ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
           <div class={styles.header}>
             <div class={styles.icon}>
               <img src={props.prompt.config?.absoluteIconUrl} />

@@ -54,7 +54,7 @@ const OverlaySyncNewDeviceDialog: Component<OverlaySyncNewDeviceDialogProps> = (
   return (
     <div class={styles.container} use:focusScope={{
         initialMode: 'trap'
-    }}>
+    }} onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
       <div class={styles.dialogHeader} style={{"margin-left": "0px"}}>
         <div class={styles.headerText}>
           Link new device

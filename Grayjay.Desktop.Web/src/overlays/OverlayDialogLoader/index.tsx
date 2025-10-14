@@ -31,7 +31,7 @@ const OverlayDialog: Component<OverlayDialogLoaderProps> = (props: OverlayDialog
 
     return (
       <Show when={props.dialog}>
-        <div class={styles.dialog} onClick={(ev)=>ev.stopPropagation()}>
+        <div class={styles.dialog} onClick={(ev)=>ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
           <Show when={props.dialog?.icon}>
             <img src={props.dialog?.icon} class={styles.icon} />
           </Show>

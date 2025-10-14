@@ -30,7 +30,7 @@ export interface OverlaySelectOnlineSyncDeviceProps {
 };
 const OverlaySelectOnlineSyncDeviceDialog: Component<OverlaySelectOnlineSyncDeviceProps> = (props: OverlaySelectOnlineSyncDeviceProps) => {
     return (
-      <div class={styles.container} style="width: 700px"> 
+      <div class={styles.container} style="width: 700px" onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}> 
         <div class={styles.dialogHeader}>
           <div class={styles.headerText}>
             {props.title}

@@ -25,6 +25,7 @@ import { Portal } from 'solid-js/web';
 import { focusScope } from '../../../focusScope'; void focusScope;
 import { focusable } from "../../../focusable"; void focusable;
 import Button from '../../buttons/Button';
+import StateGlobal from '../../../state/StateGlobal';
 
 const getDeviceIcon = (device?: CastingDeviceInfo, active?: boolean) => {
     if (!device) {
@@ -283,7 +284,7 @@ const AddDeviceManually: Component = () => {
     const globalBack = () => (casting?.actions.close(), console.info("global back"), true);
     return (
         <div class={styles.containerAddManually}>
-            <ButtonGroup items={["FCast", "Chromecast", "AirPlay"]} defaultSelectedItem={selectedType$()} onItemChanged={v => setSelectedType(v)} style={{"margin-top": "32px"}} focusableOpts={{ onBack: globalBack }} />
+            <ButtonGroup items={StateGlobal.settings$()?.object?.casting?.experimental ? ["FCast", "Chromecast"] : ["FCast", "Chromecast", "AirPlay"]} defaultSelectedItem={selectedType$()} onItemChanged={v => setSelectedType(v)} style={{"margin-top": "32px"}} focusableOpts={{ onBack: globalBack }} />
             <div class={styles.containerHeader} style="margin-top: 24px">Enter device details</div>
             <div style="display: flex; width: 100%; flex-direction: column;">
                 <div style="position: relative; width: 100%; margin-top: 12px;">

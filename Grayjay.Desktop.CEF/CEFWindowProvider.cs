@@ -122,7 +122,7 @@ namespace Grayjay.Desktop.CEF
                 iconPath: Utilities.FindFile("grayjay.png"), 
                 developerToolsEnabled: true, 
                 modifyRequests: true,
-                resizable: false,
+                //resizable: false,
                 requestModifier: (window, req) =>
                 {
                     foreach (var header in req.Headers.ToList())

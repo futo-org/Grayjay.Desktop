@@ -6,7 +6,7 @@ using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.Casting;
 
-public class AirPlayCastingDevice : CastingDevice
+public class AirPlayCastingDevice : CastingDeviceLegacy
 {
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly HttpClient _client = new HttpClient();
@@ -33,7 +33,7 @@ public class AirPlayCastingDevice : CastingDevice
         throw new NotImplementedException();
     }
 
-    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, double? speed = null, CancellationToken cancellationToken = default)
+    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, String? title, String thumbnailUrl, double? speed = null, CancellationToken cancellationToken = default)
     {
         PlaybackState.SetTime(resumePosition);
         PlaybackState.SetDuration(duration);

@@ -1,6 +1,4 @@
 using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using Grayjay.Desktop.POC;
 
 namespace Grayjay.ClientServer.Casting;
@@ -55,7 +53,7 @@ public class CastingDevicePlaybackState
         }
     }
 
-    public double Volume { get; private set; }
+    public double Volume { get; private set; } = 1.0;
     public event Action<double>? VolumeChanged;
     public void SetVolume(double volume)
     {
@@ -84,19 +82,14 @@ public class CastingDevicePlaybackState
 
 public abstract class CastingDevice
 {
-    public CastingDeviceInfo DeviceInfo { get; }
+    public abstract CastingDeviceInfo DeviceInfo { get; set; }
     public readonly CastingDeviceConnectionState ConnectionState = new CastingDeviceConnectionState();
     public readonly CastingDevicePlaybackState PlaybackState = new CastingDevicePlaybackState();
     public abstract bool CanSetVolume { get; }
     public abstract bool CanSetSpeed { get; }
     public abstract IPEndPoint? LocalEndPoint { get; }
-    
-    public CastingDevice(CastingDeviceInfo deviceInfo)
-    {
-        DeviceInfo = deviceInfo;
-    }
 
-    public bool IsSame(CastingDevice device)
+    public bool IsSame(CastingDeviceLegacy device)
     {
         return DeviceInfo.Equals(device.DeviceInfo) &&
             ConnectionState.State == device.ConnectionState.State &&
@@ -113,11 +106,8 @@ public abstract class CastingDevice
     public abstract Task MediaStopAsync(CancellationToken cancellationToken = default);
     public abstract Task MediaPauseAsync(CancellationToken cancellationToken = default);
     public abstract Task MediaResumeAsync(CancellationToken cancellationToken = default);
-    public abstract Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, double? speed = null, CancellationToken cancellationToken = default);
+    public abstract Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, String? title, String thumbnailUrl, double? speed = null, CancellationToken cancellationToken = default);
 
     public abstract Task ChangeVolumeAsync(double volume, CancellationToken cancellationToken = default);
     public abstract Task ChangeSpeedAsync(double speed, CancellationToken cancellationToken = default);
-
-    public async Task<TcpClient?> ConnectAsync(CancellationToken cancellationToken = default)
-        => await Utilities.ConnectAsync(DeviceInfo.IPAddresses, DeviceInfo.Port, TimeSpan.FromSeconds(2), cancellationToken);
 }

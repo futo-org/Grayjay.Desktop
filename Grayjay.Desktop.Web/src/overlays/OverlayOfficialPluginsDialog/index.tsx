@@ -105,7 +105,7 @@ const OverlayOfficialPluginsDialog: Component<OverlayOfficialPluginsDialogProps>
     return (
       <div class={styles.container} use:focusScope={{
           initialMode: 'trap'
-        }}> 
+        }} onClick={(ev) => ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}> 
         <Show when={!installing$()}>
           <div class={styles.dialogHeader}>
             <div class={styles.headerText}>

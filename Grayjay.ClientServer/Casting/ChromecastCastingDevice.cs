@@ -11,7 +11,7 @@ using Noise;
 
 namespace Grayjay.ClientServer.Casting;
 
-public class ChromecastCastingDevice : CastingDevice
+public class ChromecastCastingDevice : CastingDeviceLegacy
 {
     private struct MediaLoadInformation
     {
@@ -142,7 +142,7 @@ public class ChromecastCastingDevice : CastingDevice
         await SendChannelMessageAsync("sender-0", transportId, "urn:x-cast:com.google.cast.media", loadObject.ToJsonString(), cancellationToken);
     }
 
-    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, double? speed = null, CancellationToken cancellationToken = default)
+    public override async Task MediaLoadAsync(string streamType, string contentType, string contentId, TimeSpan resumePosition, TimeSpan duration, String? title, String thumbnailUrl, double? speed = null, CancellationToken cancellationToken = default)
     {
         _mediaLoadInformation = new MediaLoadInformation
         {

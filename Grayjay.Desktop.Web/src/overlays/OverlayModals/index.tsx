@@ -89,11 +89,9 @@ const OverlayModals: Component = () => {
         style={{ display: isActive$() ? undefined : 'none' }}
         onClick={() => globalDismissEvent.invoke()}
       >
-        <div onClick={(e) => e.stopPropagation()}>
-          <OverlayDialog dialog={dialog$()} onGlobalDismiss={globalDismissEvent} />
-          <OverlayDialogLoader dialog={loader$()} />
-          {customFactory$()?.()}
-        </div>
+        <OverlayDialog dialog={dialog$()} onGlobalDismiss={globalDismissEvent} />
+        <OverlayDialogLoader dialog={loader$()} />
+        {customFactory$()?.()}
       </div>
     );
   };

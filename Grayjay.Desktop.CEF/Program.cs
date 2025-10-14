@@ -361,7 +361,12 @@ namespace Grayjay.Desktop
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                     cef.Start("--disable-web-security --use-alloy-style --use-native " + userDataDirCmd + extraArgs);
                 else
-                    cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + userDataDirCmd + extraArgs);
+                {
+                    if (Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") != null)
+                        cef.Start("--disable-web-security --use-alloy-style --no-sandbox " + userDataDirCmd + extraArgs);
+                    else
+                        cef.Start("--disable-web-security --use-alloy-style --use-native --no-sandbox " + userDataDirCmd + extraArgs);
+                }
                 Logger.i(nameof(Program), $"Main: Starting DotCefProcess finished ({startWindowWatch.ElapsedMilliseconds}ms)");
             }
 

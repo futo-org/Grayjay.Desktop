@@ -36,18 +36,19 @@ public class CastingDeviceInfo
             return hash;
         }
     }
-    public CastingDevice ToCastingDevice()
-    {
-        switch (Type)
+
+    public static CastingDeviceInfo FromRsInfo(FCast.SenderSDK.DeviceInfo rsInfo) {
+        return new CastingDeviceInfo()
         {
-            case CastProtocolType.Chromecast:
-                return new ChromecastCastingDevice(this);
-            case CastProtocolType.Airplay:
-                return new AirPlayCastingDevice(this);
-            case CastProtocolType.FCast:
-                return new FCastCastingDevice(this);
-            default:
-                throw new Exception($"Not a valid cast protocol type {Type}.");
-        }
+            Addresses = rsInfo.addresses.Select(a => FCast.SenderSDK.FcastSenderSdkMethods.UrlFormatIpAddr(a)).ToList(),
+            Id = rsInfo.name,
+            Name = rsInfo.name,
+            Port = rsInfo.port,
+            Type = rsInfo.protocol switch
+            {
+                FCast.SenderSDK.ProtocolType.Chromecast => CastProtocolType.Chromecast,
+                FCast.SenderSDK.ProtocolType.FCast => CastProtocolType.FCast,
+            }
+        };
     }
 }

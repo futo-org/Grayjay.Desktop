@@ -55,6 +55,7 @@ const OverlaySubscriptionsSelector: Component<OverlaySubscsriptionsSelectorDialo
         ref={containerRef}
         class={styles.container}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
         use:focusScope={{
           initialMode: 'trap'
         }}

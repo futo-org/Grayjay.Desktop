@@ -4,8 +4,8 @@ export type FileType = "folder" | "file";
 
 export type QuickAccessType = "folder" | "volume" | "desktop" | "documents" | "music" | "pictures" | "videos" | "home";
 export interface QuickAccessRow {
-  name: string;
-  path: string;
+  name?: string;
+  path?: string;
   type: QuickAccessType;
 }
 

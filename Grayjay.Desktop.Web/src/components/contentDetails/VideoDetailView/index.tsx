@@ -232,6 +232,36 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
     let repliesOverlayScrollContainerRef: HTMLDivElement | undefined;
 
+    const previousVideoIndex = () => {
+        const index = video?.index();
+        const queue = video?.queue();
+        const repeat = video?.repeat();
+        const shuffle = video?.shuffle();
+
+        console.info("previous video index", { currentIndex: index, queue, repeat, shuffle });
+
+        if (index === undefined || !queue || queue.length === 0) {
+            return undefined;
+        }
+
+        if (shuffle) {
+            if (repeat) {
+                return Math.floor(Math.random() * (queue.length - 1));
+            } else {
+                // TODO: Don't repeat if repeat not enabled, track played
+                return Math.floor(Math.random() * (queue.length - 1));
+            }
+        } else if (index - 1 < 0) {
+            if (repeat) {
+                return queue.length - 1;
+            } else {
+                return undefined;
+            }
+        } else {
+            return index - 1;
+        }
+    };
+
     const nextVideoIndex = () => {
         const index = video?.index();
         const queue = video?.queue();
@@ -473,6 +503,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     createEffect((prev) => {
         const updated = video?.state();
         if (updated === VideoState.Minimized && prev !== updated) {
+            hideReplies();
             repositionMinimize();
         }
     });
@@ -1353,6 +1384,32 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onProgress={handleVideoProgress}
                             onPositionChanged={handlePositionChanged}
                             onVideoDimensionsChanged={handleVideoDimensions} 
+                            onToggleSubtitles={() => {
+                                const subtitleSources = subtitleSources$();
+                                const videoObj = videoLoaded$();
+                                const originalSource = videoSource$();
+                                if (!subtitleSources || subtitleSources.length < 1 || !videoObj || !originalSource) {
+                                    return;
+                                }
+
+                                let subtitleIndexToSet = -1;
+                                if (originalSource.subtitle === -1) {
+                                    subtitleIndexToSet = 0; //TODO: Select best?
+                                }
+                                                                      
+                                setVideoSource({
+                                    url: videoObj.url,
+                                    video: originalSource.video,
+                                    videoIsLocal: originalSource.videoIsLocal,
+                                    audio: originalSource.audio,
+                                    audioIsLocal: originalSource.audioIsLocal,
+                                    subtitle: subtitleIndexToSet,
+                                    subtitleIsLocal: false,
+                                    thumbnailUrl: getBestThumbnail(videoObj?.thumbnails)?.url,
+                                    isLive: videoObj?.isLive ?? false,
+                                    shouldResume: true
+                                } as SourceSelected);
+                            }}
                             onIsPlayingChanged={handleIsPlayingChanged}
                             source={videoSource$()}
                             onReady={setVideoPlayerViewHandle}
@@ -1366,6 +1423,45 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onFullscreenChange={handleFullscreenChange}
                             onEnded={handleEnded}
                             onError={handleError}
+                            onPreviousVideo={() => {
+                                const currentIndex = video?.index();
+                                if (currentIndex === undefined) {
+                                    return;
+                                }
+
+                                const nextIndex = previousVideoIndex();
+                                if (nextIndex !== undefined) {
+                                    if (nextIndex === currentIndex) {
+                                        eventRestart.invoke();
+                                    } else {
+                                        video?.actions?.setIndex(nextIndex);
+                                    }
+                                }
+                            }}
+                            onNextVideo={(() => {
+                                const currentIndex = video?.index();
+                                if (currentIndex === undefined) {
+                                    return;
+                                }
+
+                                const nextIndex = nextVideoIndex();
+                                if (nextIndex !== undefined) {
+                                    if (nextIndex === currentIndex) {
+                                        eventRestart.invoke();
+                                    } else {
+                                        video?.actions?.setIndex(nextIndex);
+                                    }
+                                }
+                            })}
+                            onIncreasePlaybackSpeed={() => setPlaybackSpeed(Math.min(2.25, playbackSpeed$() + 0.25))}
+                            onDecreasePlaybackSpeed={() => setPlaybackSpeed(Math.max(0.25, playbackSpeed$() - 0.25))}
+                            onOpenSearch={() => {
+                                if (video?.state() === VideoState.Maximized || video?.state() === VideoState.Fullscreen) {
+                                    minimize();
+                                    const el = document.getElementById("main-search");
+                                    requestAnimationFrame(() => el?.focus());
+                                }
+                            }}
                             onSetScrubbing={(scrubbing) => {
                                 isScrubbing = scrubbing;
                             }}
@@ -1373,10 +1469,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             buttons={
                                 <>
                                     <Show when={!isMinimized() && mode() === VideoMode.Theatre && focus.lastInputSource() === "pointer"}>
-                                        <img src={video?.theatrePinned() ? pinned_fill : pinned} class={styles.pinned} alt="pin theatre" onClick={() => video?.actions?.setTheatrePinned(!video?.theatrePinned())} />
+                                        <img src={video?.theatrePinned() ? pinned_fill : pinned} class={styles.pinned} alt="pin theatre" onClick={() => video?.actions?.setTheatrePinned(!video?.theatrePinned())} onDblClick={(e) => e.stopPropagation()} />
                                     </Show>
                                     <Show when={!shouldShowQueue()}>
-                                        <img src={video?.repeat() ? loop_active : loop_inactive} class={styles.loop} alt="loop" onClick={() => video?.actions?.setRepeat(!video?.repeat())} />
+                                        <img src={video?.repeat() ? loop_active : loop_inactive} class={styles.loop} alt="loop" onClick={() => video?.actions?.setRepeat(!video?.repeat())} onDblClick={(e) => e.stopPropagation()} />
                                     </Show>
                                 </>
                             }
@@ -1426,8 +1522,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 setShowSettings(true);
                             }}
                         >
-                            <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} />
-                            <img src={ic_close} class={styles.close} alt="close" onClick={onClose} />
+                            <img src={ic_minimize} class={styles.minimize} alt="minimize" onClick={onMinimize} style={{ transform: isMinimized() ? "rotate(-180deg)" : undefined }} onDblClick={(e) => e.stopPropagation()} />
+                            <img src={ic_close} class={styles.close} alt="close" onClick={onClose} onDblClick={(e) => e.stopPropagation()} />
                             <Show when={isMinimized()}>
                                 <DragArea class={styles.draggable} onDrag={handleDrag} onIsDraggingChanged={handleIsDraggingChanged} />
                                 <ResizeHandle class={styles.resizable} onResize={handleResizeHandleDrag} onIsResizingChanged={handleIsDraggingChanged} />
