@@ -760,7 +760,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 using (FileStream stream = new FileStream(targetFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 {
                     Logger.i(nameof(VideoDownload), $"Download {Video.Name} segments (" + rep.Segments.Count.ToString() + ")");
-                    int read = 0;
+                    long read = 0;
                     var speedmeter = new SpeedMonitor(TimeSpan.FromSeconds(5));
                     int preRead = 0;
                     if(rep?.InitializationUrl != null)
@@ -798,6 +798,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                         var estimatedSize = (rep.Segments.Count * (long)avgSegmentSize + preRead);
                         onProgress?.Invoke(estimatedSize, (avgSegmentSize * (i + 1) + preRead), speedmeter.GetCurrentSpeed());
                     }
+                    onProgress?.Invoke(read, read, speedmeter.GetCurrentSpeed());
                     return (read, metaData);
                 }
             }
