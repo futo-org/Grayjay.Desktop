@@ -24,12 +24,25 @@ export interface OverlayDialogLoaderProps {
 };
 const OverlayDialog: Component<OverlayDialogLoaderProps> = (props: OverlayDialogLoaderProps) => {
 
-  
-    props.dialog?.onDismiss?.registerOne("loader", (id)=>{
-      UIOverlay.dismiss();
-    });
+  let prevDialog: LoaderDescriptor | undefined;
+  createEffect(() => {
+    const dialog = props.dialog;
+    if (dialog !== prevDialog) {
+      prevDialog?.onDismiss?.unregister?.("loader");
+      dialog?.onDismiss?.registerOne("loader", (id) => {
+        console.info("loader onDismiss");
+        UIOverlay.dismiss();
+      });
 
-    return (
+      prevDialog = dialog;
+    }
+
+    onCleanup(() => {
+      dialog?.onDismiss?.unregister?.("loader");
+    });
+  });
+  
+  return (
       <Show when={props.dialog}>
         <div class={styles.dialog} onClick={(ev)=>ev.stopPropagation()} onMouseDown={(ev) => ev.stopPropagation()}>
           <Show when={props.dialog?.icon}>

@@ -269,7 +269,7 @@ export interface UIOverlay {
                   loader: {
                     icon: iconCodeEditBlue,
                     title: "Installing source",
-                    description: "Please wait untill the plugin is installed",
+                    description: "Please wait until the plugin is installed",
                     onDismiss: onDismiss,
                   }
                 });
@@ -282,6 +282,7 @@ export interface UIOverlay {
                   error = ex;
                 }
                 finally {
+                  console.info("onDismiss invoke", overlayObj);
                   onDismiss.invoke(overlayObj.id ?? "");
                 }
 
