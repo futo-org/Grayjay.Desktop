@@ -104,7 +104,10 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
             }}>
                 <div class={styles.authorName} onClick={onClickAuthor}>{props.video?.author?.name ?? "Unknown"}</div>
                 <Show when={props.video}>
-                    <div class={styles.metadata}><Show when={(props.video?.viewCount ?? 0) > 0}>{toHumanNumber(props.video?.viewCount)} views • </Show>{toHumanNowDiffString(props.video?.dateTime)}</div>
+                    <div class={styles.metadata} title={DateTime.fromSeconds(Number(props.video?.dateTime)).toISO()}>
+                      <Show when={(props.video?.viewCount ?? 0) > 0}>{toHumanNumber(props.video?.viewCount)} views • </Show>
+                      {toHumanNowDiffString(props.video?.dateTime)}
+                    </div>
                 </Show>
             </div>
             

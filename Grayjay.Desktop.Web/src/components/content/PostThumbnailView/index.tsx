@@ -77,7 +77,7 @@ const PostThumbnailView: Component<PostProps> = (props) => {
             }}>
                 <div class={styles.authorName} onClick={onClickAuthor}>{props.post?.author.name}</div>
                 <Show when={props.post}>
-                    <div class={styles.metadata}>{toHumanNowDiffString(props.post?.dateTime)}</div>
+                    <div class={styles.metadata} title={props.post?.dateTime}>{toHumanNowDiffString(props.post?.dateTime)}</div>
                 </Show>
             </div>
         </div>

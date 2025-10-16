@@ -86,7 +86,7 @@ const LockedContentThumbnailView: Component<LockedContentProps> = (props) => {
             }}>
                 <div class={styles.authorName} onClick={onClickAuthor}>{props.content?.author.name}</div>
                 <Show when={props.content}>
-                    <div class={styles.metadata}>{toHumanNowDiffString(props.content?.dateTime)}</div>
+                    <div class={styles.metadata} title={props.content?.dateTime}>{toHumanNowDiffString(props.content?.dateTime)}</div>
                 </Show>
             </div>
             <Show when={props.onSettings}>

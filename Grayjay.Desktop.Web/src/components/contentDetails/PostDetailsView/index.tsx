@@ -79,7 +79,7 @@ const PostDetailView: Component = () => {
                   {details$()?.post?.name}
                 </div>
                 <div class={styles.postMeta}>
-                  <div class={styles.date}>
+                  <div class={styles.date} title={details$()?.post?.dateTime}>
                       {toHumanNowDiffString(details$()?.post?.dateTime)}
                   </div>
                   <div class={styles.right} style={{"display": "inline-block"}}>
