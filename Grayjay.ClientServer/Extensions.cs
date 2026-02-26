@@ -196,6 +196,24 @@ namespace Grayjay.ClientServer
                 fileName = fileName.Replace(invalidChar, '_');
             return fileName;
         }
+
+        // Windows MAX_PATH is 260; reserve some room for the directory prefix.
+        private const int MaxFileNameLength = 200;
+        /// <summary>
+        /// Truncates a file name (after sanitization) so that the base name fits within
+        /// <see cref="MaxFileNameLength"/> characters, preserving the extension.
+        /// </summary>
+        public static string TruncateFileName(this string fileName)
+        {
+            if (fileName.Length <= MaxFileNameLength)
+                return fileName;
+
+            string ext = Path.GetExtension(fileName);   // e.g. ".mp4"
+            string baseName = Path.GetFileNameWithoutExtension(fileName);
+            int allowedBase = MaxFileNameLength - ext.Length;
+            if (allowedBase < 1) allowedBase = 1;
+            return baseName.Substring(0, Math.Min(baseName.Length, allowedBase)) + ext;
+        }
         public static string SanitizeFileNameWithPath(this string path)
         {
             string dirName = Path.GetDirectoryName(path);
