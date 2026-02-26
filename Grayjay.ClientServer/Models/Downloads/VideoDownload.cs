@@ -321,7 +321,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 var representation = videoRepresentations?.FirstOrDefault();
                 var mimeType = representation?.MimeType ?? VideoSource.Container;
 
-                VideoFileName = $"{VideoDetails.ID.Value} [{VideoSource.Width}x{VideoSource.Height}].{VideoHelper.VideoContainerToExtension(mimeType)}".SanitizeFileName();
+                VideoFileName = $"{VideoDetails.ID.Value} [{VideoSource.Width}x{VideoSource.Height}].{VideoHelper.VideoContainerToExtension(mimeType)}".SanitizeFileName().TruncateFileName();
                 VideoFilePath = Path.Combine(downloadDir, VideoFileName);
             }
             string audioDash = (AudioSource is DashManifestRawAudioSource dAudioSource) ? dAudioSource.Generate() : null;
@@ -331,12 +331,12 @@ namespace Grayjay.ClientServer.Models.Downloads
                 var representation = audioRepresentations?.FirstOrDefault();
                 var mimeType = representation?.MimeType ?? AudioSource.Container;
 
-                AudioFileName = $"{VideoDetails.ID.Value} [{AudioSource.Language}-{AudioSource.Bitrate}].{VideoHelper.AudioContainerToExtension(mimeType)}".SanitizeFileName();
+                AudioFileName = $"{VideoDetails.ID.Value} [{AudioSource.Language}-{AudioSource.Bitrate}].{VideoHelper.AudioContainerToExtension(mimeType)}".SanitizeFileName().TruncateFileName();
                 AudioFilePath = Path.Combine(downloadDir , AudioFileName);
             }
             if(SubtitleSourcetoUse != null)
             {
-                SubtitleFileName = $"{VideoDetails.ID.Value} [{SubtitleSourcetoUse.Name}].{VideoHelper.SubtitleContainerToExtension(SubtitleSourcetoUse.Format)}".SanitizeFileName();
+                SubtitleFileName = $"{VideoDetails.ID.Value} [{SubtitleSourcetoUse.Name}].{VideoHelper.SubtitleContainerToExtension(SubtitleSourcetoUse.Format)}".SanitizeFileName().TruncateFileName();
                 SubtitleFilePath = Path.Combine(downloadDir, SubtitleFileName);
             }
             var progressLock = new Object();
