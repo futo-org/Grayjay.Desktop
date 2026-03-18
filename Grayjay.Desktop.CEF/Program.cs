@@ -98,7 +98,7 @@ namespace Grayjay.Desktop
             Logger.i(nameof(Program), $"KillExistingProcessByPath duration {sw.ElapsedMilliseconds}ms");
         }
 
-        private static async Task<bool> TryOpenWindow()
+        private static async Task<bool> TryOpenWindow(string? startupUrl = null)
         {
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -125,11 +125,18 @@ namespace Grayjay.Desktop
                     return false;
                 }
 
+                using HttpClient client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
+
                 var url = $"http://127.0.0.1:{port}/Window/StartWindow";
                 Logger.i(nameof(Program), $"TryOpenWindow: " + url);
-
-                using HttpClient client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
                 var response = await client.GetAsync(url);
+
+                if (response.IsSuccessStatusCode && startupUrl != null)
+                {
+                    var openUrl = $"http://127.0.0.1:{port}/Window/OpenUrl?url={Uri.EscapeDataString(startupUrl)}";
+                    Logger.i(nameof(Program), $"TryOpenWindow sending URL: " + openUrl);
+                    await client.GetAsync(openUrl);
+                }
 
                 return response.IsSuccessStatusCode;
             }
@@ -248,6 +255,10 @@ namespace Grayjay.Desktop
             bool isFullscreen = args?.Contains("--fullscreen") ?? false;
             double? scaleFactor = args?.FirstOrDefault(a => a.StartsWith("--scale-factor=")) is string s && double.TryParse(s["--scale-factor=".Length..], out var v) ? v : null;
 
+            string? startupUrl = args?.FirstOrDefault(a => a.StartsWith("grayjay://https://") || a.StartsWith("grayjay://http://"));
+            if (startupUrl != null)
+                startupUrl = startupUrl.Substring("grayjay://".Length);
+
 #if DEBUG
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsAPI.AllocConsole();
@@ -293,7 +304,7 @@ namespace Grayjay.Desktop
 
                 if (await WaitForPortFileAndProcess())
                 {
-                    if (await TryOpenWindow())
+                    if (await TryOpenWindow(startupUrl))
                     {
                         Logger.i<Program>("Successfully opened new window, closing current process.");
                         return;
@@ -315,7 +326,7 @@ namespace Grayjay.Desktop
 
             if (File.Exists(PortFile))
             {
-                if (await TryOpenWindow())
+                if (await TryOpenWindow(startupUrl))
                 {
                     Logger.i<Program>("Successfully opened new window, closing current process.");
                     return;
@@ -475,6 +486,9 @@ namespace Grayjay.Desktop
             File.Delete(StartingUpFile);
             File.WriteAllText(PortFile, server.BaseUri!.Port.ToString());
             Logger.i<Program>("Created PortFile, removed StartingUpFile");
+
+            if (startupUrl != null)
+                StateWebsocket.PendingStartupUrl = startupUrl;
 
             Logger.i(nameof(Program), "Main: Navigate.");
             if (window != null)

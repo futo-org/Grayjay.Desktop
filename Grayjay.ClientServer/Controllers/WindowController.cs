@@ -38,6 +38,19 @@ namespace Grayjay.ClientServer.Controllers
                 state.Ready = true;
                 StateWindow.StateReadyChanged(state, true);
             }
+            if (StateWebsocket.PendingStartupUrl != null)
+            {
+                var pendingUrl = StateWebsocket.PendingStartupUrl;
+                StateWebsocket.PendingStartupUrl = null;
+                StateWebsocket.OpenUrl(pendingUrl, 0);
+            }
+        }
+
+        [HttpGet]
+        public void OpenUrl(string url)
+        {
+            if (!string.IsNullOrEmpty(url))
+                StateWebsocket.OpenUrl(url, 0);
         }
 
 
