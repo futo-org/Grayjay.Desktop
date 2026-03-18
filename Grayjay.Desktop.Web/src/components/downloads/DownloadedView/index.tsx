@@ -1,7 +1,8 @@
-import { Component, Show, createMemo, createSignal, onCleanup } from 'solid-js'
+import { Component, Show, createMemo, createSignal, createResource, onCleanup } from 'solid-js'
 
 import styles from './index.module.css';
-import { getBestThumbnail, positiveOrQ, proxyImage, resolutionOrUnknown, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber, toHumanTime } from '../../../utility';
+import { getBestThumbnail, getVideoProgressPercentage, positiveOrQ, proxyImage, resolutionOrUnknown, toHumanBitrate, toHumanBytesSize, toHumanBytesSpeed, toHumanNumber, toHumanTime } from '../../../utility';
+import { HistoryBackend } from '../../../backend/HistoryBackend';
 import StateGlobal from '../../../state/StateGlobal';
 import SubscribeButton from '../../buttons/SubscribeButton';
 import settings from '../../../assets/icons/icon24_settings.svg';
@@ -55,6 +56,10 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
     }
   }
 
+  const [position] = createResource(() => props.downloaded?.url, async (url) => {
+    try { return await HistoryBackend.getHistoricalPosition(url); } catch { return 0; }
+  });
+
   let refMoreButton: HTMLDivElement | undefined;
 
   return (
@@ -69,6 +74,16 @@ const DownloadedView: Component<DownloadedViewProps> = (props) => {
             <div class={styles.badgeSize}>
               {toHumanBytesSize(calcSize())}
             </div>
+            <Show when={(position() ?? 0) > 0 && (props.downloaded?.videoDetails?.duration ?? 0) > 0}>
+              <div style={{
+                "position": "absolute",
+                "bottom": "0px",
+                "left": "0px",
+                "background-color": "#019BE7",
+                "height": "3px",
+                "width": `${getVideoProgressPercentage(position()!, props.downloaded!.videoDetails.duration!)}%`
+              }} />
+            </Show>
         </div>
         <div class={styles.title} onClick={navigate}>
           {props.downloaded?.name}

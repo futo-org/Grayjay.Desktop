@@ -1,4 +1,4 @@
-import { createResource, type Component, Switch, Match, createSignal, batch, createMemo, Show, onMount } from 'solid-js';
+import { createResource, type Component, Switch, Match, createSignal, batch, createMemo, createEffect, Show, onMount } from 'solid-js';
 import NavigationBar from '../../components/topbars/NavigationBar';
 import styles from './index.module.css';
 import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
@@ -29,6 +29,7 @@ import EmptyContentView from '../../components/EmptyContentView';
 import { Menus } from '../../Menus';
 import StateWebsocket from '../../state/StateWebsocket';
 import { createResourceDefault } from '../../utility';
+import { HistoryBackend } from '../../backend/HistoryBackend';
 import LoaderGrid from '../../components/basics/loaders/LoaderGrid';
 import InputText from '../../components/basics/inputs/InputText';
 import Dropdown from '../../components/basics/inputs/Dropdown';
@@ -118,6 +119,23 @@ const PlaylistsPage: Component = () => {
       playlistsResource.refetch();
     });
   }
+
+  const [watchLaterPositions$, setWatchLaterPositions] = createSignal<Record<string, number>>({});
+  createEffect(async () => {
+    const videos = video?.watchLater();
+    if (!videos || videos.length === 0) return;
+    const entries = await Promise.all(
+      videos.map(async (v) => {
+        try {
+          const pos = await HistoryBackend.getHistoricalPosition(v.url);
+          return [v.url, pos] as [string, number];
+        } catch {
+          return [v.url, 0] as [string, number];
+        }
+      })
+    );
+    setWatchLaterPositions(Object.fromEntries(entries));
+  });
 
   const [filterText, setFilterText] = createSignal("");
   const [sortBy, setSortBy] = createSignal(0);
@@ -231,6 +249,7 @@ const PlaylistsPage: Component = () => {
                 }}
                 builder={(index, item) =>
                   <VideoThumbnailView video={item() as IPlatformVideo}
+                    position={(item() as IPlatformVideo)?.url ? watchLaterPositions$()[(item() as IPlatformVideo).url] : undefined}
                     onClick={() => {
                       const queue = video?.watchLater();
                       if (!queue) {
