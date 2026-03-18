@@ -1,4 +1,4 @@
-import { type Component, createMemo, createSignal, batch, Show } from 'solid-js';
+import { type Component, createMemo, createSignal, createEffect, batch, Show } from 'solid-js';
 import LoaderContainer from '../basics/loaders/LoaderContainer';
 import NavigationBar from '../topbars/NavigationBar';
 import styles from './index.module.css';
@@ -19,6 +19,7 @@ import iconDownload from '../../assets/icons/icon24_download.svg';
 import iconTrash from '../../assets/icons/icon_trash.svg';
 import UIOverlay from '../../state/UIOverlay';
 import { IPlatformVideo } from '../../backend/models/content/IPlatformVideo';
+import { HistoryBackend } from '../../backend/HistoryBackend';
 import PlaylistItemView from '../PlaylistItemView';
 import { Menus } from '../../Menus';
 import { useNavigate } from '@solidjs/router';
@@ -98,6 +99,23 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
       setShow(false);
     });
   }
+
+  const [positionMap$, setPositionMap] = createSignal<Record<string, number>>({});
+  createEffect(async () => {
+    const videos = props.videos;
+    if (!videos || videos.length === 0) return;
+    const entries = await Promise.all(
+      videos.map(async (v) => {
+        try {
+          const pos = await HistoryBackend.getHistoricalPosition(v.url);
+          return [v.url, pos] as [string, number];
+        } catch {
+          return [v.url, 0] as [string, number];
+        }
+      })
+    );
+    setPositionMap(Object.fromEntries(entries));
+  });
 
   const [filterText$, setFilterText] = createSignal("");
   
@@ -194,7 +212,8 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             builder={(index, item, containerRef, dragControls) => {
               const video = createMemo(() => item() as IPlatformVideo | undefined);
               return (
-                <PlaylistItemView item={video()} 
+                <PlaylistItemView item={video()}
+                  position={video()?.url ? positionMap$()[video()!.url] : undefined}
                   isEditable={isEditable$()}
                   onRemove={() => {
                     const v = video();

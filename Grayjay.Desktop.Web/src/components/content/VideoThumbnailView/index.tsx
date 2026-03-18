@@ -4,7 +4,7 @@ import styles from './index.module.css';
 import IconButton from '../../buttons/IconButton';
 import more from '../../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
 import addToQueueIcon from '../../../assets/icons/icon_add_to_queue.svg';
-import { dateFromAny, toHumanNowDiffString, toHumanNumber, toHumanTime } from '../../../utility';
+import { dateFromAny, getVideoProgressPercentage, toHumanNowDiffString, toHumanNumber, toHumanTime } from '../../../utility';
 import { DateTime } from 'luxon';
 import { useNavigate } from '@solidjs/router';
 import StateGlobal from '../../../state/StateGlobal';
@@ -16,6 +16,7 @@ import { focusable } from '../../../focusable';import { useFocus } from '../../.
 
 interface VideoProps {
   video?: IPlatformVideo;
+  position?: number;
   onClick: () => void;
   onSettings?: (element: HTMLDivElement, content: IPlatformVideo) => void;
   onAddtoQueue?: (element: HTMLDivElement, content: IPlatformVideo) => void;
@@ -33,7 +34,8 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
   })
   var progress$ = createMemo(()=>{
     let videoAny = props.video as any;
-    return (videoAny?.metadata?.position && props.video?.duration && props.video.duration > 0) ? (videoAny?.metadata?.position / props.video!.duration) : 0;
+    const position = props.position ?? videoAny?.metadata?.position;
+    return (position && props.video?.duration && props.video.duration > 0) ? getVideoProgressPercentage(position, props.video!.duration) / 100 : 0;
   })
   
   const navigate = useNavigate();

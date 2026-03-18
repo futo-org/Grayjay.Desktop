@@ -4,7 +4,7 @@ import styles from './index.module.css';
 import iconDrag from '../../assets/icons/icon_drag.svg';
 import iconClose from '../../assets/icons/icon24_close.svg';
 import iconMore from '../../assets/icons/icon_button_more.svg';
-import { proxyImage, toHumanNowDiffString, toHumanNumber } from '../../utility';
+import { getVideoProgressPercentage, proxyImage, toHumanNowDiffString, toHumanNumber } from '../../utility';
 import { DateTime } from 'luxon';
 import IconButton from '../buttons/IconButton';
 
@@ -15,6 +15,7 @@ import { focusable } from '../../focusable';import { useFocus } from '../../Focu
 
 interface PlaylistItemViewProps {
   item?: IPlatformVideo;
+  position?: number;
   onPlay?: () => void;
   onRemove?: () => void;
   onSettings?: (e: HTMLElement) => void;
@@ -41,7 +42,17 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
       <Show when={props.onDragStart && editable$() && focus?.isControllerMode() !== true} fallback={<div style="width: 12px"></div>}>
         <img src={iconDrag} style="width: 24px; height: 24px; padding: 20px; cursor: pointer;" onMouseDown={(e) => props.onDragStart?.(e, e.target as HTMLElement)} />
       </Show>
-      <img src={bestThumbnail$()?.url} style="width: auto; height: 100%; border-radius: 6px; aspect-ratio: 16/9; background-size: cover; cursor: pointer;" referrerPolicy='no-referrer' />
+      <div style="position: relative; height: 100%; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; flex-shrink: 0;">
+        <img src={bestThumbnail$()?.url} style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" referrerPolicy='no-referrer' />
+        <div style={{
+          "position": "absolute",
+          "bottom": "0px",
+          "left": "0px",
+          "background-color": "#019BE7",
+          "height": "3px",
+          "width": `${(props.position ?? 0) > 0 && (props.item?.duration ?? 0) > 0 ? getVideoProgressPercentage(props.position!, props.item!.duration!) : 0}%`
+        }} />
+      </div>
       <div style="display: flex; flex-direction: column; flex-grow: 1; margin-left: 20px; margin-right: 20px; height: 100%; cursor: pointer;">
         <div class={styles.itemTitle}>{props.item?.name}</div>
         <div class={styles.authorBottomRow}>
