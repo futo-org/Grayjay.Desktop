@@ -443,8 +443,21 @@ namespace Grayjay.Desktop
             //Logger.i(nameof(Program), $"Main: EnableClient finished ({watch.ElapsedMilliseconds}ms)");
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            GrayjayServer server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef) : null), 
-                isHeadless, 
+
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true; // Prevent immediate termination; handle gracefully below
+                Logger.i(nameof(Program), "Received SIGINT, shutting down gracefully.");
+                cancellationTokenSource.Cancel();
+            };
+
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                cancellationTokenSource.Cancel();
+            };
+
+            GrayjayServer server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef) : null),
+                isHeadless,
                 isServer);
             _ = Task.Run(async () =>
             {
