@@ -168,9 +168,11 @@ const SourcesPage: Component = () => {
                             }}>
                               <img src={iconThumb} />
                             </div>
-                            <div class={styles.image}>
-                              <img src={StateGlobal.getSourceConfig(source()!.id)?.absoluteIconUrl} />
-                            </div>
+                               <div class={styles.image}>
+                                 {/* Try dynamic icon from plugin.getIcon(), fallback to static absoluteIconUrl (derived from JSON iconUrl) */}
+                                 <img src={StateGlobal.getDynamicIcon(source()!.id).then(icon => icon ?? StateGlobal.getSourceConfig(source()!.id)?.absoluteIconUrl)} />
+                               </div>
+
                             <div class={styles.name}>
                               {source()!.name}
                             </div>
@@ -198,9 +200,11 @@ const SourcesPage: Component = () => {
                       groupRememberLast: true,
                       onPress: () => enableSource(source)
                     }}>
-                      <div class={styles.image}>
-                        <img src={StateGlobal.getSourceConfig(source.id)?.absoluteIconUrl} />
-                      </div>
+                       <div class={styles.image}>
+                         {/* Try dynamic icon from plugin.getIcon(), fallback to static absoluteIconUrl (derived from JSON iconUrl) */}
+                         <img src={StateGlobal.getDynamicIcon(source.id).then(icon => icon ?? StateGlobal.getSourceConfig(source.id)?.absoluteIconUrl)} />
+                       </div>
+
                       <div class={styles.name}>
                         {source.name}
                       </div>

@@ -26,6 +26,23 @@ namespace Grayjay.ClientServer.Controllers
 
 
         [HttpGet]
+        public string GetDynamicIcon(string id)
+        {
+            var plugin = StatePlatform.GetClient(id);
+            if (plugin == null) return null;
+
+            try
+            {
+                // Call the dynamic getIcon method implemented in the plugin script
+                return plugin.CallMethod("getIcon");
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(SourcesController), "Failed to call getIcon for plugin [" + id + "]: " + ex.Message);
+                return null;
+            }
+        }
+        [HttpGet]
         public PluginConfig[] Sources()
         {
             return StatePlatform.GetAvailableClients().Select(x => x.Config).ToArray();
