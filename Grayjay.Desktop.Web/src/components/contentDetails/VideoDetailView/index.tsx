@@ -17,7 +17,7 @@ import store from '../../../assets/icons/icon24_store.svg';
 import more from '../../../assets/icons/icon_button_more.svg';
 import donate from '../../../assets/icons/icon24_donate.svg';
 import VideoPlayerView, { VideoPlayerViewHandle } from "../../player/VideoPlayerView";
-import { VideoMode, VideoState, useVideo } from "../../../contexts/VideoProvider";
+import { VideoContextValue, VideoMode, VideoState, useVideo } from "../../../contexts/VideoProvider";
 import ScrollContainer from "../../containers/ScrollContainer";
 import VirtualFlexibleArrayList from "../../containers/VirtualFlexibleArrayList";
 import StickyShrinkOnScrollContainer from "../../containers/StickyShrinkOnScrollContainer";
@@ -101,6 +101,8 @@ export interface SourceSelected {
 }
 
 export interface VideoDetailsProps {
+    videoContext?: VideoContextValue;
+    minimizedIndex?: number;
 };
 
 const VideoDetailView: Component<VideoDetailsProps> = (props) => {
@@ -112,7 +114,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     let isScrubbing = false;
     let position: Duration | undefined = undefined;
     let errorCounter: number = 0;
-    const video = useVideo();
+    const video = props.videoContext ?? useVideo();
     const focus = useFocus()!;
     const casting = useCasting()!;
 
@@ -447,6 +449,9 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
     const handlePositionChanged = (p: Duration) => {
         position = p;
+        if (video?.state() === VideoState.Minimized) {
+            video?.actions.setStartTime(p);
+        }
     };
     
     const [currentPlayerHeight$, setCurrentPlayerHeight] = createSignal<number>();
@@ -461,6 +466,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         return desiredMaximumHeight;
     });
     const [playbackSpeed$, setPlaybackSpeed] = createSignal(1);
+    const minimizedStackIndex = createMemo(() => props.minimizedIndex ?? 0);
 
     const repositionMinimize = () => {
         const vd = videoDimensions();
@@ -481,9 +487,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             minimizedWidth = minimizedHeight * aspectRatio;
         }
         
+        const gap = 12;
+        const stackOffset = minimizedStackIndex() * (minimizedHeight + gap);
         setMinimizedPosition({
             x: window.innerWidth - minimizedWidth,
-            y: window.innerHeight - minimizedHeight
+            y: Math.max(0, window.innerHeight - minimizedHeight - stackOffset)
         });
         setMinimizedHeight(minimizedHeight);
 
@@ -499,10 +507,20 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     });
 
     const toggleMinimize = () => {
-        video?.actions.setState(isMinimized() ? VideoState.Maximized : VideoState.Minimized);
+        if (isMinimized()) {
+            video?.actions.setState(VideoState.Maximized);
+        } else {
+            if (position) {
+                video?.actions.setStartTime(position);
+            }
+            video?.actions.setState(VideoState.Minimized);
+        }
     };
 
     const minimize = () => {
+        if (position) {
+            video?.actions.setStartTime(position);
+        }
         video?.actions.setState(VideoState.Minimized);
     };
 
@@ -532,6 +550,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
     const handleIsPlayingChanged = (isPlaying: boolean) => {
         if (isPlaying) {
+            video?.actions.requestPlayback();
             console.info("Error counter reset because video is playing", errorCounter);
             errorCounter = 0;
         }
@@ -550,6 +569,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         const res = video?.state() === VideoState.Minimized;
         console.log("isMinimized", res);
         return res;
+    });
+
+    const shouldPauseForInactivePlayback = createMemo(() => {
+        const activeVideoId = video?.activePlaybackVideoId();
+        return activeVideoId !== undefined && activeVideoId !== video?.id;
     });
 
     const shouldShowQueue = createMemo(() => {
@@ -1551,6 +1575,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 isScrubbing = scrubbing;
                             }}
                             onVerifyToggle={verifyToggle}
+                            shouldPause={shouldPauseForInactivePlayback()}
                             buttons={
                                 <>
                                     <Show when={!isMinimized() && mode() === VideoMode.Theatre && focus.lastInputSource() === "pointer"}>

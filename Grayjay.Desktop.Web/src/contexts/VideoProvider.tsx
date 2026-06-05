@@ -26,6 +26,7 @@ export interface VideoContextState {
 };
 
 export interface VideoContextValue {
+    id: string;
     state: Accessor<VideoState>;
     index: Accessor<number | undefined>;
     queue: Accessor<IPlatformVideo[] | undefined>;
@@ -37,6 +38,8 @@ export interface VideoContextValue {
     desiredMode: Accessor<VideoMode>;
     theatrePinned: Accessor<boolean>;
     volume: Accessor<number>;
+    minimizedVideos: Accessor<VideoContextValue[]>;
+    activePlaybackVideoId: Accessor<string | undefined>;
     //queueType watch later, playlist en queue of undefined
     actions: {
         openVideo: (video: IPlatformVideo, time?: Duration, videoState?: VideoState) => void;
@@ -53,6 +56,7 @@ export interface VideoContextValue {
         setTheatrePinned: (pinned: boolean) => void;
         setVolume: (volume: number) => void;
         setStartTime: (startTime: Duration | undefined) => void;
+        requestPlayback: () => void;
     }
 };
 
@@ -62,158 +66,273 @@ export interface VideoContextProps {
 };
 
 export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
-    const [queue, setQueue] = createSignal<IPlatformVideo[] | undefined>();
-    const [index, setIndex] = createSignal<number | undefined>();
-    const [startTime, setStartTime] = createSignal<Duration | undefined>();
-    const [state, setState] = createSignal<VideoState>(VideoState.Closed);
-    const [repeat, setRepeat] = createSignal<boolean>(false);
-    const [shuffle, setShuffle] = createSignal<boolean>(false);
-    const [desiredMode, setDesiredModeInternal] = createSignal<VideoMode>(VideoMode.Theatre);
-    const [theatrePinned, setTheatrePinnedInternal] = createSignal<boolean>(true);
-    const [volume, setVolumeInternal] = createSignal<number>(1);
-    const video = createMemo(() => {
-        const q = queue();
-        const i = index();
-        if (!q || i === undefined || i < 0 || i >= q.length) {
-            return undefined;
-        }
-
-        return q[i];
-    })
-
-    const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => { 
-        const desiredVideoState = videoState ?? VideoState.Maximized;
-        batch(() => {
-            setIndex(0);
-            setStartTime(time);
-            setQueue([ v ]);
-            if (state() !== desiredVideoState)
-                setState(desiredVideoState);
-        });
-    };
-    const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => { 
-        const desiredVideoState = videoState ?? VideoState.Maximized;
-        if (state() !== desiredVideoState)
-            setState(desiredVideoState);
-        const videoLoadResult = await DetailsBackend.videoLoad(url);
-        batch(() => {
-            setIndex(0);
-            setStartTime(time);
-            setQueue([ videoLoadResult.video ]);
-
-        });
-    };
-    const sq = (index: number, queue: IPlatformVideo[], repeat?: boolean, shuffle?: boolean, videoState?: VideoState) => { 
-        if (index < 0 || index >= queue.length) {
-            console.error("index not valid for queue", {index, queue});
-            return;
-        }
-
-        const desiredVideoState = videoState ?? VideoState.Maximized;
-        batch(() => {
-            setIndex(index);
-            setQueue(queue);
-            setStartTime(undefined);
-            if (repeat !== undefined)
-                setRepeat(repeat);
-            if (shuffle !== undefined)
-                setShuffle(shuffle);
-            if (state() !== desiredVideoState)
-                setState(desiredVideoState);
-        });
-    };
-    const addToQueue = (video: IPlatformVideo) => { 
-        if (index() === undefined) {
-            openVideo(video);
-            return;
-        }
-
-        setQueue([ ... (queue() ?? []), video ]);
-    };
-    const closeVideo = () => {
-        batch(()=>{
-            console.log("Closing video");
-            setIndex(undefined);
-            setQueue(undefined);
-            setStartTime(undefined);
-            setState(VideoState.Closed);
-        });
-    };
+    const [watchLater, setWatchLater] = createSignal<IOrderedPlatformVideo[]>();
+    const [minimizedVideos, setMinimizedVideos] = createSignal<VideoContextValue[]>([]);
+    const [activePlaybackVideoId, setActivePlaybackVideoId] = createSignal<string | undefined>();
+    let minimizedVideoId = 0;
+    let mainVideo: VideoContextValue;
 
     const refetchWatchLater = async () => {
         const videos = await WatchLaterBackend.getAll();
         setWatchLater(videos);
         console.log("set watch later", videos);
-    }
-    const [watchLater, setWatchLater] = createSignal<IOrderedPlatformVideo[]>();
+    };
+
+    const removeMinimizedVideo = (id: string) => {
+        setMinimizedVideos(videos => videos.filter(v => v.id !== id));
+        if (activePlaybackVideoId() === id) {
+            setActivePlaybackVideoId(undefined);
+        }
+    };
+
+    const createVideoContext = (options: {
+        id: string;
+        initialState?: VideoState;
+        initialIndex?: number;
+        initialQueue?: IPlatformVideo[];
+        initialStartTime?: Duration;
+        initialRepeat?: boolean;
+        initialShuffle?: boolean;
+        initialDesiredMode?: VideoMode;
+        initialTheatrePinned?: boolean;
+        initialVolume?: number;
+        beforeReplace?: () => void;
+        onClose?: (id: string) => void;
+        onSetState?: (id: string, videoState: VideoState) => boolean;
+        persistSettings?: boolean;
+    }): VideoContextValue => {
+        const [queue, setQueue] = createSignal<IPlatformVideo[] | undefined>(options.initialQueue);
+        const [index, setIndex] = createSignal<number | undefined>(options.initialIndex);
+        const [startTime, setStartTime] = createSignal<Duration | undefined>(options.initialStartTime);
+        const [state, setState] = createSignal<VideoState>(options.initialState ?? VideoState.Closed);
+        const [repeat, setRepeat] = createSignal<boolean>(options.initialRepeat ?? false);
+        const [shuffle, setShuffle] = createSignal<boolean>(options.initialShuffle ?? false);
+        const [desiredMode, setDesiredModeInternal] = createSignal<VideoMode>(options.initialDesiredMode ?? VideoMode.Theatre);
+        const [theatrePinned, setTheatrePinnedInternal] = createSignal<boolean>(options.initialTheatrePinned ?? true);
+        const [volume, setVolumeInternal] = createSignal<number>(options.initialVolume ?? 1);
+        const video = createMemo(() => {
+            const q = queue();
+            const i = index();
+            if (!q || i === undefined || i < 0 || i >= q.length) {
+                return undefined;
+            }
+
+            return q[i];
+        });
+
+        const setVideoState = (videoState: VideoState) => {
+            if (options.onSetState?.(options.id, videoState)) {
+                return;
+            }
+
+            console.info("VIDEO STATE CHANGED", videoState, { id: options.id });
+            setState(videoState);
+        };
+
+        const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => {
+            options.beforeReplace?.();
+            const desiredVideoState = videoState ?? VideoState.Maximized;
+            batch(() => {
+                setIndex(0);
+                setStartTime(time);
+                setQueue([ v ]);
+                if (state() !== desiredVideoState)
+                    setVideoState(desiredVideoState);
+            });
+        };
+
+        const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => {
+            options.beforeReplace?.();
+            const desiredVideoState = videoState ?? VideoState.Maximized;
+            if (state() !== desiredVideoState)
+                setVideoState(desiredVideoState);
+            const videoLoadResult = await DetailsBackend.videoLoad(url);
+            batch(() => {
+                setIndex(0);
+                setStartTime(time);
+                setQueue([ videoLoadResult.video ]);
+            });
+        };
+
+        const sq = (index: number, queue: IPlatformVideo[], repeat?: boolean, shuffle?: boolean, videoState?: VideoState) => {
+            if (index < 0 || index >= queue.length) {
+                console.error("index not valid for queue", { index, queue });
+                return;
+            }
+
+            options.beforeReplace?.();
+            const desiredVideoState = videoState ?? VideoState.Maximized;
+            batch(() => {
+                setIndex(index);
+                setQueue(queue);
+                setStartTime(undefined);
+                if (repeat !== undefined)
+                    setRepeat(repeat);
+                if (shuffle !== undefined)
+                    setShuffle(shuffle);
+                if (state() !== desiredVideoState)
+                    setVideoState(desiredVideoState);
+            });
+        };
+
+        const addToQueue = (video: IPlatformVideo) => {
+            if (index() === undefined) {
+                openVideo(video);
+                return;
+            }
+
+            setQueue([ ... (queue() ?? []), video ]);
+        };
+
+        const closeVideo = () => {
+            batch(() => {
+                console.log("Closing video", { id: options.id });
+                setIndex(undefined);
+                setQueue(undefined);
+                setStartTime(undefined);
+                setState(VideoState.Closed);
+                if (activePlaybackVideoId() === options.id) {
+                    setActivePlaybackVideoId(undefined);
+                }
+                options.onClose?.(options.id);
+            });
+        };
+
+        const setDesiredMode = (mode: VideoMode) => {
+            setDesiredModeInternal(mode);
+            if (options.persistSettings) {
+                SettingsBackend.persistSet("desiredMode", mode);
+            }
+        };
+
+        const setTheatrePinned = (pinned: boolean) => {
+            setTheatrePinnedInternal(pinned);
+            if (options.persistSettings) {
+                SettingsBackend.persistSet("theatrePinned", pinned);
+            }
+        };
+
+        const setVolume = (volume: number) => {
+            setVolumeInternal(volume);
+            if (options.persistSettings) {
+                SettingsBackend.persistSet("volume", volume);
+            }
+        };
+
+        return {
+            id: options.id,
+            index,
+            queue,
+            watchLater,
+            state,
+            repeat,
+            shuffle,
+            video,
+            startTime,
+            desiredMode,
+            theatrePinned,
+            volume,
+            minimizedVideos,
+            activePlaybackVideoId,
+            actions: {
+                setIndex: (i: number) => {
+                    batch(() => {
+                        setIndex(i);
+                        setStartTime(undefined);
+                    });
+                },
+                openVideo,
+                openVideoByUrl,
+                setQueue: sq,
+                closeVideo,
+                addToQueue,
+                setState: setVideoState,
+                setRepeat,
+                setShuffle,
+                setDesiredMode,
+                setTheatrePinned,
+                setVolume,
+                refetchWatchLater,
+                setStartTime,
+                requestPlayback: () => setActivePlaybackVideoId(options.id)
+            }
+        };
+    };
+
+    const promoteMinimizedVideo = (id: string, videoState: VideoState) => {
+        const minimizedVideo = minimizedVideos().find(v => v.id === id);
+        const q = minimizedVideo?.queue();
+        const i = minimizedVideo?.index();
+        if (!minimizedVideo || !q || i === undefined) {
+            return false;
+        }
+
+        batch(() => {
+            mainVideo.actions.setDesiredMode(minimizedVideo.desiredMode());
+            mainVideo.actions.setTheatrePinned(minimizedVideo.theatrePinned());
+            mainVideo.actions.setVolume(minimizedVideo.volume());
+            mainVideo.actions.setQueue(i, q, minimizedVideo.repeat(), minimizedVideo.shuffle(), videoState);
+            mainVideo.actions.setStartTime(minimizedVideo.startTime());
+            removeMinimizedVideo(id);
+        });
+        return true;
+    };
+
+    const archiveMainVideoIfMinimized = () => {
+        if (!mainVideo || mainVideo.state() !== VideoState.Minimized) {
+            return;
+        }
+
+        const q = mainVideo.queue();
+        const i = mainVideo.index();
+        if (!q || i === undefined) {
+            return;
+        }
+
+        const id = `minimized-${++minimizedVideoId}`;
+        const minimizedVideo = createVideoContext({
+            id,
+            initialState: VideoState.Minimized,
+            initialIndex: i,
+            initialQueue: [ ... q ],
+            initialStartTime: mainVideo.startTime(),
+            initialRepeat: mainVideo.repeat(),
+            initialShuffle: mainVideo.shuffle(),
+            initialDesiredMode: mainVideo.desiredMode(),
+            initialTheatrePinned: mainVideo.theatrePinned(),
+            initialVolume: mainVideo.volume(),
+            onClose: removeMinimizedVideo,
+            onSetState: (id, videoState) => {
+                if (videoState === VideoState.Maximized || videoState === VideoState.Fullscreen) {
+                    return promoteMinimizedVideo(id, videoState);
+                }
+                return false;
+            }
+        });
+        setMinimizedVideos(videos => [ ... videos, minimizedVideo ]);
+    };
+
+    mainVideo = createVideoContext({
+        id: "main",
+        beforeReplace: archiveMainVideoIfMinimized,
+        persistSettings: true
+    });
+
     onMount(async () => {
         await refetchWatchLater();
     });
-
-    const setDesiredMode = (mode: VideoMode) => {
-        setDesiredModeInternal(mode);
-        SettingsBackend.persistSet("desiredMode", mode);
-    };
-
-    const setTheatrePinned = (pinned: boolean) => {
-        setTheatrePinnedInternal(pinned);
-        SettingsBackend.persistSet("theatrePinned", pinned);
-    };
-
-    const setVolume = (volume: number) => {
-        setVolumeInternal(volume);
-        SettingsBackend.persistSet("volume", volume);
-    };
 
     StateWebsocket.registerHandlerNew("WatchLaterChanged", (packet)=>{
         console.log("WatchLater changed");
         refetchWatchLater();
     }, "videoProvider");
-    
-    const value: VideoContextValue = {
-        index,
-        queue,
-        watchLater,
-        state,
-        repeat,
-        shuffle,
-        video,
-        startTime,
-        desiredMode,
-        theatrePinned,
-        volume,
-        actions: {
-            setIndex: (i: number) => {
-                batch(() => {
-                    setIndex(i);
-                    setStartTime(undefined);
-                });
-            },
-            openVideo,
-            openVideoByUrl,
-            setQueue: sq,
-            closeVideo,
-            addToQueue,
-            setState: (videoState: VideoState) => {
-                console.info("VIDEO STATE CHANGED", videoState);
-                setState(videoState);
-            },
-            setRepeat,
-            setShuffle,
-            setDesiredMode,
-            setTheatrePinned,
-            setVolume,
-            refetchWatchLater,
-            setStartTime
-        }
-    };
 
-    SettingsBackend.persistGet("desiredMode", VideoMode.Theatre).then((r: VideoMode) => setDesiredModeInternal(r)).catch(e => console.error("Failed to get persistent setting 'desiredMode'.", e));
-    SettingsBackend.persistGet("theatrePinned", true).then((r: boolean) => setTheatrePinnedInternal(r)).catch(e => console.error("Failed to get persistent setting 'theatrePinned'.", e));
-    SettingsBackend.persistGet("volume", 1).then((r: number) => setVolumeInternal(r)).catch(e => console.error("Failed to get persistent setting 'volume'.", e));
+    SettingsBackend.persistGet("desiredMode", VideoMode.Theatre).then((r: VideoMode) => mainVideo.actions.setDesiredMode(r)).catch(e => console.error("Failed to get persistent setting 'desiredMode'.", e));
+    SettingsBackend.persistGet("theatrePinned", true).then((r: boolean) => mainVideo.actions.setTheatrePinned(r)).catch(e => console.error("Failed to get persistent setting 'theatrePinned'.", e));
+    SettingsBackend.persistGet("volume", 1).then((r: number) => mainVideo.actions.setVolume(r)).catch(e => console.error("Failed to get persistent setting 'volume'.", e));
 
     return (
-        <VideoContext.Provider value={value}>
+        <VideoContext.Provider value={mainVideo}>
             {props.children}
         </VideoContext.Provider>
     );

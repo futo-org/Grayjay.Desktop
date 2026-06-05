@@ -4,7 +4,7 @@ import { render } from 'solid-js/web';
 import './index.css';
 import { Router, Route, RouteSectionProps, useNavigate, Navigator } from '@solidjs/router';
 import SideBar from './components/menus/SideBar';
-import { Component, Show, children, createSignal, lazy, onCleanup, onMount } from 'solid-js';
+import { Component, For, Show, children, createSignal, lazy, onCleanup, onMount } from 'solid-js';
 import VideoDetailView from './components/contentDetails/VideoDetailView';
 import { VideoContextValue, VideoProvider, VideoState, useVideo } from './contexts/VideoProvider';
 import SourcesPage from './pages/Sources';
@@ -119,12 +119,17 @@ const App: Component<RouteSectionProps> = (props) => {
     return <div class="root-container" use:focusScope={{ id: 'root-container' }}>
       <CastingProvider>
         <SideBar />
-          <Show when={useVideo()?.state() !== VideoState.Maximized && useVideo()?.state() !== VideoState.Fullscreen}>
+          <Show when={video?.state() !== VideoState.Maximized && video?.state() !== VideoState.Fullscreen}>
             <div class="root-content">
               {props.children}
             </div>
           </Show>
-          <VideoDetailView />
+          <VideoDetailView minimizedIndex={video?.minimizedVideos().length ?? 0} />
+          <For each={video?.minimizedVideos() ?? []}>
+            {(minimizedVideo, index) => (
+              <VideoDetailView videoContext={minimizedVideo} minimizedIndex={index()} />
+            )}
+          </For>
         <OverlayCasting />
       </CastingProvider>
       <OverlayModals />
