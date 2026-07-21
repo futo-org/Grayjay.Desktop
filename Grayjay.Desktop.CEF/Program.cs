@@ -26,6 +26,32 @@ namespace Grayjay.Desktop
         private const int StartupTimeoutSeconds = 5;
         private const int NewWindowTimeoutSeconds = 5;
 
+        private static void EnsureCefLibraryPath()
+        {
+            if (!OperatingSystem.IsLinux())
+                return;
+
+            string? cefDirectory = Utilities.FindDirectory("cef");
+            if (string.IsNullOrEmpty(cefDirectory))
+            {
+                Logger.w(nameof(Program), "Unable to locate the CEF directory");
+                return;
+            }
+
+            string? currentPath = Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
+            string[] paths = string.IsNullOrEmpty(currentPath)
+                ? Array.Empty<string>()
+                : currentPath.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            if (!paths.Contains(cefDirectory, StringComparer.Ordinal))
+            {
+                string updatedPath = string.IsNullOrEmpty(currentPath)
+                    ? cefDirectory
+                    : cefDirectory + Path.PathSeparator + currentPath;
+                Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", updatedPath);
+            }
+        }
+
         private static bool IsProcessRunningByPath(string path, out Process? matchingProcess)
         {
             matchingProcess = null;
@@ -383,6 +409,7 @@ namespace Grayjay.Desktop
             using var cef = !isServer ? new JustCefProcess() : null;
             if (cef != null)
             {
+                EnsureCefLibraryPath();
                 PackageBrowser.Process = cef;
                 Stopwatch startWindowWatch = Stopwatch.StartNew();
                 var extraArgs = ReconstructArgs(args);
