@@ -54,10 +54,23 @@
 		</DirectoryRef>
 		
 				 
+		<DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+			<Component Id="GrayjayProtocol" Guid="b3f2a1c4-8e7d-4f9a-b6c2-1d3e5f7a9b0c">
+				<RegistryKey Root="HKCR" Key="grayjay">
+					<RegistryValue Type="string" Value="URL:Grayjay Protocol" KeyPath="yes" />
+					<RegistryValue Name="URL Protocol" Type="string" Value="" />
+				</RegistryKey>
+				<RegistryKey Root="HKCR" Key="grayjay\shell\open\command">
+					<RegistryValue Type="string" Value="&quot;[APPLICATIONROOTDIRECTORY]Grayjay.exe&quot; &quot;%1&quot;" />
+				</RegistryKey>
+			</Component>
+		</DirectoryRef>
+
 		<Feature Id="MainApplication" Title="Grayjay" Level="1">
 			<ComponentRef Id="Files" />
 			<ComponentRef Id="FilesCEF" />
 			<ComponentRef Id="ApplicationShortcut" />
+			<ComponentRef Id="GrayjayProtocol" />
 		</Feature>
 		
 		<CustomAction Id="RunUpdaterEXE"

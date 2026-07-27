@@ -37,5 +37,16 @@
         <string>NSApplication</string>
         <key>NSSupportsAutomaticGraphicsSwitching</key>
         <true/>
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleURLName</key>
+                <string>Grayjay URL</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>grayjay</string>
+                </array>
+            </dict>
+        </array>
     </dict>
 </plist>

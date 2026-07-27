@@ -10,6 +10,8 @@ namespace Grayjay.ClientServer.States;
 
 public class StateWebsocket
 {
+    public static string? PendingStartupUrl { get; set; } = null;
+
     public static void SubscriptionGroupsChanged()
     {
         Task.Run(async () =>
