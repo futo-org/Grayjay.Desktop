@@ -106,9 +106,21 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<PagerResult<PlatformVideo>> SubscriptionsCacheLoad()
         {
-            var subs = StateCache.GetSubscriptionCachePager();
-            this.State().SubscriptionsState.SubscriptionPagerCache = subs;
-            return subs.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
+            try
+            {
+                var subs = StateCache.GetSubscriptionCachePager();
+                this.State().SubscriptionsState.SubscriptionPagerCache = subs;
+                return subs.AsPagerResult(x => x is PlatformVideo, y => StateHistory.AddVideoMetadata((PlatformVideo)y));
+            }
+            catch (Exception ex)
+            {
+                return new PagerResult<PlatformVideo>()
+                {
+                    Results = new PlatformVideo[0],
+                    HasMore = false,
+                    Exception = ex.Message
+                };
+            }
         }
         [HttpGet]
         public PagerResult<PlatformVideo> SubscriptionsCacheNextPage()
