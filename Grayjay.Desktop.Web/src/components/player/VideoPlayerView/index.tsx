@@ -20,6 +20,7 @@ import { clearLiveChatOnSeek } from '../../../state/StateLiveChat';
 import { focusable } from '../../../focusable'; void focusable;
 import { FocusableOptions, InputSource } from '../../../nav';
 import { SettingsBackend } from '../../../backend/SettingsBackend';
+import { decode } from 'html-entities';
 
 interface VideoProps {
     onVideoDimensionsChanged: (width: number, height: number) => void;
@@ -776,7 +777,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 dashPlayer.on(dashjs.MediaPlayer.events.CUE_ENTER, (e: any) => {
                     const subtitle = document.createElement("div")
-                    subtitle.textContent = e.text;
+                    subtitle.textContent = decode(e.text);
                     subtitleMap.set(e.cueID, subtitle);
                     videoCaptionsRef?.appendChild(subtitle);
                 });
