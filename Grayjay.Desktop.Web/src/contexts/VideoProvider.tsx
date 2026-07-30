@@ -6,6 +6,7 @@ import { Duration } from "luxon";
 import { SettingsBackend } from "../backend/SettingsBackend";
 import StateWebsocket from "../state/StateWebsocket";
 import { DetailsBackend } from "../backend/DetailsBackend";
+import { WindowBackend } from "../backend/WindowBackend";
 
 export enum VideoState {
     Closed = 0,
@@ -81,7 +82,11 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         return q[i];
     })
 
-    const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => { 
+    const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => {
+        if (WindowBackend.consumeCmdClick() && v.url) {
+            WindowBackend.openInNewWindow({ url: v.url });
+            return;
+        }
         const desiredVideoState = videoState ?? VideoState.Maximized;
         batch(() => {
             setIndex(0);
@@ -91,7 +96,11 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 setState(desiredVideoState);
         });
     };
-    const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => { 
+    const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => {
+        if (WindowBackend.consumeCmdClick() && url) {
+            WindowBackend.openInNewWindow({ url });
+            return;
+        }
         const desiredVideoState = videoState ?? VideoState.Maximized;
         if (state() !== desiredVideoState)
             setState(desiredVideoState);
