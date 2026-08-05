@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Proxy;
+using Grayjay.Engine.Models;
 using Microsoft.ClearScript.V8;
 using Microsoft.VisualBasic;
 
@@ -34,7 +35,7 @@ public class ProxyTests
             { "host", "grayjay.app"}
         };
 
-        AssertDictionariesAreEqual(expectedHeaders, request.Headers);
+        AssertDictionariesAreEqual(expectedHeaders, request.Headers.ToDictionaryLastWins());
 
         using var bodyStream = new MemoryStream();
         await httpStream.TransferUntilEndOfStreamAsync(bodyStream);
@@ -86,7 +87,7 @@ public class ProxyTests
                 { "i", i.ToString()}
             };
 
-            AssertDictionariesAreEqual(expectedHeaders, request.Headers);
+            AssertDictionariesAreEqual(expectedHeaders, request.Headers.ToDictionaryLastWins());
 
             using var bodyStream = new MemoryStream();
             await httpStream.TransferFixedLengthContentAsync(bodyStream, byteContents[i].Length);
@@ -112,7 +113,7 @@ public class ProxyTests
             {
                 await httpStream.WriteRequestAsync(new HttpProxyRequest()
                 {
-                    Headers = expectedHeaders,
+                    Headers = new HttpHeaders(expectedHeaders),
                     Method = "GET",
                     Path = "/hello",
                     Version = "HTTP/1.1"
@@ -132,7 +133,7 @@ public class ProxyTests
             Assert.AreEqual("GET", readRequest.Method);
             Assert.AreEqual("/hello", readRequest.Path);
             Assert.AreEqual("HTTP/1.1", readRequest.Version);
-            CollectionAssert.AreEquivalent(expectedHeaders, readRequest.Headers);
+            CollectionAssert.AreEquivalent(expectedHeaders, readRequest.Headers.ToDictionaryLastWins());
 
             using var bodyStream = new MemoryStream();
             await inputHttpStream.TransferUntilEndOfStreamAsync(bodyStream);
@@ -160,12 +161,12 @@ public class ProxyTests
                 {
                     await httpStream.WriteRequestAsync(new HttpProxyRequest()
                     {
-                        Headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+                        Headers = new HttpHeaders(new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
                         {
                             { "host", "grayjay.app"},
                             { "content-length", contents[i].Length.ToString() },
                             { "i", i.ToString() }
-                        },
+                        }),
                         Method = "GET",
                         Path = "/hello",
                         Version = "HTTP/1.1"
@@ -192,7 +193,7 @@ public class ProxyTests
                 { "host", "grayjay.app"},
                 { "content-length", contents[i].Length.ToString() },
                 { "i", i.ToString() }
-            }, readRequest.Headers);
+            }, readRequest.Headers.ToDictionaryLastWins());
 
             using var bodyStream = new MemoryStream();
             await inputHttpStream.TransferFixedLengthContentAsync(bodyStream, contents[i].Length);
@@ -232,7 +233,7 @@ public class ProxyTests
             { "transfer-encoding", "chunked" }
         };
 
-        AssertDictionariesAreEqual(expectedHeaders, response.Headers);
+        AssertDictionariesAreEqual(expectedHeaders, response.Headers.ToDictionaryLastWins());
 
         byte[] chunkedData;
         using (var stream = new MemoryStream())
@@ -279,7 +280,7 @@ public class ProxyTests
             { "transfer-encoding", "chunked" }
         };
 
-        AssertDictionariesAreEqual(expectedHeaders, response.Headers);
+        AssertDictionariesAreEqual(expectedHeaders, response.Headers.ToDictionaryLastWins());
 
         byte[] chunkedData;
         using (var stream = new MemoryStream())

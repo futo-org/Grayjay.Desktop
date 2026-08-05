@@ -1295,6 +1295,7 @@ export function FocusProvider(props: { children: JSX.Element }) {
             "/web/downloads",
             "/web/history",
             "/web/sync",
+            "/web/blocked",
             "/web/buy",
             "/web/settings"
         ];

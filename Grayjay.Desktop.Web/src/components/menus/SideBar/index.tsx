@@ -17,6 +17,7 @@ import history from '../../../assets/icons/icon_nav_history.svg';
 import download from '../../../assets/icons/icon24_download.svg';
 import iconSync from '../../../assets/icons/ic_sync.svg';
 import iconWatchLater from '../../../assets/icons/icon24_watch_later.svg';
+import iconBlocked from '../../../assets/icons/icon24_hide.svg';
 import iconSettings from '../../../assets/icons/ic_settings_color.svg';
 import iconBuy from '../../../assets/icons/ic_buy.svg';
 import iconLink from '../../../assets/icons/icon_link.svg';
@@ -139,6 +140,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
   const downloadsBtn: ButtonItem = { icon: download, name: 'Downloads', path: '/web/downloads', getSelected: createMemo(() => location.pathname === '/web/downloads'), autoPressOnFocus: false };
   const historyBtn: ButtonItem = { icon: history, name: 'History', path: '/web/history', getSelected: createMemo(() => location.pathname === '/web/history'), autoPressOnFocus: false };
   const syncBtn: ButtonItem = { icon: iconSync, name: 'Sync', path: '/web/sync', getSelected: createMemo(() => location.pathname === '/web/sync'), autoPressOnFocus: false };
+  const blockedBtn: ButtonItem = { icon: iconBlocked, name: 'Blocked', path: '/web/blocked', getSelected: createMemo(() => location.pathname === '/web/blocked'), autoPressOnFocus: false };
   const newWindowBtn: ButtonItem = { icon: iconPlus, name: 'New Window', action: () => WindowBackend.startWindow(), getSelected: createMemo(() => false) };
   const closeWindowBtn: ButtonItem = { icon: iconExitToApp, name: 'Close', action: () => WindowBackend.closeWindow(), getSelected: createMemo(() => false) };
   const maximizeVideoBtn: ButtonItem = { icon: iconFitScreen, name: 'Expand Video', action: () => video?.actions.setState(VideoState.Maximized), getSelected: createMemo(() => false) };
@@ -152,7 +154,7 @@ const SideBar: Component<SideBarProps> = (props: SideBarProps) => {
       list.push(watchLaterBtn);
     }
   
-    list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn]);
+    list = list.concat([sourcesBtn, downloadsBtn, historyBtn, syncBtn, blockedBtn]);
     if (focus?.isControllerMode() === true && video?.state() === VideoState.Minimized) {
       list.push(maximizeVideoBtn);
     }

@@ -29,6 +29,7 @@ public class StateBackup
     {
         return StateSubscriptions.ToMigrateCheck()
             .Concat(StatePlaylists.ToMigrateCheck())
+            .Concat(StateBlockedChannels.Instance.ToMigrateCheck())
             .ToList();
     }
 
@@ -366,6 +367,13 @@ public class StateBackup
 
         var allSubscriptions = StateSubscriptions.GetSubscriptions();
         var channels = allSubscriptions.Select(x => x.Channel).ToList();
+        channels.AddRange(StateBlockedChannels.Instance.GetBlocked().Select(x => new PlatformChannel()
+        {
+            Url = x.Url,
+            Name = x.Name,
+            Thumbnail = x.Thumbnail,
+            UrlAlternatives = x.UrlAlternatives
+        }));
         return new ImportCache()
         {
             Channels = channels,

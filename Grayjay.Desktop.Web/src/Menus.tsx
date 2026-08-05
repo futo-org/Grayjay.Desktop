@@ -7,12 +7,14 @@ import ic_addToPlaylist from './assets/icons/icon_add_to_playlist.svg';
 import ic_subscriptions from './assets/icons/icon_nav_subscriptions.svg';
 import ic_download from './assets/icons/icon24_download.svg';
 import ic_trash from './assets/icons/icon_trash.svg';
+import ic_hide from './assets/icons/icon24_hide.svg';
 
 import { ISourceConfigState } from "./backend/models/plugin/ISourceConfigState";
 import UIOverlay from "./state/UIOverlay";
 import { PlaylistsBackend } from "./backend/PlaylistsBackend";
 import { IPlaylist } from "./backend/models/IPlaylist";
 import { SubscriptionsBackend } from "./backend/SubscriptionsBackend";
+import StateBlockedChannels from "./state/StateBlockedChannels";
 
 export class Menus {
     static getSubscriptionMenu(subscription: ISubscription, subscriptionSettings: ISubscriptionSettings, sourceState?: ISourceConfigState) {
@@ -34,6 +36,20 @@ export class Menus {
                             }
                         }, "Are you sure you want to unsubscribe?");*/
                         await SubscriptionsBackend.unsubscribe(subscription.channel.url);
+                    }),
+                    new MenuItemButton(StateBlockedChannels.isBlocked(subscription.channel.url) ? "Unblock channel" : "Block channel", ic_hide, undefined, async () => {
+                        const channel = subscription.channel;
+                        if (StateBlockedChannels.isBlocked(channel.url)) {
+                            await StateBlockedChannels.unblock(channel.url);
+                        }
+                        else {
+                            UIOverlay.overlayConfirm({
+                                no: () => { },
+                                yes: async () => {
+                                    await StateBlockedChannels.block(channel.url, channel.name, channel.thumbnail, channel.id?.pluginID);
+                                }
+                            }, "Block this channel? Content from this channel will no longer appear in your home feed, and videos from it will not play.");
+                        }
                     }),
                     new MenuSeperator(),
                     new MenuItemToggle({

@@ -36,6 +36,7 @@ const CreatorsPage = lazy(() => import('./pages/Creators'));
 const PlaylistsPage = lazy(() => import('./pages/Playlists'));
 const PlaylistPage = lazy(() => import('./pages/Playlist'));
 const VirtualExamplePage = lazy(() => import('./pages/VirtualExamplePage'));
+const BlockedChannelsPage = lazy(() => import('./pages/BlockedChannels'));
 
 const root = document.getElementById('root');
 
@@ -170,6 +171,7 @@ render(() => (
     <Route path="/web/channel" component={ChannelPage} />
     <Route path="/web/downloads" component={DownloadsPage} />
     <Route path="/web/history" component={HistoryPage} />
+    <Route path="/web/blocked" component={BlockedChannelsPage} />
     <Route path="/web/sync" component={SyncPage} />
     <Route path="/web/details/post" component={PostDetailView} />
     <Route path="/web/buy" component={BuyPage} />

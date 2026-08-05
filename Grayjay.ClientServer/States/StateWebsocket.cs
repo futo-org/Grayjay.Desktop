@@ -47,6 +47,17 @@ public class StateWebsocket
             await GrayjayServer.Instance.WebSocket.Broadcast(null, "WatchLaterChanged");
         });
     }
+    public static void BlockedChannelsChanged()
+    {
+        var instance = GrayjayServer.Instance;
+        if (instance == null)
+            return;
+
+        Task.Run(async () =>
+        {
+            await instance.WebSocket.Broadcast(null, "BlockedChannelsChanged");
+        });
+    }
     public static void EnabledClientsChanged()
     {
         var instance = GrayjayServer.Instance;

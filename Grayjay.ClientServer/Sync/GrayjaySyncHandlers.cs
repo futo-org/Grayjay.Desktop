@@ -27,6 +27,7 @@ namespace Grayjay.ClientServer.Sync
         public const byte SyncSubscriptionGroups = 204;
         public const byte SyncPlaylists = 205;
         public const byte SyncWatchLater = 206;
+        public const byte SyncBlockedChannels = 207;
     }
 
     public partial class GrayjaySyncHandlers : SyncHandlers
@@ -71,6 +72,12 @@ namespace Grayjay.ClientServer.Sync
             });
 
             await StateWatchLater.Instance.BroadcastChangesAsync();
+
+            await session.SendJsonDataAsync(GJSyncOpcodes.SyncBlockedChannels, new SyncBlockedChannelsPackage()
+            {
+                Channels = StateBlockedChannels.Instance.GetBlocked(),
+                ChannelRemovals = StateBlockedChannels.Instance.GetBlockedRemovals()
+            });
 
 
             var newHistory = StateHistory.GetRecentHistory(data.LastHistory);
@@ -243,6 +250,57 @@ namespace Grayjay.ClientServer.Sync
             DateTimeOffset packReorderTime = pack.ReorderTime < 0 ? DateTimeOffset.MinValue : DateTimeOffset.FromUnixTimeSeconds(pack.ReorderTime);
             if (StateWatchLater.Instance.GetWatchLaterLastReorderTime() < packReorderTime && pack.Ordering != null)
                 StateWatchLater.Instance.UpdateWatchLaterOrder(pack.Ordering, packReorderTime);
+        }
+
+        private static object _lockBlockedChannels = new object();
+        [SyncHandler(GJSyncOpcodes.SyncBlockedChannels)]
+        public void HandleSyncBlockedChannels(SyncSession session, SyncBlockedChannelsPackage pack)
+        {
+            Logger.Info(nameof(GrayjaySyncHandlers), $"SyncBlockedChannels received {pack.Channels.Count} blocked channels");
+
+            List<BlockedChannel> added = new List<BlockedChannel>();
+            lock (_lockBlockedChannels)
+            {
+                foreach (var channel in pack.Channels)
+                {
+                    if (channel == null || string.IsNullOrEmpty(channel.Url))
+                        continue;
+                    if (StateBlockedChannels.Instance.IsBlocked(channel.Url))
+                        continue;
+                    var removalTime = StateBlockedChannels.Instance.GetBlockedRemovalTime(channel.Url);
+                    if (removalTime.Year < 2000 || DateTimeOffset.FromUnixTimeSeconds(channel.BlockedTime) > removalTime)
+                    {
+                        StateBlockedChannels.Instance.Add(channel);
+                        added.Add(channel);
+                    }
+                }
+            }
+            if (added.Count > 3)
+                StateUI.Toast($"{added.Count} blocked channels from {session.RemotePublicKey.Substring(0, Math.Min(8, session.RemotePublicKey.Length))}");
+            else if (added.Count > 0)
+                StateUI.Toast($"Blocked channels from {session.RemotePublicKey.Substring(0, Math.Min(8, session.RemotePublicKey.Length))}:\n" +
+                    string.Join("\n", added.Select(x => !string.IsNullOrEmpty(x.Name) ? x.Name : x.Url)));
+
+            if (pack.ChannelRemovals != null && pack.ChannelRemovals.Count > 0)
+            {
+                List<string> removed = new List<string>();
+                foreach (var removal in pack.ChannelRemovals)
+                {
+                    var blockedTime = StateBlockedChannels.Instance.GetBlockedTime(removal.Key);
+                    var removalTime = DateTimeOffset.FromUnixTimeSeconds(removal.Value);
+                    var existingRemoval = StateBlockedChannels.Instance.GetBlockedRemovalTime(removal.Key);
+                    if (blockedTime < removalTime)
+                        StateBlockedChannels.Instance.Remove(removal.Key);
+                    if (existingRemoval < removalTime)
+                        StateBlockedChannels.Instance.SetBlockedRemovalTime(removal.Key, removal.Value);
+                    removed.Add(removal.Key);
+                }
+                if (removed.Count > 3)
+                    StateUI.Toast($"Removed {removed.Count} blocked channels from {session.RemotePublicKey.Substring(0, Math.Min(8, session.RemotePublicKey.Length))}");
+                else if (removed.Count > 0)
+                    StateUI.Toast($"Blocked channels removed from {session.RemotePublicKey.Substring(0, Math.Min(8, session.RemotePublicKey.Length))}:\n" +
+                        string.Join("\n", removed));
+            }
         }
 
         [SyncHandler(GJSyncOpcodes.SyncHistory)]

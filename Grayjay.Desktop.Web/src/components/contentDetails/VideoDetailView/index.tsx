@@ -29,9 +29,11 @@ import { createResourceDefault, getBestThumbnail, preventDragDrop, proxyImage, s
 import { DetailsBackend } from "../../../backend/DetailsBackend";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import SubscribeButton from "../../buttons/SubscribeButton";
+import BlockChannelButton from "../../buttons/BlockChannelButton";
 import SettingsMenu, { Menu, MenuItem, IMenuItemGroup, IMenuItemOption, MenuItemButton, IMenuFilter } from "../../menus/Overlays/SettingsMenu";
 import ExceptionModel from "../../../backend/exceptions/ExceptionModel";
 import UIOverlay from "../../../state/UIOverlay";
+import StateBlockedChannels from "../../../state/StateBlockedChannels";
 import Loader from "../../basics/loaders/Loader";
 import Anchor, { AnchorStyle } from "../../../utility/Anchor";
 import DragArea from "../../basics/DragArea";
@@ -154,6 +156,12 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                 video?.actions?.closeVideo();
             }, ()=>{
                 videoLoadedResource.refetch();
+            }, undefined, ()=>{
+                const authorUrl = author$()?.url;
+                if(authorUrl)
+                    StateBlockedChannels.unblock(authorUrl);
+                video?.actions?.closeVideo();
+                navigate("/web/home");
             });
         }
         catch (error: any) {
@@ -1681,6 +1689,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 </div>
 
                                 <SubscribeButton author={author$()?.url} style={{"margin-top": "29px"}} focusable={true} />
+
+                                <BlockChannelButton author={author$()?.url} name={author$()?.name} thumbnail={author$()?.thumbnail} pluginId={author$()?.id?.pluginID} style={{"margin-top": "29px", "margin-left": "16px"}} focusable={true} onBlocked={() => {
+                                    video?.actions.closeVideo();
+                                    navigate("/web/home");
+                                }} />
 
                                 <div style="flex-grow: 1;">
                                 </div>

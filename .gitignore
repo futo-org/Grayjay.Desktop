@@ -5,6 +5,9 @@
 
 Grayjay.Desktop.Installer/Result/*
 
+# Local working notes
+TODO.md
+
 # User-specific files
 *.rsuser
 *.suo

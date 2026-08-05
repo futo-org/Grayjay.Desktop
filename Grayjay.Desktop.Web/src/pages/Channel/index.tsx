@@ -14,6 +14,7 @@ import { useShrinkProgress } from '../../contexts/ShrinkProgress';
 import { easeOutExpo } from '../../animation';
 import ButtonGroup from '../../components/ButtonGroup';
 import SubscribeButton from '../../components/buttons/SubscribeButton';
+import BlockChannelButton from '../../components/buttons/BlockChannelButton';
 
 import more from '../../assets/icons/more_horiz_FILL0_wght400_GRAD0_opsz24.svg';
 import NavigationBar from '../../components/topbars/NavigationBar';
@@ -44,6 +45,7 @@ interface ChannelTopBarProps {
   metadata?: string;
   description?: string;
   activeTab?: string;
+  pluginId?: string;
   onActiveTabChanged?: (tab: string) => void;
   suggestionsVisible?: boolean;
   onInit?: (init: ChannelTopBarInit) => void;
@@ -143,6 +145,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
                 />
               </Show>
               <SubscribeButton small={true} author={props.authorUrl} style={{"width": "110px"}} onIsSubscribedChanged={() => subscriptionResource.refetch()} focusable={true} />
+              <BlockChannelButton small={true} author={props.authorUrl} name={props.name} thumbnail={props.thumbnailUrl} pluginId={props.pluginId} style={{"width": "110px"}} focusable={true} />
             </div>
           </Show>
         </div>
@@ -166,6 +169,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
               />
             </Show>
             <SubscribeButton small={true} author={props.authorUrl} style={{"width": "300px"}} onIsSubscribedChanged={() => subscriptionResource.refetch()} focusable={true} />
+            <BlockChannelButton small={true} author={props.authorUrl} name={props.name} thumbnail={props.thumbnailUrl} pluginId={props.pluginId} style={{"width": "110px"}} focusable={true} />
           </div>
         </Show>
         <div class={styles.containerTabButtons}>
@@ -302,6 +306,7 @@ const ChannelPage: Component = () => {
                 metadata={(((channel$()?.subscribers ?? 0) > 0) ? (toHumanNumber(channel$()?.subscribers) + " subscribers") : "")}
                 name={channel$()?.name ?? authorSummary$()?.name}
                 authorUrl={channel$()?.url ?? authorSummary$()?.url}
+                pluginId={channel$()?.id?.pluginID ?? authorSummary$()?.id?.pluginID}
                 activeTab={activeTab$()}
                 onActiveTabChanged={(tab) => setActiveTab(tab)}
                 suggestionsVisible={suggestionsVisible$()}

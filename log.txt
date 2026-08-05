@@ -1,0 +1,2 @@
+[2026-08-04 17:34:42.457] [INFO] [ManagedThreadPool] New threadpool created (16)
+[2026-08-04 17:34:42.485] [INFO] [ManagedThreadPool] New threadpool created (4)

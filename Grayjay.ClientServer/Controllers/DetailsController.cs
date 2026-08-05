@@ -231,6 +231,18 @@ namespace Grayjay.ClientServer.Controllers
             => state.DetailsState.PostLoaded ?? throw new BadHttpRequestException("No post loaded");
         public static PlatformVideoDetails EnsureVideo(WindowState state)
             => state.DetailsState.VideoLoaded ?? throw new BadHttpRequestException("No video loaded");
+        private static void AssertNotBlocked(PlatformVideoDetails video)
+        {
+            if (video != null && StateBlockedChannels.Instance.IsBlocked(video.Author))
+                throw new DialogException(new ExceptionModel()
+                {
+                    Type = ExceptionModel.EXCEPTION_GENERAL,
+                    Title = "Channel blocked",
+                    Message = $"The channel [{(string.IsNullOrEmpty(video.Author?.Name) ? video.Author?.Url : video.Author?.Name)}] is blocked, so this video cannot be played.",
+                    CanRetry = false,
+                    TypeName = nameof(DialogException)
+                });
+        }
         public static VideoLocal EnsureLocal(WindowState state) => state.DetailsState.VideoLocal ?? throw new BadHttpRequestException("No offline video loaded");
         private RefPager<PlatformComment> EnsureComments()
             => this.State().DetailsState.CommentPager ?? throw new BadHttpRequestException("No comments loaded");
@@ -342,6 +354,7 @@ namespace Grayjay.ClientServer.Controllers
 
             if (contentDetails is PlatformVideoDetails video)
             {
+                AssertNotBlocked(video);
                 ChangeVideo(video, local);
             }
             else if (local != null)
@@ -605,6 +618,7 @@ namespace Grayjay.ClientServer.Controllers
         public IActionResult Download(string url, int videoIndex, int audioIndex)
         {
             var video = EnsureVideo(this.State());
+            AssertNotBlocked(video);
             var sourceVideo = (videoIndex >= 0) ? video.Video.VideoSources[videoIndex] : null;
             var sourceAudio = (audioIndex >= 0 && video.Video is UnMuxedVideoDescriptor unmuxed) ? unmuxed.AudioSources[audioIndex] : null;
 
@@ -624,8 +638,10 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public List<VideoQuality> VideoQualities(int videoIndex)
         {
-            var video = (videoIndex == -999) ? EnsureVideo(this.State()).Live :
-                EnsureVideo(this.State()).Video.VideoSources[videoIndex];
+            var loaded = EnsureVideo(this.State());
+            AssertNotBlocked(loaded);
+            var video = (videoIndex == -999) ? loaded.Live :
+                loaded.Video.VideoSources[videoIndex];
             if(video is HLSManifestSource hlsVideo)
             {
                 var hlsResponse = _qualityClient.GET(hlsVideo.Url, new Engine.Models.HttpHeaders());
@@ -677,6 +693,7 @@ namespace Grayjay.ClientServer.Controllers
         public async Task<IActionResult> SourceDash(int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, bool isLoopback = true, string? tag = null)
         {
             var state = this.State();
+            AssertNotBlocked(EnsureVideo(state));
             try
             {
                 (var taskGenerateSourceDash, var promiseMetadata) = GenerateSourceDash(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal, new ProxySettings(isLoopback));
@@ -966,6 +983,7 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public async Task<IActionResult> SourceHLS(int videoIndex = -1, int audioIndex = -1, int subtitleIndex = -1, bool subtitleIsLocal = false, bool isLoopback = true, string? modifierId = null)
         {
+            AssertNotBlocked(EnsureVideo(this.State()));
             return Content(await GenerateSourceHLS(this.State(), videoIndex, audioIndex, subtitleIndex, subtitleIsLocal, new ProxySettings(isLoopback), modifierId), "application/x-mpegurl");
         }
 
@@ -1133,6 +1151,7 @@ namespace Grayjay.ClientServer.Controllers
             else
             {
                 var video = EnsureVideo(this.State());
+                AssertNotBlocked(video);
                 var bestVideoSourceIndex = VideoHelper.SelectBestVideoSourceIndex(video.Video.VideoSources.Cast<IVideoSource>().ToList(), GrayjaySettings.Instance.Playback.GetPreferredQualityPixelCount(), new List<string>() { "video/mp4" });
                 var bestAudioSourceIndex = (video.Video is UnMuxedVideoDescriptor unmuxed) ? 
                     VideoHelper.SelectBestAudioSourceIndex(unmuxed.AudioSources.Cast<IAudioSource>().ToList(), new List<string>() { "audio/mp4" }, GrayjaySettings.Instance.Playback.GetPrimaryLanguage(), 9999 * 9999) : 
@@ -1173,6 +1192,7 @@ namespace Grayjay.ClientServer.Controllers
         public static async Task<SourceDescriptor> GenerateSourceProxy(WindowState state, int videoIndex, int audioIndex, int subtitleIndex, bool videoIsLocal = false, bool audioIsLocal = false, bool subtitleIsLocal = false, ProxySettings? proxySettings = null, string? tag = null, bool forceReady = false)
         {
             var video = EnsureVideo(state);
+            AssertNotBlocked(video);
 
             if (videoIndex == -999)
             {

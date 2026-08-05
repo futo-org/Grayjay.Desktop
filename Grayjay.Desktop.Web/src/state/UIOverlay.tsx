@@ -479,7 +479,7 @@ export interface UIOverlay {
       dismiss(id?: string | undefined) {
         this.onDismiss.invoke(id ?? this.currentOverlay?.id ?? "");
       },
-      async catchDialogExceptions<T>(action: ()=>T, back: (()=>void) | null | undefined, retry: ()=>void, _beforeDialog: ()=>void | null | undefined = undefined): Promise<T> {
+      async catchDialogExceptions<T>(action: ()=>T, back: (()=>void) | null | undefined, retry: ()=>void, _beforeDialog: ()=>void | null | undefined = undefined, onBlocked: (()=>void) | null | undefined = undefined): Promise<T> {
         try {
           return await action();
         }
@@ -517,6 +517,21 @@ export interface UIOverlay {
                           style: "primary"
                         } as DialogButton
                       ]
+                    } as DialogDescriptor)
+                  }
+                  else if(error.typeName == "DialogException" && error.title == "Channel blocked") {
+                    if(_beforeDialog)
+                      _beforeDialog();
+                    this.overlay({
+                      dialog: {
+                        icon: iconError,
+                        title: "Channel blocked",
+                        description: error.message,
+                        buttons: [
+                          { title: "Go home", onClick: ()=>{ back?.(); } },
+                          { title: "Unblock", style: "primary", onClick: ()=>{ onBlocked?.(); } }
+                        ] as DialogButton[]
+                      }
                     } as DialogDescriptor)
                   }
                   else

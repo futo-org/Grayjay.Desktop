@@ -348,7 +348,14 @@ namespace Grayjay.Desktop.POC.Port.States
 
             var pager = new MultiDistributionPager<PlatformContent>(pages, true);
             pager.Initialize();
-            return pager;
+            return new FilterPager<PlatformContent>(pager, (content) => !IsContentBlocked(content));
+        }
+
+        private static bool IsContentBlocked(PlatformContent content)
+        {
+            if (content == null)
+                return false;
+            return StateBlockedChannels.Instance.IsBlocked(content.Author);
         }
         public static IPager<PlatformContent> GetHomeLazy(Func<PlatformContent, PlatformContent> modifier = null, Func<int> requiredSize = null)
         {
@@ -620,14 +627,14 @@ namespace Grayjay.Desktop.POC.Port.States
             var unfinishedPagers = pageTasks.Where(x => !finishedPagers.Contains(x)).ToList();
 
             var pager = new RefreshDistributionContentPager<T>(
-                finishedPagers.Select(x => x.Item2.Result),
+                finishedPagers.Select(x => x.Item2.Result).Select(x => (IPager<T>)new FilterPager<T>(x, (item) => !(item is PlatformContent content && IsContentBlocked(content)))),
                 unfinishedPagers.Select(x => x.Item2),
                 unfinishedPagers.Select(x => new PlaceholderPager<T>(5, () => placeholderCreator(x.client, x.Item2))),
                 async (changedPager) => {
                     var result = changedPager.AsPagerResult();
                     Logger.i(TAG, $"Resolving {result.Results.Length} lazy results ({result.PagerID})");
                     await GrayjayServer.Instance.WebSocket.Broadcast(result, "PagerUpdated", changedPager.ID);
-                }, pageSize);
+                }, pageSize, (item) => !(item is PlatformContent content && IsContentBlocked(content)));
             return pager;
         }
 

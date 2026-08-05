@@ -28,6 +28,7 @@ import { useNavigate } from "@solidjs/router";
 import CreatorView from "../../content/CreatorView";
 import { IPlatformAuthorLink } from "../../../backend/models/IPlatformAuthorLink";
 import StateGlobal from "../../../state/StateGlobal";
+import StateBlockedChannels from "../../../state/StateBlockedChannels";
 import { toHumanNumber, uuidv4 } from "../../../utility";
 import PostThumbnailView from "../../content/PostThumbnailView";
 import { IPlatformPost } from "../../../backend/models/content/IPlatformPost";
@@ -81,48 +82,57 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     const [settingsContent$, setSettingsContent] = createSignal<IPlatformContent>();
     const [settingsMenuInputSource$, setSettingsMenuInputSource] = createSignal<InputSource>();
     const settingsMenu$ = createMemo(() => {
-        const content = settingsContent$();        
+        const content = settingsContent$();
+        const items = [
+            ... (content?.contentType === ContentType.MEDIA ? [ 
+                ... props.openChannelButton === true ? [ new MenuItemButton("Open channel", iconCreator, undefined, ()=>{
+                    const author = content?.author;
+                    if(author)
+                        navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
+                }) ] : [],
+                new MenuItemButton("Add to queue", iconQueue, undefined, ()=>{
+                    video?.actions.addToQueue(content as IPlatformVideo);
+                }),
+                /* commented out */
+                new MenuItemButton("Watch later", iconWatchLater, undefined, async () => {
+                    await WatchLaterBackend.add(content as IPlatformVideo);
+                    await video?.actions?.refetchWatchLater();
+                }),
+                new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
+                    await UIOverlay.overlayAddToPlaylist(content as IPlatformVideo);
+                }),
+                new MenuItemButton("Download video", iconDownload, undefined, ()=>{
+                    UIOverlay.overlayDownload(content.url);
+                }),
+            ] : [
+                new MenuItemButton("Open channel", iconCreator, undefined, ()=>{
+                    const author = content?.author;
+                    if(author)
+                        navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
+                }),
+            ]),
+            new MenuSeperator(),
+            new MenuItemButton(StateBlockedChannels.isBlocked(content?.author?.url) ? "Unblock channel" : "Block channel", iconHide, StateBlockedChannels.isBlocked(content?.author?.url) ? "Remove from blocked list" : "Block this channel", async () => {
+                const author = content?.author;
+                if (!author)
+                    return;
+                if (StateBlockedChannels.isBlocked(author.url)) {
+                    await StateBlockedChannels.unblock(author.url);
+                }
+                else {
+                    UIOverlay.overlayConfirm({
+                        no: () => { },
+                        yes: async () => {
+                            await StateBlockedChannels.block(author.url, author.name, author.thumbnail, author.id?.pluginID);
+                        }
+                    }, "Block this channel? Content from this channel will no longer appear in your home feed, and videos from it will not play.");
+                }
+            }),
+        ];
+        console.log("ContentGrid settingsMenu constructed", { contentName: content?.name, contentType: content?.contentType, itemCount: items.length, items: items.map(i => ({ type: i.type, name: (i as any).name })) });
         return {
             title: "",
-            items: [
-            
-                ... (content?.contentType === ContentType.MEDIA ? [ 
-                    ... props.openChannelButton === true ? [ new MenuItemButton("Open channel", iconCreator, undefined, ()=>{
-                        const author = content?.author;
-                        if(author)
-                            navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
-                    }) ] : [],
-                    new MenuItemButton("Add to queue", iconQueue, undefined, ()=>{
-                        video?.actions.addToQueue(content as IPlatformVideo);
-                    }),
-                    /*
-                    new MenuItemButton("Play feed as queue", iconPlaylist, undefined, ()=>{
-
-                    }),
-                    new MenuSeperator(),*/
-                    new MenuItemButton("Watch later", iconWatchLater, undefined, async () => {
-                        await WatchLaterBackend.add(content as IPlatformVideo);
-                        await video?.actions?.refetchWatchLater();
-                    }),
-                    new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
-                        await UIOverlay.overlayAddToPlaylist(content as IPlatformVideo);
-                    }),
-                    new MenuItemButton("Download video", iconDownload, undefined, ()=>{
-                        UIOverlay.overlayDownload(content.url);
-                    }),
-                ] : [
-                    new MenuItemButton("Open channel", iconCreator, undefined, ()=>{
-                        const author = content?.author;
-                        if(author)
-                            navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
-                    }),
-                ]),
-                /*
-                new MenuSeperator(),
-                new MenuItemButton("Hide creator from feed", iconHide, undefined, ()=>{
-
-                }),*/
-            ]
+            items: items,
         } as Menu;
     });
     const [show$, setShow] = createSignal<boolean>(false);
@@ -275,11 +285,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     notifyEndOnLast={5}
                     onScroll={()=>{}}
                     onEnd={onScrollEnd}
-                    style={{
-                        /*"margin-left": "15px",*/
-                        /*"margin-top": "15px",*/
-                        "margin-bottom": "10px"
-                    }}
+                    style={{ "margin-bottom": "10px" }}
                     elementStyle={{
                         "margin-left": "0px"
                     }}
