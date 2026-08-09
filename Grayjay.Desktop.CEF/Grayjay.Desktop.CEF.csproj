@@ -60,4 +60,13 @@
     <ProjectReference Include="..\Grayjay.ClientServer\Grayjay.ClientServer.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyWebAssetsToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_WebAssets Include="..\Grayjay.ClientServer\wwwroot\**" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_WebAssets)"
+      DestinationFiles="@(_WebAssets->'$(PublishDir)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
 </Project>
