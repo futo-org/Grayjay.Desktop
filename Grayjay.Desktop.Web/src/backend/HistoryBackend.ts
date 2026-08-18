@@ -1,5 +1,6 @@
 import { Backend } from "./Backend";
 import { IHistoryVideo } from "./models/content/IHistoryVideo";
+import { IPlatformVideo } from "./models/content/IPlatformVideo";
 import { Pager } from "./models/pagers/Pager";
 
 export abstract class HistoryBackend {
@@ -24,6 +25,26 @@ export abstract class HistoryBackend {
     }
     static async historyPager(): Promise<Pager<IHistoryVideo>> {
         return Pager.fromMethods<IHistoryVideo>(this.historyLoad, this.historyNextPage);
+    }
+
+    static watchedPosition(duration: number): number {
+        return Math.max(1, (duration ?? 0) - 1);
+    }
+
+    static applyWatchedMetadata(video: IPlatformVideo): void {
+        const videoAny = video as IPlatformVideo & { metadata?: { position?: number, watched?: boolean } };
+        videoAny.metadata = {
+            ...(videoAny.metadata ?? {}),
+            position: this.watchedPosition(video.duration),
+            watched: true
+        };
+    }
+
+    static async markAsWatched(video: IPlatformVideo): Promise<boolean> {
+        const result = await Backend.POST("/history/MarkAsWatched", JSON.stringify(video), "application/json") as boolean;
+        if (result)
+            this.applyWatchedMetadata(video);
+        return result;
     }
 
     static async removeHistory(url: string): Promise<boolean> {
