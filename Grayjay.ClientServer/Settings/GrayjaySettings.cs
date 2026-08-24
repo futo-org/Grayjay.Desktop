@@ -358,6 +358,17 @@ namespace Grayjay.ClientServer.Settings
             public string mode => (GrayjayServer.Instance?.ServerMode ?? false) ? "Server" : (GrayjayServer.Instance?.HeadlessMode ?? false) ? "Headless" : "UI";
         }
 
+        [SettingsField("Distraction-free (YouTube)", "group", "Set distraction-free options for YouTube videos", 14)]
+        public DistractionFreeSettings Distractions { get; set; } = new DistractionFreeSettings();
+
+        public class DistractionFreeSettings
+        {
+            [SettingsField("Hide YouTube comments", SettingsField.TOGGLE, "Hide platform/polycentric comments when watching YouTube videos.", 0)]
+            public bool HideComments { get; set; } = false;
+
+            [SettingsField("Hide YouTube recommendations", SettingsField.TOGGLE, "Hide watch-next/recommended videos when watching YouTube videos.", 1)]
+            public bool HideYoututbeReccomendations { get; set; } = false;
+        }
 
 
         private static int QualityIndexToHeight(int index)
