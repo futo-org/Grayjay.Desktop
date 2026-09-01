@@ -85,7 +85,7 @@ const VideoThumbnailView: Component<VideoProps> = (props) => {
           <Show when={props.video?.isLive && dateFromAny(props.video?.dateTime, DateTime.min())! > DateTime.now()}>
             <div class={styles.isPlanned}>PLANNED</div>
           </Show>
-          <Show when={!props.video?.isLive}>
+          <Show when={!props.video?.isLive && (props.video?.duration ?? 0) > 0}>
             <div class={styles.duration}>{toHumanTime(props.video?.duration ?? 0)}</div>
           </Show>
             <div class={styles.progressBar}>

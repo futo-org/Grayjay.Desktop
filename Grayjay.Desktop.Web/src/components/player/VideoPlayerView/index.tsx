@@ -871,7 +871,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 });
 
                 dashPlayer.initialize(videoElement, sourceUrl, true, getResumePosition(shouldResume, startTime)?.as('seconds') ?? 0);
-            } else if ((mediaType === 'application/vnd.apple.mpegurl' || mediaType === 'application/x-mpegURL') && !videoElement.canPlayType(mediaType)) {
+            } else if ((mediaType === 'application/vnd.apple.mpegurl' || mediaType === 'application/x-mpegURL') && Hls.isSupported()) {
                 videoElement.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
                     console.error("Player error", {source, lineno, colno, error});
                     onError(`Video Error: ${JSON.stringify({ source, lineno, colno, error})}`, true);
