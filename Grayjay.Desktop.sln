@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FUTO.MDNS", "FUTO.MDNS\FUTO
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grayjay.Windows.Tests", "Grayjay.Windows.Tests\Grayjay.Windows.Tests.csproj", "{73B7D243-270A-467B-BFB2-7C740D34D443}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JustCef", "JustCef\JustCef.csproj", "{3F12A054-76CB-4AB9-8453-5EF2B4EE756B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JustCef", "JustCef\cs\JustCef.csproj", "{3F12A054-76CB-4AB9-8453-5EF2B4EE756B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncClient", "SyncServer\SyncClient\SyncClient.csproj", "{07C4DA07-2AC3-7FC8-A0BE-DB5F91B7ECE4}"
 EndProject

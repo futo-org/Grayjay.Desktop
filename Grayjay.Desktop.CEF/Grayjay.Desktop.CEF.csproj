@@ -56,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JustCef\JustCef.csproj" />
+    <ProjectReference Include="..\JustCef\cs\JustCef.csproj" />
     <ProjectReference Include="..\Grayjay.ClientServer\Grayjay.ClientServer.csproj" />
   </ItemGroup>
 
