@@ -53,6 +53,7 @@ import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
 import { focusable } from '../../focusable'; void focusable;
 import Button from '../../components/buttons/Button';
 import { InputSource } from '../../nav';
+import { Menus } from '../../Menus';
 
 const DownloadsPage: Component = () => {
   const navigate = useNavigate();
@@ -284,6 +285,7 @@ const DownloadsPage: Component = () => {
                       await WatchLaterBackend.add(content as any as IPlatformVideo);
                       await video?.actions?.refetchWatchLater();
                   }),
+                  Menus.markAsWatchedButton(content as any as IPlatformVideo),
                   new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
                       await UIOverlay.overlayAddToPlaylist(content as any as IPlatformVideo);
                   })
