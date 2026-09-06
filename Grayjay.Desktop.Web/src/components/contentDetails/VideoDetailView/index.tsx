@@ -161,20 +161,89 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     });
 
-    const [commentsPager$] = createResource<Pager<RefItem<ISerializedComment>>>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded) ? undefined : await DetailsBackend.commentsPager());
+    const isYoutubeUrl = (url?: string) => {
+        if (!url) {
+            return false;
+        }
+
+        try {
+            const host = new URL(url).hostname.toLowerCase();
+            if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) {
+                return true;
+            }
+        }
+        catch {
+            const lowered = url.toLowerCase();
+            if (lowered.includes("youtube.com/") || lowered.includes("youtu.be/")) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const isYoutubeVideo$ = createMemo(() => {
+        const loadedVideo = videoLoaded$();
+        const queuedVideo = currentVideo$();
+
+        const pluginID = loadedVideo?.id?.pluginID ?? queuedVideo?.id?.pluginID;
+        const pluginIDLower = pluginID?.toLowerCase();
+        if (pluginIDLower?.includes("youtube")) {
+            return true;
+        }
+
+        const sourceName = pluginID ? StateGlobal.getSourceConfig(pluginID)?.name?.toLowerCase() : undefined;
+        if (sourceName?.includes("youtube")) {
+            return true;
+        }
+
+        return isYoutubeUrl(loadedVideo?.url)
+            || isYoutubeUrl(loadedVideo?.shareUrl)
+            || isYoutubeUrl(queuedVideo?.url)
+            || isYoutubeUrl(queuedVideo?.shareUrl);
+    });
+
+    const distractionSettings$ = createMemo(() => {
+        const settingsObject = StateGlobal.settings$()?.object;
+        return settingsObject?.distractions ?? settingsObject?.distractionFree;
+    });
+
+    const hideYoutubeComments$ = createMemo(() => {
+        const settings = distractionSettings$();
+        return settings?.hideComments === true || settings?.hideYoutubeComments === true;
+    });
+
+    const hideYoutubeRecommendations$ = createMemo(() => {
+        const settings = distractionSettings$();
+        return settings?.hideYoututbeReccomendations === true
+            || settings?.hideYoutubeReccomendations === true
+            || settings?.hideYoutubeRecommendations === true
+            || settings?.hideYoutubeWatchNext === true;
+    });
+
+    const showCommentsSection$ = createMemo(() => !(isYoutubeVideo$() && hideYoutubeComments$()));
+    const showRecommendationsSection$ = createMemo(() => !(isYoutubeVideo$() && hideYoutubeRecommendations$()));
+
+    const [commentsPager$] = createResource(
+        () => ({ videoLoaded: videoLoaded$(), showCommentsSection: showCommentsSection$() }),
+        async ({ videoLoaded, showCommentsSection }) => (!videoLoaded || !showCommentsSection) ? undefined : await DetailsBackend.commentsPager()
+    );
     const [videoChapters$, videoChaptersResource] = createResourceDefault(()=> currentVideo$()?.url, async (url)=>{
         const result = (!url) ? undefined : (await DetailsBackend.getVideoChapters(url));
         console.log("Video chapters:", result);
         return result;
     });
     //const [liveChatWindow$] = createResource<ILiveChatWindowDescriptor | undefined>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded || !videoLoaded.isLive) ? undefined : await DetailsBackend.liveChatWindow());
-    const [recomPager$] = createResource<Pager<IPlatformContent>>(() => videoLoaded$(), async (videoLoaded: any) => {
-        if(!videoLoaded)
-            return undefined;
-        const result =  await DetailsBackend.recommendationsPager(videoLoaded.url);
-        console.log("Recommendation Results:", result);
-        return result;
-    });
+    const [recomPager$] = createResource(
+        () => ({ videoLoaded: videoLoaded$(), showRecommendationsSection: showRecommendationsSection$() }),
+        async ({ videoLoaded, showRecommendationsSection }) => {
+            if(!videoLoaded || !showRecommendationsSection)
+                return undefined;
+            const result =  await DetailsBackend.recommendationsPager(videoLoaded.url);
+            console.log("Recommendation Results:", result);
+            return result;
+        }
+    );
 
 
     const [videoSource$, setVideoSource] = createSignal<SourceSelected>();
@@ -186,7 +255,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         errorCounter = 0;
     }));
 
-    const [videoSourceQualities$] = createResource<any | undefined>(()=> videoSource$()?.video && !videoSource$()?.videoIsLocal, async () => {
+    const [videoSourceQualities$] = createResource<any | undefined, boolean>(()=> (videoSource$()?.video !== undefined) && !videoSource$()?.videoIsLocal, async () => {
         if((videoSource$()?.video ?? -1) < 0 && videoSource$()?.video != -999) {
             setVideoQuality(-1);
             return undefined;
@@ -558,7 +627,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     });
 
     const videoLoadedIsValid$ = createMemo(() => videoLoaded$()?.url === currentVideo$()?.url);
-    const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);   
+    const recommendationsVisible$ = createMemo(() => showRecommendationsSection$() && videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);   
     const hasLiveChat$ = createMemo(() => {
         return videoLoaded$()?.isLive === true || videoLoaded$()?.isVOD === true;
     });
@@ -1824,83 +1893,85 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 </div>
                             </Show>
 
-                            <Switch>
-                                <Match when={!videoLoadedIsValid$() || commentsPager$.state !== "ready"}>
-                                    <div style="width: 100%; height: 100px; margin: 30px; display: grid; justify-items: center;">
-                                        <Loader />
-                                    </div>
-                                </Match>
-                                <Match when={videoLoadedIsValid$() && commentsPager$.state == "ready" && !videoSource$()?.isLive}>
-                                    <>
-                                        <Show when={commentsPager$() && (commentsPager$().data?.length ?? 0) > 0}>
-                                            <div class={styles.commentHeader}>
-                                                <div class={styles.commentHeaderTitle}>Comments</div>
-                                                <Show when={false}>
-                                                    <ToggleButtonGroup items={[ "Polycentric", "Platform" ]} 
-                                                        defaultSelectedItem={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC ? "Polycentric" : "Platform" } 
-                                                        onItemChanged={(i) => setActiveCommentSection(i === "Polycentric" ? COMMENT_SECTION_POLYCENTRIC : COMMENT_SECTION_PLATFORM)} 
-                                                        style={{ "margin-left": "24px" }} />
-                                                </Show>
-                                            </div>
-                                        </Show>
-                                        <Show when={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}>
-                                            <div class={styles.addComment}>
-                                                Add a comment
-                                            </div>
-                                        </Show>
-                                        <Show when={!commentsPager$()?.error}>
-                                            <FlexibleArrayList outerContainerRef={scrollContainerRef}
-                                                onEnd={onScrollEnd}
-                                                addedItems={commentsPager$()?.addedItemsEvent}
-                                                modifiedItems={commentsPager$()?.modifiedItemsEvent}
-                                                removedItems={commentsPager$()?.removedItemsEvent}
-                                                items={commentsPager$()?.data}
-                                                builder={(_, item) => {
-                                                    const onRepliesClicked = async () => {
-                                                        const parent = item();
-                                                        if (!parent) {
-                                                            return;
-                                                        }
-                                                        if (parent.object.replyCount <= 0) {
-                                                            return;
-                                                        }
-                                                        console.log("show replies for", parent);
+                            <Show when={showCommentsSection$()}>
+                                <Switch>
+                                    <Match when={!videoLoadedIsValid$() || commentsPager$.state !== "ready"}>
+                                        <div style="width: 100%; height: 100px; margin: 30px; display: grid; justify-items: center;">
+                                            <Loader />
+                                        </div>
+                                    </Match>
+                                    <Match when={videoLoadedIsValid$() && commentsPager$.state == "ready" && !videoSource$()?.isLive}>
+                                        <>
+                                            <Show when={(commentsPager$()?.data?.length ?? 0) > 0}>
+                                                <div class={styles.commentHeader}>
+                                                    <div class={styles.commentHeaderTitle}>Comments</div>
+                                                    <Show when={false}>
+                                                        <ToggleButtonGroup items={[ "Polycentric", "Platform" ]} 
+                                                            defaultSelectedItem={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC ? "Polycentric" : "Platform" } 
+                                                            onItemChanged={(i) => setActiveCommentSection(i === "Polycentric" ? COMMENT_SECTION_POLYCENTRIC : COMMENT_SECTION_PLATFORM)} 
+                                                            style={{ "margin-left": "24px" }} />
+                                                    </Show>
+                                                </div>
+                                            </Show>
+                                            <Show when={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}>
+                                                <div class={styles.addComment}>
+                                                    Add a comment
+                                                </div>
+                                            </Show>
+                                            <Show when={!commentsPager$()?.error}>
+                                                <FlexibleArrayList outerContainerRef={scrollContainerRef}
+                                                    onEnd={onScrollEnd}
+                                                    addedItems={commentsPager$()?.addedItemsEvent}
+                                                    modifiedItems={commentsPager$()?.modifiedItemsEvent}
+                                                    removedItems={commentsPager$()?.removedItemsEvent}
+                                                    items={commentsPager$()?.data}
+                                                    builder={(_, item) => {
+                                                        const onRepliesClicked = async () => {
+                                                            const parent = item();
+                                                            if (!parent) {
+                                                                return;
+                                                            }
+                                                            if (parent.object.replyCount <= 0) {
+                                                                return;
+                                                            }
+                                                            console.log("show replies for", parent);
 
-                                                        batch(async () => {
-                                                            setRepliesParents([ parent.object ]);
-                                                            setRepliesVisible(true);
-                                                        });
+                                                            batch(async () => {
+                                                                setRepliesParents([ parent.object ]);
+                                                                setRepliesVisible(true);
+                                                            });
 
-                                                        setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
-                                                    };
+                                                            setRepliesPager(await DetailsBackend.repliesPager(parent.refID ?? ""));
+                                                        };
 
-                                                    return (
-                                                        <CommentView
-                                                            style={{
-                                                                "padding-left": "40px",
-                                                                "padding-right": "40px",
-                                                                "padding-top": "16px",
-                                                                "padding-bottom": "16px"
-                                                            }}
-                                                            editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
-                                                            comment={item()?.object}
-                                                            onClick={(ev) => handleContainerClick(ev)}
-                                                            onRepliesClicked={onRepliesClicked}
-                                                            focusableOpts={item() ? {
-                                                                onPress: () => onRepliesClicked()
-                                                            } : undefined} />
-                                                    );
-                                                }}
-                                                /*overscan={10}*/ />
-                                        </Show>
-                                        <Show when={commentsPager$()?.error}>
-                                            <div style="margin: 40px; text-align: center; color: #AA5555;">
-                                                {(typeof commentsPager$()?.error == 'string') ? commentsPager$()?.error : commentsPager$()?.error.title}
-                                            </div>
-                                        </Show>
-                                    </>
-                                </Match>
-                            </Switch>
+                                                        return (
+                                                            <CommentView
+                                                                style={{
+                                                                    "padding-left": "40px",
+                                                                    "padding-right": "40px",
+                                                                    "padding-top": "16px",
+                                                                    "padding-bottom": "16px"
+                                                                }}
+                                                                editable={activeCommentSection$() === COMMENT_SECTION_POLYCENTRIC}
+                                                                comment={item()?.object}
+                                                                onClick={(ev) => handleContainerClick(ev)}
+                                                                onRepliesClicked={onRepliesClicked}
+                                                                focusableOpts={item() ? {
+                                                                    onPress: () => onRepliesClicked()
+                                                                } : undefined} />
+                                                        );
+                                                    }}
+                                                    /*overscan={10}*/ />
+                                            </Show>
+                                            <Show when={commentsPager$()?.error}>
+                                                <div style="margin: 40px; text-align: center; color: #AA5555;">
+                                                    {(typeof commentsPager$()?.error == 'string') ? commentsPager$()?.error : commentsPager$()?.error.title}
+                                                </div>
+                                            </Show>
+                                        </>
+                                    </Match>
+                                </Switch>
+                            </Show>
                         </div>
                         <Show when={!shouldHideSideBar()}>
                             <div class={styles.containerRight} style={{
