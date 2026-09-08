@@ -193,7 +193,9 @@ namespace Grayjay.ClientServer.Proxy
                     }
                     else if (_buffer[i] == '\n' && foundCarriageReturn)
                     {
-                        lineStream.Write(_buffer, _bufferPosition, i - _bufferPosition - 1);
+                        int bytesBeforeCr = i - _bufferPosition - 1;
+                        if (bytesBeforeCr > 0)
+                            lineStream.Write(_buffer, _bufferPosition, bytesBeforeCr);
                         _bufferPosition = i + 1;
                         return Encoding.UTF8.GetString(lineStream.ToArray());
                     }
