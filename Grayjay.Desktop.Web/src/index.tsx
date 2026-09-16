@@ -119,11 +119,12 @@ const App: Component<RouteSectionProps> = (props) => {
     return <div class="root-container" use:focusScope={{ id: 'root-container' }}>
       <CastingProvider>
         <SideBar />
-          <Show when={useVideo()?.state() !== VideoState.Maximized && useVideo()?.state() !== VideoState.Fullscreen}>
-            <div class="root-content">
-              {props.children}
-            </div>
-          </Show>
+          {/* Keep the route and its layout alive so feeds and scroll positions survive playback. */}
+          <div class="root-content" style={{
+            visibility: useVideo()?.state() === VideoState.Maximized || useVideo()?.state() === VideoState.Fullscreen ? "hidden" : "visible"
+          }}>
+            {props.children}
+          </div>
           <VideoDetailView />
         <OverlayCasting />
       </CastingProvider>
