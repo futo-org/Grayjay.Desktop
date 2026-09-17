@@ -167,7 +167,15 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         console.log("Video chapters:", result);
         return result;
     });
-    //const [liveChatWindow$] = createResource<ILiveChatWindowDescriptor | undefined>(() => videoLoaded$(), async (videoLoaded: any) => (!videoLoaded || !videoLoaded.isLive) ? undefined : await DetailsBackend.liveChatWindow());
+    const liveChatWindowEnabled$ = createMemo(() => StateGlobal.settings$()?.object?.playback?.useLiveChatWindow as boolean | undefined);
+    const [liveChatWindow$] = createResource<ILiveChatWindowDescriptor | undefined>(() => liveChatWindowEnabled$() === true ? videoLoaded$() : undefined, async (video: any) => {
+        if (!video?.isLive) return undefined;
+        try {
+            return await DetailsBackend.liveChatWindow();
+        } catch {
+            return undefined;
+        }
+    });
     const [recomPager$] = createResource<Pager<IPlatformContent>>(() => videoLoaded$(), async (videoLoaded: any) => {
         if(!videoLoaded)
             return undefined;
@@ -561,6 +569,13 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const recommendationsVisible$ = createMemo(() => videoLoadedIsValid$() && recomPager$.state == "ready" && recomPager$()?.data && recomPager$()?.data.length);   
     const hasLiveChat$ = createMemo(() => {
         return videoLoaded$()?.isLive === true || videoLoaded$()?.isVOD === true;
+    });
+    const hasRemoteLiveChat$ = createMemo(() => {
+        const descriptor = liveChatWindow$();
+        return liveChatWindowEnabled$() === true && videoLoaded$()?.isLive === true && !liveChatWindow$.loading && videoLoadedIsValid$() && !!descriptor?.url && /^https?:\/\//i.test(descriptor.url) && !descriptor.error;
+    });
+    const shouldShowNativeChat$ = createMemo(() => {
+        return liveChatWindowEnabled$() === false;
     });
     const shouldHideSideBar = createMemo(() => {
         //TODO: Expand these conditions
@@ -1764,7 +1779,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     }} />
                             </Show>
 
-                            <Show when={shouldHideSideBar() && videoLoadedIsValid$() && hasLiveChat$()}>
+                            <Show when={shouldHideSideBar() && videoLoadedIsValid$() && hasLiveChat$() && shouldShowNativeChat$()}>
                                 <LiveChatWindow onExecuteRaid={handleExecuteRaid} viewCount={videoLoaded$()?.viewCount ?? 0} style={{
                                     'margin-top': '30px',
                                     "width": "calc(100% - 80px)",
@@ -1773,16 +1788,14 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                 }} />
                             </Show>
 
-                            {
-                                /*
-                                <Show when={false && shouldHideSideBar() && videoLoadedIsValid$() && liveChatWindow$()}>
+                                <Show when={shouldHideSideBar() && hasRemoteLiveChat$()}>
                                     <Show when={liveChatWindow$()?.error}>
                                         <div class={styles.liveChatError}>
                                             {liveChatWindow$()?.error}
                                         </div>
                                     </Show>
                                     <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
-                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
+                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()!} style={{
                                             'margin-top': '30px',
                                             "width": "calc(100% - 80px)",
                                             "margin-right": "40px",
@@ -1790,8 +1803,6 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                         }} />
                                     </Show>
                                 </Show>
-                                */
-                            }
 
                             <Show when={shouldHideSideBar() && recommendationsVisible$()}>
                                 <div style={{
@@ -1945,7 +1956,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                         }} />
                                 </Show>
 
-                                <Show when={videoLoadedIsValid$() && hasLiveChat$()}>
+                                <Show when={videoLoadedIsValid$() && hasLiveChat$() && shouldShowNativeChat$()}>
                                     <LiveChatWindow onExecuteRaid={handleExecuteRaid} viewCount={videoLoaded$()?.viewCount ?? 0} style={{
                                         'height': '640px',
                                         "margin-right": "40px",
@@ -1953,22 +1964,20 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     }} />
                                 </Show>
                                 
-                                {
-                                /*<Show when={false && videoLoadedIsValid$() && liveChatWindow$()}>
+                                <Show when={hasRemoteLiveChat$()}>
                                     <Show when={liveChatWindow$()?.error}>
                                         <div class={styles.liveChatError}>
                                             {liveChatWindow$()?.error}
                                         </div>
                                     </Show>
                                     <Show when={!liveChatWindow$()?.error && liveChatWindow$()?.url}>
-                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()} style={{
+                                        <LiveChatRemoteWindow descriptor={liveChatWindow$()!} style={{
                                             'height': '640px',
                                             "margin-right": "40px",
                                             "width": "calc(100% - 40px)"
                                         }} />
                                     </Show>
-                                </Show>*/
-                                }
+                                </Show>
 
                                 <Show when={videoLoadedIsValid$() && recommendationsVisible$()}>
                                     <div style={{

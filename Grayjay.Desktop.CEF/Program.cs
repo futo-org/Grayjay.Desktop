@@ -523,7 +523,8 @@ namespace Grayjay.Desktop
                     title: "Grayjay",
                     iconPath: Utilities.FindFile("grayjay.png"),
                     appId: "com.futo.grayjay.desktop",
-                    fullscreen: isFullscreen
+                    fullscreen: isFullscreen,
+                    viewsEnabled: true
                 );
                 await window.SetModifyRequestsAsync(true, false);
                 if (scaleFactor != null && scaleFactor != 1.0)
@@ -810,8 +811,26 @@ namespace Grayjay.Desktop
             if (window != null)
             {
                 Logger.i(nameof(Program), "Main: Waiting for window exit.");
-                await window.WaitForExitAsync(cancellationTokenSource.Token);
-                Logger.i(nameof(Program), "Main: Window exited.");
+                var windowExitTask = window.WaitForExitAsync(cancellationTokenSource.Token);
+                try
+                {
+                    while (!windowExitTask.IsCompleted && cef != null && !cef.HasExited)
+                        await Task.WhenAny(windowExitTask, Task.Delay(250, cancellationTokenSource.Token));
+
+                    if (windowExitTask.IsCompleted)
+                    {
+                        await windowExitTask;
+                        Logger.i(nameof(Program), "Main: Window exited.");
+                    }
+                    else if (cef?.HasExited == true)
+                    {
+                        Logger.w(nameof(Program), "Main: Native browser process exited before the window close notification.");
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+                {
+                    Logger.i(nameof(Program), "Main: Window wait canceled during shutdown.");
+                }
             }
             else
             {

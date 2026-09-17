@@ -19,6 +19,7 @@ namespace Grayjay.ClientServer
         Task SetRequestModifier(Func<WindowRequest, WindowRequest> handler);
 
         Task CloseAsync(CancellationToken cancellationToken = default);
+        Task ConfigureLiveChatViewAsync(int viewId, Grayjay.Engine.Models.Comments.LiveChatWindowDescriptor descriptor);
     }
 
     public class InterceptorRequest

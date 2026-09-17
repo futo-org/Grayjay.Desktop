@@ -445,6 +445,98 @@ namespace Grayjay.Desktop.CEF
                 await _window.CloseAsync(cancellationToken: cancellationToken);
             }
 
+            public async Task ConfigureLiveChatViewAsync(int viewId, Grayjay.Engine.Models.Comments.LiveChatWindowDescriptor descriptor)
+            {
+                var view = _window.Views.SingleOrDefault(v => v.Identifier == viewId)
+                    ?? throw new InvalidOperationException("Live chat view no longer exists.");
+                if (!Uri.TryCreate(descriptor.Url, UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
+                    throw new ArgumentException("Invalid live chat URL.");
+                view.OnDevToolsEvent += (method, parameters) =>
+                {
+                    try
+                    {
+                        var payload = Encoding.UTF8.GetString(parameters);
+                        if (method == "Runtime.exceptionThrown")
+                            Logger.e(nameof(CEFWindowProvider), $"[LiveChatView:{viewId}] {method}: {payload}");
+                        else
+                            Logger.w(nameof(CEFWindowProvider), $"[LiveChatView:{viewId}] {method}: {payload}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.e(nameof(CEFWindowProvider), $"[LiveChatView:{viewId}] Failed to process DevTools event {method}.", ex);
+                    }
+                };
+                await view.AddDevToolsEventMethod("Runtime.consoleAPICalled");
+                await view.AddDevToolsEventMethod("Runtime.exceptionThrown");
+                var runtime = await view.ExecuteDevToolsMethodAsync("Runtime.enable", "{}");
+                if (!runtime.Success)
+                    throw new InvalidOperationException("Failed to enable live chat console capture.");
+                var page = await view.ExecuteDevToolsMethodAsync("Page.enable", "{}");
+                if (!page.Success)
+                    throw new InvalidOperationException("Failed to enable live chat page instrumentation.");
+                var source = $$"""
+                    (() => {
+                        const normalize = url => url.split('#')[0].replace(/\/+$/, '');
+                        const chatUrl = {{JsonSerializer.Serialize(descriptor.Url)}};
+                        const matches = () => normalize(location.href) === normalize(chatUrl);
+                        const prefix = '[Grayjay live chat cleanup]';
+                        const reported = new Set();
+                        console.info(prefix, 'Script executed', { url: location.href, expectedUrl: chatUrl, readyState: document.readyState });
+                        const remove = selectors => {
+                            if (!matches()) return;
+                            for (const selector of selectors) {
+                                try {
+                                    const elements = document.querySelectorAll(selector);
+                                    elements.forEach(element => element.remove());
+                                    if (!reported.has(selector) || elements.length > 0)
+                                        console.info(prefix, 'Selector result', { selector, removed: elements.length });
+                                    reported.add(selector);
+                                }
+                                catch (error) {
+                                    if (!reported.has(selector)) console.warn(prefix, 'Invalid selector', selector, error);
+                                    reported.add(selector);
+                                }
+                            }
+                        };
+                        const start = () => {
+                            if (!matches()) {
+                                console.info(prefix, 'Skipped: URL does not match', { url: location.href, expectedUrl: chatUrl });
+                                return;
+                            }
+                            const initialized = Symbol.for('grayjay.liveChatCleanup');
+                            if (document[initialized]) {
+                                console.info(prefix, 'Already initialized for this document');
+                                return;
+                            }
+                            document[initialized] = true;
+                            remove({{JsonSerializer.Serialize(descriptor.RemoveElements)}} ?? []);
+                            const repeated = {{JsonSerializer.Serialize(descriptor.RemoveElementsInterval)}} ?? [];
+                            console.info(prefix, 'Cleanup initialized', { repeatedSelectors: repeated, intervalMs: 1000 });
+                            if (repeated.length) {
+                                const timer = setInterval(() => remove(repeated), 1000);
+                                window.addEventListener('pagehide', () => clearInterval(timer), { once: true });
+                            }
+                        };
+                        if (document.readyState === 'complete') start();
+                        else {
+                            console.info(prefix, 'Waiting for page load');
+                            window.addEventListener('load', start, { once: true });
+                        }
+                    })();
+                    """;
+                var result = await view.ExecuteDevToolsMethodAsync("Page.addScriptToEvaluateOnNewDocument", JsonSerializer.Serialize(new { source }));
+                if (!result.Success)
+                    throw new InvalidOperationException("Failed to configure live chat cleanup.");
+                var current = await view.ExecuteDevToolsMethodAsync("Runtime.evaluate", JsonSerializer.Serialize(new { expression = source }));
+                if (!current.Success)
+                    throw new InvalidOperationException("Failed to apply live chat cleanup to the current page.");
+                using var evaluation = JsonDocument.Parse(current.Data);
+                if (evaluation.RootElement.TryGetProperty("exceptionDetails", out var exception))
+                    throw new InvalidOperationException($"Live chat cleanup failed: {exception}");
+                await view.LoadUrlAsync(descriptor.Url);
+                Logger.i(nameof(CEFWindowProvider), $"Live chat view {viewId}: cleanup registered and navigation started.");
+            }
+
             public async Task SetRequestProxyAsync(string url, Func<WindowRequest, Task<WindowResponse>> handler, CancellationToken cancellationToken = default)
             {
                 var ipcHandle = (IPCRequest req) =>

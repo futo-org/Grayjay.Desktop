@@ -2,6 +2,6 @@
 export interface ILiveChatWindowDescriptor {
     url: string,
     removeElements?: string[],
-    removeElementsInternal?: string[]
+    removeElementsInterval?: string[]
     error?: string
 }

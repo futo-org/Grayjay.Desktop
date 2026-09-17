@@ -36,8 +36,11 @@ export abstract class DetailsBackend {
     static async commentsPager(): Promise<Pager<RefItem<ISerializedComment>>> {
         return Pager.fromMethods<RefItem<ISerializedComment>>(this.commentsLoad, this.commentsNextPage);
     }
-    static async liveChatWindow(): Promise<ILiveChatWindowDescriptor> {
+    static async liveChatWindow(): Promise<ILiveChatWindowDescriptor | undefined> {
         return await Backend.GET("/details/GetLiveChatWindow");
+    }
+    static async configureLiveChatView(viewId: number, descriptor: ILiveChatWindowDescriptor): Promise<void> {
+        await Backend.POST("/details/ConfigureLiveChatView?viewId=" + viewId, JSON.stringify(descriptor), "application/json");
     }
     static async loadLiveChat(): Promise<void> {
         return await Backend.GET("/details/LoadLiveChat");
