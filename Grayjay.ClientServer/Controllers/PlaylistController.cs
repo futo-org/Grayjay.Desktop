@@ -26,6 +26,27 @@ namespace Grayjay.ClientServer.Controllers
         public ReusablePager<PlatformContent> EnsurePlaylistContentsPager()
             => this.State().PlaylistState.PlaylistContentsPager ?? throw new BadHttpRequestException("No reusable playlist contents loaded");
 
+        private List<PlatformVideo> LoadAllContents()
+        {
+            var playlistContentsPager = EnsurePlaylistContentsPager();
+            var window = playlistContentsPager.GetWindow();
+            var allowedEmptyPages = 2;
+            while (window.HasMorePages() && allowedEmptyPages > 0)
+            {
+                window.NextPage();
+                if (window.GetResults().Length < 1)
+                {
+                    allowedEmptyPages--;
+                }
+                else
+                {
+                    allowedEmptyPages = 2;
+                }
+            }
+
+            return playlistContentsPager.PreviousResults.OfType<PlatformVideo>().ToList();
+        }
+
         [HttpGet]
         public ActionResult<dynamic> PlaylistLoad(string url)
         {
@@ -70,21 +91,22 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
+        public List<PlatformVideo> ContentsAll()
+        {
+            EnsurePlaylist();
+            return LoadAllContents();
+        }
+
+        [HttpGet]
         public ActionResult<string> ConvertToLocalPlaylist()
         {
             var playlist = EnsurePlaylist();
-            var playlistContentsPager = EnsurePlaylistContentsPager();
-            var window = playlistContentsPager.GetWindow();
-            while (window.HasMorePages())
-                window.NextPage();
-
             var id = Guid.NewGuid();
-            var contents = playlistContentsPager.PreviousResults;
             StatePlaylists.CreateOrUpdate(new Playlist
             {
                 Id = id.ToString(),
                 Name = playlist.Name,
-                Videos = playlistContentsPager.PreviousResults.Select(v => (v as PlatformVideo)!).ToList()
+                Videos = LoadAllContents()
             });
 
             return Ok(id);

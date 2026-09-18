@@ -1,5 +1,6 @@
 import { Backend } from "./Backend";
 import { IPlatformContent } from "./models/content/IPlatformContent";
+import { IPlatformVideo } from "./models/content/IPlatformVideo";
 import { IPlatformPlaylistDetails } from "./models/content/IPlatformPlaylistDetails";
 import { Pager } from "./models/pagers/Pager";
 
@@ -18,6 +19,10 @@ export abstract class PlaylistBackend {
 
     static async contentsPager(): Promise<Pager<IPlatformContent>> {
         return Pager.fromMethods<IPlatformContent>(this.contentsLoad, this.contentsNextPage);
+    }
+
+    static async contentsAll(): Promise<IPlatformVideo[]> {
+        return await Backend.GET("/playlist/ContentsAll") as IPlatformVideo[];
     }
 
     static async convertToLocalPlaylist(): Promise<string> {
