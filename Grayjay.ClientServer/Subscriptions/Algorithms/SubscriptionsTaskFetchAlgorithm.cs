@@ -173,7 +173,7 @@ namespace Grayjay.ClientServer.Subscriptions.Algorithms
                         if (resolve != null)
                         {
                             resolveCount = resolves.Length;
-                            StateUI.Toast($"SubsExchange (Res: {resolves.Length}, Prov: {resolve.Length})");
+                            Logger.i(TAG, $"SubsExchange resolved (Res: {resolves.Length}, Prov: {resolve.Length})");
                             foreach (var result in resolve)
                             {
                                 var task = providedTasks?.FirstOrDefault(x => x.Url == result.ChannelUrl);
