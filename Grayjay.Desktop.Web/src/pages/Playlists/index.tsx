@@ -61,6 +61,7 @@ const PlaylistsPage: Component = () => {
       new MenuItemButton("Add to queue", iconQueue, undefined, () => {
 
       }),
+      Menus.markAsWatchedButton(content),
       new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
         await UIOverlay.overlayAddToPlaylist(content, () => playlistsResource.refetch());
       }),

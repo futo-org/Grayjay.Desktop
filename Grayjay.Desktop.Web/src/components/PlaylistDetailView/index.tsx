@@ -69,6 +69,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
       title: "",
       items: [
         new MenuItemButton("Add to queue", iconQueue, undefined, () => props.onAddToQueue(content)),
+        Menus.markAsWatchedButton(content),
         new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
           await UIOverlay.overlayAddToPlaylist(content, () => props.refetch?.());
         }),
