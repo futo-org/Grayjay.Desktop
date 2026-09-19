@@ -580,7 +580,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const shouldHideSideBar = createMemo(() => {
         //TODO: Expand these conditions
         const sideBarVisible = shouldShowQueue() || hasLiveChat$() || recommendationsVisible$();
-        return !sideBarVisible || dimensions().width < 1400;
+        return !sideBarVisible || dimensions().width < 1350;
     });
 
     const mode = createMemo(() => isMinimized() ? VideoMode.Theatre : (video?.desiredMode() ?? VideoMode.Theatre));
