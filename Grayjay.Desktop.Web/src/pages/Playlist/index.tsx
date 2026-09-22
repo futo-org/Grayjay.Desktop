@@ -62,7 +62,7 @@ const PlaylistPage: Component = () => {
         }}
         onAddToQueue={(v) => video?.actions?.addToQueue(v)}
         onDownload={() => {}}
-        refetch={() => refetch()}
+        refetch={() => refetch(params.id)}
         onDragEnd={async () => {
           const playlist = playlist$();
           if (playlist) {
