@@ -149,7 +149,7 @@ const OverlayDialog: Component<OverlayDialogProps> = (props: OverlayDialogProps)
         changed = true;
       }
       if (!next && index >= 0) {
-        checkedInputs.splice(index);
+        checkedInputs.splice(index, 1);
         changed = true;
       }
       output.selected = checkedInputs;
