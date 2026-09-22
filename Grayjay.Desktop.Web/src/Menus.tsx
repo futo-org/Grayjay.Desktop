@@ -1,4 +1,4 @@
-import { MenuItemButton, MenuItemCheckbox, MenuItemToggle, MenuSeperator } from "./components/menus/Overlays/SettingsMenu";
+import { MenuItemButton, MenuItemCheckbox, MenuItemGroup, MenuItemOption, MenuItemToggle, MenuSeperator } from "./components/menus/Overlays/SettingsMenu";
 
 import ic_notifications from './assets/icons/notifications.svg';
 import ic_streams from './assets/icons/streams.svg';
@@ -15,7 +15,7 @@ import { IPlaylist } from "./backend/models/IPlaylist";
 import { SubscriptionsBackend } from "./backend/SubscriptionsBackend";
 
 export class Menus {
-    static getSubscriptionMenu(subscription: ISubscription, subscriptionSettings: ISubscriptionSettings, sourceState?: ISourceConfigState) {
+    static getSubscriptionMenu(subscription: ISubscription, subscriptionSettings: ISubscriptionSettings, sourceState?: ISourceConfigState, groups: ISubscriptionGroup[] = []) {
         const hasStreams = (sourceState?.capabilitiesChannel?.types?.indexOf("STREAMS") ?? -1) !== -1;
         const hasVideos = (sourceState?.capabilitiesChannel?.types?.indexOf("VIDEOS") ?? -1) !== -1 
           || (sourceState?.capabilitiesChannel?.types?.indexOf("MIXED") ?? -1) !== -1
@@ -61,7 +61,27 @@ export class Menus {
                         onToggle: (v) => {
                             subscriptionSettings.doFetchStreams = v;
                         }
-                    })] : []
+                    })] : [],
+                    ...groups.length > 0 ? [
+                        new MenuSeperator(),
+                        new MenuItemGroup("Add to group", "", {
+                            title: "Add to group",
+                            items: groups.map(g => new MenuItemOption(
+                                g.name,
+                                g.id,
+                                g.urls.includes(subscription.channel.url),
+                                (id: string) => {
+                                    const group = groups.find(x => x.id === id);
+                                    if (!group) return;
+                                    const url = subscription.channel.url;
+                                    group.urls = group.urls.includes(url)
+                                        ? group.urls.filter(u => u !== url)
+                                        : [...group.urls, url];
+                                    SubscriptionsBackend.subscriptionGroupSave(group).catch(console.error);
+                                }
+                            ))
+                        })
+                    ] : []
                 ]
             }
         };

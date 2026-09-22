@@ -69,9 +69,12 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
     }
 
     const sourceState = StateGlobal.getSourceState(subscription.channel.id.pluginID);
-    const subscriptionSettings: ISubscriptionSettings = await SubscriptionsBackend.subscriptionSettings(subscription.channel.url);
+    const [subscriptionSettings, groups] = await Promise.all([
+      SubscriptionsBackend.subscriptionSettings(subscription.channel.url),
+      SubscriptionsBackend.subscriptionGroups().catch(() => [] as ISubscriptionGroup[])
+    ]);
     anchor.setElement(el);
-    setSubscriptionMenu(Menus.getSubscriptionMenu(subscription, subscriptionSettings, sourceState));
+    setSubscriptionMenu(Menus.getSubscriptionMenu(subscription, subscriptionSettings, sourceState, groups));
     setShowSettings(true);
   };
 
