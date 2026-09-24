@@ -9,8 +9,8 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
     private CastingDeviceInfo info;
 
     internal void UpdateInfo(FCast.SenderSDK.DeviceInfo info) {
-        inner.SetAddresses(info.addresses);
-        inner.SetPort(info.port);
+        inner.SetAddresses(info.Addresses);
+        inner.SetPort(info.Port);
         this.info = CastingDeviceInfo.FromRsInfo(info);
     }
 
@@ -32,7 +32,8 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
                 break;
             case FCast.SenderSDK.DeviceConnectionState.Connected(
                 FCast.SenderSDK.IpAddr usedRemoteAddr,
-                FCast.SenderSDK.IpAddr localAddr
+                FCast.SenderSDK.IpAddr localAddr,
+                _
             ):
                 _localEndPointChanged(localAddr switch {
                         FCast.SenderSDK.IpAddr.V4(byte @o1, byte @o2, byte @o3, byte @o4) =>
@@ -74,23 +75,22 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
 
         public void VolumeChanged(double volume) => PlaybackState.SetVolume(volume);
         public void TimeChanged(double time) => PlaybackState.SetTime(TimeSpan.FromSeconds(time));
-        public void PlaybackStateChanged(FCast.SenderSDK.PlaybackState state) => PlaybackState.SetIsPlaying(state switch
-        {
-            FCast.SenderSDK.PlaybackState.Playing => true,
-            _ => false
-        });
-        public void DurationChanged(double duration) => PlaybackState.SetDuration(TimeSpan.FromSeconds(duration));
-        public void SpeedChanged(double speed) => PlaybackState.SetSpeed(speed);
-        public void SourceChanged(FCast.SenderSDK.Source @source) {}
-        public void KeyEvent(FCast.SenderSDK.KeyEvent @event) {}
-
-        public void MediaEvent(FCast.SenderSDK.MediaEvent @event) {
-            if (@event.type == FCast.SenderSDK.MediaItemEventType.End) {
+        public void PlaybackStateChanged(FCast.SenderSDK.PlaybackState state) {
+            PlaybackState.SetIsPlaying(state == FCast.SenderSDK.PlaybackState.Playing);
+            if (state == FCast.SenderSDK.PlaybackState.Ended) {
                 PlaybackState.MediaItemDidEnd();
             }
         }
-
+        public void DurationChanged(double duration) => PlaybackState.SetDuration(TimeSpan.FromSeconds(duration));
+        public void SpeedChanged(double speed) => PlaybackState.SetSpeed(speed);
+        public void SourceChanged(FCast.SenderSDK.Source @source) {}
+        public void PlaybackStopped() {}
         public void PlaybackError(string message) => Logger.e(nameof(CastingDeviceExperimentalWrapper), $"Playback error: {@message}");
+        public void TracksAvailable(FCast.SenderSDK.MediaTrack[] tracks) {}
+        public void TrackSelected(uint? id, FCast.SenderSDK.MediaTrackType typ) {}
+        public void TracksChanged(FCast.SenderSDK.TrackList tracks) {}
+        public void QueueChanged(FCast.SenderSDK.QueueState queue) {}
+        public void CommandError(FCast.SenderSDK.ReceiverError error) => Logger.e(nameof(CastingDeviceExperimentalWrapper), $"Command error: {error}");
     }
 
     internal CastingDeviceExperimentalWrapper(FCast.SenderSDK.CastingDevice dev, CastingDeviceInfo info) {
@@ -139,7 +139,8 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
                     PlaybackState.Volume,
                     new FCast.SenderSDK.Metadata(title, thumbnailUrl),
                     null
-                )
+                ),
+                null
             );
         } catch (Exception e) {
             Logger.e(nameof(CastingDeviceExperimentalWrapper), "Failed to laod media", e);
@@ -209,13 +210,5 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
         }
     }
 
-    public override void DidConnect() {
-        if (inner.SupportsFeature(FCast.SenderSDK.DeviceFeature.MediaEventSubscription)) {
-            try {
-                inner.SubscribeEvent(new FCast.SenderSDK.EventSubscription.MediaItemEnd());
-            } catch (Exception e) {
-                Logger.e(nameof(CastingDeviceExperimentalWrapper), "Failed to subscribe to media end events", e);
-            }
-        }
-    }
+    public override void DidConnect() {}
 }

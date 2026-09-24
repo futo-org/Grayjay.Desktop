@@ -12,6 +12,7 @@ public class CastingDeviceInfo
     [JsonIgnore]
     public List<IPAddress> IPAddresses => Addresses.Select(v => IPAddress.Parse(v)).ToList();
     public required int Port { get; init; }
+    public Dictionary<string, string>? TxtRecords { get; set; }
 
     public override bool Equals(object? obj)
     {
@@ -40,11 +41,12 @@ public class CastingDeviceInfo
     public static CastingDeviceInfo FromRsInfo(FCast.SenderSDK.DeviceInfo rsInfo) {
         return new CastingDeviceInfo()
         {
-            Addresses = rsInfo.addresses.Select(a => FCast.SenderSDK.FcastSenderSdkMethods.UrlFormatIpAddr(a)).ToList(),
-            Id = rsInfo.name,
-            Name = rsInfo.name,
-            Port = rsInfo.port,
-            Type = rsInfo.protocol switch
+            Addresses = rsInfo.Addresses.Select(a => FCast.SenderSDK.FcastSenderSdkMethods.UrlFormatIpAddr(a)).ToList(),
+            Id = rsInfo.Name,
+            Name = rsInfo.Name,
+            Port = rsInfo.Port,
+            TxtRecords = rsInfo.TxtRecords,
+            Type = rsInfo.Protocol switch
             {
                 FCast.SenderSDK.ProtocolType.Chromecast => CastProtocolType.Chromecast,
                 FCast.SenderSDK.ProtocolType.FCast => CastProtocolType.FCast,

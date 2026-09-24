@@ -40,17 +40,12 @@ namespace Grayjay.ClientServer.Controllers
         {
             var instance = GrayjayCastingServer.Instance; //TODO: Make a nicer way to ensure the instance gets created
 
-            CastingDevice? castingDevice;
-            var pinnedDeviceInfo = StateCasting.Instance.PinnedDevices.FirstOrDefault(x => x.Id == id);
-            if (pinnedDeviceInfo != null)
+            CastingDevice? castingDevice = StateCasting.Instance.DiscoveredDevices.FirstOrDefault(x => x.DeviceInfo.Id == id);
+            if (castingDevice == null)
             {
-                castingDevice = StateCasting.Instance.CreateDevice(pinnedDeviceInfo);
-            }
-            else
-            {
-                castingDevice = StateCasting.Instance.DiscoveredDevices.FirstOrDefault(x => x.DeviceInfo.Id == id);
-                if (castingDevice != null)
-                    StateCasting.Instance.PinnedDevices.Add(castingDevice.DeviceInfo);
+                var pinnedDeviceInfo = StateCasting.Instance.PinnedDevices.FirstOrDefault(x => x.Id == id);
+                if (pinnedDeviceInfo != null)
+                    castingDevice = StateCasting.Instance.CreateDevice(pinnedDeviceInfo);
             }
 
             if (castingDevice != null)
