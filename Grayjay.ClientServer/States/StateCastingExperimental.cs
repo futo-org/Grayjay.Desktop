@@ -118,7 +118,7 @@ public class StateCastingExperimental: StateCasting
     }
 
     private String FormatDeviceInfo(FCast.SenderSDK.DeviceInfo devInfo) {
-        return $"{{ name = {devInfo.name}, protocol = {devInfo.protocol}, addresses = [{String.Join(", ", devInfo.addresses.Select(addr => FCast.SenderSDK.FcastSenderSdkMethods.UrlFormatIpAddr(addr)))}], port = {devInfo.port} }}";
+        return $"{{ name = {devInfo.Name}, protocol = {devInfo.Protocol}, addresses = [{String.Join(", ", devInfo.Addresses.Select(addr => FCast.SenderSDK.FcastSenderSdkMethods.UrlFormatIpAddr(addr)))}], port = {devInfo.Port} }}";
     }
 
     override public void Start() {
@@ -135,7 +135,7 @@ public class StateCastingExperimental: StateCasting
 
         eventHandler.OnChanged += (info) => {
             Logger.d(nameof(StateCastingExperimental), $"Device changed: {FormatDeviceInfo(info)}");
-            CastingDevice? dev = _castingDevices[info.name];
+            CastingDevice? dev = _castingDevices[info.Name];
             if (dev != null && dev is CastingDeviceExperimentalWrapper expDev) {
                 expDev.UpdateInfo(info);
             }
@@ -179,7 +179,8 @@ public class StateCastingExperimental: StateCasting
             info.Name,
             protoType,
             info.IPAddresses.Select(a => IPAddressToRsIpAddr(a)).ToArray(),
-            (ushort)info.Port
+            (ushort)info.Port,
+            info.TxtRecords ?? new Dictionary<string, string>()
         );
 
         return new CastingDeviceExperimentalWrapper(_context.CreateDeviceFromInfo(rsDeviceInfo), info);
