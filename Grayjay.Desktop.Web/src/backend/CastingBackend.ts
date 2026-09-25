@@ -42,6 +42,14 @@ export abstract class CastingBackend {
         await Backend.GET("/casting/MediaPause");
     }
 
+    static async umpCastQualities(): Promise<{ selectedHeight: number, activeHeight: number, activeLabel?: string, options: { height: number, width: number, label: string, codecName: string }[] } | undefined> {
+        return await Backend.GET("/casting/UmpCastQualities");
+    }
+
+    static async setUmpCastQuality(height: number): Promise<void> {
+        await Backend.GET(`/casting/SetUmpCastQuality?height=${height}`);
+    }
+
     static async mediaResume(): Promise<void> {
         await Backend.GET("/casting/MediaResume");
     }

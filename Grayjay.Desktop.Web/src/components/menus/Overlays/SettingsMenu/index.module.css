@@ -68,25 +68,26 @@
     font-size: 15px;
     font-style: normal;
     font-weight: 400;
-    line-height: 20px; /* 160% */
-    width: 150px;
     line-height: 24px;
+    flex: 0 0 auto;
+    max-width: 65%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-family: "Inter";
 }
 .menuItem .value {
     color: #FFF;
     font-size: 15px;
-    width: calc(100% - 180px);
+    flex: 1 1 0;
+    min-width: 0;
     text-align: right;
     font-style: normal;
     font-weight: 400;
-    line-height: 20px; /* 133.333% */
     letter-spacing: 0.25px;
-    position: absolute;
-    left: 140px;
-    top: 10px;
     line-height: 24px;
     height: 24px;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-family: "Inter";
@@ -130,7 +131,9 @@
 }
 
 .menuItem.isGroup {
-
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 .menuItem.isGroup:hover {
     background-color: rgba(255,255,255,0.1);
@@ -155,6 +158,9 @@
 }
 .menuItem.isGroup .expander {
     display: block;
+    position: static;
+    flex: 0 0 15px;
+    margin-right: -5px;
 }
 
 .menuItem .name {

@@ -7,6 +7,7 @@ using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.Pagers;
 using Grayjay.ClientServer.Proxy;
+using Grayjay.ClientServer.Sabr;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Subscriptions;
@@ -52,6 +53,9 @@ namespace Grayjay.ClientServer.Controllers
             public Subscription VideoSubscription { get; set; }
             public DBHistoryIndex VideoHistoryIndex { get; set; }
             public PlaybackTracker VideoPlaybackTracker { get; set; }
+
+            public string? UmpPlaybackId { get; set; }
+            public int UmpCastHeight { get; set; } = -1;
 
             public RequestExecutor _videoRequestExecutor = null;
             public RequestExecutor _audioRequestExecutor = null;
@@ -115,10 +119,19 @@ namespace Grayjay.ClientServer.Controllers
                 }
             }
 
+            public void ReleaseUmpPlayback()
+            {
+                var id = UmpPlaybackId;
+                UmpPlaybackId = null;
+                if (id != null)
+                    UmpPlaybackRegistry.Release(id);
+            }
+
             public void Dispose()
             {
                 LiveChatManager?.Stop();
                 LiveChatManager = null;
+                ReleaseUmpPlayback();
             }
         }
 
@@ -129,6 +142,8 @@ namespace Grayjay.ClientServer.Controllers
             var state = this.State().DetailsState;
             video = video ?? videoLocal;
             state.ClearCachedDash();
+            state.ReleaseUmpPlayback();
+            state.UmpCastHeight = -1;
             state.VideoLoaded = video;
             state.VideoLocal = videoLocal;
             state.VideoSubscription = StateSubscriptions.GetSubscription(video?.Author?.Url ?? videoLocal?.Author?.Url);
@@ -496,6 +511,8 @@ namespace Grayjay.ClientServer.Controllers
         {
             var video = (videoIndex == -999) ? EnsureVideo(this.State()).Live :
                 EnsureVideo(this.State()).Video.VideoSources[videoIndex];
+            if (video is UMPSource)
+                return new List<VideoQuality>();
             if(video is HLSManifestSource hlsVideo)
             {
                 var hlsResponse = _qualityClient.GET(hlsVideo.Url, new Engine.Models.HttpHeaders());
@@ -1044,6 +1061,9 @@ namespace Grayjay.ClientServer.Controllers
         {
             var video = EnsureVideo(state);
 
+            if (videoIndex == -999 && video.Live is UMPSource liveUmp && (proxySettings?.IsLoopback ?? true))
+                return UmpSourceDescriptor(state, liveUmp, videoIndex, subtitleIndex, subtitleIsLocal, tag);
+
             if (videoIndex == -999)
             {
                 if (video.Live == null)
@@ -1064,6 +1084,12 @@ namespace Grayjay.ClientServer.Controllers
             }
 
             (var sourceVideo, var sourceAudio, var sourceSubtitle) = GetSources(state, videoIndex, audioIndex, subtitleIndex, videoIsLocal, audioIsLocal, subtitleIsLocal);
+            if (sourceVideo is UMPSource umpSource)
+            {
+                if (proxySettings?.IsLoopback ?? true)
+                    return UmpSourceDescriptor(state, umpSource, videoIndex, subtitleIndex, subtitleIsLocal, tag);
+                throw new InvalidOperationException("UMP sources are cast through UmpCasting, not the source proxy");
+            }
             if (subtitleIndex >= 0 && sourceVideo is HLSManifestSource)
                 return DirectHLSUrlSource(state, videoIndex, -1, subtitleIndex, subtitleIsLocal, proxySettings ?? new ProxySettings(true), null);
 
@@ -1136,6 +1162,21 @@ namespace Grayjay.ClientServer.Controllers
                     CanRetry = false
                 });
             //throw new Exception("Select either a videoIndex or audioIndex");
+        }
+
+        public static SourceDescriptor UmpSourceDescriptor(WindowState state, UMPSource source, int videoIndex, int subtitleIndex, bool subtitleIsLocal, string? tag)
+        {
+            var details = state.DetailsState;
+            var previous = details.UmpPlaybackId != null ? UmpPlaybackRegistry.Get(details.UmpPlaybackId) : null;
+            var continued = previous != null && previous.Source.VideoId == source.VideoId && previous.Source.Url == source.Url && previous.Session.FatalError == null && !previous.Session.IsReleased
+                ? previous.Session.ExportTransferable() : null;
+            details.ReleaseUmpPlayback();
+            var playback = UmpPlaybackRegistry.Create(state.WindowID, source, continued == null ? Sabr.Cast.UmpCasting.TakeHandBackState(source.VideoId ?? "") : null, continued);
+            playback.Tag = tag;
+            if (subtitleIndex >= 0)
+                playback.SubtitleUrl = $"/details/Subtitle?subtitleIndex={subtitleIndex}&subtitleIsLocal={subtitleIsLocal}&windowId={state.WindowID}";
+            details.UmpPlaybackId = playback.Id;
+            return new SourceDescriptor($"/Ump/Info?id={playback.Id}", UMPSource.CONTAINER, videoIndex, -1, subtitleIndex, false, false, subtitleIsLocal);
         }
 
         private static readonly Regex _repIdRegex = new Regex("Representation\\s+id=\"(\\d+)\"", RegexOptions.Compiled);
@@ -1419,6 +1460,12 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         public static async Task<(byte[] Bytes, string ContentType)> GetSubtitleBytesAsync(WindowState state, int subtitleIndex, bool subtitleIsLocal, string? modifierId = null)
+        {
+            var (bytes, contentType) = await GetRawSubtitleBytesAsync(state, subtitleIndex, subtitleIsLocal, modifierId);
+            return (VttHelper.IsVtt(contentType, bytes) ? VttHelper.StripUnsupportedTags(bytes) : bytes, contentType);
+        }
+
+        private static async Task<(byte[] Bytes, string ContentType)> GetRawSubtitleBytesAsync(WindowState state, int subtitleIndex, bool subtitleIsLocal, string? modifierId)
         {
             if (subtitleIsLocal)
             {

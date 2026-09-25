@@ -108,6 +108,9 @@ public abstract class CastingDevice
     public abstract void Start();
     public abstract void Stop();
     public virtual void DidConnect() {}
+    public virtual bool IsSabrSupported => false;
+    public virtual bool SupportsExternalSubtitles => false;
+    public virtual Task<bool> AddSubtitleAsync(byte[] data, string contentType, string? name) => Task.FromResult(false);
 
     public abstract Task MediaSeekAsync(TimeSpan time, CancellationToken cancellationToken = default);
     public abstract Task MediaStopAsync(CancellationToken cancellationToken = default);

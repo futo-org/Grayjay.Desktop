@@ -130,6 +130,7 @@ namespace Grayjay.ClientServer.States
             Stopwatch sw = Stopwatch.StartNew();
 
             Thread.CurrentThread.Name = "Startup Thread";
+            Grayjay.Engine.Packages.PackageBridge.SupportsUMP = () => GrayjaySettings.Instance.Playback.NativeUmp;
 
             _ = Task.Run(async () =>
             {

@@ -2,6 +2,8 @@
 using System.Net;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Proxy;
+using Grayjay.ClientServer.Sabr;
+using Grayjay.ClientServer.Sabr.Cast;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Video.Additions;
@@ -73,6 +75,64 @@ namespace Grayjay.ClientServer
                 BaseUrl = address;
                 if (BaseUrl.EndsWith('/'))
                     BaseUrl = BaseUrl.Substring(0, BaseUrl.Length - 1);
+            });
+
+            AddCorsHandler("/ump/cast/manifest", [ "GET", "HEAD", "OPTIONS" ]);
+            _app.MapMethods("/ump/cast/manifest", [ "GET", "HEAD" ], (HttpContext context, string id) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                var cast = UmpCasting.Get(id);
+                if (cast == null)
+                    return Results.NotFound();
+                var manifest = UmpCasting.ManifestFor(cast);
+                if (string.IsNullOrEmpty(manifest))
+                    return Results.StatusCode(503);
+                return Results.Content(manifest, "application/dash+xml");
+            });
+            AddCorsHandler("/ump/cast/init", [ "GET", "OPTIONS" ]);
+            _app.MapGet("/ump/cast/init", async (HttpContext context, string id, string role) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                var cast = UmpCasting.Get(id);
+                if (cast?.Proxy == null)
+                    return Results.NotFound();
+                var roleId = role == "audio" ? SabrSession.ROLE_AUDIO : SabrSession.ROLE_VIDEO;
+                var format = roleId == SabrSession.ROLE_AUDIO ? cast.Proxy.AudioFormat : cast.Proxy.VideoFormat;
+                var data = await cast.Proxy.GetInitAsync(roleId);
+                if (data == null || format == null)
+                    return Results.StatusCode(504);
+                return Results.Bytes(data, format.ContainerMimeType);
+            });
+            AddCorsHandler("/ump/cast/seg", [ "GET", "OPTIONS" ]);
+            _app.MapGet("/ump/cast/seg", async (HttpContext context, string id, string role, int n) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                var cast = UmpCasting.Get(id);
+                if (cast?.Proxy == null)
+                    return Results.NotFound();
+                var roleId = role == "audio" ? SabrSession.ROLE_AUDIO : SabrSession.ROLE_VIDEO;
+                var format = roleId == SabrSession.ROLE_AUDIO ? cast.Proxy.AudioFormat : cast.Proxy.VideoFormat;
+                var data = await cast.Proxy.GetSegmentAsync(roleId, n);
+                if (data == null || format == null)
+                    return Results.NotFound();
+                return Results.Bytes(data, format.ContainerMimeType);
+            });
+            AddCorsHandler("/ump/cast/sub", [ "GET", "OPTIONS" ]);
+            _app.MapGet("/ump/cast/sub", (HttpContext context, string id) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                var cast = UmpCasting.Get(id);
+                if (cast?.SubtitleBytes == null)
+                    return Results.NotFound();
+                return Results.Bytes(cast.SubtitleBytes, cast.SubtitleContentType ?? "text/vtt");
+            });
+            AddCorsHandler("/ump/cast/time", [ "GET", "OPTIONS" ]);
+            _app.MapGet("/ump/cast/time", (HttpContext context) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                return Results.Text(DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture), "text/plain");
             });
 
             AddCorsHandler("/details/SourceDash", [ "GET", "HEAD", "OPTIONS" ]);

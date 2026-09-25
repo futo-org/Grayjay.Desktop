@@ -492,10 +492,10 @@ const SettingsMenu: Component<SettingsMenuProps> = (props: SettingsMenuProps) =>
                     onBack: settingsMenuBack,
                   }}
                 >
-                  <div class={styles.key}>
+                  <div class={styles.key} title={(item as IMenuItemGroup).key}>
                     {(item as IMenuItemGroup).key}
                   </div>
-                  <div class={styles.value}>
+                  <div class={styles.value} title={(item as IMenuItemGroup).value}>
                     {(item as IMenuItemGroup).value}
                   </div>
                   <div class={styles.expander}>
