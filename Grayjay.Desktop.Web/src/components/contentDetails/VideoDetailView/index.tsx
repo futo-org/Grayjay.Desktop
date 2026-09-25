@@ -1179,14 +1179,14 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             tokens.push(toHumanNumber(viewCount) + " views");
         }
 
-        if (tokens.length < 1) {
-            return undefined;
-        }
-
         const date = dateTime$();
         if (date) {
             tokens.push(toHumanNowDiffString(date));
             //tokens.push(toHumanNowDiffStringMinDay(date));
+        }
+
+        if (tokens.length < 1) {
+            return undefined;
         }
 
         return tokens.join(" • ")
