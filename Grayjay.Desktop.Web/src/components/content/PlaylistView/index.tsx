@@ -63,7 +63,9 @@ const PlaylistView: Component<PlaylistViewProps> = (props) => {
         <div style="display: flex; flex-direction: row; align-items: center; margin-top: 16px;">
           <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
             <div class={styles.title}>{props.name ?? 0}</div>
-            <div class={styles.metadata}>{props.itemCount ?? 0} items</div>
+            <Show when={(props.itemCount ?? 0) >= 0}>
+              <div class={styles.metadata}>{props.itemCount ?? 0} items</div>
+            </Show>
           </div>
 
           <Show when={props.onSettings && focus?.isControllerMode() !== true} fallback={<div class="menu-anchor"></div>}>

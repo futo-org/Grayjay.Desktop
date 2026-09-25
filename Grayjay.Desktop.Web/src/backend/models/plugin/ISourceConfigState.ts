@@ -2,6 +2,7 @@
 export interface ISourceCapabilities {
     hasChannelSearch: boolean,
     hasGetChannelCapabilities: boolean,
+    hasGetChannelPlaylists: boolean,
     hasGetChannelTemplateByClaimMap: boolean,
     hasGetChannelUrlByClaim: boolean,
     hasGetComments: boolean,

@@ -27,6 +27,18 @@ export abstract class ChannelBackend {
         (await result).nextPage();
         return result;
     }
+    static async canGetChannelPlaylists(url: string): Promise<boolean> {
+        return await Backend.GET("/channel/CanGetChannelPlaylists?url=" + encodeURIComponent(url)) as boolean;
+    }
+    static async channelPlaylistsLoad(url?: string): Promise<PagerResult<IPlatformContent>> {
+        return await Backend.GET("/channel/ChannelPlaylistsLoad?url=" + encodeURIComponent(url ?? "")) as PagerResult<IPlatformContent>;
+    }
+    static async channelPlaylistsNextPage(): Promise<PagerResult<IPlatformContent>> {
+        return await Backend.GET("/channel/ChannelPlaylistsNextPage") as PagerResult<IPlatformContent>;
+    }
+    static async channelPlaylistsPager(url: string): Promise<Pager<IPlatformContent>> {
+        return Pager.fromMethods<IPlatformContent>(() => this.channelPlaylistsLoad(url), this.channelPlaylistsNextPage);
+    }
 
 
 }

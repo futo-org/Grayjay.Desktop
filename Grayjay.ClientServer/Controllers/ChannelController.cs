@@ -22,9 +22,14 @@ namespace Grayjay.ClientServer.Controllers
         {
             public PlatformChannel ChannelLoaded { get; set; }
             public IPager<PlatformContent> ChannelPager { get; set; }
+            public IPager<PlatformContent> ChannelPlaylistsPager { get; set; }
+
+            public object ChannelPagerLock { get; } = new object();
+            public object ChannelPlaylistsPagerLock { get; } = new object();
         }
 
         private IPager<PlatformContent> EnsureChannelPager() => this.State().ChannelState.ChannelPager ?? throw new BadHttpRequestException("No channel loaded");
+        private IPager<PlatformContent> EnsureChannelPlaylistsPager() => this.State().ChannelState.ChannelPlaylistsPager ?? throw new BadHttpRequestException("No channel playlists loaded");
 
 
 
@@ -97,7 +102,7 @@ namespace Grayjay.ClientServer.Controllers
             var state = this.State().ChannelState;
             try
             {
-                lock (state.ChannelPager)
+                lock (state.ChannelPagerLock)
                 {
                     var home = EnsureChannelPager();
                     home.NextPage();
@@ -109,6 +114,64 @@ namespace Grayjay.ClientServer.Controllers
                 return new PagerResult<PlatformContent>()
                 {
                     Results = new PlatformVideo[0],
+                    HasMore = false,
+                    Exception = ex.Message
+                };
+            }
+        }
+
+        [HttpGet]
+        public bool CanGetChannelPlaylists(string url)
+        {
+            var client = StatePlatform.GetChannelClientOrNull(url);
+            if (client == null)
+                return false;
+
+            return client.Capabilities.HasGetChannelPlaylists;
+        }
+        [HttpGet]
+        public PagerResult<PlatformContent> ChannelPlaylistsLoad(string url = null)
+        {
+            Logger.w(nameof(ChannelController), $"ChannelPlaylistsLoad started");
+            Stopwatch watch = Stopwatch.StartNew();
+            var state = this.State().ChannelState;
+            try
+            {
+                var pager = StatePlatform.GetChannelPlaylists(url ?? state.ChannelLoaded?.Url ?? "");
+                lock (state.ChannelPlaylistsPagerLock)
+                {
+                    state.ChannelPlaylistsPager = pager;
+                    return pager.AsPagerResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw DialogException.FromException("Failed to get channel playlists", ex);
+            }
+            finally
+            {
+                watch.Stop();
+                Logger.w(nameof(ChannelController), $"ChannelPlaylistsLoad took {watch.Elapsed.TotalMilliseconds}ms");
+            }
+        }
+        [HttpGet]
+        public PagerResult<PlatformContent> ChannelPlaylistsNextPage()
+        {
+            var state = this.State().ChannelState;
+            try
+            {
+                lock (state.ChannelPlaylistsPagerLock)
+                {
+                    var playlists = EnsureChannelPlaylistsPager();
+                    playlists.NextPage();
+                    return playlists.AsPagerResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                return new PagerResult<PlatformContent>()
+                {
+                    Results = new PlatformContent[0],
                     HasMore = false,
                     Exception = ex.Message
                 };
