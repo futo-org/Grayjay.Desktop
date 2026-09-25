@@ -1,4 +1,4 @@
-import { createEffect, createMemo, type Component } from 'solid-js';
+import { Show, createEffect, createMemo, type Component } from 'solid-js';
 import LoaderContainer from '../basics/loaders/LoaderContainer';
 import NavigationBar from '../topbars/NavigationBar';
 import styles from './index.module.css';
@@ -54,7 +54,9 @@ const RemotePlaylistDetailView: Component<RemotePlaylistDetailViewProps> = (prop
         <div style="display: flex; flex-direction: row; align-items: center; margin-left: 32px; margin-right: 32px; margin-top: 46px; margin-bottom: 16px; gap: 16px;">
           <div style="display: flex; flex-direction: column;">
             <div class={styles.header}>{props.name}</div>
-            <div class={styles.metadata}>{props.itemCount ?? 0} {props.itemCount === 1 ? "item" : "items"}</div>
+            <Show when={(props.itemCount ?? 0) >= 0}>
+              <div class={styles.metadata}>{props.itemCount ?? 0} {props.itemCount === 1 ? "item" : "items"}</div>
+            </Show>
           </div>
           <div style="flex-grow: 1"></div>
             <CustomButton

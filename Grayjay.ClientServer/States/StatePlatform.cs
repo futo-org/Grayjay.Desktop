@@ -420,6 +420,13 @@ namespace Grayjay.Desktop.POC.Port.States
                 throw new ArgumentException($"No plugin to search channel [{url}]");
             return client.FromPool(_channelClientPool).SearchChannelContents(url, query);
         }
+        public static IPager<PlatformContent> GetChannelPlaylists(string url)
+        {
+            var client = GetChannelClientOrNull(url);
+            if (client == null)
+                throw new ArgumentException($"No plugin to load channel playlists [{url}]");
+            return client.FromPool(_channelClientPool).getChannelPlaylists(url) ?? new EmptyPager<PlatformContent>();
+        }
         public static IPager<PlatformContent> GetChannelContent(GrayjayPlugin client, string url = null, string type = null, string order = null)
         {
             return client.FromPool(_channelClientPool)

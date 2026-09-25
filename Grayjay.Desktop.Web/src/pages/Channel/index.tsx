@@ -1,4 +1,4 @@
-import { createResource, type Component, Show, createMemo, createSignal, Switch, Match, createEffect, untrack, onMount, onCleanup } from 'solid-js';
+import { createResource, type Component, Show, createMemo, createSignal, Switch, Match, createEffect, on, untrack, onMount, onCleanup } from 'solid-js';
 import { createResourceDefault, toHumanNumber } from '../../utility';
 import { ChannelBackend } from '../../backend/ChannelBackend';
 import { useLocation, useParams, useSearchParams } from '@solidjs/router';
@@ -44,6 +44,7 @@ interface ChannelTopBarProps {
   metadata?: string;
   description?: string;
   activeTab?: string;
+  tabs?: string[];
   onActiveTabChanged?: (tab: string) => void;
   suggestionsVisible?: boolean;
   onInit?: (init: ChannelTopBarInit) => void;
@@ -169,7 +170,7 @@ const ChannelTopBar: Component<ChannelTopBarProps> = (props) => {
           </div>
         </Show>
         <div class={styles.containerTabButtons}>
-          <ButtonGroup defaultSelectedItem="Videos" items={["Videos"/*, "Channels", "Support"*/, "About"]}
+          <ButtonGroup defaultSelectedItem={props.activeTab ?? "Videos"} items={props.tabs ?? ["Videos"/*, "Channels", "Support"*/, "About"]}
           style={{opacity: 1 - p(), "flex-shrink": 0}} onItemChanged={(item) => props.onActiveTabChanged?.(item)} focusableOpts={{}} />
         </div>
       </div>
@@ -198,7 +199,10 @@ const ChannelPage: Component = () => {
     return author;
   });
 
-  const [canSearchChannel$] = createResourceDefault(async () => [], async () => params.url ? await ChannelBackend.CanSearchChannel(params.url) : false, undefined, false);
+  const paramUrl$ = createMemo(() => Array.isArray(params.url) ? params.url[0] : params.url);
+
+  const [canSearchChannel$] = createResourceDefault(() => paramUrl$(), async (u) => u ? await ChannelBackend.CanSearchChannel(u) : false, undefined, false);
+  const [canGetChannelPlaylists$] = createResourceDefault(() => paramUrl$(), async (u) => u ? await ChannelBackend.canGetChannelPlaylists(u) : false, undefined, false);
 
   const updatePager = async (query: string, url?: string) => {
     if (!url) {
@@ -218,7 +222,31 @@ const ChannelPage: Component = () => {
 
   
   const [channelPager$, setChannelPager] = createSignal<Pager<IPlatformContent>>();
-  const [activeTab$, setActiveTab] = createSignal("Videos");
+  //Tab lives in the URL so Back from a playlist restores it (Android parity).
+  const tabParam$ = createMemo(() => Array.isArray(params.tab) ? params.tab[0] : params.tab);
+  const activeTab$ = createMemo(() => {
+    const tab = tabParam$();
+    if (tab === "Playlists") {
+      return canGetChannelPlaylists$() ? "Playlists" : "Videos";
+    }
+    if (tab === "About") {
+      return "About";
+    }
+    return "Videos";
+  });
+  const setActiveTab = (tab: string) => {
+    setParams({ tab: tab === "Videos" ? undefined : tab }, { replace: true });
+  };
+
+  const [playlistsPager$, setPlaylistsPager] = createSignal<Pager<IPlatformContent>>();
+  let playlistsLoading = false;
+  const [playlistsEmpty$, setPlaylistsEmpty] = createSignal(false);
+  const [playlistsError$, setPlaylistsError] = createSignal<any>(undefined);
+
+  //Playlists sits at index 1 to match the Android channel tab order.
+  const tabs$ = createMemo(() => canGetChannelPlaylists$()
+    ? ["Videos", "Playlists", "About"]
+    : ["Videos", "About"]);
   
   const [query$, setQuery] = createSignal<string>("");
   
@@ -252,6 +280,61 @@ const ChannelPage: Component = () => {
       return undefined;
     }
   });
+  let playlistsRequestId = 0;
+  const playlistsPagerTag = {};
+  const loadPlaylists = async (url: string) => {
+    const requestId = ++playlistsRequestId;
+    playlistsLoading = true;
+    setPlaylistsError(undefined);
+    try {
+      const pager = await ChannelBackend.channelPlaylistsPager(url);
+      //Drop superseded loads.
+      if (requestId !== playlistsRequestId) {
+        return;
+      }
+      //Empty only once the pager is exhausted.
+      setPlaylistsEmpty(pager.data.length === 0 && !pager.hasMore);
+      pager.noFilteredItemsEvent.registerOne(playlistsPagerTag, () => {
+        if (requestId === playlistsRequestId) {
+          setPlaylistsEmpty(pager.data.length === 0 && !pager.hasMore);
+        }
+      });
+      setPlaylistsError(pager.error);
+      setPlaylistsPager(pager);
+    } catch (ex) {
+      if (requestId !== playlistsRequestId) {
+        return;
+      }
+      setPlaylistsError(ex);
+      setPlaylistsPager(undefined);
+    } finally {
+      if (requestId === playlistsRequestId) {
+        playlistsLoading = false;
+      }
+    }
+  };
+
+  createEffect(() => {
+    const tab = activeTab$();
+    const url = channel$()?.url ?? paramUrl$();
+    if (tab !== "Playlists" || !url) {
+      return;
+    }
+    if (untrack(playlistsPager$) || playlistsLoading) {
+      return;
+    }
+    loadPlaylists(url);
+  });
+
+  createEffect(on(() => paramUrl$(), () => {
+    //Supersede any in-flight load.
+    playlistsRequestId++;
+    setPlaylistsPager(undefined);
+    setPlaylistsEmpty(false);
+    setPlaylistsError(undefined);
+    playlistsLoading = false;
+  }, { defer: true }));
+
   //createEffect(() => updatePager(untrack(query$), channel$()));
   
   const isReady$ = createMemo(()=>params?.url && (channel$() && channel$()?.url == params?.url || authorSummary$()))
@@ -303,7 +386,11 @@ const ChannelPage: Component = () => {
                 name={channel$()?.name ?? authorSummary$()?.name}
                 authorUrl={channel$()?.url ?? authorSummary$()?.url}
                 activeTab={activeTab$()}
-                onActiveTabChanged={(tab) => setActiveTab(tab)}
+                tabs={tabs$()}
+                onActiveTabChanged={(tab) => {
+                  setActiveTab(tab);
+                  scrollContainerRef?.scrollTo({ top: 0 });
+                }}
                 suggestionsVisible={suggestionsVisible$()}
                 onInit={(init) => {
                   topBarInit = init;
@@ -346,6 +433,33 @@ const ChannelPage: Component = () => {
                     </div>
                   }>
                    <ContentGrid pager={channelPager$()} outerContainerRef={scrollContainerRef} />
+                  </LoaderContainer>
+                </Show>
+              </Show>
+              <Show when={activeTab$() === "Playlists"}>
+                <Show when={playlistsError$()}>
+                  <div style="text-align: center;">
+                    <div style="color: #555">
+                      Failed to load playlists
+                    </div>
+                    <div style="color: #AA0000">
+                      {playlistsError$()?.message ?? playlistsError$()}
+                    </div>
+                  </div>
+                </Show>
+                <Show when={!playlistsError$()}>
+                  <LoaderContainer isLoading={!playlistsPager$()} loader={
+                    <div>
+                      <LoaderGrid itemCount={18} />
+                    </div>
+                  }>
+                    <Show when={!playlistsEmpty$()} fallback={
+                      <div style="text-align: center; color: #555; padding: 32px;">
+                        This channel has no playlists
+                      </div>
+                    }>
+                      <ContentGrid pager={playlistsPager$()} outerContainerRef={scrollContainerRef} />
+                    </Show>
                   </LoaderContainer>
                 </Show>
               </Show>
