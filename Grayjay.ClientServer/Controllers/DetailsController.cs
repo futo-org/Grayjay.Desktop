@@ -1239,10 +1239,10 @@ namespace Grayjay.ClientServer.Controllers
             var executor = (sourceVideo.HasRequestExecutor) ? sourceVideo.GetRequestExecutor() : null;
 
             var videoUrl = proxySettings != null && proxySettings.Value.ShouldProxySources(sourceVideo, null) ? WebUtility.HtmlEncode(HttpProxy.Get(proxySettings.Value.IsLoopback).Add(new HttpProxyRegistryEntry()
-            {   
+            {
                 RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceVideo as VideoUrlSource).Url
-            })) : sourceVideo.Url;
+            }, proxySettings.Value.ProxyAddress)) : sourceVideo.Url;
             return new SourceDescriptor(videoUrl, sourceVideo.Container)
             {
                 VideoIndex = index,
@@ -1258,7 +1258,7 @@ namespace Grayjay.ClientServer.Controllers
             {
                 RequestModifier = modifier?.ToProxyFunc(),
                 Url = (sourceAudio as AudioUrlSource).Url
-            })) : sourceAudio.Url;
+            }, proxySettings.Value.ProxyAddress)) : sourceAudio.Url;
             return new SourceDescriptor(audioUrl, sourceAudio.Container)
             {
                 AudioIndex = index,
