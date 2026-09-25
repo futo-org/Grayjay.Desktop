@@ -2,6 +2,7 @@
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
 using Grayjay.ClientServer.Parsers;
+using Grayjay.ClientServer.Sabr;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.ClientServer.Transcoding;
@@ -136,9 +137,11 @@ namespace Grayjay.ClientServer.Models.Downloads
 
             SubtitleName = subtitleSource?.Name;
 
-            VideoSourceRequiresLive = (videoSource is DashManifestRawSource dashManifestRawSource && dashManifestRawSource.HasGenerate) ||
+            VideoSourceRequiresLive = videoSource is UMPVideoFormatSource || videoSource is UMPSource ||
+                (videoSource is DashManifestRawSource dashManifestRawSource && dashManifestRawSource.HasGenerate) ||
                 (videoSource is JSSource videoJSSource && (videoJSSource.HasRequestExecutor || videoJSSource.HasRequestModifier));
-            AudioSourceRequiresLive = (audioSource is DashManifestRawAudioSource dashManifestRawAudioSource && dashManifestRawAudioSource.HasGenerate) ||
+            AudioSourceRequiresLive = audioSource is UMPAudioFormatSource ||
+                (audioSource is DashManifestRawAudioSource dashManifestRawAudioSource && dashManifestRawAudioSource.HasGenerate) ||
                 (audioSource is JSSource audioJSSource && (audioJSSource.HasRequestExecutor || audioJSSource.HasRequestModifier));
             SubtitleSourceRequiresLive = subtitleSource?.HasFetch ?? false;
 
@@ -244,7 +247,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 if (VideoSource == null && TargetPixelCount != null)
                 {
                     var videoSources = new List<IVideoSource>();
-                    foreach (var source in original.Video.VideoSources)
+                    foreach (var source in VideoHelper.ExpandUMPVideoSources(original.Video.VideoSources))
                     {
                         if (source is HLSManifestSource hlsManifestSource)
                         {
@@ -273,7 +276,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                     var vsource = VideoHelper.SelectBestVideoSource(videoSources, (int)TargetPixelCount, new List<string>(), TargetLanguage, TargetLanguage != null);
                     if (vsource != null)
                     {
-                        if (vsource is VideoUrlSource || vsource is DashManifestRawSource)
+                        if (vsource is VideoUrlSource || vsource is DashManifestRawSource || vsource is UMPVideoFormatSource)
                             VideoSource = vsource;
                         else
                             throw new DownloadException("Video source is not supported for downloading (yet)", false);
@@ -283,6 +286,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 if (AudioSource == null && TargetBitrate != null)
                 {
                     var audioSources = new List<IAudioSource>();
+                    audioSources.AddRange(VideoHelper.GetUMPAudioSources(original.Video.VideoSources).Where(x => x.IsDownloadable()));
                     if (original.Video is UnMuxedVideoDescriptor unmuxed)
                     {
                         foreach (var source in unmuxed.AudioSources)
@@ -302,7 +306,7 @@ namespace Grayjay.ClientServer.Models.Downloads
 
                     if (asource == null)
                         AudioSource = null;
-                    else if (asource is AudioUrlSource || asource is DashManifestRawAudioSource)
+                    else if (asource is AudioUrlSource || asource is DashManifestRawAudioSource || asource is UMPAudioFormatSource)
                         AudioSource = asource;
                     else
                         throw new DownloadException("Audio source is not supported for downloading (yet)", false);
@@ -405,7 +409,15 @@ namespace Grayjay.ClientServer.Models.Downloads
                         }
                     };
 
-                    if (VideoSourceToUse is DashManifestRawSource dashManifestRawSource)
+                    if (VideoSourceToUse is UMPVideoFormatSource umpVideo)
+                    {
+                        var result = await UmpDownloader.DownloadTrackAsync(SabrStreamSpec.FromSource(umpVideo.Parent), SabrSession.ROLE_VIDEO, umpVideo.Format,
+                            umpVideo.Parent.Duration, VideoFilePath, GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount(), progressCallback, () => IsCancelled, cancel);
+                        VideoFileSize = result.Length;
+                        VideoSourceMetaDataOverride = result.ToStreamMetaData();
+                        VideoSourceMimeTypeOverride = umpVideo.Format.ContainerMimeType;
+                    }
+                    else if (VideoSourceToUse is DashManifestRawSource dashManifestRawSource)
                     {
                         var rep = videoRepresentations.FirstOrDefault(x => x.MimeType.StartsWith("video/"));
                         var repAudio = AudioSourceToUse == null ? videoRepresentations.FirstOrDefault(x => x.MimeType.StartsWith("audio/")) : null;
@@ -466,7 +478,15 @@ namespace Grayjay.ClientServer.Models.Downloads
                         }
                     };
 
-                    if (AudioSourceToUse is DashManifestRawAudioSource dashManifestRawSource)
+                    if (AudioSourceToUse is UMPAudioFormatSource umpAudio)
+                    {
+                        var result = await UmpDownloader.DownloadTrackAsync(SabrStreamSpec.FromSource(umpAudio.Parent), SabrSession.ROLE_AUDIO, umpAudio.Format,
+                            umpAudio.Parent.Duration, AudioFilePath, GrayjaySettings.Instance.Downloads.GetByteRangeThreadCount(), progressCallback, () => IsCancelled, cancel);
+                        AudioFileSize = result.Length;
+                        AudioSourceMetaDataOverride = result.ToStreamMetaData();
+                        AudioSourceMimeTypeOverride = umpAudio.Format.ContainerMimeType;
+                    }
+                    else if (AudioSourceToUse is DashManifestRawAudioSource dashManifestRawSource)
                     {
                         var rep = audioRepresentations.FirstOrDefault();
 

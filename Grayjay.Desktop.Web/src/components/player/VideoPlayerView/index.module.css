@@ -113,4 +113,9 @@
     background-color: rgba(0, 0, 0, 0.5);
     padding: 4px;
     box-sizing: border-box;
+    white-space: pre-line;
+}
+
+.captionsContainer div:empty {
+    display: none;
 }

@@ -82,6 +82,8 @@ import ControllerOverlay from "../../ControllerOverlay";
 import { useCasting } from "../../../contexts/Casting";
 import { SearchBackend } from "../../../backend/SearchBackend";
 import history from '../../../assets/icons/icon_nav_history.svg';
+import { UmpFormatInfo } from "../../player/UmpPlayer/UmpPlayer";
+import { CastingBackend } from "../../../backend/CastingBackend";
 
 const SCOPE_ID = "video-detail-view";
 
@@ -188,6 +190,38 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const [videoSource$, setVideoSource] = createSignal<SourceSelected>();
     const [videoQuality$, setVideoQuality] = createSignal<number>(-1);
     const [playerQuality$, setPlayerQuality] = createSignal<number>(-1);
+    const [umpVideoFormats$, setUmpVideoFormats] = createSignal<UmpFormatInfo[]>([]);
+    const [umpAudioFormats$, setUmpAudioFormats] = createSignal<UmpFormatInfo[]>([]);
+    const [umpVideoKey$, setUmpVideoKey] = createSignal<string>();
+    const [umpAudioKey$, setUmpAudioKey] = createSignal<string>();
+    const [umpActiveVideo$, setUmpActiveVideo] = createSignal<UmpFormatInfo>();
+    const [umpActiveAudio$, setUmpActiveAudio] = createSignal<UmpFormatInfo>();
+    const isCastingUmp$ = createMemo(() => !!casting.activeDevice.device() && !videoSource$()?.videoIsLocal
+        && videoSources$()[videoSource$()?.video ?? -1]?.container == "application/vnd.yt-ump");
+    const [umpCastQualities$, { refetch: refetchUmpCastQualities }] = createResource(isCastingUmp$, async (isCasting) => {
+        if (!isCasting) return undefined;
+        try {
+            return await CastingBackend.umpCastQualities();
+        } catch {
+            return undefined;
+        }
+    });
+    const selectUmpCastQuality = async (height: number) => {
+        try {
+            await CastingBackend.setUmpCastQuality(height);
+        } catch (e) {
+            console.error("Failed to change cast quality", e);
+        }
+        refetchUmpCastQualities();
+    };
+    createEffect(on(() => `${videoSource$()?.url}|${videoSource$()?.video}|${videoSource$()?.videoIsLocal}`, () => {
+        setUmpVideoFormats([]);
+        setUmpAudioFormats([]);
+        setUmpVideoKey(undefined);
+        setUmpAudioKey(undefined);
+        setUmpActiveVideo(undefined);
+        setUmpActiveAudio(undefined);
+    }, { defer: true }));
 
     createEffect(on(currentVideoUrl$, (url) => {
         console.info("Reset error counter because video source changed", { url, errorCounter });
@@ -225,6 +259,55 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     const audioSources$ = createMemo(() => {
         return videoLoaded$()?.video?.audioSources as any[] ?? [];
     });
+    const SUBTITLE_LANGUAGE_KEY = "subtitleLanguage";
+    const getPreferredSubtitleLanguage = (): string | undefined => {
+        try {
+            return localStorage.getItem(SUBTITLE_LANGUAGE_KEY) || undefined;
+        } catch {
+            return undefined;
+        }
+    };
+    const setPreferredSubtitleLanguage = (language?: string) => {
+        if (!language)
+            return;
+        try {
+            localStorage.setItem(SUBTITLE_LANGUAGE_KEY, language);
+        } catch { }
+    };
+    const selectBestSubtitleIndex = (sources: any[], preferredLanguage?: string): number => {
+        const normalize = (tag: string) => tag.trim().replace(/_/g, "-").toLowerCase();
+        const primary = (tag: string) => tag.split("-")[0];
+        const hasRegion = (tag: string) => tag.split("-").slice(1).some(x => /^([a-z]{2}|\d{3})$/.test(x));
+        const bestFor = (language: string) => {
+            const pref = normalize(language);
+            const prefPrimary = primary(pref);
+            let best = -1;
+            let bestKey: [number, number, string] | undefined;
+            sources.forEach((source, index) => {
+                if (!source?.language)
+                    return;
+                const tag = normalize(source.language);
+                const score = tag === pref ? 0 : primary(tag) === prefPrimary ? (hasRegion(tag) ? 2 : 1) : 3;
+                if (score >= 3)
+                    return;
+                const key: [number, number, string] = [score, (source.name ?? "").length, tag];
+                if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))) {
+                    bestKey = key;
+                    best = index;
+                }
+            });
+            return best;
+        };
+        for (const language of [preferredLanguage, navigator.language, "en"]) {
+            if (!language)
+                continue;
+            const index = bestFor(language);
+            if (index >= 0)
+                return index;
+        }
+        return sources.length > 0 ? 0 : -1;
+    };
+
     const subtitleSources$ = createMemo(() => {
         const subs = videoLoaded$()?.subtitles;
         console.info("subtitle sources", subs);
@@ -328,7 +411,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     };
 
-    const handleError = (error: string, fatal: boolean) => {
+    const handleError = (error: string, fatal: boolean, reloadable?: boolean) => {
         console.info("Error occurred", { fatal, error });
 
         if (!fatal) {
@@ -343,6 +426,12 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             videoLoadedResource.mutate(undefined);
             videoLoadedResource.refetch();
         };
+
+        if (reloadable && errorCounter < 2) {
+            console.info("UMP stream expired, reloading automatically", { error });
+            reloadMedia();
+            return;
+        }
 
         const nvi = nextVideoIndex();
         if (nvi === undefined) {
@@ -717,8 +806,11 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     let lastHideSettingsTime = (new Date()).getTime();
     function onShowSettings() {
         console.log("hideDiff", ((new Date()).getTime() - lastHideSettingsTime))
-        if(((new Date()).getTime() - lastHideSettingsTime) > 500)
+        if(((new Date()).getTime() - lastHideSettingsTime) > 500) {
+            if (isCastingUmp$())
+                refetchUmpCastQualities();
             setShowSettings(true);
+        }
     }
     function onHideSettings() {
         if(showSettings$()) {
@@ -1052,6 +1144,80 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                         })))
                     }
                 } : undefined,
+                (isCastingUmp$() && (umpCastQualities$()?.options?.length ?? 0) > 0) ? {
+                    key: "Cast Quality (" + umpCastQualities$()!.options.length + ")",
+                    value: umpCastQualities$()!.selectedHeight > 0
+                        ? `${umpCastQualities$()!.selectedHeight}p`
+                        : (umpCastQualities$()!.activeLabel ? `Auto (${umpCastQualities$()!.activeLabel})` : "Auto"),
+                    type: "group",
+                    subMenu: {
+                        title: "Cast qualities",
+                        items: [{
+                            name: "Auto",
+                            value: "Auto",
+                            type: "option",
+                            onSelected: () => selectUmpCastQuality(-1),
+                            isSelected: umpCastQualities$()!.selectedHeight <= 0
+                        } as IMenuItemOption].concat(umpCastQualities$()!.options.map((x: { height: number, width: number, label: string, codecName: string }) => ({
+                            name: `${x.label} ${x.codecName}`.trim(),
+                            value: x.width + "x" + x.height,
+                            type: "option",
+                            onSelected: () => selectUmpCastQuality(x.height),
+                            isSelected: umpCastQualities$()!.selectedHeight == x.height
+                        } as IMenuItemOption)))
+                    }
+                } as IMenuItemGroup : undefined,
+                (!isCastingUmp$() && umpVideoFormats$().length > 0) ? {
+                    key: "Video Quality (" + umpVideoFormats$().length + ")",
+                    value: umpVideoKey$()
+                        ? (umpVideoFormats$().find(x => x.key == umpVideoKey$())?.label ?? "")
+                        : (umpActiveVideo$() ? `Auto (${umpActiveVideo$()!.label})` : "Auto"),
+                    type: "group",
+                    subMenu: {
+                        title: "Stream qualities",
+                        items: [{
+                            name: "Auto",
+                            value: "Auto",
+                            type: "option",
+                            onSelected: () => setUmpVideoKey(undefined),
+                            isSelected: !umpVideoKey$()
+                        } as IMenuItemOption].concat(umpVideoFormats$().map(x => ({
+                            name: `${x.label} ${x.codecName}`.trim(),
+                            value: x.width + "x" + x.height,
+                            type: "option",
+                            onSelected: () => setUmpVideoKey(x.key),
+                            isSelected: umpVideoKey$() == x.key
+                        } as IMenuItemOption)))
+                    }
+                } as IMenuItemGroup : undefined,
+                (!isCastingUmp$() && umpAudioFormats$().length > 0) ? {
+                    key: "Audio Tracks (" + umpAudioFormats$().length + ")",
+                    value: umpAudioKey$()
+                        ? (umpAudioFormats$().find(x => x.key == umpAudioKey$())?.label ?? "")
+                        : (umpActiveAudio$() ? `Auto (${umpActiveAudio$()!.label})` : "Auto"),
+                    type: "group",
+                    subMenu: {
+                        title: "Audio tracks",
+                        items: [{
+                            name: "Auto",
+                            value: "Auto",
+                            type: "option",
+                            onSelected: () => setUmpAudioKey(undefined),
+                            isSelected: !umpAudioKey$()
+                        } as IMenuItemOption].concat([...umpAudioFormats$()].sort((a, b) =>
+                            Number(b.original) - Number(a.original)
+                            || (a.languageName ?? a.language ?? "").localeCompare(b.languageName ?? b.language ?? "")
+                            || Number(a.isDrc) - Number(b.isDrc)
+                            || b.bitrate - a.bitrate
+                        ).map(x => ({
+                            name: `${x.label} ${x.codecName}`.trim(),
+                            value: x.key,
+                            type: "option",
+                            onSelected: () => setUmpAudioKey(x.key),
+                            isSelected: umpAudioKey$() == x.key
+                        } as IMenuItemOption)))
+                    }
+                } as IMenuItemGroup : undefined,
                 (audioSources$() && audioSources$().length > 0 && videoSource$()) ? {
                     key: "Audio Sources (" + (audioSources$().length) + ")",
                     value: (videoSource$() && !videoSource$()?.audioIsLocal) ? audioSources$()[videoSource$()!.audio]?.name : undefined,
@@ -1121,6 +1287,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                                     onSelected: (val: any) => {
                                         const videoObj = videoLoaded$();
                                         const originalSource = videoSource$();
+                                        setPreferredSubtitleLanguage(x?.language);
                                         setVideoSource({
                                             url: videoObj?.url,
                                             video: originalSource?.video,
@@ -1494,7 +1661,8 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
 
                                 let subtitleIndexToSet = -1;
                                 if (originalSource.subtitle === -1) {
-                                    subtitleIndexToSet = 0; //TODO: Select best?
+                                    subtitleIndexToSet = selectBestSubtitleIndex(subtitleSources, getPreferredSubtitleLanguage());
+                                    setPreferredSubtitleLanguage(subtitleSources[subtitleIndexToSet]?.language);
                                 }
                                                                       
                                 setVideoSource({
@@ -1515,6 +1683,10 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             onReady={setVideoPlayerViewHandle}
                             sourceQuality={videoQuality$()}
                             onPlayerQualityChanged={(number)=>{setPlayerQuality(number)}}
+                            umpVideoKey={umpVideoKey$()}
+                            umpAudioKey={umpAudioKey$()}
+                            onUmpFormats={(video, audio) => { setUmpVideoFormats(video); setUmpAudioFormats(audio); }}
+                            onUmpActiveFormat={(role, format) => role == "video" ? setUmpActiveVideo(format) : setUmpActiveAudio(format)}
                             onSettingsDialog={(ev) => onShowSettings()} 
                             lockOverlay={showSettings$()} 
                             volume={video?.volume()}

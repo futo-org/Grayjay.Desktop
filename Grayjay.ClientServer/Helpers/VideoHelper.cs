@@ -22,14 +22,24 @@ namespace Grayjay.ClientServer.Helpers
             return false;
         }
 
-        public static bool IsDownloadable(IVideoSource source) => source is VideoUrlSource videoUrlSource || source is HLSManifestSource || source is DashManifestRawSource;
-        public static bool IsDownloadable(IAudioSource source) => source is AudioUrlSource videoUrlSource || source is HLSManifestAudioSource || source is DashManifestRawAudioSource;
+        public static bool IsDownloadable(IVideoSource source) => source is VideoUrlSource videoUrlSource || source is HLSManifestSource || source is DashManifestRawSource || (source is UMPSource ump && !ump.IsLive) || (source is UMPVideoFormatSource umpFormat && !umpFormat.Parent.IsLive);
+        public static bool IsDownloadable(IAudioSource source) => source is AudioUrlSource videoUrlSource || source is HLSManifestAudioSource || source is DashManifestRawAudioSource || (source is UMPAudioFormatSource umpFormat && !umpFormat.Parent.IsLive);
+
+        public static List<IVideoSource> ExpandUMPVideoSources(IEnumerable<IVideoSource> sources) =>
+            sources.SelectMany(x => x is UMPSource ump ? ump.GetVideoFormatSources().Cast<IVideoSource>() : new[] { x }).ToList();
+
+        public static List<IAudioSource> GetUMPAudioSources(IEnumerable<IVideoSource> sources) =>
+            sources.OfType<UMPSource>().SelectMany(x => x.GetAudioFormatSources().Where(a => !a.Format.IsDrc)).Cast<IAudioSource>().ToList();
 
 
         public static IVideoSource SelectBestVideoSource(List<IVideoSource> sources, int desiredPixelCount, List<string> prefContainers, string preferredLanguage = null, bool ignoreOriginal = false)
         {
             if(preferredLanguage == null)
                 preferredLanguage = GrayjaySettings.Instance.Playback.GetPrimaryLanguage();
+
+            var umpSource = sources.FirstOrDefault(x => x is UMPSource);
+            if (umpSource != null)
+                return umpSource;
 
             var targetVideo = (desiredPixelCount > 0) ? sources.OrderBy(x => Math.Abs(x.Height * x.Width - desiredPixelCount)).FirstOrDefault()
                 : sources.LastOrDefault();

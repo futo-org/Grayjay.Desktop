@@ -9,6 +9,7 @@ import { CastingBackend } from '../../../backend/CastingBackend';
 import { Event0 } from "../../../utility/Event";
 import * as dashjs from 'dashjs';
 import Hls from 'hls.js';
+import { UmpFormatInfo, UmpPlayer } from '../UmpPlayer/UmpPlayer';
 import { ChapterType, IChapter } from '../../../backend/models/contentDetails/IChapter';
 import { IPlatformVideoDetails } from '../../../backend/models/contentDetails/IPlatformVideoDetails';
 import CircleLoader from '../../basics/loaders/CircleLoader';
@@ -28,12 +29,16 @@ interface VideoProps {
     source?: SourceSelected;
     sourceQuality?: number;
     onPlayerQualityChanged?: (level: number) => void;
+    umpVideoKey?: string;
+    umpAudioKey?: string;
+    onUmpFormats?: (video: UmpFormatInfo[], audio: UmpFormatInfo[]) => void;
+    onUmpActiveFormat?: (role: "video" | "audio", format: UmpFormatInfo) => void;
     onSettingsDialog?: (event: HTMLElement|undefined) => void;
     onFullscreenChange?: (isFullscreen: boolean) => void;
     onToggleSubtitles?: () => void;
     onProgress?: (progress: number) => void;
     onEnded?: () => void;
-    onError?: (message: string, fatal: boolean) => void;
+    onError?: (message: string, fatal: boolean, reloadable?: boolean) => void;
     onPositionChanged?: (time: Duration) => void;
     onIncreasePlaybackSpeed?: () => void;
     onDecreasePlaybackSpeed?: () => void;
@@ -80,6 +85,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
     let containerRef: HTMLDivElement | undefined;
     let dashPlayer: dashjs.MediaPlayerClass | undefined;
     let hlsPlayer: Hls | undefined;
+    let umpPlayer: UmpPlayer | undefined;
     let timeout: NodeJS.Timeout | undefined;
     let volumeBeforeMute: number | undefined = undefined;
     let subtitleMap: Map<string, HTMLParagraphElement> = new Map<string, HTMLParagraphElement>();
@@ -557,8 +563,27 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         }
     };
 
+    const cueText = (text: string): string => {
+        if (!text || !text.includes("<") && !text.includes("&"))
+            return text ?? "";
+        const stripped = text.replace(/<[^>]*>/g, "");
+        const decoded = stripped.includes("&") ? (new DOMParser().parseFromString(stripped, "text/html").documentElement.textContent ?? stripped) : stripped;
+        return decoded.split("\n").map(x => x.replace(/[\u200B\s]+/g, " ").trim()).filter(x => x.length > 0).join("\n");
+    };
+
+    const umpLiveWindow = (): { start: number, end: number } | undefined => {
+        if (!umpPlayer?.isLive || !videoElement)
+            return undefined;
+        const seekable = videoElement.seekable;
+        if (!seekable || seekable.length === 0)
+            return undefined;
+        const start = seekable.start(0);
+        const end = seekable.end(seekable.length - 1);
+        return isFinite(start) && isFinite(end) && end > start ? { start, end } : undefined;
+    };
+
     const seekLocal = (time: Duration) => {
-        const seconds = time.as('seconds');
+        const seconds = time.as('seconds') + (umpLiveWindow()?.start ?? 0);
         if (dashPlayer) {
             dashPlayer.seek(seconds);
         } else if (videoElement) {
@@ -592,8 +617,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         props.onVolumeChanged?.(volume);
     };
 
-    const onError = (error: string, fatal: boolean) => {
-        props.onError?.(error, fatal);
+    const onError = (error: string, fatal: boolean, reloadable?: boolean) => {
+        props.onError?.(error, fatal, reloadable);
         if (fatal) {
             setLoaderGameVisible(undefined);
             setIsPlaying(false);
@@ -664,6 +689,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         if (hlsPlayer) {
             hlsPlayer.destroy();
             hlsPlayer = undefined;
+        }
+
+        if (umpPlayer) {
+            umpPlayer.destroy();
+            umpPlayer = undefined;
         }
 
         if (videoElement) {
@@ -776,7 +806,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
 
                 dashPlayer.on(dashjs.MediaPlayer.events.CUE_ENTER, (e: any) => {
                     const subtitle = document.createElement("div")
-                    subtitle.textContent = e.text;
+                    subtitle.textContent = cueText(e.text);
                     subtitleMap.set(e.cueID, subtitle);
                     videoCaptionsRef?.appendChild(subtitle);
                 });
@@ -988,7 +1018,8 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     else
                         setVideoDimensions({ width: videoWidth, height: videoHeight });
 
-                    setDuration(Duration.fromMillis((videoElement?.duration ?? 0) * 1000));
+                    const mediaDuration = videoElement?.duration ?? 0;
+                    setDuration(Duration.fromMillis(isFinite(mediaDuration) ? mediaDuration * 1000 : 0));
                     onReady(shouldResume, startTime);
                 };
 
@@ -998,7 +1029,11 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     }
         
                     const currentTime = videoElement?.currentTime ?? 0;
-                    setPosition(Duration.fromMillis(currentTime * 1000));
+                    const liveWindow = umpLiveWindow();
+                    const windowStart = liveWindow?.start ?? 0;
+                    if (liveWindow)
+                        setDuration(Duration.fromMillis((liveWindow.end - liveWindow.start) * 1000));
+                    setPosition(Duration.fromMillis(Math.max(0, currentTime - windowStart) * 1000));
 
                     if (videoElement && videoElement.buffered) {
                         const buffered = videoElement.buffered;
@@ -1007,7 +1042,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                             const end = buffered.end(i);
                     
                             if (currentTime >= start && currentTime <= end) {
-                                setPositionBuffered(Duration.fromMillis(end * 1000));
+                                setPositionBuffered(Duration.fromMillis(Math.max(0, end - windowStart) * 1000));
                                 break;
                             }
                         }
@@ -1048,8 +1083,33 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     onVolumeChanged(videoElement?.volume ?? 1);
                 };
 
-                videoElement.src = sourceUrl;
-                videoElement.load();
+                if (mediaType === 'application/vnd.yt-ump') {
+                    const player = new UmpPlayer(videoElement, sourceUrl, {
+                        onError: (message, fatal, kind) => onError(message, fatal, kind === "reload" || kind === "blocked"),
+                        onCueEnter: (id, text) => {
+                            const subtitle = document.createElement("div");
+                            subtitle.textContent = cueText(text);
+                            subtitleMap.set(id, subtitle);
+                            videoCaptionsRef?.appendChild(subtitle);
+                        },
+                        onCueExit: (id) => {
+                            const subtitle = subtitleMap.get(id);
+                            if (subtitle) {
+                                subtitleMap.delete(id);
+                                subtitle.remove();
+                            }
+                        },
+                        onFormatsChanged: (video, audio) => props.onUmpFormats?.(video, audio),
+                        onActiveFormatChanged: (role, format) => props.onUmpActiveFormat?.(role, format)
+                    });
+                    umpPlayer = player;
+                    player.setVideoFormat(untrack(() => props.umpVideoKey));
+                    player.setAudioFormat(untrack(() => props.umpAudioKey));
+                    player.start(getResumePosition(shouldResume, startTime)?.as('seconds') ?? 0);
+                } else {
+                    videoElement.src = sourceUrl;
+                    videoElement.load();
+                }
             }
         } else {
             setIsLoading(true);
@@ -1067,6 +1127,14 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         if(hlsPlayer) {
             hlsPlayer!.currentLevel = newLevel && newLevel >= 0 && newLevel < hlsPlayer!.levels.length ? (hlsPlayer!.levels.length - newLevel) : -1;
         }
+    });
+    createEffect(() => {
+        const key = props.umpVideoKey;
+        umpPlayer?.setVideoFormat(key);
+    });
+    createEffect(() => {
+        const key = props.umpAudioKey;
+        umpPlayer?.setAudioFormat(key);
     });
 
     const toggleFullscreen = () => {

@@ -17,12 +17,14 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
     internal class EventHandler: FCast.SenderSDK.DeviceEventHandler {
         private Action<IPAddress> _localEndPointChanged;
         private CastingDeviceConnectionState ConnectionState;
+        private Action<FCast.SenderSDK.ReceiverCapabilities?> _capabilitiesChanged;
         private CastingDevicePlaybackState PlaybackState;
 
-        public EventHandler(Action<IPAddress> _localEndPointChanged, CastingDeviceConnectionState ConnectionState, CastingDevicePlaybackState PlaybackState) {
+        public EventHandler(Action<IPAddress> _localEndPointChanged, Action<FCast.SenderSDK.ReceiverCapabilities?> _capabilitiesChanged, CastingDeviceConnectionState ConnectionState, CastingDevicePlaybackState PlaybackState) {
             this.ConnectionState = ConnectionState;
             this.PlaybackState = PlaybackState;
             this._localEndPointChanged = _localEndPointChanged;
+            this._capabilitiesChanged = _capabilitiesChanged;
         }
 
         public void ConnectionStateChanged(FCast.SenderSDK.DeviceConnectionState state) {
@@ -33,8 +35,9 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
             case FCast.SenderSDK.DeviceConnectionState.Connected(
                 FCast.SenderSDK.IpAddr usedRemoteAddr,
                 FCast.SenderSDK.IpAddr localAddr,
-                _
+                var capabilities
             ):
+                _capabilitiesChanged(capabilities);
                 _localEndPointChanged(localAddr switch {
                         FCast.SenderSDK.IpAddr.V4(byte @o1, byte @o2, byte @o3, byte @o4) =>
                             new IPAddress([@o1, @o2, @o3, @o4]),
@@ -105,6 +108,20 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
     public override bool CanSetSpeed => inner.SupportsFeature(FCast.SenderSDK.DeviceFeature.SetSpeed);
 
     private IPEndPoint? _localEndPoint = null;
+    private FCast.SenderSDK.ReceiverCapabilities? _receiverCapabilities = null;
+    public override bool IsSabrSupported => _receiverCapabilities?.Media?.Protocols?.Contains("sabr") == true;
+    public override bool SupportsExternalSubtitles => _receiverCapabilities?.Media?.ExternalSubtitles == true;
+
+    public override Task<bool> AddSubtitleAsync(byte[] data, string contentType, string? name)
+    {
+        try {
+            inner.AddSubtitleSource(new FCast.SenderSDK.SubtitleSource(new FCast.SenderSDK.SubtitleContent.Data(data, contentType), true, name));
+            return Task.FromResult(true);
+        } catch (Exception e) {
+            Logger.e(nameof(CastingDeviceExperimentalWrapper), "Failed to add subtitle source", e);
+            return Task.FromResult(false);
+        }
+    }
     public override IPEndPoint? LocalEndPoint => _localEndPoint;
 
     public override Task ChangeSpeedAsync(double speed, CancellationToken cancellationToken = default)
@@ -193,7 +210,10 @@ public class CastingDeviceExperimentalWrapper : CastingDevice
         try {
             inner.Connect(
                 null,
-                new EventHandler((ip) => _localEndPoint = new IPEndPoint(ip, 0), ConnectionState, PlaybackState),
+                new EventHandler((ip) => _localEndPoint = new IPEndPoint(ip, 0), (caps) => {
+                    _receiverCapabilities = caps;
+                    Logger.i(nameof(CastingDeviceExperimentalWrapper), $"Receiver capabilities: protocols=[{string.Join(", ", caps?.Media?.Protocols ?? [])}], isSabrSupported={IsSabrSupported}");
+                }, ConnectionState, PlaybackState),
                 1000
             );
         } catch (Exception e) {

@@ -43,8 +43,9 @@ namespace Grayjay.ClientServer.Controllers
                 _details = details;
                 _sources = new DownloadSources()
                 {
-                    VideoSources = VideoHelper.ReorderVideoSources(details.Video.VideoSources.Where(x=>x.IsDownloadable()).ToList(), (details.Video is UnMuxedVideoDescriptor unmux && (unmux.AudioSources?.Any(x=>x.IsDownloadable()) ?? false))),
-                    AudioSources = VideoHelper.ReorderAudioSources(((details.Video is UnMuxedVideoDescriptor unmux2) ? unmux2.AudioSources.Where(x=>x.IsDownloadable()).ToList() : new List<IAudioSource>())),
+                    VideoSources = VideoHelper.ReorderVideoSources(VideoHelper.ExpandUMPVideoSources(details.Video.VideoSources).Where(x=>x.IsDownloadable()).ToList(), (details.Video is UnMuxedVideoDescriptor unmux && (unmux.AudioSources?.Any(x=>x.IsDownloadable()) ?? false)) || details.Video.VideoSources.Any(x => x is UMPSource)),
+                    AudioSources = VideoHelper.ReorderAudioSources(((details.Video is UnMuxedVideoDescriptor unmux2) ? unmux2.AudioSources.Where(x=>x.IsDownloadable()).ToList() : new List<IAudioSource>())
+                        .Concat(VideoHelper.GetUMPAudioSources(details.Video.VideoSources).Where(x => x.IsDownloadable())).ToList()),
                     SubtitleSources = details.Subtitles.ToList(),
                     ManifestSources = details.Video.VideoSources.Where(x => x is HLSManifestSource)
                         .ToDictionary(x => Array.IndexOf(details.Video.VideoSources, x), y =>
