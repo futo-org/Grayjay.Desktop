@@ -16,6 +16,7 @@ const OverlayRemoteFilePicker: Component<OverlayFilePickerProps> = (props) => {
       filters={props.dialog.data$().Filters} 
       mode={props.dialog.data$().Mode}
       selectionMode={props.dialog.data$().SelectionMode}
+      onCancel={() => props.dialog.action!('close', {})}
       onPick={(v) => {
         props.dialog.action!('pick', v);
       }} />

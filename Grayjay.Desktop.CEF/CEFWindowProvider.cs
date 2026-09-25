@@ -51,18 +51,17 @@ namespace Grayjay.Desktop.CEF
 
         public async Task<string?> ShowDirectoryDialogAsync(CancellationToken cancellationToken = default)
         {
-            var taskCompletionSource = new TaskCompletionSource<string?>();
+            var taskCompletionSource = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var dialog = FilePickerDialog.OpenFolderPicker((v) => taskCompletionSource.TrySetResult(v.FirstOrDefault()), false, null);
+            dialog.OnClosed += () => taskCompletionSource.TrySetResult(null);
             try
             {
-                var dialog = FilePickerDialog.OpenFolderPicker((v) => taskCompletionSource.SetResult(v.FirstOrDefault()), false, null);
                 await dialog.Show();
-                taskCompletionSource.TrySetResult(null);
                 return await taskCompletionSource.Task;
             }
-            catch (Exception e)
+            finally
             {
-                taskCompletionSource.SetException(e);
-                throw;
+                await dialog.CloseAsync();
             }
             //return await _cef.PickDirectoryAsync(cancellationToken);
         }

@@ -225,7 +225,7 @@ namespace Grayjay.ClientServer.Controllers
                 throw DialogException.FromException("Export not supported in server-mode", new Exception("For export support, run the application in ui mode, server support might be added at a later time"));
 
             var downloads = ids.Select(x => StateDownloads.GetDownloadedVideo(x))
-                .Where(x=>x.Video != null)
+                .Where(x=>x?.Video != null)
                 .ToArray();
             if(downloads.Length > 0)
             {
@@ -289,8 +289,9 @@ namespace Grayjay.ClientServer.Controllers
                             FFMPEG.ExecuteSafe(args);
                         }
                     }
+                    return ExportsFinished(downloads, outputFolder);
                 }
-                return ExportsFinished(downloads, outputFolder);
+                return Ok();
             }
             return NotFound();
         }
