@@ -12,6 +12,7 @@ namespace Grayjay.ClientServer.Dialogs
 
         public string Status { get; set; }
         public bool IsOpen => _dialog != null;
+        public event Action? OnClosed;
 
         public RemoteDialog(string name)
         {
@@ -38,6 +39,7 @@ namespace Grayjay.ClientServer.Dialogs
             _dialog = null;
             if (dlg != null)
             {
+                OnClosed?.Invoke();
                 try
                 {
                     await dlg.Close().ConfigureAwait(false);

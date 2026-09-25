@@ -26,6 +26,7 @@ import CenteredLoader from '../../components/basics/loaders/CenteredLoader';
 export type PickerSelectionMode = 'file' | 'folder';
 export interface OverlayFilePickerProps {
   onPick?: (paths: string[]) => void;
+  onCancel?: () => void;
   selectionMode?: PickerSelectionMode;
   allowMultiple?: boolean;
   mode?: 'open' | 'save';
@@ -170,7 +171,10 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
     setConfirmState(null);
   }
 
-  const dismiss = () => UIOverlay.dismiss();
+  const dismiss = () => {
+    props.onCancel?.();
+    UIOverlay.dismiss();
+  };
 
   const INVALID_FILENAME_CHARS = /[<>:"/\\|?*]/;
   function validateFileName(inputPathOrName: string): string | undefined {
@@ -220,7 +224,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
       } catch { /* missing => OK */ }
 
       props.onPick?.([full]);
-      dismiss();
+      UIOverlay.dismiss();
   };
   const openSelected = async () => {
     if (isSaveMode()) {
@@ -272,7 +276,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
       }
 
       props.onPick?.(stats.map(s => s.path));
-      dismiss();
+      UIOverlay.dismiss();
     } catch (e: any) {
       setErrorMsg(e?.message ?? "Failed to validate selection.");
     }
@@ -450,7 +454,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
     if (currentBreadcrumbs.length >= 2)
       setCurrentDirectory(currentBreadcrumbs[currentBreadcrumbs.length - 2].path);
     else
-      UIOverlay.dismiss();
+      dismiss();
     return true;
   }
 
