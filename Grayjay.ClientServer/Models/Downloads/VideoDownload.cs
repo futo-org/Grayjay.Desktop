@@ -349,7 +349,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 if(AudioSource == null && VideoSource is DashManifestRawSource)
                 {
                     var representationAudio = videoRepresentations?.FirstOrDefault(x => x.MimeType.StartsWith("audio/"));
-                    var mimeTypeAudio = representation?.MimeType;
+                    var mimeTypeAudio = representationAudio?.MimeType;
                     if(representationAudio != null && mimeTypeAudio != null)
                     {
                         AudioFileName = $"{VideoDetails.ID.Value} [unknown].{VideoHelper.AudioContainerToExtension(mimeTypeAudio)}".SanitizeFileName();
@@ -917,7 +917,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                                 segReadAudio = data.Length;
                             }
                             else
-                                segReadAudio = (int)DownloadSourceSequential(client, modifier, stream, segment.Url, onProgress);
+                                segReadAudio = (int)DownloadSourceSequential(client, modifier, streamAudio, segmentAudio.Url, onProgress);
                             readAudio += segReadAudio;
                             speedmeter.Activity(segReadAudio);
 
