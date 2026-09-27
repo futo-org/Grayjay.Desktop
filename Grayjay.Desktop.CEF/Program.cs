@@ -6,6 +6,7 @@ using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
 using Grayjay.Engine.Packages;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -25,6 +26,8 @@ namespace Grayjay.Desktop
         private const string PortFileName = "port";   
         private const int StartupTimeoutSeconds = 5;
         private const int NewWindowTimeoutSeconds = 5;
+        private static readonly TimeSpan SandboxedReadyTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan TimedOutProcessExitDelay = TimeSpan.FromSeconds(6);
 
         private static bool IsProcessRunningByPath(string path, out Process? matchingProcess)
         {
@@ -123,7 +126,7 @@ namespace Grayjay.Desktop
             return null;
         }
 
-        private static async Task<JustCefProcess> StartCefProcessAsync(string startArgs)
+        private static async Task<JustCefProcess> StartCefProcessAsync(string startArgs, Action<JustCefProcess>? configure = null, TimeSpan? readyTimeout = null)
         {
             const int maxAttempts = 3;
 
@@ -132,8 +135,9 @@ namespace Grayjay.Desktop
                 var cef = new JustCefProcess();
                 try
                 {
+                    configure?.Invoke(cef);
                     cef.Start(startArgs);
-                    await cef.WaitForReadyAsync();
+                    await WaitForReadyAsync(cef, readyTimeout);
                     return cef;
                 }
                 catch (JustCefStartupException e) when (e.Failure != JustCefStartupFailure.Unknown && attempt < maxAttempts)
@@ -147,6 +151,53 @@ namespace Grayjay.Desktop
                     cef.Dispose();
                     throw;
                 }
+            }
+        }
+
+        private static async Task<JustCefProcess> StartCefProcessWithSandboxFallbackAsync(string startArgs, bool canFallback, string rootCachePath)
+        {
+            if (!canFallback)
+                return await StartCefProcessAsync(startArgs);
+
+            try
+            {
+                return await StartCefProcessAsync(startArgs, cef => LinuxSandbox.ConfigureProcess(cef, rootCachePath), SandboxedReadyTimeout);
+            }
+            catch (JustCefStartupException e) when (e.Failure == JustCefStartupFailure.Unknown)
+            {
+                Logger.w(nameof(Program), $"JustCef failed to start with the sandbox enabled (exit code {e.ExitCode}), retrying without the sandbox.", e);
+            }
+            catch (TimeoutException e)
+            {
+                Logger.w(nameof(Program), "JustCef did not become ready with the sandbox enabled, retrying without the sandbox.", e);
+                await Task.Delay(TimedOutProcessExitDelay);
+            }
+            catch (Win32Exception e)
+            {
+                Logger.w(nameof(Program), "JustCef could not be launched with the sandbox enabled, retrying without the sandbox.", e);
+            }
+
+            var cef = await StartCefProcessAsync("--no-sandbox " + startArgs);
+            LinuxSandbox.MarkFailed();
+            return cef;
+        }
+
+        private static async Task WaitForReadyAsync(JustCefProcess cef, TimeSpan? timeout)
+        {
+            if (timeout == null)
+            {
+                await cef.WaitForReadyAsync();
+                return;
+            }
+
+            using var cts = new CancellationTokenSource(timeout.Value);
+            try
+            {
+                await cef.WaitForReadyAsync(cts.Token);
+            }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                throw new TimeoutException($"JustCef did not become ready within {timeout.Value.TotalSeconds} seconds.");
             }
         }
 
@@ -472,12 +523,13 @@ namespace Grayjay.Desktop
             }
 
             string cefStartArgs = "";
+            string rootCachePath = Path.Combine(Directories.Base, "cef_cache");
+            bool useSandbox = true;
             if (!isServer)
             {
                 var extraArgs = ReconstructArgs(args);
                 Logger.i(nameof(Program), "Extra args: " + extraArgs);
 
-                string rootCachePath = Path.Combine(Directories.Base, "cef_cache");
                 string rootCacheDirCmd = "--root-cache-path=\"" + rootCachePath + "\" ";
                 Logger.i(nameof(Program), "Root cache path: " + rootCachePath);
 
@@ -488,24 +540,30 @@ namespace Grayjay.Desktop
                     rootCacheDirCmd += "--widevine-cdm-path=\"" + systemCdmPath + "\" ";
                 }
 
+                if (OperatingSystem.IsLinux())
+                    useSandbox = LinuxSandbox.ShouldUse(args);
+                string sandboxArg = useSandbox ? "" : "--no-sandbox ";
+
                 if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                     cefStartArgs = "--use-alloy-style --use-native " + rootCacheDirCmd + extraArgs;
                 else if (Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") != null)
-                    cefStartArgs = "--no-sandbox " + rootCacheDirCmd + extraArgs;
+                    cefStartArgs = sandboxArg + rootCacheDirCmd + extraArgs;
                 else
-                    cefStartArgs = "--use-alloy-style --use-native --no-sandbox " + rootCacheDirCmd + extraArgs;
+                    cefStartArgs = "--use-alloy-style --use-native " + sandboxArg + rootCacheDirCmd + extraArgs;
 
                 Logger.i(nameof(Program), "Main: Starting JustCefProcess");
             }
 
             Stopwatch startCefWatch = Stopwatch.StartNew();
-            using var cef = !isServer ? await StartCefProcessAsync(cefStartArgs) : null;
+            using var cef = !isServer ? await StartCefProcessWithSandboxFallbackAsync(cefStartArgs, OperatingSystem.IsLinux() && useSandbox, rootCachePath) : null;
             if (cef != null)
             {
                 PackageBrowser.Process = cef;
                 Logger.i(nameof(Program), $"Main: Starting JustCefProcess finished ({startCefWatch.ElapsedMilliseconds}ms)");
 
                 _ = MonitorWidevineAsync(cef);
+                if (OperatingSystem.IsLinux() && !isHeadless)
+                    _ = LinuxSandbox.OfferAppArmorProfileAsync();
             }
             GrayjayServer server = null;
             JustCefWindow ? window = null;

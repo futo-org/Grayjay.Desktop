@@ -338,6 +338,15 @@ namespace Grayjay.ClientServer.Settings
             public bool PluginUpdates { get; set; } = true;
         }
 
+        [SettingsField("Browser", SettingsField.GROUP, "Configure the embedded browser", 12)]
+        public BrowserSettings Browser { get; set; } = new BrowserSettings();
+        public class BrowserSettings
+        {
+            [SettingsField("Disable Sandbox", SettingsField.TOGGLE, "Linux only. Run the embedded browser without the Chromium sandbox. Only use this if pages crash or stay blank. Requires restart", 0)]
+            [SettingsAdvanced]
+            public bool DisableSandbox { get; set; } = false;
+        }
+
         [SettingsField("Info", SettingsField.GROUP, "", 13)]
         public InfoData Info { get; } = new InfoData();
 
