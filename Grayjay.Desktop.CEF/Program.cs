@@ -381,6 +381,14 @@ namespace Grayjay.Desktop
         {
             Stopwatch sw = Stopwatch.StartNew();
 
+#if DEBUG
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && WindowsAPI.AllocConsole())
+            {
+                Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+                Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
+            }
+#endif
+
             if (args.Length > 0 && args[0] == "version")
             {
                 Console.WriteLine(App.Version.ToString());
@@ -394,10 +402,6 @@ namespace Grayjay.Desktop
             double? scaleFactor = args?.FirstOrDefault(a => a.StartsWith("--scale-factor=")) is string s && double.TryParse(s["--scale-factor=".Length..], out var v) ? v : null;
             StateApp.InputSource = args?.FirstOrDefault(a => a.StartsWith("--input-source="))?["--input-source=".Length..];
 
-#if DEBUG
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                WindowsAPI.AllocConsole();
-#endif
             if (isHeadless || isServer)
             {
                 if (disableSecurity)
