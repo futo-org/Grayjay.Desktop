@@ -1,4 +1,4 @@
-import { Accessor, Resource, createResource, createRoot, createSignal } from "solid-js";
+import { Accessor, Resource, Setter, createResource, createRoot, createSignal } from "solid-js";
 import { SourcesBackend } from "../backend/SourcesBackend";
 import { Event1 } from "../utility/Event";
 import { IFilter, IResultCapabilities, ISourceConfig, ISourceConfigState } from "../backend/models/plugin/ISourceConfigState";
@@ -18,6 +18,13 @@ import { WindowBackend } from "../backend/WindowBackend";
 import { LocalBackend } from "../backend/LocalBackend";
 import { ToastDescriptor } from "../overlays/OverlayRoot";
 
+export interface HomeFilterState {
+    hideWatched: boolean;
+    inProgressOnly: boolean;
+    hideLive: boolean;
+    hidePlanned: boolean;
+}
+
 export interface StateGlobal {
     settings$: Resource<any>,
     sources$: Resource<ISourceConfig[]>,
@@ -25,6 +32,8 @@ export interface StateGlobal {
     sourceStates$: Resource<ISourceConfigState[]>,
     lastHomeTime$: Accessor<DateTime|undefined>,
     home$: Resource<RefreshPager<IPlatformVideo>>,
+    homeFilter$: Accessor<HomeFilterState>,
+    setHomeFilter: Setter<HomeFilterState>,
     didPurchase$: Resource<boolean>,
     isDeveloper$: Resource<boolean>,
     onGlobalClick: Event1<MouseEvent>,
@@ -47,6 +56,12 @@ function createState() {
     const [sources$, sourcesResource] = createResourceDefault(async () => await SourcesBackend.sources());
     const [sourceStates$, sourceStatesResource] = createResourceDefault(async () => await SourcesBackend.sourceStates());
     const [lastHomeTime$, setLastHomeTime] = createSignal<DateTime>();
+    const [homeFilter$, setHomeFilter] = createSignal<HomeFilterState>({
+        hideWatched: false,
+        inProgressOnly: false,
+        hideLive: false,
+        hidePlanned: false,
+    });
     const [home$, homeResource] = createResourceDefault(async () => {
         setLastHomeTime(DateTime.now());
         return await HomeBackend.homePagerLazy();
@@ -154,6 +169,8 @@ function createState() {
 
         lastHomeTime$: lastHomeTime$,
         home$: home$,
+        homeFilter$: homeFilter$,
+        setHomeFilter: setHomeFilter,
         didPurchase$: didPurchase$,
         
         onGlobalClick: new Event1<MouseEvent>(),
