@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Settings;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC.Port.States;
 using Grayjay.Engine;
@@ -17,6 +17,38 @@ namespace Grayjay.ClientServer.Controllers
         {
             if (string.IsNullOrEmpty(url) || url == "undefined")
                 return NotFound();
+
+            if (url.StartsWith("grayjay://", StringComparison.OrdinalIgnoreCase))
+            {
+                var stripped = url.Substring("grayjay://".Length);
+                if (stripped.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                    stripped.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    url = stripped;
+                }
+                else if (stripped.StartsWith("play/", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("open/", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("content/", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+                {
+                    int slash = stripped.IndexOf('/');
+                    url = stripped.Substring(slash + 1);
+                }
+                else if (stripped.StartsWith("play?", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("open?", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("content?", StringComparison.OrdinalIgnoreCase) ||
+                         stripped.StartsWith("video?", StringComparison.OrdinalIgnoreCase))
+                {
+                    int q = stripped.IndexOf('?');
+                    var qs = System.Web.HttpUtility.ParseQueryString(stripped.Substring(q + 1));
+                    url = qs["url"] ?? qs["data"] ?? stripped;
+                }
+                else if (stripped.Contains("youtube.com") || stripped.Contains("youtu.be") || stripped.Contains("rumble.com"))
+                {
+                    url = stripped.StartsWith("http") ? stripped : "https://" + stripped;
+                }
+            }
+
             var contentClient = StatePlatform.GetContentClientOrNull(url);
             if (contentClient != null)
                 return Ok(new HandlePlan()

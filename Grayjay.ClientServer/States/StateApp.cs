@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Constants;
+using Grayjay.ClientServer.Constants;
 using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Database;
 using Grayjay.ClientServer.Database.Indexes;
@@ -341,6 +341,27 @@ namespace Grayjay.ClientServer.States
             ThreadPool.Stop();
             AppCancellationToken.Cancel();
             Connection = null;
+        }
+
+        public static async Task ExitAsync()
+        {
+            try
+            {
+                if (MainWindow != null)
+                    await MainWindow.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(StateApp), "Failed to close main window", ex);
+            }
+            finally
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(500);
+                    Environment.Exit(0);
+                });
+            }
         }
 
         private static bool _hasCaptchaDialog = false;

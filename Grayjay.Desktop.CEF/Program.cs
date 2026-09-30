@@ -1,4 +1,4 @@
-﻿using JustCef;
+using JustCef;
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Constants;
 using Grayjay.ClientServer.Controllers;
@@ -287,6 +287,123 @@ namespace Grayjay.Desktop
             }
         }
 
+        private static async Task<bool> TryHandleCliCommandAsync(string[] args)
+        {
+            if (args == null || args.Length == 0)
+                return false;
+
+            if (!File.Exists(PortFile!))
+                return false;
+
+            string port = (await File.ReadAllTextAsync(PortFile!)).Trim();
+            if (string.IsNullOrWhiteSpace(port))
+                return false;
+
+            var filteredArgs = args.Where(a =>
+                !a.StartsWith("--data-dir") &&
+                !a.StartsWith("--data-directory") &&
+                !a.StartsWith("--scale-factor") &&
+                !a.StartsWith("--input-source") &&
+                a != "--headless" &&
+                a != "--server" &&
+                a != "--ignore-security" &&
+                a != "--fullscreen").ToArray();
+
+            if (filteredArgs.Length == 0)
+                return false;
+
+            string firstArg = filteredArgs[0].Trim();
+            string? commandUrl = null;
+
+            if (firstArg.StartsWith("grayjay://", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Protocol?uri={Uri.EscapeDataString(firstArg)}";
+            }
+            else if (firstArg.Equals("exit", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--exit", StringComparison.OrdinalIgnoreCase) ||
+                     firstArg.Equals("quit", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--quit", StringComparison.OrdinalIgnoreCase) ||
+                     firstArg.Equals("close", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--close", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Exit";
+            }
+            else if (firstArg.Equals("stop", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--stop", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Stop";
+            }
+            else if (firstArg.Equals("pause", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--pause", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Pause";
+            }
+            else if (firstArg.Equals("resume", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--resume", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Resume";
+            }
+            else if (firstArg.Equals("toggle", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--toggle", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Toggle";
+            }
+            else if (firstArg.Equals("seek", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--seek", StringComparison.OrdinalIgnoreCase))
+            {
+                double pos = filteredArgs.Length > 1 && double.TryParse(filteredArgs[1], out double p) ? p : 0;
+                commandUrl = $"http://127.0.0.1:{port}/Player/Seek?position={pos}";
+            }
+            else if (firstArg.Equals("volume", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--volume", StringComparison.OrdinalIgnoreCase))
+            {
+                double vol = filteredArgs.Length > 1 && double.TryParse(filteredArgs[1], out double v) ? v : 100;
+                commandUrl = $"http://127.0.0.1:{port}/Player/Volume?val={vol}";
+            }
+            else if (firstArg.Equals("status", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--status", StringComparison.OrdinalIgnoreCase))
+            {
+                commandUrl = $"http://127.0.0.1:{port}/Player/Status";
+            }
+            else if (firstArg.Equals("play", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--play", StringComparison.OrdinalIgnoreCase) ||
+                     firstArg.Equals("open", StringComparison.OrdinalIgnoreCase) || firstArg.Equals("--open", StringComparison.OrdinalIgnoreCase))
+            {
+                if (filteredArgs.Length > 1)
+                {
+                    string targetUrl = Uri.EscapeDataString(filteredArgs[1]);
+                    int pos = 0;
+                    if (filteredArgs.Length > 2 && int.TryParse(filteredArgs[2], out int p))
+                        pos = p;
+                    commandUrl = $"http://127.0.0.1:{port}/Player/Play?url={targetUrl}&position={pos}";
+                }
+            }
+            else if (firstArg.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || firstArg.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                string targetUrl = Uri.EscapeDataString(firstArg);
+                commandUrl = $"http://127.0.0.1:{port}/Player/Play?url={targetUrl}";
+            }
+
+            if (commandUrl != null)
+            {
+                try
+                {
+                    using HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                    var response = await client.GetAsync(commandUrl);
+                    string content = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine(content);
+                        Logger.i(nameof(Program), $"CLI command '{firstArg}' forwarded to running instance on port {port}.");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Grayjay error ({response.StatusCode}): {content}");
+                        Logger.w(nameof(Program), $"CLI command '{firstArg}' returned {response.StatusCode} from port {port}: {content}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Failed to send CLI command '{firstArg}' to running instance: {ex.Message}");
+                    Logger.e(nameof(Program), $"Failed to send CLI command '{firstArg}' to running instance: {ex.Message}");
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
         public static string ReconstructArgs(string[] args)
         {
             if (args == null || args.Length == 0)
@@ -486,6 +603,12 @@ namespace Grayjay.Desktop
 
             if (File.Exists(PortFile))
             {
+                if (await TryHandleCliCommandAsync(args))
+                {
+                    Logger.i<Program>("Handled CLI command, exiting.");
+                    return;
+                }
+
                 if (await TryOpenWindow())
                 {
                     Logger.i<Program>("Successfully opened new window, closing current process.");

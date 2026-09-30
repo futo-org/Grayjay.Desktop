@@ -1,4 +1,4 @@
-﻿using Grayjay.Desktop.POC;
+using Grayjay.Desktop.POC;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics;
 
@@ -11,7 +11,11 @@ namespace Grayjay.ClientServer
 
         private List<PathString> _excludedPaths = new List<PathString>()
         {
-            new PathString("/Developer")
+            new PathString("/Developer"),
+            new PathString("/Player"),
+            new PathString("/Ump"),
+            new PathString("/Window"),
+            new PathString("/Handle")
         };
         private HashSet<string> _excluded = new HashSet<string>()
         {
