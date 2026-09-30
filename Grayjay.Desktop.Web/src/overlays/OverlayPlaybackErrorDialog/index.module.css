@@ -1,0 +1,71 @@
+.dialog {
+    position: relative;
+    width: 90%;
+    max-width: 520px;
+    padding: 32px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    border-radius: 12px;
+    border: 1px solid #2E2E2E;
+    background: #141414;
+    box-sizing: border-box;
+    box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+}
+
+.iconClose {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    right: 24px;
+    top: 24px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.iconClose:hover,
+.iconClose:focus {
+    opacity: 1;
+}
+
+.title {
+    color: #FFF;
+    font-family: Inter, sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.description {
+    color: #8C8C8C;
+    font-family: Inter, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.countdownHighlight {
+    color: #019BE7;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}

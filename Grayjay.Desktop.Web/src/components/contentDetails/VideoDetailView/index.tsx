@@ -32,6 +32,7 @@ import SubscribeButton from "../../buttons/SubscribeButton";
 import SettingsMenu, { Menu, MenuItem, IMenuItemGroup, IMenuItemOption, MenuItemButton, IMenuFilter } from "../../menus/Overlays/SettingsMenu";
 import ExceptionModel from "../../../backend/exceptions/ExceptionModel";
 import UIOverlay from "../../../state/UIOverlay";
+import OverlayPlaybackErrorDialog from "../../../overlays/OverlayPlaybackErrorDialog";
 import Loader from "../../basics/loaders/Loader";
 import Anchor, { AnchorStyle } from "../../../utility/Anchor";
 import DragArea from "../../basics/DragArea";
@@ -412,7 +413,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
     };
 
     const handleError = (error: string, fatal: boolean, reloadable?: boolean) => {
-        console.info("Error occurred", { fatal, error });
+        console.info("Error occurred", { fatal, error, reloadable });
 
         if (!fatal) {
             return;
@@ -427,38 +428,34 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
             videoLoadedResource.refetch();
         };
 
-        if (reloadable && errorCounter < 2) {
-            console.info("UMP stream expired, reloading automatically", { error });
-            reloadMedia();
-            return;
-        }
-
         const nvi = nextVideoIndex();
-        if (nvi === undefined) {
-            console.error("Playback error: " + error, { errorCounter });
-            exitFullscreen();
-            setTimeout(() => {
-                UIOverlay.overlayConfirm(
-                    { yes: () => reloadMedia() },
-                    "An error occurred while playing the video, do you want to reload?"
-                );
-            }, 0);
-        } else {
-            if (errorCounter < 2) {
-                const waitTime_ms = Math.max((errorCounter - 1) * 1000, 0);
-                console.info("Attempting automatic error recovery since in playlist: " + error, { errorCounter, waitTime_ms });
-    
-                if (waitTime_ms > 0) {
-                    setTimeout(() => {
-                        reloadMedia();
-                    }, waitTime_ms);
-                } else {
-                    reloadMedia();
-                }
-            } else {
-                video?.actions?.setIndex(nvi);
-            }
-        }
+        // Staggered timeout: 5s on 1st error, then doubles: 10s, 20s, 40s, 80s...
+        const countdownSec = Math.round(5 * Math.pow(2, Math.max(0, errorCounter - 1)));
+
+        console.error("Playback error: " + error, { errorCounter, countdownSec, hasNextVideo: nvi !== undefined });
+        exitFullscreen();
+
+        setTimeout(() => {
+            UIOverlay.overlay({
+                custom: () => (
+                    <OverlayPlaybackErrorDialog
+                        initialSeconds={countdownSec}
+                        hasPlaylistNext={nvi !== undefined}
+                        errorMessage={typeof error === 'string' ? error : undefined}
+                        onReload={() => reloadMedia()}
+                        onNext={() => {
+                            if (nvi !== undefined) {
+                                errorCounter = 0;
+                                video?.actions?.setIndex(nvi);
+                            }
+                        }}
+                        onCancel={() => {
+                            console.info("Reload cancelled by user");
+                        }}
+                    />
+                )
+            });
+        }, 0);
     };
 
     createEffect(async () => {
