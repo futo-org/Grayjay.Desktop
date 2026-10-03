@@ -30,6 +30,7 @@ import { Pager } from '../../backend/models/pagers/Pager';
 import { focusable } from "../../focusable"; void focusable;
 import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
 import { useFocus } from '../../FocusProvider';
+import { Menus } from '../../Menus';
 
 const HistoryPage: Component = () => {
   const focus = useFocus();
@@ -134,6 +135,10 @@ const HistoryPage: Component = () => {
               setShow(false);
               await WatchLaterBackend.add(content.video);
               await video?.actions?.refetchWatchLater();
+            }),
+            Menus.markAsWatchedButton(content.video, () => {
+              content.position = HistoryBackend.watchedPosition(content.video.duration);
+              historyPager$()?.itemUpdated(content);
             }),
             new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
               setShow(false);

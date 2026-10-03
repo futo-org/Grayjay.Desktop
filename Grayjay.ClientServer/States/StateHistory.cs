@@ -174,6 +174,29 @@ namespace Grayjay.ClientServer.States
             return result;
         }
 
+        public static bool MarkAsWatched(PlatformVideo video)
+        {
+            if (video == null)
+                return false;
+
+            try
+            {
+                var history = GetHistoryByVideo(video, true, DateTime.Now);
+                if (history == null)
+                    return false;
+
+                long position = Math.Max(1, video.Duration - 1);
+                UpdateHistory(video, history, position, 0);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(StateHistory), "Failed to mark as watched", ex);
+                StateUI.Toast("Failed to mark as watched\n" + ex.Message);
+                return false;
+            }
+        }
+
 
         public static void RemoveHistory(string url)
         {

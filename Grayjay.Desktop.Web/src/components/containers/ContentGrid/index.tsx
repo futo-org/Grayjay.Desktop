@@ -14,6 +14,7 @@ import iconAddToPlaylist from '../../../assets/icons/icon24_add_to_playlist.svg'
 import iconHide from '../../../assets/icons/icon24_hide.svg';
 import iconDownload from '../../../assets/icons/icon24_download.svg';
 import iconCreator from '../../../assets/icons/icon_nav_creators.svg';
+import { Menus } from "../../../Menus";
 import Anchor, { AnchorStyle } from "../../../utility/Anchor";
 import { Portal } from "solid-js/web";
 import { WatchLaterBackend } from "../../../backend/WatchLaterBackend";
@@ -103,6 +104,9 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                     new MenuItemButton("Watch later", iconWatchLater, undefined, async () => {
                         await WatchLaterBackend.add(content as IPlatformVideo);
                         await video?.actions?.refetchWatchLater();
+                    }),
+                    Menus.markAsWatchedButton(content as IPlatformVideo, () => {
+                        props.pager?.itemUpdated(content);
                     }),
                     new MenuItemButton("Add to playlist", iconAddToPlaylist, undefined, async () => {
                         await UIOverlay.overlayAddToPlaylist(content as IPlatformVideo);

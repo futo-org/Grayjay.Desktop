@@ -80,6 +80,26 @@ export abstract class Pager<T> {
         
     }
 
+    itemUpdated(item: T) {
+        const dataIndex = this.data.indexOf(item);
+        const filteredIndex = this.dataFiltered.indexOf(item);
+        const copy = { ...(item as object) } as T;
+        if (dataIndex >= 0)
+            this.data[dataIndex] = copy;
+        if (filteredIndex >= 0)
+            this.dataFiltered[filteredIndex] = copy;
+
+        if (this.filter) {
+            this.setFilter(this.filter);
+            return;
+        }
+
+        if (dataIndex >= 0)
+            this.modified(dataIndex, dataIndex);
+        if (filteredIndex >= 0)
+            this.modifiedFiltered(filteredIndex, filteredIndex);
+    }
+
     protected modified(startIndex: number, endIndex: number){
         this.modifiedItemsEvent.invoke({ startIndex, endIndex });
         console.log("modified triggered", {startIndex, endIndex});
