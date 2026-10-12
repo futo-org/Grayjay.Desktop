@@ -56,7 +56,7 @@ const PostThumbnailView: Component<PostProps> = (props) => {
           {props.post?.description}
         </div>
         <div class={styles.descriptionOverlay} style={{bottom: !hasThumbnails$() ? "65px" : "165px"}}></div>
-        <Show when={hasThumbnails$}>
+        <Show when={hasThumbnails$()}>
           <div class={styles.thumbnails} onClick={props.onClick}>
             <Index each={props.post?.thumbnails}>{(thumb: Accessor<IThumbnails>, index: number)=>
               <Show when={index < 3}>
