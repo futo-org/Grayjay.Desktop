@@ -14,7 +14,7 @@ internal sealed class LinuxCdmBridge : IAsyncDisposable
     private readonly CancellationTokenSource stop = new();
     internal LinuxCdmBridge(string cache) { this.cache = cache; assets = new(cache); }
     internal static LinuxCdmBridge? Create(string cache) => RuntimeAssets.Supported ? new(cache) : null;
-    internal void AttachWindow(JustCefWindow window, bool warm = true) => _ = ForWindow(window, warm);
+    internal void AttachWindow(JustCefWindow window, bool warm = false) => _ = ForWindow(window, warm);
     private PlaybackGuestSession ForWindow(JustCefWindow window, bool warm = false) => windows.GetOrAdd(window.Identifier, identifier =>
     {
         var session = new PlaybackGuestSession(
@@ -37,7 +37,7 @@ internal sealed class LinuxCdmBridge : IAsyncDisposable
                 }
             };
         }
-        // Only the main window starts an already downloaded Widevine CDM with the app (licence warm-up after its page loads);
+        // When enabled, only the main window starts an already downloaded Widevine CDM with the app (licence warm-up after its page loads);
         // otherwise the helper starts through protected playback preparation or start.
         return session;
     });
