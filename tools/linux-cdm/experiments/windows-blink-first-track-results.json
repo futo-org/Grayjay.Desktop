@@ -1,0 +1,174 @@
+{
+  "date": "2026-10-09",
+  "changes": [
+    "LAHF/SETO flag capture replaces PUSHFQ/POP in fast arithmetic",
+    "flag-aware INC specialization preserves carry and register widths",
+    "256-instruction total budget bounds branch flag analysis"
+  ],
+  "memory_cap_in_production": false,
+  "cpu_cap": false,
+  "overall_deadline": false,
+  "soundcloud_same_startup_interval_ms": 5000,
+  "soundcloud_pairs": [
+    {
+      "variant": "baseline",
+      "playingMs": 8514,
+      "time": 0.001402,
+      "ready": 4,
+      "licenseRequests": [
+        {
+          "path": "/details/WidevineLicense",
+          "start": 2342.2000000001863,
+          "duration": 143.8999999994412
+        }
+      ]
+    },
+    {
+      "variant": "candidate",
+      "playingMs": 7615,
+      "time": 0.001788,
+      "ready": 4,
+      "licenseRequests": [
+        {
+          "path": "/details/WidevineLicense",
+          "start": 2259.7000000001863,
+          "duration": 152.59999999962747
+        }
+      ]
+    },
+    {
+      "variant": "baseline",
+      "playingMs": 8440,
+      "time": 0.001304,
+      "ready": 4,
+      "licenseRequests": [
+        {
+          "path": "/details/WidevineLicense",
+          "start": 2429.5999999996275,
+          "duration": 144.1000000005588
+        }
+      ]
+    },
+    {
+      "variant": "candidate",
+      "playingMs": 7824,
+      "time": 0.009537,
+      "ready": 4,
+      "licenseRequests": [
+        {
+          "path": "/details/WidevineLicense",
+          "start": 2305,
+          "duration": 138.8999999994412
+        }
+      ]
+    }
+  ],
+  "soundcloud_mean_ms": {
+    "baseline": 8477,
+    "candidate": 7719.5
+  },
+  "soundcloud_improvement_percent": 8.94,
+  "arithmetic_differential_cases": 640000,
+  "reference_trial_notes": "Cold reference licenses have substantial run-to-run variation; SoundCloud A/B results are the reported improvement. AES support did not improve CDM timings and was discarded. Reducing the JIT link-check budget also had no demonstrated benefit and was discarded.",
+  "final_reference_tracks": [
+    {
+      "iteration": 0,
+      "license_ms": 17423,
+      "decrypt_ms": 593
+    },
+    {
+      "iteration": 1,
+      "license_ms": 1674,
+      "decrypt_ms": 503
+    },
+    {
+      "iteration": 2,
+      "license_ms": 1667,
+      "decrypt_ms": 500
+    },
+    {
+      "iteration": 3,
+      "license_ms": 1692,
+      "decrypt_ms": 658
+    },
+    {
+      "iteration": 4,
+      "license_ms": 1691,
+      "decrypt_ms": 1067
+    },
+    {
+      "iteration": 5,
+      "license_ms": 1700,
+      "decrypt_ms": 1062
+    },
+    {
+      "iteration": 6,
+      "license_ms": 1696,
+      "decrypt_ms": 1080
+    },
+    {
+      "iteration": 7,
+      "license_ms": 1697,
+      "decrypt_ms": 1055
+    },
+    {
+      "iteration": 8,
+      "license_ms": 1692,
+      "decrypt_ms": 1074
+    },
+    {
+      "iteration": 9,
+      "license_ms": 1826,
+      "decrypt_ms": 867
+    },
+    {
+      "iteration": 10,
+      "license_ms": 1681,
+      "decrypt_ms": 1068
+    },
+    {
+      "iteration": 11,
+      "license_ms": 1642,
+      "decrypt_ms": 1077
+    },
+    {
+      "iteration": 12,
+      "license_ms": 1690,
+      "decrypt_ms": 1060
+    },
+    {
+      "iteration": 13,
+      "license_ms": 1706,
+      "decrypt_ms": 1073
+    },
+    {
+      "iteration": 14,
+      "license_ms": 1633,
+      "decrypt_ms": 1061
+    },
+    {
+      "iteration": 15,
+      "license_ms": 1707,
+      "decrypt_ms": 1058
+    }
+  ],
+  "reference_sample_count": 1290,
+  "reference_sha256": "39d48f0c2611ebf76850950a38d046b2b9996f666f3f250d9af6ebf500ada9da",
+  "sampled_helper_peak_private_bytes": 174141440,
+  "guest_increment_probe_exit": 0,
+  "fresh_pinned_source_patch_check_exit": 0,
+  "default_tests_exit": 0,
+  "publish_exit": 0,
+  "runtime_manifest": {
+    "version": "1",
+    "protocol": 3,
+    "blinkCommit": "f006a4fc6f9b8de9272504fdff0dbbe5ce5dc580",
+    "cpuBaseline": "x86-64",
+    "compiler": "14.4.0",
+    "cygwinVersion": "3.6.11-1",
+    "blinkSha256": "a244e95a025f381cc4177d42348c68aa1d40d0ae44402f5bedf96166c82a753c",
+    "cygwinSha256": "959048d1407074097af021708d87bdf5ac1a8f107ff963c8950cd6dc8f21afaf",
+    "patchSha256": "d4a68fe8c158e914a095ecfdbe4448ecd0e007eb4b061a751f60a81a6cb8d91e",
+    "mapperSha256": "bdec4596fe49aec92d4a9700b0693f38d5bde38db23c92f3e41eb7de40aac554"
+  }
+}

@@ -1,0 +1,442 @@
+{
+  "date": "2026-10-09",
+  "backend": "packaged Blink/Cygwin, native Windows suspended launch",
+  "memory_cap": false,
+  "cpu_cap": false,
+  "overall_runtime_deadline": false,
+  "helper_warmed_before_first_click": true,
+  "click_to_playing_ms": {
+    "Backwards": 6492,
+    "BA": 2700,
+    "DARK SIDE": 2887
+  },
+  "sampled_helper_private_bytes": 162062336,
+  "normal_shutdown_no_helper": true,
+  "abrupt_shutdown_no_helper": true,
+  "reference_sha256": "39d48f0c2611ebf76850950a38d046b2b9996f666f3f250d9af6ebf500ada9da",
+  "reference_samples": 1290,
+  "unbuffered_seek_ms": 1398,
+  "queue_advanced_and_playing": true,
+  "snapshots": {
+    "Backwards": {
+      "url": "http://127.0.0.1:55265/web/remotePlaylist?url=https%3A%2F%2Fsoundcloud.com%2Fmusic-charts-us%2Fsets%2Fall-music-genres",
+      "validation": {
+        "started": 9053.299999999814,
+        "events": [
+          {
+            "name": "loadedmetadata",
+            "ms": 6420,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 6421,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 6422,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeked",
+            "ms": 6492,
+            "time": 0.000616,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 6492,
+            "time": 0.001143,
+            "ready": 4
+          }
+        ]
+      },
+      "media": [
+        {
+          "time": 2.258975,
+          "paused": false,
+          "ready": 4,
+          "duration": 191.55700000000004,
+          "buffered": [
+            [
+              0,
+              70.008162
+            ]
+          ]
+        }
+      ],
+      "resourcePaths": [
+        "/details/WidevineLicense"
+      ]
+    },
+    "BA": {
+      "url": "http://127.0.0.1:55265/web/remotePlaylist?url=https%3A%2F%2Fsoundcloud.com%2Fmusic-charts-us%2Fsets%2Fall-music-genres",
+      "validation": {
+        "started": 26232.599999999627,
+        "events": [
+          {
+            "name": "error",
+            "ms": 16,
+            "time": 0,
+            "ready": 0,
+            "error": "MEDIA_ELEMENT_ERROR: Empty src attribute"
+          },
+          {
+            "name": "error",
+            "ms": 16,
+            "time": 0,
+            "ready": 0,
+            "error": "MEDIA_ELEMENT_ERROR: Empty src attribute"
+          },
+          {
+            "name": "loadedmetadata",
+            "ms": 2688,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "loadedmetadata",
+            "ms": 2688,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 2689,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 2689,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 2689,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 2689,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeked",
+            "ms": 2699,
+            "time": 0.000411,
+            "ready": 4
+          },
+          {
+            "name": "seeked",
+            "ms": 2699,
+            "time": 0.000434,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 2700,
+            "time": 0.000676,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 2700,
+            "time": 0.000686,
+            "ready": 4
+          }
+        ]
+      },
+      "media": [
+        {
+          "time": 9.350484,
+          "paused": false,
+          "ready": 4,
+          "duration": 149.20999999999998,
+          "buffered": [
+            [
+              0,
+              120.000724
+            ]
+          ]
+        }
+      ],
+      "resourcePaths": [
+        "/details/WidevineLicense"
+      ]
+    },
+    "DARK SIDE": {
+      "url": "http://127.0.0.1:55265/web/remotePlaylist?url=https%3A%2F%2Fsoundcloud.com%2Fmusic-charts-us%2Fsets%2Fall-music-genres",
+      "validation": {
+        "started": 38471.799999999814,
+        "events": [
+          {
+            "name": "error",
+            "ms": 12,
+            "time": 0,
+            "ready": 0,
+            "error": "MEDIA_ELEMENT_ERROR: Empty src attribute"
+          },
+          {
+            "name": "error",
+            "ms": 12,
+            "time": 0,
+            "ready": 0,
+            "error": "MEDIA_ELEMENT_ERROR: Empty src attribute"
+          },
+          {
+            "name": "error",
+            "ms": 12,
+            "time": 0,
+            "ready": 0,
+            "error": "MEDIA_ELEMENT_ERROR: Empty src attribute"
+          },
+          {
+            "name": "loadedmetadata",
+            "ms": 2873,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "loadedmetadata",
+            "ms": 2873,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "loadedmetadata",
+            "ms": 2873,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeking",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "waiting",
+            "ms": 2877,
+            "time": 0,
+            "ready": 1
+          },
+          {
+            "name": "seeked",
+            "ms": 2887,
+            "time": 0.000347,
+            "ready": 4
+          },
+          {
+            "name": "seeked",
+            "ms": 2887,
+            "time": 0.000354,
+            "ready": 4
+          },
+          {
+            "name": "seeked",
+            "ms": 2887,
+            "time": 0.000366,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 2887,
+            "time": 0.000528,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 2887,
+            "time": 0.000533,
+            "ready": 4
+          },
+          {
+            "name": "playing",
+            "ms": 2887,
+            "time": 0.000539,
+            "ready": 4
+          }
+        ]
+      },
+      "media": [
+        {
+          "time": 9.644767,
+          "paused": false,
+          "ready": 4,
+          "duration": 151.001,
+          "buffered": [
+            [
+              0,
+              130.008525
+            ]
+          ]
+        }
+      ],
+      "resourcePaths": [
+        "/details/WidevineLicense"
+      ]
+    }
+  },
+  "reference_under_development_memory_ceiling": {
+    "limit_mib": 200,
+    "initialize_ms": 270,
+    "tracks": [
+      {
+        "iteration": 0,
+        "license_ms": 10290,
+        "decrypt_ms": 668
+      },
+      {
+        "iteration": 1,
+        "license_ms": 2099,
+        "decrypt_ms": 522
+      },
+      {
+        "iteration": 2,
+        "license_ms": 1874,
+        "decrypt_ms": 564
+      },
+      {
+        "iteration": 3,
+        "license_ms": 1850,
+        "decrypt_ms": 549
+      }
+    ]
+  },
+  "clean_build_validation": {
+    "pinned_commit": "f006a4fc6f9b8de9272504fdff0dbbe5ce5dc580",
+    "build_exit": 0,
+    "publish_exit": 0,
+    "default_tests_exit": 0,
+    "reference_iterations": 16,
+    "development_memory_limit_mib": 200,
+    "reference_tracks": [
+      {
+        "iteration": 0,
+        "license_ms": 9822,
+        "decrypt_ms": 574
+      },
+      {
+        "iteration": 1,
+        "license_ms": 1652,
+        "decrypt_ms": 453
+      },
+      {
+        "iteration": 2,
+        "license_ms": 1696,
+        "decrypt_ms": 442
+      },
+      {
+        "iteration": 3,
+        "license_ms": 2336,
+        "decrypt_ms": 442
+      },
+      {
+        "iteration": 4,
+        "license_ms": 1751,
+        "decrypt_ms": 456
+      },
+      {
+        "iteration": 5,
+        "license_ms": 1682,
+        "decrypt_ms": 1064
+      },
+      {
+        "iteration": 6,
+        "license_ms": 2123,
+        "decrypt_ms": 664
+      },
+      {
+        "iteration": 7,
+        "license_ms": 1944,
+        "decrypt_ms": 876
+      },
+      {
+        "iteration": 8,
+        "license_ms": 1999,
+        "decrypt_ms": 656
+      },
+      {
+        "iteration": 9,
+        "license_ms": 2201,
+        "decrypt_ms": 455
+      },
+      {
+        "iteration": 10,
+        "license_ms": 1917,
+        "decrypt_ms": 888
+      },
+      {
+        "iteration": 11,
+        "license_ms": 1948,
+        "decrypt_ms": 651
+      },
+      {
+        "iteration": 12,
+        "license_ms": 1981,
+        "decrypt_ms": 656
+      },
+      {
+        "iteration": 13,
+        "license_ms": 1967,
+        "decrypt_ms": 655
+      },
+      {
+        "iteration": 14,
+        "license_ms": 1950,
+        "decrypt_ms": 646
+      },
+      {
+        "iteration": 15,
+        "license_ms": 1945,
+        "decrypt_ms": 870
+      }
+    ],
+    "sampled_peak_private_bytes": 173826048,
+    "repeat_license_decrypt_median_ms": 2655
+  },
+  "runtime_manifest": {
+    "version": "1",
+    "protocol": 3,
+    "blinkCommit": "f006a4fc6f9b8de9272504fdff0dbbe5ce5dc580",
+    "cpuBaseline": "x86-64",
+    "compiler": "14.4.0",
+    "cygwinVersion": "3.6.11-1",
+    "blinkSha256": "56be3ed9168dead6a9a9e9cef79e5778d2c1baeeddca30fc882424ba8ffb9d17",
+    "cygwinSha256": "959048d1407074097af021708d87bdf5ac1a8f107ff963c8950cd6dc8f21afaf",
+    "patchSha256": "8f1786f33f6e0d020b4e1d708c5a402d976c790347422f1abcb1aa788e05b4e7",
+    "mapperSha256": "bdec4596fe49aec92d4a9700b0693f38d5bde38db23c92f3e41eb7de40aac554"
+  }
+}

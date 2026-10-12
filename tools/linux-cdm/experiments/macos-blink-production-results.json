@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-10",
+  "host": "macOS Apple Silicon",
+  "memoryMode": "indirect (-m)",
+  "nativeIntelHardwareTested": false,
+  "referenceMediaSamples": 1290,
+  "expectedDecryptedSha256": "39d48f0c2611ebf76850950a38d046b2b9996f666f3f250d9af6ebf500ada9da",
+  "runtimes": {
+    "osx-arm64": {
+      "execution": "native",
+      "hardenedRuntime": true,
+      "binaryBytes": 499488,
+      "previousQemuBinaryBytes": 26424928,
+      "binarySha256": "eb8fef39996364ba2b3c95f83d8372ea43391809c817767d22ed09b8db7ae944",
+      "initializationMs": 703,
+      "rounds": [
+        {
+          "iteration": 0,
+          "licenseMs": 7612,
+          "decryptMs": 569,
+          "hashVerified": true
+        },
+        {
+          "iteration": 1,
+          "licenseMs": 1960,
+          "decryptMs": 553,
+          "hashVerified": true
+        },
+        {
+          "iteration": 2,
+          "licenseMs": 1933,
+          "decryptMs": 555,
+          "hashVerified": true
+        },
+        {
+          "iteration": 3,
+          "licenseMs": 1909,
+          "decryptMs": 542,
+          "hashVerified": true
+        }
+      ]
+    },
+    "osx-x64": {
+      "execution": "Rosetta",
+      "hardenedRuntime": true,
+      "binaryBytes": 518848,
+      "previousQemuBinaryBytes": 26799808,
+      "binarySha256": "eae50dcabc7525d502fcad04b9880ca8682929b1f8b703e63b6d52fe0b5e69e8",
+      "initializationMs": 865,
+      "rounds": [
+        {
+          "iteration": 0,
+          "licenseMs": 9697,
+          "decryptMs": 973,
+          "hashVerified": true
+        },
+        {
+          "iteration": 1,
+          "licenseMs": 2717,
+          "decryptMs": 822,
+          "hashVerified": true
+        },
+        {
+          "iteration": 2,
+          "licenseMs": 3295,
+          "decryptMs": 800,
+          "hashVerified": true
+        },
+        {
+          "iteration": 3,
+          "licenseMs": 2701,
+          "decryptMs": 806,
+          "hashVerified": true
+        }
+      ]
+    }
+  }
+}

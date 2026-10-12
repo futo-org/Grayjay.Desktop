@@ -196,7 +196,7 @@ namespace Grayjay.Desktop.POC
     {
         private static Log _staticLogger = new Log(new Log.Config()
         {
-            LogFilePath = "log.txt",
+            LogFilePath = Path.Combine(Path.GetTempPath(), "grayjay-startup-" + Environment.ProcessId + ".log"),
             FileLogLevel = (LogLevel)LogLevel.Verbose,
             ConsoleLogLevel = LogLevel.Verbose,
 //#if DEBUG

@@ -1,0 +1,27 @@
+{
+  "qemu": {
+    "version": "11.1.2",
+    "url": "https://download.qemu.org/qemu-11.1.2.tar.xz",
+    "sha256": "731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016"
+  },
+  "glib": {
+    "version": "2.90.1",
+    "url": "https://download.gnome.org/sources/glib/2.90/glib-2.90.1.tar.xz",
+    "sha256": "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396"
+  },
+  "pcre2": {
+    "version": "10.49",
+    "url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.bz2",
+    "sha256": "53c156e1ba416a20da8e65395daa132da0d80e76910424caca3fcdae7831d384"
+  },
+  "ffmpeg": {
+    "version": "5.1.10",
+    "url": "https://ffmpeg.org/releases/ffmpeg-5.1.10.tar.xz",
+    "sha256": "392306d6fc45dab0e9e0ea55381e071842e83a2fb31d320aeda40477a7766293"
+  },
+  "mingw_headers": {
+    "version": "14.0.0.r426.g4564ee4b5-1",
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-headers-14.0.0.r426.g4564ee4b5-1-any.pkg.tar.zst",
+    "sha256": "b6f06085e8f3858cb59ed72d581203c75000592bdaa55af2710be3b1a752a7bb"
+  }
+}

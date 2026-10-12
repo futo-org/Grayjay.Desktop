@@ -27,8 +27,9 @@ build_sign_notarize() {
     rm -rf bin/ obj/
     dotnet publish -r $ARCH -c Release -p:AssemblyVersion=1.$VERSION.0.0 || { echo "dotnet publish failed for $ARCH"; exit 1; }
     PUBLISH_PATH="bin/Release/net8.0/$ARCH/publish"
-    mkdir -p "$PUBLISH_PATH/wwwroot"
-    cp -r ../Grayjay.Desktop.Web/dist "$PUBLISH_PATH/wwwroot/web"
+    rm -rf "$PUBLISH_PATH/wwwroot/web"
+    mkdir -p "$PUBLISH_PATH/wwwroot/web"
+    cp -a ../Grayjay.Desktop.Web/dist/. "$PUBLISH_PATH/wwwroot/web/"
 
     echo "Creating the app bundle..."
     rm -rf "$APP_NAME"
@@ -65,6 +66,8 @@ build_sign_notarize() {
     cp -a Info/Info-Helper-GPU.plist "$APP_NAME/Contents/Frameworks/justcefnative Helper (GPU).app/Contents/Info.plist"
     cp -a Info/Info-Helper-Plugin.plist "$APP_NAME/Contents/Frameworks/justcefnative Helper (Plugin).app/Contents/Info.plist"
     cp -a Info/Info-Helper-Renderer.plist "$APP_NAME/Contents/Frameworks/justcefnative Helper (Renderer).app/Contents/Info.plist"
+
+    python3 ../tools/linux-cdm/bundle-macos.py --publish "$PUBLISH_PATH" --app "$APP_NAME" || { echo "Playback bundling failed for $ARCH"; exit 1; }
 
     bash ./sign-macos.sh "$APP_NAME" || { echo "Signing/notarization failed for $ARCH"; exit 1; }
 

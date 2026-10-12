@@ -60,4 +60,43 @@
     <ProjectReference Include="..\Grayjay.ClientServer\Grayjay.ClientServer.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</RuntimeIdentifier>
+    <PlaybackRuntimeId>$(RuntimeIdentifier)</PlaybackRuntimeId>
+    <PlaybackRuntimeId Condition="'$(RuntimeIdentifier)' == 'win-arm64'">win-x64</PlaybackRuntimeId>
+    <BundlePlayback Condition="'$(RuntimeIdentifier)' == 'win-x64' Or '$(RuntimeIdentifier)' == 'win-arm64' Or '$(RuntimeIdentifier)' == 'osx-x64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">true</BundlePlayback>
+    <PlaybackDependencyRoot>$(MSBuildProjectDirectory)/../Grayjay.ClientServer/deps/playback</PlaybackDependencyRoot>
+    <PlaybackGuestExcludes>$(PlaybackDependencyRoot)/guest/vmlinuz</PlaybackGuestExcludes>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BundlePlayback)' == 'true'">
+    <Content Condition="'$(PlaybackRuntimeId)' != 'win-x64'" Include="$(PlaybackDependencyRoot)/runtimes/$(PlaybackRuntimeId)/**/*">
+      <Link>playback/runtime/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Condition="'$(PlaybackRuntimeId)' == 'win-x64'" Include="$(PlaybackDependencyRoot)/runtimes/win-x64/blink.exe;$(PlaybackDependencyRoot)/runtimes/win-x64/cygwin1.dll;$(PlaybackDependencyRoot)/runtimes/win-x64/blink-runtime.json">
+      <Link>playback/runtime/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Condition="'$(PlaybackRuntimeId)' == 'win-x64'" Include="$(PlaybackDependencyRoot)/runtimes/win-x64/licenses/blink/**/*">
+      <Link>playback/runtime/licenses/blink/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="$(PlaybackDependencyRoot)/guest/**/*" Exclude="$(PlaybackGuestExcludes)">
+      <Link>playback/guest/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+  <Target Name="ValidateBundledPlayback" BeforeTargets="PrepareForBuild" Condition="'$(BundlePlayback)' == 'true'">
+    <Error Condition="!Exists('$(PlaybackDependencyRoot)/guest/bundle.json')" Text="Linux playback guest is missing. Fetch Git LFS dependencies before building." />
+    <Error Condition="'$(PlaybackRuntimeId)' != 'win-x64' And !Exists('$(PlaybackDependencyRoot)/runtimes/$(PlaybackRuntimeId)/blink-runtime.json')" Text="Blink playback runtime is missing. Fetch Git LFS dependencies before building." />
+    <Error Condition="'$(PlaybackRuntimeId)' == 'win-x64' And !Exists('$(PlaybackDependencyRoot)/runtimes/win-x64/blink-runtime.json')" Text="Blink playback runtime is missing. Fetch Git LFS dependencies before building." />
+  </Target>
 </Project>

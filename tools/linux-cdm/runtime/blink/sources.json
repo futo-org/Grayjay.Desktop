@@ -1,0 +1,29 @@
+{
+  "install": {
+    "url": "https://mirrors.kernel.org/sourceware/cygwin/x86_64/release/cygwin/cygwin-3.6.11-1-x86_64.tar.xz",
+    "size": 1621088,
+    "sha512": "1c33f8396d78eca035106325c5b90ff1165a6b78839f16190ec00f025067306522a23a5ec1b99557974e471649104cd31dad68685d2a544c31fb4494297a744a"
+  },
+  "source": {
+    "url": "https://mirrors.kernel.org/sourceware/cygwin/src/release/cygwin/cygwin-3.6.11-1-src.tar.xz",
+    "size": 9316544,
+    "sha512": "0c90f92e714d69013cf9281647a75737952f44acca556959645a7a0669606e2c9caa8217abee667c795824ff6fbe711a020b75d8043818c828713570652bec32"
+  },
+  "blink_commit": "f006a4fc6f9b8de9272504fdff0dbbe5ce5dc580",
+  "cygwin_version": "3.6.11-1",
+  "gcc_version": "14.4.0",
+  "cygwin_dll_sha256": "959048d1407074097af021708d87bdf5ac1a8f107ff963c8950cd6dc8f21afaf",
+  "gcc_notices": [
+    {
+      "name": "COPYING3",
+      "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.4.0/COPYING3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    {
+      "name": "COPYING.RUNTIME",
+      "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.4.0/COPYING.RUNTIME",
+      "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"
+    }
+  ],
+  "blink_repository": "https://github.com/jart/blink.git"
+}
