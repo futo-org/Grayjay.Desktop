@@ -12,10 +12,11 @@ import IconButton from '../../buttons/IconButton';
 import iconRefresh from "../../../assets/icons/icon_reload_temp.svg"
 import iconHome from "../../../assets/icons/icon_nav_home.svg"
 import iconSources from "../../../assets/icons/ic_circles.svg"
-import { useNavigate, useSearchParams } from '@solidjs/router';
+import { useLocation, useNavigate, useSearchParams } from '@solidjs/router';
 import EmptyContentView from '../../EmptyContentView';
 import { DetailsBackend } from '../../../backend/DetailsBackend';
-import { TextType } from '../../../backend/models/content/IPlatformPostDetails';
+import { IPlatformPostDetails, TextType } from '../../../backend/models/content/IPlatformPostDetails';
+import { IPlatformPost } from '../../../backend/models/content/IPlatformPost';
 import UIOverlay from '../../../state/UIOverlay';
 import SubscribeButton from '../../buttons/SubscribeButton';
 import { createResourceDefault, getBestThumbnail, toHumanNowDiffString, toHumanNumber } from '../../../utility';
@@ -25,25 +26,32 @@ const PostDetailView: Component = () => {
   const [params, setParams] = useSearchParams();
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const existingPost = createMemo(() => (location.state as { post?: IPlatformPost } | undefined)?.post);
 
-  const [details$, detailResources] = createResourceDefault(()=>params.url, async (url)=>{
-    if(!url)
+  const [details$, detailResources] = createResourceDefault(()=>({ url: params.url, post: existingPost() }), async (source)=>{
+    if(!source.post && !source.url)
         return undefined;
-      return UIOverlay.catchDialogExceptions(()=>{
-        return DetailsBackend.postLoad(url);
-      }, ()=>navigate(-1), ()=>detailResources.refetch());
+    if(source.post && "textType" in source.post)
+        return { post: source.post as IPlatformPostDetails };
+    return UIOverlay.catchDialogExceptions(()=>{
+      return DetailsBackend.postLoad(source.url!);
+    }, ()=>navigate(-1), ()=>detailResources.refetch());
   });
+
+  const detailPost = createMemo<IPlatformPostDetails | undefined>(() => details$.loading ? undefined : details$()?.post);
+  const displayPost = createMemo<IPlatformPost | undefined>(() => detailPost() ?? existingPost());
 
   
   function onClickAuthor() {
-    const author = details$()?.post?.author;
+    const author = displayPost()?.author;
     if (author) {
         navigate("/web/channel?url=" + encodeURIComponent(author.url), { state: { author } });
     }
 }
 
   const pluginIconUrl = createMemo(() => {
-    const plugin = StateGlobal.getSourceConfig(details$()?.post?.id?.pluginID);
+    const plugin = StateGlobal.getSourceConfig(displayPost()?.id?.pluginID);
     return plugin?.absoluteIconUrl;
   });
 
@@ -64,74 +72,72 @@ const PostDetailView: Component = () => {
             }}
           />
         } />
-        <Show when={details$.state == 'ready'}>
-          <Show when={details$()?.post}>
-            <ScrollContainer ref={scrollContainerRef}>
-              <div>
-                <div class={styles.authorContainer}>
-                  <Show when={details$()?.post?.author?.thumbnail}>
-                    <img src={details$()?.post?.author?.thumbnail} class={styles.authorThumbnail} alt="author" onClick={onClickAuthor} referrerPolicy='no-referrer' />
-                  </Show>
-                  <div class={styles.authorDescription} style={{
-                    "margin-left": !!details$()?.post?.author?.thumbnail ? undefined : "40px"
-                  }}>
-                      <div class={styles.authorName}>{details$()?.post?.author?.name}</div>
+        <Show when={displayPost()}>
+          <ScrollContainer ref={scrollContainerRef}>
+            <div>
+              <div class={styles.authorContainer}>
+                <Show when={displayPost()?.author?.thumbnail}>
+                  <img src={displayPost()?.author?.thumbnail} class={styles.authorThumbnail} alt="author" onClick={onClickAuthor} referrerPolicy='no-referrer' />
+                </Show>
+                <div class={styles.authorDescription} style={{
+                  "margin-left": !!displayPost()?.author?.thumbnail ? undefined : "40px"
+                }}>
+                    <div class={styles.authorName} onClick={onClickAuthor}>{displayPost()?.author?.name}</div>
+                    <div style="flex-grow:1;"></div>
+                    <Show when={(displayPost()?.author?.subscribers ?? 0) > 0}>
+                      <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(displayPost()?.author?.subscribers)} subscribers</div>
                       <div style="flex-grow:1;"></div>
-                      <Show when={(details$()?.post?.author?.subscribers ?? 0) > 0}>
-                        <div class={styles.authorMetadata} onClick={onClickAuthor}>{toHumanNumber(details$()?.post?.author?.subscribers)} subscribers</div>
-                        <div style="flex-grow:1;"></div>
-                      </Show>
-                  </div>
-                  <SubscribeButton author={details$()?.post?.author?.url} style={{"margin-top": "29px", "margin-left": "auto", "margin-right": "20px"}} />
+                    </Show>
+                </div>
+                <SubscribeButton author={displayPost()?.author?.url} style={{"margin-top": "29px", "margin-left": "auto", "margin-right": "20px"}} />
 
+              </div>
+              <div class={styles.postTitle}>
+                {displayPost()?.name}
+              </div>
+              <div class={styles.postMeta}>
+                <div class={styles.date}>
+                    {toHumanNowDiffString(displayPost()?.dateTime)}
                 </div>
-                <div class={styles.postTitle}>
-                  {details$()?.post?.name}
-                </div>
-                <div class={styles.postMeta}>
-                  <div class={styles.date}>
-                      {toHumanNowDiffString(details$()?.post?.dateTime)}
+                <div class={styles.right} style={{"display": "inline-block"}}>
+                  <RatingView rating={detailPost()?.rating} style={{"display": "inline-block"}} />
+                  <div class={styles.sourceIcon} style={{"display": "inline-block"}}>
+                    <img src={pluginIconUrl()} />
                   </div>
-                  <div class={styles.right} style={{"display": "inline-block"}}>
-                    <RatingView rating={details$()?.post?.rating} style={{"display": "inline-block"}} />
-                    <div class={styles.sourceIcon} style={{"display": "inline-block"}}>
-                      <img src={pluginIconUrl()} />
-                    </div>
-                  </div>
-                </div>
-                <div class={styles.postBody}>
-                  <Switch>
-                    <Match when={details$()?.post?.textType == TextType.RAW}>
-                      <div class={styles.postRaw}>
-                        {details$()?.post?.content}
-                      </div>
-                    </Match>
-                    <Match when={details$()?.post?.textType == TextType.HTML}>
-                      <div class={styles.postHtml} innerHTML={details$()?.post?.content}>
-                          {
-                          /*TODO: Safe html rendering*/
-                          }
-                      </div>
-                    </Match>
-                    <Match when={details$()?.post?.textType == TextType.MARKUP}>
-                      <div class={styles.postMarkup}>
-                        {details$()?.post?.content}
-                      </div>
-                    </Match>
-                  </Switch>
-                </div>
-                <div class={styles.postImages}>
-                  <Index each={details$()?.post?.images}>{(img: Accessor<string>, index: number) => 
-                    <div class={styles.postImage} onClick={()=>UIOverlay.overlayImage(img())}>
-                      <img style={{"width": "300px", "height": (index == 1) ? "200px" : "300px"}}
-                        src={((details$()?.post?.thumbnails && (details$()?.post?.thumbnails.length) ? getBestThumbnail(details$()!.post.thumbnails[index])?.url : img()))} referrerPolicy='no-referrer' />
-
-                    </div>
-                  }</Index>
                 </div>
               </div>
-            </ScrollContainer>
-          </Show>
+              <div class={styles.postBody}>
+                <Switch>
+                  <Match when={detailPost()?.textType == TextType.RAW}>
+                    <div class={styles.postRaw}>
+                      {detailPost()?.content}
+                    </div>
+                  </Match>
+                  <Match when={detailPost()?.textType == TextType.HTML}>
+                    <div class={styles.postHtml} innerHTML={detailPost()?.content}>
+                        {
+                        /*TODO: Safe html rendering*/
+                        }
+                    </div>
+                  </Match>
+                  <Match when={detailPost()?.textType == TextType.MARKUP}>
+                    <div class={styles.postMarkup}>
+                      {detailPost()?.content}
+                    </div>
+                  </Match>
+                </Switch>
+              </div>
+              <div class={styles.postImages}>
+                <Index each={displayPost()?.images}>{(img: Accessor<string>, index: number) =>
+                  <div class={styles.postImage} onClick={()=>UIOverlay.overlayImage(img())}>
+                    <img style={{"width": "300px", "height": (index == 1) ? "200px" : "300px"}}
+                      src={getBestThumbnail(displayPost()?.thumbnails?.[index])?.url ?? img()} referrerPolicy='no-referrer' />
+
+                  </div>
+                }</Index>
+              </div>
+            </div>
+          </ScrollContainer>
         </Show>
     </div>
   );

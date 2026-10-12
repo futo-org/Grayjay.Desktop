@@ -55,6 +55,17 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
     const navigate = useNavigate();
     const groupId = uuidv4();
 
+    function openPost(post: IPlatformPost) {
+        const url = post.backendUrl ?? post.url;
+        if (!url)
+            return;
+
+        navigate(
+            "/web/details/post?url=" + encodeURIComponent(url),
+            { state: { post } }
+        );
+    }
+
     let isLoading = false;
     let loadNextPageWhenFinishedLoading = false;
     let dataFiltered0Counter = 0;
@@ -315,9 +326,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                 <PostThumbnailView post={item() as IPlatformPost}
                                     onSettings={(e, content)=> onSettingsClicked(e, content, "pointer")}
                                     onClick={() =>{
-                                        const url = item().backendUrl ?? item().url;
-                                        if(url)
-                                            navigate("/web/details/post?url=" + encodeURIComponent(url));
+                                        openPost(item() as IPlatformPost);
                                     }}
                                     focusableOpts={item() ? {
                                         groupId: groupId,
@@ -325,9 +334,7 @@ const ContentGrid: Component<ContentGridProps> = (props) => {
                                         groupIndices: [row(), col()],
                                         groupEscapeTo: { left: ['sidebar'] },
                                         onPress: () => {
-                                            const url = item().backendUrl ?? item().url;
-                                            if(url)
-                                                navigate("/web/details/post?url=" + encodeURIComponent(url));
+                                            openPost(item() as IPlatformPost);
                                         },
                                         onOptions: (e, inputSource) => onSettingsClicked(e, item(), inputSource),
                                         onBack: () => onBackContentGrid()
