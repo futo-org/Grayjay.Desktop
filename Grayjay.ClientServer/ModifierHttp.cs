@@ -3,6 +3,7 @@ using Grayjay.Engine.Models;
 using Grayjay.Engine.Web;
 using Grayjay.Engine.Models.Video.Additions;
 using Grayjay.Engine.Packages;
+using Grayjay.ClientServer.Helpers;
 
 namespace Grayjay.ClientServer
 {
@@ -41,8 +42,10 @@ namespace Grayjay.ClientServer
             string url,
             IRequestModifier? modifier = null,
             HttpHeaders? headers = null,
-            bool decodeContent = false)
-            => SendBytes(client, "GET", url, null, modifier, headers, decodeContent);
+            bool decodeContent = false,
+            CancellationToken cancel = default,
+            TimeSpan? readIdleTimeout = null)
+            => SendBytes(client, "GET", url, null, modifier, headers, decodeContent, cancel, readIdleTimeout);
 
         public static BytesResult PostBytes(
             ManagedHttpClient client,
@@ -50,7 +53,7 @@ namespace Grayjay.ClientServer
             byte[] body,
             IRequestModifier? modifier = null,
             HttpHeaders? headers = null)
-            => SendBytes(client, "POST", url, body, modifier, headers, true);
+            => SendBytes(client, "POST", url, body, modifier, headers, true, default, null);
 
         private static BytesResult SendBytes(
             ManagedHttpClient client,
@@ -59,7 +62,9 @@ namespace Grayjay.ClientServer
             byte[]? body,
             IRequestModifier? modifier,
             HttpHeaders? headers,
-            bool decodeContent)
+            bool decodeContent,
+            CancellationToken cancel,
+            TimeSpan? readIdleTimeout)
         {
             headers ??= new HttpHeaders();
             var modified = modifier?.ModifyRequest(url, headers);
@@ -70,14 +75,14 @@ namespace Grayjay.ClientServer
 
             if (!string.IsNullOrEmpty(impersonate))
             {
-                var res = Libcurl.Perform(new Libcurl.Request
+                var res = PerformImpersonated(new Libcurl.Request
                 {
                     Url = finalUrl,
                     Method = method,
                     Headers = ToHeaderList(finalHeaders),
                     Body = body,
                     ImpersonateTarget = impersonate
-                });
+                }, cancel);
                 if (res.EffectiveUrl != null)
                     finalUrl = res.EffectiveUrl;
 
@@ -94,7 +99,18 @@ namespace Grayjay.ClientServer
             if (resp.Body == null)
                 return new BytesResult(finalUrl, resp.Code, Array.Empty<byte>());
 
-            var responseBody = resp.Body.AsBytes();
+            byte[] responseBody;
+            if (readIdleTimeout.HasValue)
+            {
+                using var bodyStream = new IdleTimeoutStream(resp.Body.AsStream(), readIdleTimeout.Value, cancel);
+                using var buffered = new MemoryStream();
+                bodyStream.CopyTo(buffered);
+                responseBody = buffered.ToArray();
+            }
+            else
+            {
+                responseBody = resp.Body.AsBytes();
+            }
             if (decodeContent && resp.Headers != null)
                 responseBody = DecodeContent(resp.Headers, responseBody);
             return new BytesResult(finalUrl, resp.Code, responseBody);
@@ -197,7 +213,9 @@ namespace Grayjay.ClientServer
             ManagedHttpClient client,
             string url,
             IRequestModifier? modifier = null,
-            HttpHeaders? headers = null)
+            HttpHeaders? headers = null,
+            CancellationToken cancel = default,
+            TimeSpan? readIdleTimeout = null)
         {
             headers ??= new HttpHeaders();
             var modified = modifier?.ModifyRequest(url, headers);
@@ -208,13 +226,13 @@ namespace Grayjay.ClientServer
 
             if (!string.IsNullOrEmpty(impersonate))
             {
-                var res = Libcurl.Perform(new Libcurl.Request
+                var res = PerformImpersonated(new Libcurl.Request
                 {
                     Url = finalUrl,
                     Method = "GET",
                     Headers = ToHeaderList(finalHeaders),
                     ImpersonateTarget = impersonate
-                });
+                }, cancel);
 
                 var bytes = res.BodyBytes ?? Array.Empty<byte>();
                 var code = Convert.ToInt32(res.Status);
@@ -226,7 +244,20 @@ namespace Grayjay.ClientServer
             if (resp.Body == null)
                 return new StreamResult(finalUrl, resp.Code, contentLength, Stream.Null);
 
-            return new StreamResult(finalUrl, resp.Code, contentLength, resp.Body.AsStream()) { Headers = resp.Headers };
+            var bodyStream = readIdleTimeout.HasValue
+                ? new IdleTimeoutStream(resp.Body.AsStream(), readIdleTimeout.Value, cancel)
+                : resp.Body.AsStream();
+            return new StreamResult(finalUrl, resp.Code, contentLength, bodyStream) { Headers = resp.Headers };
+        }
+
+        //Libcurl cannot be interrupted, so a cancelled caller stops waiting and the transfer ends within Request.TimeoutMs
+        internal static Libcurl.Response PerformImpersonated(Libcurl.Request request, CancellationToken cancel, Func<Libcurl.Request, Libcurl.Response>? perform = null)
+        {
+            perform ??= Libcurl.Perform;
+            cancel.ThrowIfCancellationRequested();
+            if (!cancel.CanBeCanceled)
+                return perform(request);
+            return Task.Run(() => perform(request)).WaitAsync(cancel).GetAwaiter().GetResult();
         }
 
         private static long ReadContentLength(HttpHeaders headers)

@@ -2,6 +2,7 @@
 using Grayjay.Engine.Models;
 using Grayjay.Engine.Models.Feed;
 using Grayjay.Engine.Models.Video.Sources;
+using Grayjay.Desktop.POC;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -17,24 +18,7 @@ namespace Grayjay.ClientServer.Serializers
 
         public override IVideoSource? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            Utf8JsonReader readerClone = reader;
-
-            if (readerClone.TokenType != JsonTokenType.StartObject)
-                throw new JsonException();
-
-            readerClone.Read();
-            if (readerClone.TokenType != JsonTokenType.PropertyName)
-                throw new JsonException();
-
-            string? propertyName = readerClone.GetString();
-            if (propertyName != nameof(IVideoSource.Type))
-                throw new JsonException("Missing Type property in VideoSource");
-
-            readerClone.Read();
-            if (readerClone.TokenType != JsonTokenType.String)
-                throw new JsonException();
-
-            string typeDiscriminator = readerClone.GetString();
+            string typeDiscriminator = SourceTypeReader.ReadTypeDiscriminator(reader, "VideoSource");
             IVideoSource content = typeDiscriminator switch
             {
                 "VideoUrlSource" => GJsonSerializer.Deserialize<VideoUrlSource>(ref reader),
@@ -43,7 +27,7 @@ namespace Grayjay.ClientServer.Serializers
                 "LocalVideoSource" => GJsonSerializer.Deserialize<LocalVideoSource>(ref reader),
                 "DashRawSource" => GJsonSerializer.Deserialize<DashManifestRawSource>(ref reader),
                 "VideoSourceDescription" => GJsonSerializer.Deserialize<VideoSourceDescription>(ref reader),
-                _ => throw new NotImplementedException()
+                _ => SourceTypeReader.ReadPlaceholder<VideoSourceDescription>(ref reader, typeDiscriminator, "VideoSource")
             };
             return content;
         }
@@ -65,24 +49,7 @@ namespace Grayjay.ClientServer.Serializers
 
         public override IAudioSource? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            Utf8JsonReader readerClone = reader;
-
-            if (readerClone.TokenType != JsonTokenType.StartObject)
-                throw new JsonException();
-
-            readerClone.Read();
-            if (readerClone.TokenType != JsonTokenType.PropertyName)
-                throw new JsonException();
-
-            string? propertyName = readerClone.GetString();
-            if (propertyName != nameof(IAudioSource.Type))
-                throw new JsonException();
-
-            readerClone.Read();
-            if (readerClone.TokenType != JsonTokenType.String)
-                throw new JsonException();
-
-            string typeDiscriminator = readerClone.GetString();
+            string typeDiscriminator = SourceTypeReader.ReadTypeDiscriminator(reader, "AudioSource");
             IAudioSource content = typeDiscriminator switch
             {
                 "AudioUrlSource" => GJsonSerializer.Deserialize<AudioUrlSource>(ref reader),
@@ -91,7 +58,7 @@ namespace Grayjay.ClientServer.Serializers
                 "LocalAudioSource" => GJsonSerializer.Deserialize<LocalAudioSource>(ref reader),
                 "DashRawAudioSource" => GJsonSerializer.Deserialize<DashManifestRawAudioSource>(ref reader),
                 "AudioSourceDescription" => GJsonSerializer.Deserialize<AudioSourceDescription>(ref reader),
-                _ => throw new NotImplementedException()
+                _ => SourceTypeReader.ReadPlaceholder<AudioSourceDescription>(ref reader, typeDiscriminator, "AudioSource")
             };
             return content;
         }
@@ -102,6 +69,32 @@ namespace Grayjay.ClientServer.Serializers
                 JsonSerializer.Serialize(writer, AudioSourceDescription.FromSource(value));
             else
                 JsonSerializer.Serialize(writer, value);
+        }
+    }
+    internal static class SourceTypeReader
+    {
+        //Takes the reader by value, so the caller's reader stays at the start of the object
+        public static string ReadTypeDiscriminator(Utf8JsonReader reader, string sourceName)
+        {
+            if (reader.TokenType != JsonTokenType.StartObject)
+                throw new JsonException();
+
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                string? propertyName = reader.GetString();
+                reader.Read();
+                if (propertyName == "Type" && reader.TokenType == JsonTokenType.String)
+                    return reader.GetString()!;
+                reader.Skip();
+            }
+            throw new JsonException($"Missing Type property in {sourceName}");
+        }
+
+        //Unsupported entries are kept as descriptions so the rest of the saved object still loads
+        public static TDescription ReadPlaceholder<TDescription>(ref Utf8JsonReader reader, string typeDiscriminator, string sourceName)
+        {
+            Logger.w(nameof(SourceTypeReader), $"Unsupported {sourceName} type [{typeDiscriminator}], loading it as a description");
+            return GJsonSerializer.Deserialize<TDescription>(ref reader);
         }
     }
 }

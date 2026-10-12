@@ -99,6 +99,58 @@ namespace Grayjay.ClientServer.Transcoding
             process.WaitForExit();
             return process.ExitCode;
         }
+        /// <summary>Runs FFmpeg with the input files streamed in order to stdin (read it with <c>-i pipe:0</c>).</summary>
+        /// <returns>The FFmpeg exit code, or -1 when FFmpeg stopped reading early but still exited with 0.</returns>
+        public static int ExecuteSafeWithInputFiles(string[] args, IReadOnlyList<FileInfo> inputFiles)
+        {
+            using var process = ExecuteProcessSafe(args, true);
+            bool inputClosedEarly = false;
+            try
+            {
+                Stream input = process.StandardInput.BaseStream;
+                byte[] buffer = new byte[81920];
+                foreach (FileInfo inputFile in inputFiles)
+                {
+                    using FileStream source = inputFile.OpenRead();
+                    int bytesRead;
+                    while (!inputClosedEarly && (bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        try
+                        {
+                            input.Write(buffer, 0, bytesRead);
+                        }
+                        catch (IOException)
+                        {
+                            //FFmpeg closed its stdin, its exit code tells why
+                            inputClosedEarly = true;
+                        }
+                    }
+                    if (inputClosedEarly)
+                    {
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                try
+                {
+                    process.StandardInput.Close();
+                }
+                catch (IOException)
+                {
+                    inputClosedEarly = true;
+                }
+                process.WaitForExit();
+            }
+
+            if (inputClosedEarly && process.ExitCode == 0)
+            {
+                Logger.w(nameof(FFMPEG), "FFmpeg exited before reading all input");
+                return -1;
+            }
+            return process.ExitCode;
+        }
         public static bool ExecuteWithTimeout(string command, TimeSpan max, bool print = true)
         {
             var process = ExecuteProcess(command, print);
@@ -152,6 +204,9 @@ namespace Grayjay.ClientServer.Transcoding
                 process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 if (onLog != null)
                 {
+                    //Redirection requires UseShellExecute to be off
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
                     process.OutputDataReceived += (sender, args) => onLog(args.Data, false);

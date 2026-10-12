@@ -37,8 +37,43 @@ namespace Grayjay.ClientServer.Store
         private Func<T, object> _withUnique;
         private bool _withBackup;
         private bool _withEncryption;
+        private bool _keepUnloadable;
 
         private bool _isLoaded;
+
+        private List<string> _unloadableIds = new List<string>();
+        private List<(T obj, StoreFile mfile)> _duplicateObjects = new List<(T obj, StoreFile mfile)>();
+        public bool HasUnloadable
+        {
+            get
+            {
+                lock (_unloadableIds)
+                {
+                    return _unloadableIds.Count > 0;
+                }
+            }
+        }
+        public List<string> UnloadableIds
+        {
+            get
+            {
+                lock (_unloadableIds)
+                {
+                    return _unloadableIds.ToList();
+                }
+            }
+        }
+        //Older records that share a unique key with a loaded record, kept on disk but not loaded
+        public List<T> DuplicateObjects
+        {
+            get
+            {
+                lock (_duplicateObjects)
+                {
+                    return _duplicateObjects.Select(duplicate => duplicate.obj).ToList();
+                }
+            }
+        }
 
 
         private Dictionary<T, StoreFile> _files = new Dictionary<T, StoreFile>();
@@ -83,12 +118,26 @@ namespace Grayjay.ClientServer.Store
             _withEncryption = true;
             return this;
         }
+        //Files that fail to load are kept on disk and reported through UnloadableIds instead of deleted
+        public ManagedStore<T> WithKeepUnloadable()
+        {
+            _keepUnloadable = true;
+            return this;
+        }
 
         public ManagedStore<T> Load()
         {
             lock (_files)
             {
                 _files.Clear();
+                lock (_unloadableIds)
+                {
+                    _unloadableIds.Clear();
+                }
+                lock (_duplicateObjects)
+                {
+                    _duplicateObjects.Clear();
+                }
                 var newObjs = Directory
                     .GetFiles()
                     .Select(x => Path.GetFileNameWithoutExtension(x.Name))
@@ -96,11 +145,24 @@ namespace Grayjay.ClientServer.Store
                     .Select((fileId) =>
                     {
                         var mfile = new StoreFile(fileId, Directory.FullName, _withEncryption);
+                        if (_keepUnloadable && !File.Exists(mfile.FilePath) && !(_withBackup && File.Exists(mfile.BackupFilePath)))
+                            return (obj: default(T), mfile);
                         var obj = mfile.Load(this, _withBackup);
                         if (obj == null)
                         {
-                            Logger.w<ManagedStore<T>>($"Deleting {LogName(mfile.ID)}");
-                            mfile.Delete();
+                            if (_keepUnloadable)
+                            {
+                                Logger.w<ManagedStore<T>>($"Keeping unloadable {LogName(mfile.ID)}");
+                                lock (_unloadableIds)
+                                {
+                                    _unloadableIds.Add(mfile.ID);
+                                }
+                            }
+                            else
+                            {
+                                Logger.w<ManagedStore<T>>($"Deleting {LogName(mfile.ID)}");
+                                mfile.Delete();
+                            }
                             //TODO: Reconstruction
                         }
                         return (obj, mfile);
@@ -108,7 +170,10 @@ namespace Grayjay.ClientServer.Store
 
                 if (newObjs != null)
                 {
-                    foreach (var obj in newObjs)
+                    var loadedObjs = newObjs.ToList();
+                    if (_keepUnloadable && _withUnique != null)
+                        loadedObjs = KeepNewestPerUnique(loadedObjs);
+                    foreach (var obj in loadedObjs)
                     {
                         _files[obj.obj] = obj.mfile;
                     }
@@ -118,6 +183,52 @@ namespace Grayjay.ClientServer.Store
             return this;
         }
 
+
+        private List<(T obj, StoreFile mfile)> KeepNewestPerUnique(List<(T obj, StoreFile mfile)> loadedObjs)
+        {
+            var kept = new List<(T obj, StoreFile mfile)>();
+            //Grouped with Equals like Save, unique keys such as PlatformID do not override GetHashCode
+            var groups = new List<(object key, List<(T obj, StoreFile mfile)> members)>();
+            foreach (var loaded in loadedObjs)
+            {
+                var key = UniqueKeyOrFileId(loaded.obj, loaded.mfile);
+                var groupIndex = groups.FindIndex(group => group.key.Equals(key));
+                if (groupIndex >= 0)
+                    groups[groupIndex].members.Add(loaded);
+                else
+                    groups.Add((key, new List<(T obj, StoreFile mfile)>() { loaded }));
+            }
+            foreach (var group in groups)
+            {
+                var newestFirst = group.members
+                    .OrderByDescending(member => member.mfile.GetLastWriteTimeUtc())
+                    .ThenBy(member => member.mfile.ID, StringComparer.Ordinal)
+                    .ToList();
+                kept.Add(newestFirst[0]);
+                foreach (var duplicate in newestFirst.Skip(1))
+                {
+                    Logger.w<ManagedStore<T>>($"Keeping duplicate {LogName(duplicate.mfile.ID)}, {LogName(newestFirst[0].mfile.ID)} has the same key and is newer");
+                    lock (_duplicateObjects)
+                    {
+                        _duplicateObjects.Add(duplicate);
+                    }
+                }
+            }
+            return kept;
+        }
+
+        private object UniqueKeyOrFileId(T obj, StoreFile mfile)
+        {
+            try
+            {
+                return _withUnique(obj) ?? mfile.ID;
+            }
+            catch (Exception ex)
+            {
+                Logger.w<ManagedStore<T>>($"No unique key for {LogName(mfile.ID)}", ex);
+                return mfile.ID;
+            }
+        }
 
         public int Count()
         {
@@ -282,6 +393,7 @@ namespace Grayjay.ClientServer.Store
                 {
                     _files.Remove(entry);
                     file.Delete();
+                    DeleteDuplicatesOf(entry);
                 }
                 return entry;
             }
@@ -299,10 +411,41 @@ namespace Grayjay.ClientServer.Store
                 {
                     _files.Remove(obj);
                     file.Delete();
+                    DeleteDuplicatesOf(obj);
                     return true;
                 }
             }
             return false;
+        }
+
+        //Older duplicates would otherwise be loaded again as the record on the next Load
+        private void DeleteDuplicatesOf(T obj)
+        {
+            List<(T obj, StoreFile mfile)> matching;
+            lock (_duplicateObjects)
+            {
+                if (_duplicateObjects.Count == 0 || _withUnique == null)
+                    return;
+                object? key;
+                try
+                {
+                    key = _withUnique(obj);
+                }
+                catch (Exception ex)
+                {
+                    Logger.w<ManagedStore<T>>("No unique key for deleted object, duplicates kept", ex);
+                    return;
+                }
+                if (key == null)
+                    return;
+                matching = _duplicateObjects.Where(duplicate => UniqueKeyOrFileId(duplicate.obj, duplicate.mfile).Equals(key)).ToList();
+                _duplicateObjects.RemoveAll(duplicate => matching.Contains(duplicate));
+            }
+            foreach (var duplicate in matching)
+            {
+                Logger.w<ManagedStore<T>>($"Deleting duplicate {LogName(duplicate.mfile.ID)}");
+                duplicate.mfile.Delete();
+            }
         }
 
         public void DeleteAll()
@@ -442,6 +585,11 @@ namespace Grayjay.ClientServer.Store
                 FilePath = Path.Combine(directory, id);
                 BackupFilePath = Path.Combine(directory, id + ".bak");
                 UseEncryption = useEncryption;
+            }
+
+            public DateTime GetLastWriteTimeUtc()
+            {
+                return File.Exists(FilePath) ? File.GetLastWriteTimeUtc(FilePath) : File.GetLastWriteTimeUtc(BackupFilePath);
             }
 
             public T Load(ManagedStore<T> store, bool withBackup = true)
