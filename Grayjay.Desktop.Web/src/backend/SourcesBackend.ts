@@ -78,6 +78,10 @@ export abstract class SourcesBackend {
     static async sourceInstallPeerTubePrompt(url: string): Promise<IPluginPrompt> {
         return await Backend.POST("/sources/SourceInstallPeerTubePrompt", JSON.stringify(url), "application/json") as any;
     }
+
+    static async getDynamicIcon(id: string): Promise<string | null> {
+        return await Backend.GET("/sources/GetDynamicIcon?id=" + id) as string;
+    }
     
     static login(id: string) {
         Backend.GET("/sources/SourceLogin?id=" + id);

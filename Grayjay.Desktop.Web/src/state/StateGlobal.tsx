@@ -33,7 +33,8 @@ export interface StateGlobal {
     getSourceConfig: (id: string | undefined) => ISourceConfig | undefined,
     getSourceState: (id: string | undefined) => ISourceConfigState | undefined,
     getCommonSearchCapabilities: (sourceIds: string[]) => IResultCapabilities | undefined,
-    getCommonSearchChannelContentsCapabilities: (sourceIds: string[]) => IResultCapabilities | undefined
+    getCommonSearchChannelContentsCapabilities: (sourceIds: string[]) => IResultCapabilities | undefined,
+    getDynamicIcon: (id: string) => Promise<string | null>
 };
 
 function createState() {
@@ -173,6 +174,9 @@ function createState() {
             if(!id)
                 return undefined;
             return sourceStates$()?.find(x=>x.config.id == id);
+        },
+        getDynamicIcon(id: string) {
+            return SourcesBackend.getDynamicIcon(id);
         },
         getCommonSearchCapabilities(sourceIds: string[]): IResultCapabilities | undefined {
             return getCommonSearchCapabilitiesType(sourceIds, (sourceId) => this.getSourceState(sourceId)?.capabilitiesSearch);
