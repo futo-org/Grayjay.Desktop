@@ -214,6 +214,7 @@ namespace Grayjay.ClientServer.Settings
             public bool NativeUmp { get; set; } = true;
 
             [SettingsField("Warm Up Widevine at Startup", SettingsField.TOGGLE, "Start the installed Widevine playback helper at app startup to reduce the delay before playing protected videos. Uses additional memory. Requires restart", 11)]
+            [SettingsAdvanced]
             public bool WarmupWidevineOnStartup { get; set; } = false;
 
             //[SettingsField("Hide Known Broken Livechats", SettingsField.TOGGLE, "Some live chats are known to have compatibility issues with desktop, this setting disables those (Recommended)", 7)]
