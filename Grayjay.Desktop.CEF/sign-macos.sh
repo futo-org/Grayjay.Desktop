@@ -9,6 +9,7 @@ ENTITLEMENTS_PATH="Entitlements"
 sign_path() {
     FILE_PATH=$1
     case "$FILE_PATH" in
+        *"/Helpers/blink") ENTITLEMENT_FILE="$ENTITLEMENTS_PATH/blink.entitlements" ;;
         *"Helper (GPU)"*) ENTITLEMENT_FILE="$ENTITLEMENTS_PATH/cef-helper-gpu.entitlements" ;;
         *"Helper (Alerts)"*) ENTITLEMENT_FILE="$ENTITLEMENTS_PATH/cef-helper-alerts.entitlements" ;;
         *"Helper (Renderer)"*) ENTITLEMENT_FILE="$ENTITLEMENTS_PATH/cef-helper-renderer.entitlements" ;;
@@ -91,7 +92,10 @@ build_sign_notarize() {
 
     echo "Signing..."
     for path in "${PATHS_TO_SIGN[@]}"; do
-        sign_path "$path"
+        if [ "$path" = "$APP_PATH/Contents/MacOS/Grayjay" ]; then
+            continue
+        fi
+        sign_path "$path" || exit 1
     done
 
     echo "Verifying $APP_PATH..."

@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-10",
+  "runtime": {
+    "version": "1",
+    "protocol": 3,
+    "blinkRepository": "https://github.com/jart/blink.git",
+    "blinkCommit": "f006a4fc6f9b8de9272504fdff0dbbe5ce5dc580",
+    "cpuBaseline": "x86-64",
+    "compiler": "14.4.0",
+    "cygwinVersion": "3.6.11-1",
+    "blinkSha256": "04afea600ebb757ba103dc6d966297d13ab1ede708f0022a27cb7c59f0f3fb04",
+    "cygwinSha256": "959048d1407074097af021708d87bdf5ac1a8f107ff963c8950cd6dc8f21afaf",
+    "patchSha256": "d4a68fe8c158e914a095ecfdbe4448ecd0e007eb4b061a751f60a81a6cb8d91e",
+    "mapperHeaderSha256": "851616619b65e3b918b3d1fea6f9b8366ff8985306b57fa323f29208c8220571",
+    "mapperSha256": "bdec4596fe49aec92d4a9700b0693f38d5bde38db23c92f3e41eb7de40aac554"
+  },
+  "source_strategy": "Pinned upstream Blink commit plus tracked CDM patch and owned Windows mapper",
+  "clean_source_build": "passed; configure probes serialized to prevent allocation failures being treated as missing features",
+  "packaged_startup": "passed",
+  "offline_tests": "passed",
+  "mapping_semantics": "passed",
+  "mapping_allocation_failure_rollback": "passed with 32 MiB development job",
+  "arithmetic_differential_cases": 640000,
+  "reference_license_sessions": 16,
+  "samples_per_session": 1290,
+  "decrypted_sha256": "39d48f0c2611ebf76850950a38d046b2b9996f666f3f250d9af6ebf500ada9da",
+  "windows_publish": "passed; bundled binary matches manifest; no QEMU DLLs, executable, firmware or Linux kernel",
+  "staging": "passed; removes obsolete Windows QEMU and rejects mixed archives before modifying output",
+  "production_resource_caps": "none",
+  "macos": "QEMU retained; not exercised in this Windows validation"
+}

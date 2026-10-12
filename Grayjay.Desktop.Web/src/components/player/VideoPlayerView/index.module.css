@@ -60,6 +60,13 @@
     justify-content: center;
 }
 
+.protectedPlaybackStatus {
+    position: absolute;
+    top: calc(50% + 40px);
+    padding: 0 20px;
+    text-align: center;
+}
+
 .controlsFullscreen {
     position: absolute;
     top: 0;

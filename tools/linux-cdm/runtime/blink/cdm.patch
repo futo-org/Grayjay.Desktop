@@ -1,0 +1,728 @@
+diff --git a/blink/alu1.c b/blink/alu1.c
+index ce23e24..1a5d36b 100644
+--- a/blink/alu1.c
++++ b/blink/alu1.c
+@@ -161,6 +161,46 @@ void OpNegEvqp(P) {
+   }
+ }
+ 
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++extern i64 JustInc(u64);
++extern const aluop_f kFastInc[4];
++void OpIncEvqp(P) {
++  AluEvqp(A, kAlu[ALU_INC]);
++  if (IsMakingPath(m) && !Lock(rde)) {
++    STATISTIC(++alu_ops);
++    switch (GetNeededFlags(m, m->ip, ZF | SF | OF | AF | PF)) {
++      case 0:
++        STATISTIC(++alu_unflagged);
++        Jitter(A,
++               "B"     // res0 = GetRegOrMem(RexbRm)
++               "t"     // arg0 = res0
++               "m"     // call micro-op
++               "r0D",  // PutRegOrMem(RexbRm, res0)
++               JustInc);
++        break;
++      case ZF:
++        STATISTIC(++alu_simplified);
++        Jitter(A,
++               "B"      // res0 = GetRegOrMem(RexbRm)
++               "s0a1="  // arg1 = machine
++               "t"      // arg0 = res0
++               "m"      // call micro-op
++               "r0D",   // PutRegOrMem(RexbRm, res0)
++               kFastInc[WordLog2(rde)]);
++        break;
++      default:
++        Jitter(A,
++               "B"      // res0 = GetRegOrMem(RexbRm)
++               "r0a1="  // arg1 = res0
++               "q"      // arg0 = machine
++               "c"      // call function
++               "r0D",   // PutRegOrMem(RexbRm, res0)
++               kAlu[ALU_INC][WordLog2(rde)]);
++        break;
++    }
++  }
++}
++#else
+ void OpIncEvqp(P) {
+   AluEvqp(A, kAlu[ALU_INC]);
+   if (IsMakingPath(m) && !Lock(rde)) {
+@@ -174,6 +214,8 @@ void OpIncEvqp(P) {
+   }
+ }
+ 
++#endif
++
+ void OpDecEvqp(P) {
+   AluEvqp(A, kAlu[ALU_DEC]);
+   if (IsMakingPath(m) && !Lock(rde)) {
+diff --git a/blink/argv.c b/blink/argv.c
+index 11c77c9..9a008e0 100644
+--- a/blink/argv.c
++++ b/blink/argv.c
+@@ -113,7 +113,7 @@ void LoadArgv(struct Machine *m, char *execfn, char *prog, char **args,
+   while ((sp - nall * sizeof(i64)) & (STACKALIGN - 1)) --sp;
+   sp -= nall * sizeof(i64);
+   Write64(m->sp, sp);
+-  Write64(m->dx, dx);
++  Write64(m->dx, m->system->iscosmo ? dx : 0);
+   Write64(m->di, 0); /* or ape detects freebsd */
+   bytes = (u8 *)malloc(nall * 8);
+   for (i = 0; i < nall; ++i) {
+diff --git a/blink/blink.c b/blink/blink.c
+index 3571b61..f255106 100644
+--- a/blink/blink.c
++++ b/blink/blink.c
+@@ -375,6 +375,10 @@ int main(int argc, char *argv[]) {
+   WriteErrorInit();
+   InitMap();
+   GetOpts(argc, argv);
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  // Preserve Cygwin mmap granularity when -m selects indirect memory.
++  if (FLAG_nolinear) InitMap();
++#endif
+   if (optind_ == argc) {
+     PrintUsage(argc, argv, 48, 2);
+   }
+diff --git a/blink/deps.c b/blink/deps.c
+index e6e3339..ac21d7d 100644
+--- a/blink/deps.c
++++ b/blink/deps.c
+@@ -37,10 +37,12 @@ static int CrawlFlags(struct Machine *m,  //
+                       i64 pc,             //
+                       int myflags,        //
+                       int look,           //
+-                      int depth) {
++                      int depth, unsigned *budget) {
+   u64 place;
+   int need, deps;
+   for (need = 0;;) {
++    if (!*budget) return -1;
++    --*budget;
+     place = pc;
+     SPX_LOGF("%" PRIx64 " %*s%s", pc, depth * 2, "", DescribeOp(m, pc));
+     if (LoadInstruction2(m, place)) {
+@@ -62,7 +64,7 @@ static int CrawlFlags(struct Machine *m,  //
+     } else if (IsJump(m->xedd->op.rde)) {
+       pc += m->xedd->op.disp;
+     } else if (IsConditionalJump(m->xedd->op.rde)) {
+-      need |= CrawlFlags(m, pc + m->xedd->op.disp, myflags, look, depth + 1);
++      need |= CrawlFlags(m, pc + m->xedd->op.disp, myflags, look, depth + 1, budget);
+       if (need == -1) return -1;
+     } else if (ClassifyOp(m->xedd->op.rde) != kOpNormal) {
+       WriteCod("/\tspeculated abnormal op at %" PRIx64 "\n", place);
+@@ -73,7 +75,10 @@ static int CrawlFlags(struct Machine *m,  //
+ 
+ // returns bitset of flags read by code at pc, or -1 if unknown
+ int GetNeededFlags(struct Machine *m, i64 pc, int myflags) {
+-  int rc = CrawlFlags(m, pc, myflags, 32, 0);
++  // A per-branch lookahead alone permits exponential work on branching DAGs.
++  // Exhaustion returns unknown, retaining complete flag calculations.
++  unsigned budget = 256;
++  int rc = CrawlFlags(m, pc, myflags, 32, 0, &budget);
+   WriteCod("/\t%" PRIx64 " needs flags %s\n", pc, DescribeCpuFlags(rc));
+   return rc;
+ }
+diff --git a/blink/jit.c b/blink/jit.c
+index 6e6240e..31fe0cc 100644
+--- a/blink/jit.c
++++ b/blink/jit.c
+@@ -574,7 +574,12 @@ static void ClearEdges(struct JitEdges *edges) {
+   edges->i = 0;
+ }
+ 
+-static bool IsCyclic(struct JitEdges *edges, i64 V[kJitDepth], int d, i64 dst) {
++// Conservatively decline a direct link when checking it costs too much.
++// A depth limit alone permits exponential work on branching DAGs.
++static bool IsCyclic(struct JitEdges *edges, i64 V[kJitDepth], int d, i64 dst,
++                     unsigned *budget) {
++  if (!*budget) return true;
++  --*budget;
+   int i, s;
+   if (d == kJitDepth) {
+     return true;
+@@ -587,7 +592,7 @@ static bool IsCyclic(struct JitEdges *edges, i64 V[kJitDepth], int d, i64 dst) {
+   V[d++] = dst;
+   if (edges->dst[(s = GetEdge(edges, dst))]) {
+     for (i = 0; i < edges->dst[s]->i; ++i) {
+-      if (IsCyclic(edges, V, d, edges->dst[s]->p[i])) {
++      if (IsCyclic(edges, V, d, edges->dst[s]->p[i], budget)) {
+         return true;
+       }
+     }
+@@ -623,7 +628,11 @@ static u8 *AllocateJitMemory(long *state) {
+   uintptr_t p;
+   brk = *state;
+   p = (uintptr_t)g_code;
++  #if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  i = ROUNDUP(p + brk, 65536) - p;
++#else
+   i = ROUNDUP(p + brk, FLAG_pagesize) - p;
++#endif
+   if (i + kJitBlockSize > kJitMemorySize) {
+     return 0;
+   }
+@@ -1592,9 +1601,10 @@ bool RecordJitJump(struct JitBlock *jb, u64 virt, int addend) {
+ // @assume jit->lock
+ static bool RecordJitEdgeImpl(struct Jit *jit, i64 src, i64 dst) {
+   i64 visits[kJitDepth];
++  unsigned budget = 4096;
+   if (src == dst) return false;
+   visits[0] = src;
+-  if (IsCyclic(&jit->edges, visits, 1, dst)) {
++  if (IsCyclic(&jit->edges, visits, 1, dst, &budget)) {
+     STATISTIC(++jit_cycles_avoided);
+     return false;
+   }
+diff --git a/blink/machine.h b/blink/machine.h
+index be17a8a..1ee37a2 100644
+--- a/blink/machine.h
++++ b/blink/machine.h
+@@ -98,6 +98,7 @@
+ #define PAGE_HOST  0x0000000000000400  // PAGE_TA bits point to system memory
+ #define PAGE_MAP   0x0000000000000800  // PAGE_TA bits are a linear host mmap
+ #define PAGE_TA    0x0000fffffffff000  // bits used for host, or real address
++#define PAGE_WRESV 0x0001000000000000  // Windows reserved, not committed
+ #define PAGE_GROW  0x0010000000000000  // for future support of MAP_GROWSDOWN
+ #define PAGE_MUG   0x0020000000000000  // host page magic mapped individually
+ #define PAGE_FILE  0x0040000000000000  // page has tracking bit in s->filemap
+@@ -121,7 +122,7 @@
+ #define HOSTPAGE_CONTAINER(e) DLL_CONTAINER(struct HostPage, elem, e)
+ 
+ #if defined(NOLINEAR) || defined(__SANITIZE_THREAD__) ||                       \
+-    defined(__CYGWIN__) || defined(__NetBSD__) || defined(__COSMOPOLITAN__) || \
++    (defined(__CYGWIN__) && !defined(BLINK_CYGWIN_LINEAR)) || defined(__NetBSD__) || defined(__COSMOPOLITAN__) || \
+     defined(__FILC__)
+ #define CanHaveLinearMemory() false
+ #else
+@@ -440,7 +441,7 @@ struct Machine {               //
+   bool boop;                             //
+   i8 trapno;                             //
+   i8 segvcode;                           //
+-  struct MachineTlb tlb[32];             //
++  struct MachineTlb tlb[256];             //
+   sigjmp_buf onhalt;                     //
+   struct sigaltstack_linux sigaltstack;  //
+   i64 robust_list;                       //
+diff --git a/blink/map.c b/blink/map.c
+index b25aa74..7c3beed 100644
+--- a/blink/map.c
++++ b/blink/map.c
+@@ -35,9 +35,12 @@
+ #include "blink/types.h"
+ #include "blink/util.h"
+ #include "blink/vfs.h"
++#include "blink/winmap.h"
+ 
+ static long GetSystemPageSize(void) {
+-#ifdef __EMSCRIPTEN__
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  return FLAG_nolinear ? 65536 : 4096;
++#elif defined(__EMSCRIPTEN__)
+   // "pages" in Emscripten only refer to the granularity the memory
+   // buffer can be grown at but does not affect functions like mmap
+   return 4096;
+@@ -173,6 +176,10 @@ void *Mmap(void *addr,     //
+   if (!(flags & MAP_SHARED)) {
+     prot |= PROT_MPROTECT(PROT_EXEC | PROT_WRITE | PROT_READ);
+   }
++#endif
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  if (!strcmp(owner, "linear")) res = WindowsMmap(addr,length,prot,flags,fd,offset);
++  else
+ #endif
+   res = PortableMmap(addr, length, prot, flags, fd, offset);
+ #if LOG_MEM
+@@ -194,6 +201,9 @@ void *Mmap(void *addr,     //
+ 
+ int Munmap(void *addr, size_t length) {
+   int rc;
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  if (WindowsOwnsMap(addr)) rc = WindowsMunmap(addr,length); else
++#endif
+   rc = VfsMunmap(addr, length);
+ #if LOG_MEM
+   char szbuf[16];
+@@ -212,7 +222,11 @@ int Mprotect(void *addr,     //
+              size_t length,  //
+              int prot,       //
+              const char *owner) {
+-  int res = VfsMprotect(addr, length, prot);
++int res;
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  if (WindowsOwnsMap(addr)) res = WindowsMprotect(addr,length,prot); else
++#endif
++  res = VfsMprotect(addr, length, prot);
+ #if LOG_MEM
+   char szbuf[16];
+   FormatSize(szbuf, length, 1024);
+@@ -235,7 +249,11 @@ int Msync(void *addr,     //
+ #if defined(__FILC__)
+   if (1) return 0;
+ #endif
+-  int res = VfsMsync(addr, length, flags);
++int res;
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  if (WindowsOwnsMap(addr)) res = 0; else
++#endif
++  res = VfsMsync(addr, length, flags);
+ #if LOG_MEM
+   char szbuf[16];
+   FormatSize(szbuf, length, 1024);
+diff --git a/blink/memory.c b/blink/memory.c
+index 6c2d34c..dbe54c3 100644
+--- a/blink/memory.c
++++ b/blink/memory.c
+@@ -260,12 +260,26 @@ MapError:
+   return (uintptr_t)efault0();
+ }
+ 
++// Keep the common translation-cache hit in the caller. Permission checks
++// and self-modifying-code tracking remain in LookupAddress2.
++forceinline u64 FindCachedPageTableEntry(struct Machine *m, u64 page) {
++  u64 entry;
++  unsigned key = (page >> 12) & (ARRAYLEN(m->tlb) - 1);
++  if (LIKELY(!atomic_load_explicit(&m->invalidated, memory_order_acquire) &&
++             m->tlb[key].page == page &&
++             ((entry = m->tlb[key].entry) & PAGE_V))) {
++    STATISTIC(++tlb_hits);
++    return entry;
++  }
++  return FindPageTableEntry(m, page);
++}
++
+ u8 *LookupAddress2(struct Machine *m, i64 virt, u64 mask, u64 need) {
+   u8 *host;
+   u64 entry;
+   if (!m->metal || m->mode.omode == XED_MODE_LONG ||
+       (m->mode.genmode != XED_GEN_MODE_REAL && (m->system->cr0 & CR0_PG))) {
+-    if (!(entry = FindPageTableEntry(m, virt & -4096))) {
++    if (!(entry = FindCachedPageTableEntry(m, virt & -4096))) {
+       return 0;
+     }
+   } else if (virt >= 0 && virt <= 0xffffffff &&
+diff --git a/blink/memorymalloc.c b/blink/memorymalloc.c
+index 7d5cc93..9434613 100644
+--- a/blink/memorymalloc.c
++++ b/blink/memorymalloc.c
+@@ -17,6 +17,7 @@
+ │ PERFORMANCE OF THIS SOFTWARE.                                                │
+ ╚─────────────────────────────────────────────────────────────────────────────*/
+ #include <stdlib.h>
++#include <stdio.h>
+ #include <string.h>
+ #include <sys/mman.h>
+ #include <unistd.h>
+@@ -139,7 +140,9 @@ static bool FreeEmptyPageTables(struct System *s, u64 pt, long level) {
+     } else {
+       pt = LoadPte(mi + i * 8);
+       if (pt & PAGE_V) {
+-        if (FreeEmptyPageTables(s, pt, level + 1)) {
++        if (pt & PAGE_PS) {
++          isempty = false;
++        } else if (FreeEmptyPageTables(s, pt, level + 1)) {
+           StorePte(mi + i * 8, 0);
+         } else {
+           isempty = false;
+@@ -490,6 +493,24 @@ u64 AllocatePageTable(struct System *s) {
+   return res;
+ }
+ 
++// Only inaccessible, reserved linear mappings use compact 2 MiB entries.
++// Mutation paths hold the mmap lock and materialize one ordinary table.
++_Noreturn static void PanicDueToMmap(void);
++static u64 ExpandReservedTable(struct System *s,u8 *slot,u64 entry) {
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  if ((entry & (PAGE_PS|PAGE_WRESV)) == (PAGE_PS|PAGE_WRESV)) {
++    u64 table=AllocatePageTable(s);
++    if(table==(u64)-1)PanicDueToMmap();
++    u8 *page=GetPageAddress(s,table,false);
++    for(unsigned j=0;j<512;++j)
++      StorePte(page+j*8,((entry&PAGE_TA)+j*4096)|(entry&~(PAGE_TA|PAGE_PS)));
++    StorePte(slot,table);
++    return table;
++  }
++#endif
++  return entry;
++}
++
+ bool IsValidAddrSize(i64 virt, i64 size) {
+   virt = (i64)((u64)virt << 16) >> 16;
+   return size > 0 &&                 //
+@@ -660,8 +681,12 @@ static bool FreePage(struct System *s, i64 virt, u64 entry, u64 size,
+   } else if ((entry & (PAGE_HOST | PAGE_MAP | PAGE_MUG)) ==
+              (PAGE_HOST | PAGE_MAP)) {
+     unassert(!(entry & PAGE_RSRV));
+-    s->memstat.committed -= 1;
+-    --*rss_delta;
++    if (entry & PAGE_WRESV) {
++      s->memstat.reserved -= 1;
++    } else {
++      s->memstat.committed -= 1;
++      --*rss_delta;
++    }
+     return true;  // call is responsible for freeing
+   } else if (entry & PAGE_RSRV) {
+     s->memstat.reserved -= 1;
+@@ -710,6 +735,20 @@ static void RemoveVirtual(struct System *s, i64 virt, i64 size,
+       pp = GetPageAddress(s, pt, i == 39) + pi * 8;
+       if (i == 12 + 9) pde = pp;
+       pt = LoadPte(pp);
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++      if(i==21 && (pt&(PAGE_PS|PAGE_WRESV))==(PAGE_PS|PAGE_WRESV) &&
++         !(virt&0x1fffff) && end-virt>=0x200000) {
++        // A whole inaccessible reservation can be removed without expanding
++        // 512 entries, allocating a table, or visiting every 4 KiB page.
++        if(Munmap(ToHost(virt),0x200000))PanicDueToMmap();
++        StorePte(pp,0);
++        s->memstat.reserved-=512;
++        *vss_delta-=512;
++        *address_space_was_mutated=true;
++        break;
++      }
++#endif
++      if(i>12)pt=ExpandReservedTable(s,pp,pt);
+       if (i > 12 && !(pt & PAGE_V)) break;
+       if (i > 12) continue;
+     LastLevel:
+@@ -923,10 +962,18 @@ i64 ReserveVirtual(struct System *s, i64 virt, i64 size, u64 flags, int fd,
+         PanicDueToMmap();
+       }
+     }
+-    s->memstat.committed += pages;
+     flags |= PAGE_HOST | PAGE_MAP;
+     vss_delta += pages;
+-    rss_delta += pages;
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++    if (!prot && fd == -1) {
++      flags |= PAGE_WRESV;
++      s->memstat.reserved += pages;
++    } else
++#endif
++    {
++      s->memstat.committed += pages;
++      rss_delta += pages;
++    }
+   } else if (fd != -1 || shared) {
+     vss_delta += pages;
+     s->memstat.reserved += pages;
+@@ -953,8 +1000,18 @@ i64 ReserveVirtual(struct System *s, i64 virt, i64 size, u64 flags, int fd,
+       mi = GetPageAddress(s, pt, level == 39) + ti * 8;
+       if (level > 12) {
+         pt = LoadPte(mi);
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++        if(level==21 && (flags&PAGE_WRESV) && !(virt&0x1fffff) && end-virt>=0x200000 && !pt) {
++          StorePte(mi,(uintptr_t)ToHost(virt)|flags|PAGE_V|PAGE_PS);
++          virt+=0x200000;
++          if(virt>=end)goto ReservationDone;
++          goto NextReservation;
++        }
++#endif
++        pt=ExpandReservedTable(s,mi,pt);
+         if (!(pt & PAGE_V)) {
+           if ((pt = AllocatePageTable(s)) == -1) {
++            fprintf(stderr,"table crisis size=%lld tables=%ld rss=%ld reserved=%ld committed=%ld\n",(long long)size,s->memstat.tables,s->rss,s->memstat.reserved,s->memstat.committed);
+             WriteErrorString("mmap() crisis: ran out of page table memory\n");
+             exit(EXIT_FAILURE_MMAP_PANIC);
+           }
+@@ -1015,6 +1072,7 @@ i64 ReserveVirtual(struct System *s, i64 virt, i64 size, u64 flags, int fd,
+                    &rss_delta);
+         }
+         if ((virt += 4096) >= end) {
++          ReservationDone:
+           s->rss += rss_delta;
+           s->vss += vss_delta;
+ #ifndef DISABLE_JIT
+@@ -1030,6 +1088,7 @@ i64 ReserveVirtual(struct System *s, i64 virt, i64 size, u64 flags, int fd,
+         mi += 8;
+       }
+     }
++NextReservation:;
+   }
+ }
+ 
+@@ -1048,7 +1107,7 @@ StartOver:
+     for (i = 39, pt = s->cr3;; i -= 9) {
+       pt = LoadPte(GetPageAddress(s, pt, i == 39) +
+                    (((virt + got) >> i) & 511) * 8);
+-      if (i == 12 || !(pt & PAGE_V)) break;
++      if (i == 12 || !(pt & PAGE_V) || (pt & PAGE_PS)) break;
+     }
+     got += (u64)1 << i;
+     if ((pt & PAGE_V)) {
+@@ -1126,6 +1185,11 @@ bool IsFullyMapped(struct System *s, i64 virt, i64 size) {
+         if (!(pt & PAGE_V)) {
+           return false;
+         }
++        if(pt&PAGE_PS) {
++          virt=MIN(end,(virt|0x1fffff)+1);
++          if(virt>=end)return true;
++          goto NextMapped;
++        }
+         continue;
+       }
+       for (;;) {
+@@ -1139,6 +1203,7 @@ bool IsFullyMapped(struct System *s, i64 virt, i64 size) {
+         pt = LoadPte((mi += 8));
+       }
+     }
++NextMapped:;
+   }
+ }
+ 
+@@ -1152,7 +1217,7 @@ bool IsFullyUnmapped(struct System *s, i64 virt, i64 size) {
+       pt = LoadPte(mi);
+       if (!(pt & PAGE_V)) {
+         break;
+-      } else if (i == 12) {
++      } else if (i == 12 || (pt & PAGE_PS)) {
+         return false;
+       }
+     }
+@@ -1203,6 +1268,7 @@ int ProtectVirtual(struct System *s, i64 virt, i64 size, int prot,
+       ti = (virt >> level) & 511;
+       mi = GetPageAddress(s, pt, level == 39) + ti * 8;
+       pt = LoadPte(mi);
++      if(level>12)pt=ExpandReservedTable(s,mi,pt);
+       if (level > 12) {
+         if (!(pt & PAGE_V)) {
+           goto MemoryDisappeared;
+@@ -1230,7 +1296,15 @@ int ProtectVirtual(struct System *s, i64 virt, i64 size, int prot,
+         if (!hostonly) {
+           for (;;) {
+             pt2 = (pt & ~(PAGE_U | PAGE_RW | PAGE_XD)) | key;
+-            if (CasPte(mi, pt, pt2)) break;
++            if ((pt & PAGE_WRESV) && prot) pt2 &= ~PAGE_WRESV;
++            if (CasPte(mi, pt, pt2)) {
++              if ((pt & PAGE_WRESV) && !(pt2 & PAGE_WRESV)) {
++                s->memstat.reserved -= 1;
++                s->memstat.committed += 1;
++                s->rss += 1;
++              }
++              break;
++            }
+             pt = LoadPte(mi);
+             if (!(pt & PAGE_V)) {
+               goto MemoryDisappeared;
+@@ -1321,6 +1395,7 @@ int SyncVirtual(struct System *s, i64 virt, i64 size, int sysflags) {
+       ti = (virt >> level) & 511;
+       mi = GetPageAddress(s, pt, level == 39) + ti * 8;
+       pt = LoadPte(mi);
++      if(level>12)pt=ExpandReservedTable(s,mi,pt);
+       if (level > 12) {
+         if (!(pt & PAGE_V)) {
+           goto MemoryDisappeared;
+@@ -1388,6 +1463,7 @@ static i64 FindGuestAddr(struct System *s, uintptr_t hp, u64 pt, long lvl,
+   if ((mi = GetPageAddress(s, pt, lvl == 1))) {
+     for (i = 0; i < 512; ++i) {
+       if ((pte = LoadPte(mi + i * 8)) & PAGE_V) {
++        if(pte&PAGE_PS)continue;
+         if (lvl == 4) {
+           if ((pte & PAGE_HOST) && (uintptr_t)FindHostPage(pte) == hp) {
+             if (out_pte) {
+@@ -1418,6 +1494,26 @@ i64 ConvertHostToGuestAddress(struct System *s, void *ha, u64 *out_pte) {
+   if ((uintptr_t)ha < kNullSize) return (uintptr_t)ha;
+   if (HasLinearMapping() && !out_pte) return ToGuest(ha);
+   base = (uintptr_t)ha & -4096;
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  // Linear guest mappings have a reversible address translation. Validate
++  // the candidate through four table levels instead of scanning every table.
++  if(HasLinearMapping() && out_pte) {
++    i64 guest=ToGuest(ha);
++    u64 pt=s->cr3;
++    if(IsValidAddrSize(guest&-4096,4096)) {
++      for(int level=39;level>=12;level-=9) {
++        u8 *table=GetPageAddress(s,pt,level==39);
++        if(!table)break;
++        pt=LoadPte(table+(((u64)guest>>level)&511)*8);
++        if(!(pt&PAGE_V) || (level>12 && (pt&PAGE_PS)))break;
++        if(level==12 && (pt&PAGE_HOST) && (uintptr_t)FindHostPage(pt)==base) {
++          *out_pte=pt;
++          return guest;
++        }
++      }
++    }
++  }
++#endif
+   if ((g48 = FindGuestAddr(s, base, s->cr3, 1, out_pte)) != -1) {
+     return ((i64)((u64)g48 << 16) >> 16) | ((uintptr_t)ha & 4095);
+   } else {
+diff --git a/blink/smc.c b/blink/smc.c
+index ec04e87..87e39a7 100644
+--- a/blink/smc.c
++++ b/blink/smc.c
+@@ -27,6 +27,7 @@
+ #include "blink/tunables.h"
+ #include "blink/util.h"
+ #include "blink/xlat.h"
++#include "blink/winmap.h"
+ 
+ #ifndef DISABLE_JIT
+ 
+@@ -36,7 +37,11 @@ static int ProtectHostPages(struct System *s, i64 vaddr, i64 size, int prot) {
+   unassert(HasLinearMapping());
+   a = ROUNDDOWN(vaddr, FLAG_pagesize);
+   b = ROUNDUP(vaddr + size, FLAG_pagesize);
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  return WindowsRawMprotect(ToHost(a), b - a, prot);
++#else
+   return mprotect(ToHost(a), b - a, prot);
++#endif
+ }
+ 
+ static int ProtectSelfModifyingCode(struct System *s, i64 vaddr, i64 size) {
+diff --git a/blink/syscall.c b/blink/syscall.c
+index 34cc01c..915c934 100644
+--- a/blink/syscall.c
++++ b/blink/syscall.c
+@@ -400,6 +400,9 @@ _Noreturn void SysExit(struct Machine *m, int rc) {
+ }
+ 
+ static int Fork(struct Machine *m, u64 flags, u64 stack, u64 ctid) {
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++  return enosys(); // The CDM runner supports threads, not new guest processes.
++#else
+   int pid, newpid = 0;
+   _Atomic(int) *ctid_ptr;
+   unassert(!m->path.jb);
+@@ -473,6 +476,7 @@ static int Fork(struct Machine *m, u64 flags, u64 stack, u64 ctid) {
+     }
+   }
+   return pid;
++#endif
+ }
+ 
+ static int SysFork(struct Machine *m) {
+@@ -674,7 +678,15 @@ static int SysFutexWait(struct Machine *m,  //
+     if (!(0 <= timeout.tv_nsec && timeout.tv_nsec < 1000000000)) {
+       return einval();
+     }
+-    deadline = AddTime(now, timeout);
++    if ((op & ~FUTEX_CLOCK_REALTIME_LINUX) == FUTEX_WAIT_BITSET_LINUX) {
++      if (op & FUTEX_CLOCK_REALTIME_LINUX) deadline = timeout;
++      else {
++        struct timespec mono = GetMonotonic();
++        struct timespec delta = {timeout.tv_sec-mono.tv_sec, timeout.tv_nsec-mono.tv_nsec};
++        if (delta.tv_nsec < 0) { --delta.tv_sec; delta.tv_nsec += 1000000000; }
++        deadline = AddTime(now, delta);
++      }
++    } else deadline = AddTime(now, timeout);
+   } else {
+     deadline = GetMaxTime();
+   }
+@@ -762,10 +774,8 @@ static int SysFutex(struct Machine *m,  //
+       return SysFutexWake(m, uaddr, val);
+     case FUTEX_WAIT_BITSET_LINUX:
+     case FUTEX_WAIT_BITSET_LINUX | FUTEX_CLOCK_REALTIME_LINUX:
+-      // will be supported soon
+-      // avoid logging when cosmo feature checks this
+-      if (!m->system->iscosmo) goto DefaultCase;
+-      return einval();
++      if (val3 != 0xffffffffu) return einval();
++      return SysFutexWait(m, uaddr, op, val, timeout_addr);
+     default:
+     DefaultCase:
+       LOGF("unsupported %s op %#x", "futex", op);
+@@ -1094,7 +1104,7 @@ static i64 SysBrk(struct Machine *m, i64 addr) {
+   BEGIN_NO_PAGE_FAULTS;
+   LOCK(&m->system->mmap_lock);
+   MEM_LOGF("brk(%#" PRIx64 ") currently %#" PRIx64, addr, m->system->brk);
+-  pagesize = FLAG_pagesize;
++  pagesize = HasLinearMapping() ? FLAG_pagesize : 4096;
+   addr = ROUNDUP(addr, pagesize);
+   if (addr >= kNullSize) {
+     if (addr > m->system->brk) {
+diff --git a/blink/uop.c b/blink/uop.c
+index 1547710..d2b5fa5 100644
+--- a/blink/uop.c
++++ b/blink/uop.c
+@@ -1006,6 +1006,33 @@ const aluop_f kJustBsu32[8] = {
+ };
+ 
+ #if X86_INTRINSICS
++#if defined(__CYGWIN__) && defined(BLINK_CYGWIN_LINEAR)
++// Capture arithmetic flags without pushfq/pop traffic on the host stack.
++// Fast arithmetic preserves lazy parity; flag analysis excludes its use here.
++#define ALU_FAST(M, TYPE, X, Y, OP, COMMUT) \
++  ({ \
++    TYPE Res; unsigned char Overflow; u64 Status; \
++    u32 OldFlags = (M)->flags & ~(OF | SF | ZF | AF | CF); \
++    asm(OP "\t%4,%0\n\tlahf\n\tseto %1" \
++        : "=&r" (Res), "=q" (Overflow), "=a" (Status) \
++        : "0" ((TYPE)(X)), "g" ((TYPE)(Y)) : "cc"); \
++    (M)->flags = OldFlags | ((Status >> 8) & (SF | ZF | AF | CF)) | \
++                 (u32)Overflow << FLAGS_OF; \
++    Res; \
++  })
++#define ALU_FAST_CF(M, TYPE, X, Y, OP, COMMUT) \
++  ({ \
++    TYPE Res; unsigned char Overflow; u64 Status; \
++    u32 Carry = (M)->flags; \
++    u32 OldFlags = Carry & ~(OF | SF | ZF | AF | CF); \
++    asm("bt $0,%5\n\t" OP "\t%4,%0\n\tlahf\n\tseto %1" \
++        : "=&r" (Res), "=q" (Overflow), "=a" (Status) \
++        : "0" ((TYPE)(X)), "g" ((TYPE)(Y)), "r" (Carry) : "cc"); \
++    (M)->flags = OldFlags | ((Status >> 8) & (SF | ZF | AF | CF)) | \
++                 (u32)Overflow << FLAGS_OF; \
++    Res; \
++  })
++#else
+ #define ALU_FAST(M, TYPE, X, Y, OP, COMMUT)                             \
+   ({                                                                    \
+     TYPE Res;                                                           \
+@@ -1036,6 +1063,7 @@ const aluop_f kJustBsu32[8] = {
+     (M)->flags = OldFlags | ((u32)NewFlags & (OF | SF | ZF | AF | CF)); \
+     Res;                                                                \
+   })
++#endif
+ MICRO_OP static i64 FastXor64(struct Machine *m, u64 x, u64 y) {
+   return ALU_FAST(m, u64, x, y, "xor", "%");
+ }
+@@ -1357,6 +1385,45 @@ MICRO_OP i64 JustNeg(u64 x) {
+   return -x;
+ }
+ 
++MICRO_OP i64 JustInc(u64 x) {
++  return x + 1;
++}
++
++MICRO_OP static i64 FastInc64(u64 x, struct Machine *m) {
++  u64 z;
++  z = x + 1;
++  m->flags = (m->flags & ~ZF) | !z << FLAGS_ZF;
++  return z;
++}
++MICRO_OP static i64 FastInc32(u64 x64, struct Machine *m) {
++  u32 x, z;
++  x = x64;
++  z = x + 1;
++  m->flags = (m->flags & ~ZF) | !z << FLAGS_ZF;
++  return z;
++}
++MICRO_OP static i64 FastInc16(u64 x64, struct Machine *m) {
++  u16 x, z;
++  x = x64;
++  z = x + 1;
++  m->flags = (m->flags & ~ZF) | !z << FLAGS_ZF;
++  return z;
++}
++MICRO_OP static i64 FastInc8(u64 x64, struct Machine *m) {
++  u8 x, z;
++  x = x64;
++  z = x + 1;
++  m->flags = (m->flags & ~ZF) | !z << FLAGS_ZF;
++  return z;
++}
++
++const aluop_f kFastInc[4] = {
++    (aluop_f)FastInc8,   //
++    (aluop_f)FastInc16,  //
++    (aluop_f)FastInc32,  //
++    (aluop_f)FastInc64,  //
++};
++
+ MICRO_OP i64 JustDec(u64 x) {
+   return x - 1;
+ }

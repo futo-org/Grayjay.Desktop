@@ -22,8 +22,9 @@ build_sign_notarize() {
     rm -rf bin/ obj/
     dotnet publish -r $ARCH
     PUBLISH_PATH="bin/Release/net8.0/$ARCH/publish"
-    mkdir -p "$PUBLISH_PATH/wwwroot"
-    cp -r ../Grayjay.Desktop.Web/dist "$PUBLISH_PATH/wwwroot/web"
+    rm -rf "$PUBLISH_PATH/wwwroot/web"
+    mkdir -p "$PUBLISH_PATH/wwwroot/web"
+    cp -a ../Grayjay.Desktop.Web/dist/. "$PUBLISH_PATH/wwwroot/web/"
 
     echo "Creating the app bundle..."
     rm -rf "$APP_NAME"
@@ -51,6 +52,8 @@ build_sign_notarize() {
     cp -a Resources/MacOS/Keychain.framework "$APP_NAME/Contents/Frameworks/Keychain.framework"
     cp -a Resources/MacOS/grayjay.icns "$APP_NAME/Contents/Resources/shared.icns"
     
+    python3 ../tools/linux-cdm/bundle-macos.py --publish "$PUBLISH_PATH" --app "$APP_NAME" || { echo "Playback bundling failed for $ARCH"; exit 1; }
+
     bash ./sign-macos.sh "$APP_NAME"
 }
 

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/DownloadProgress.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/VerifiedDownload.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/RuntimeAssets.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/BundledRuntime.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/WidevineDownloader.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/Crx3.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/Initramfs.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/QemuGuest.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/PlaybackProcessJob.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/WindowsPlaybackProcess.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/BlinkGuest.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/CdmRoot.cs" />
+    <Compile Include="../../../Grayjay.Desktop.CEF/LinuxCdm/PlaybackGuestSession.cs" />
+  </ItemGroup>
+</Project>

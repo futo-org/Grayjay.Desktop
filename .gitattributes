@@ -1,1 +1,4 @@
 Grayjay.ClientServer/deps/** filter=lfs diff=lfs merge=lfs -text
+# Preserve the reviewed CDM patch and Cygwin build scripts on Windows.
+tools/linux-cdm/runtime/blink/** text eol=lf
+tools/linux-cdm/runtime/blink/cdm.patch whitespace=-blank-at-eol

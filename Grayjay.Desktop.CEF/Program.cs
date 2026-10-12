@@ -5,6 +5,7 @@ using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.CEF;
+using Grayjay.Desktop.CEF.LinuxCdm;
 using Grayjay.Engine.Packages;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -230,7 +231,10 @@ namespace Grayjay.Desktop
                         break;
                     case WidevineState.RestartRequired:
                         Logger.i(nameof(Program), $"Widevine CDM {status.Version} was installed and takes effect after a restart.");
-                        await ShowWidevineRestartDialogAsync();
+                        if (!StateWidevine.IsPlaybackAvailable) await ShowWidevineRestartDialogAsync();
+                        break;
+                    case WidevineState.Unavailable when StateWidevine.IsPlaybackAvailable:
+                        Logger.i(nameof(Program), "Protected playback is provided by the Linux playback helper.");
                         break;
                     case WidevineState.Unavailable when status.Reason == WidevineUnavailableReason.NotSupported:
                         Logger.i(nameof(Program), "Widevine is unavailable on this platform, protected content will not play.");
@@ -602,6 +606,8 @@ namespace Grayjay.Desktop
 
             Stopwatch startCefWatch = Stopwatch.StartNew();
             using var cef = !isServer ? await StartCefProcessWithSandboxFallbackAsync(cefStartArgs, OperatingSystem.IsLinux() && useSandbox, rootCachePath) : null;
+            await using var linuxCdm = !isServer ? LinuxCdmBridge.Create(Path.Combine(Directories.Base, "playback-components")) : null;
+            StateWidevine.SetLinuxCdmPlaybackAvailable(linuxCdm != null);
             if (cef != null)
             {
                 PackageBrowser.Process = cef;
@@ -636,9 +642,12 @@ namespace Grayjay.Desktop
                     iconPath: Utilities.FindFile("grayjay.png"),
                     appId: "com.futo.grayjay.desktop",
                     fullscreen: isFullscreen,
-                    viewsEnabled: true
+                    viewsEnabled: true,
+                    bridgeEnabled: linuxCdm != null,
+                    bridgeRpcHandler: linuxCdm != null ? linuxCdm.HandleAsync : null
                 );
                 await window.SetModifyRequestsAsync(true, false);
+                linuxCdm?.AttachWindow(window);
                 if (scaleFactor != null && scaleFactor != 1.0)
                 {
                     window.OnFrameLoadEnd += async (frameLoadInfo) =>
@@ -689,7 +698,7 @@ namespace Grayjay.Desktop
 
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef) : null), 
+            server = new GrayjayServer((!isServer && cef != null ? new CEFWindowProvider(cef, linuxCdm) : null),
                 isHeadless, 
                 isServer,
                 !(disableSecurity && (isHeadless || isServer)));

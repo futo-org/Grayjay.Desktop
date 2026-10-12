@@ -2,6 +2,7 @@
 using Grayjay.ClientServer;
 using Grayjay.ClientServer.Browser;
 using Grayjay.ClientServer.Dialogs;
+using Grayjay.Desktop.CEF.LinuxCdm;
 using Grayjay.Desktop.POC;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using System;
@@ -23,9 +24,14 @@ namespace Grayjay.Desktop.CEF
     public class CEFWindowProvider : IWindowProvider
     {
         private JustCefProcess _cef;
+        private LinuxCdmBridge? _linuxCdm;
         public CEFWindowProvider(JustCefProcess process)
         {
             _cef = process;
+        }
+        internal CEFWindowProvider(JustCefProcess process, LinuxCdmBridge? linuxCdm) : this(process)
+        {
+            _linuxCdm = linuxCdm;
         }
 
         public async Task<IWindow> CreateWindowAsync(string url, string title, int preferredWidth, int preferredHeight, int minimumWidth, int minimumHeight, Func<IWindow, Task> beforeLoad = null)
@@ -36,9 +42,12 @@ namespace Grayjay.Desktop.CEF
                 minimumHeight: minimumHeight,
                 preferredWidth: preferredWidth,
                 preferredHeight: preferredHeight,
-                title: title, 
-                iconPath: Utilities.FindFile("grayjay.png")
+                title: title,
+                iconPath: Utilities.FindFile("grayjay.png"),
+                bridgeEnabled: _linuxCdm != null,
+                bridgeRpcHandler: _linuxCdm != null ? _linuxCdm.HandleAsync : null
             );
+            _linuxCdm?.AttachWindow(window, warm: false);
 
             var windowResult = new Window(window);
             if(beforeLoad != null)

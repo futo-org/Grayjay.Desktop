@@ -401,3 +401,13 @@ FodyWeavers.xsd
 
 # Steam zip
 Grayjay_Steam.zip
+
+.DS_Store
+/Grayjay.Desktop.CEF/*.app/
+/Grayjay.Desktop.CEF/Grayjay.Desktop-*.zip
+/Grayjay.Desktop.CEF/__MACOSX/
+/Grayjay.Desktop.CEF/log.txt
+/Grayjay.Desktop.CEF/logs.txt
+/Grayjay.Desktop.CEF/output.txt
+
+/Grayjay.ClientServer/wwwroot/web/assets/

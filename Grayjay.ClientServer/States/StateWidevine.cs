@@ -10,6 +10,7 @@ public static class StateWidevine
     private static readonly object _lock = new object();
     private static WidevineStatus? _status;
     private static bool _clientEvaluatedWithoutPlayback;
+    private static bool _linuxCdmPlaybackAvailable;
 
     public static WidevineStatus? Status
     {
@@ -68,7 +69,19 @@ public static class StateWidevine
 
     private static bool IsAvailable(WidevineStatus? status)
     {
-        return status?.State == WidevineState.Ready;
+        return _linuxCdmPlaybackAvailable || status?.State == WidevineState.Ready;
+    }
+
+    public static void SetLinuxCdmPlaybackAvailable(bool available)
+    {
+        bool becameAvailable;
+        lock (_lock)
+        {
+            bool wasAvailable = IsAvailable(_status);
+            _linuxCdmPlaybackAvailable = available;
+            becameAvailable = ApplyAvailability(wasAvailable, _status);
+        }
+        if (becameAvailable) RaisePlaybackBecameAvailable();
     }
 
     // Applies the status JustCef publishes once: at startup when a CDM is installed, otherwise after the update.

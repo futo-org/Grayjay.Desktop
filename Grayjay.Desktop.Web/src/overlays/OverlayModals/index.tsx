@@ -15,7 +15,8 @@ export interface OverlayRequest {
   id?: string,
 
   onShown?: ()=>void,
-  onGlobalDismiss?: (id: string)=>void
+  onGlobalDismiss?: (id: string)=>void,
+  dismissOnBackdrop?: boolean
 }
 
 const OverlayModals: Component = () => {
@@ -87,7 +88,7 @@ const OverlayModals: Component = () => {
         class={styles.root}
         // Hide when inactive but DO NOT unmount; avoids provider/context churn.
         style={{ display: isActive$() ? undefined : 'none' }}
-        onClick={() => globalDismissEvent.invoke()}
+        onClick={() => { if (overlayCurrent?.dismissOnBackdrop !== false) globalDismissEvent.invoke(); }}
       >
         <OverlayDialog dialog={dialog$()} onGlobalDismiss={globalDismissEvent} />
         <OverlayDialogLoader dialog={loader$()} />

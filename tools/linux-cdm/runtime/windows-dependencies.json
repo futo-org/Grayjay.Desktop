@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-glib2-2.90.1-1-any.pkg.tar.zst",
+    "sha256": "152ba3b2cfb35feebc0fcb690889b16a6f0c2b89ced52e65aea45d089f86d219"
+  },
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-pcre2-10.49-1-any.pkg.tar.zst",
+    "sha256": "0abc5313085a0f9b4a77a1580d92b09761371cb3a1f31d01051a94a289fb9413"
+  },
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-libffi-3.8.0-1-any.pkg.tar.zst",
+    "sha256": "6dad7f3c6c900d3c64a4fe0c2764b405e678b22df3521d2284ffaeff0198b84b"
+  },
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gettext-runtime-1.0-1-any.pkg.tar.zst",
+    "sha256": "be68d7f260633284b910c588c6d82ee304a81c8817a686d2cd9df83f872c27af"
+  },
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-libiconv-1.19-1-any.pkg.tar.zst",
+    "sha256": "21e334d0911f25de75d3e18e0697648bcecfa9658256d600cad0827d719c2f35"
+  },
+  {
+    "url": "https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-zlib-ng-compat-2.3.3-2-any.pkg.tar.zst",
+    "sha256": "4ab8ceca5131272225023759fbc7999ccde8dd55b681fcd6787177f75aba9954"
+  }
+]
