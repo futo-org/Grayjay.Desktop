@@ -1,5 +1,6 @@
 namespace Grayjay.ClientServer.Parsers;
 
+using Grayjay.ClientServer.Constants;
 using Grayjay.Engine.Models.Video.Additions;
 using Grayjay.Engine.Models.Video.Sources;
 using System;
@@ -280,6 +281,30 @@ public static class HLS
         MasterPlaylist playlist = ParseMasterPlaylist(content, url);
         return playlist.GetVideoSources();
     }
+    /// <summary>Audio sources of an HLS audio manifest: a media playlist is itself the source, a master playlist gives its audio renditions or audio-only variants.</summary>
+    public static List<HLSVariantAudioUrlSource> ParseToAudioSources(string content, string url)
+    {
+        if (IsMediaPlaylist(content))
+        {
+            return new List<HLSVariantAudioUrlSource>()
+            {
+                new HLSVariantAudioUrlSource()
+                {
+                    Container = "application/vnd.apple.mpegurl",
+                    Codec = "",
+                    Name = "Audio",
+                    Language = Language.UNKNOWN,
+                    Url = url
+                }
+            };
+        }
+
+        MasterPlaylist playlist = ParseMasterPlaylist(content, url);
+        var renditions = playlist.GetAudioSources();
+        if (renditions.Count > 0)
+            return renditions;
+        return playlist.GetAudioOnlyVariantSources();
+    }
 
     private static void ParseByteRange(string value, out long length, out long start)
     {
@@ -559,6 +584,59 @@ public static class HLS
                     Url = x.Url
                 };
             }).ToList();
+        }
+
+        /// <summary>EXT-X-MEDIA audio renditions with their own playlist, optionally limited to one group, default rendition first.</summary>
+        public List<HLSVariantAudioUrlSource> GetAudioSources(string? groupId = null)
+        {
+            return MediaRenditions
+                .Where(rendition => rendition.Type == "AUDIO" && !string.IsNullOrEmpty(rendition.Uri) && (groupId == null || rendition.GroupId == groupId))
+                .OrderByDescending(rendition => rendition.IsDefault)
+                .Select(rendition => new HLSVariantAudioUrlSource()
+                {
+                    Container = "application/vnd.apple.mpegurl",
+                    Codec = GetAudioCodecs(VariantPlaylistsRefs.FirstOrDefault(variant => variant.StreamInfo?.Audio == rendition.GroupId)?.StreamInfo?.Codecs),
+                    Name = rendition.Name ?? rendition.Language ?? "Audio",
+                    Language = rendition.Language ?? Language.UNKNOWN,
+                    Duration = 0,
+                    Url = rendition.Uri!
+                }).ToList();
+        }
+
+        /// <summary>Separate audio renditions belonging to the variant with this url, empty when the variant carries its own audio.</summary>
+        public List<HLSVariantAudioUrlSource> GetAudioSourcesForVariant(string variantUrl)
+        {
+            var groupId = VariantPlaylistsRefs.FirstOrDefault(variant => variant.Url == variantUrl)?.StreamInfo?.Audio;
+            if (groupId == null)
+                return new List<HLSVariantAudioUrlSource>();
+            return GetAudioSources(groupId);
+        }
+
+        /// <summary>Variants without resolution whose codecs are all audio codecs.</summary>
+        public List<HLSVariantAudioUrlSource> GetAudioOnlyVariantSources()
+        {
+            return VariantPlaylistsRefs
+                .Where(variant => string.IsNullOrEmpty(variant.StreamInfo?.Resolution) && !string.IsNullOrEmpty(variant.StreamInfo?.Codecs)
+                    && GetAudioCodecs(variant.StreamInfo.Codecs) == variant.StreamInfo.Codecs.Replace(" ", ""))
+                .Select(variant => new HLSVariantAudioUrlSource()
+                {
+                    Container = "application/vnd.apple.mpegurl",
+                    Codec = variant.StreamInfo.Codecs!,
+                    Name = "Audio",
+                    Language = Language.UNKNOWN,
+                    Bitrate = variant.StreamInfo.Bandwidth ?? 0,
+                    Duration = 0,
+                    Url = variant.Url
+                }).ToList();
+        }
+
+        private static readonly string[] AudioCodecPrefixes = { "mp4a", "opus", "ac-3", "ec-3", "flac", "mp3", "vorbis" };
+        private static string GetAudioCodecs(string? codecs)
+        {
+            if (string.IsNullOrEmpty(codecs))
+                return "";
+            return string.Join(",", codecs.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Where(codec => AudioCodecPrefixes.Any(prefix => codec.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))));
         }
     }
 

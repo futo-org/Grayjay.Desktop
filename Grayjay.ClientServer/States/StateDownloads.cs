@@ -22,19 +22,23 @@ namespace Grayjay.ClientServer.States
     public static class StateDownloads
     {
         private static object _downloadLock = new object();
+        private static bool _downloadCycleRequested = false;
         public static bool IsDownloading { get; private set; }
 
         private static DirectoryInfo _downloadsDirectory = new DirectoryInfo("downloads");
 
         public static ManagedStore<PlaylistDownload> _downloadingPlaylists = new ManagedStore<PlaylistDownload>("downloads_playlists")
             .WithUnique(x=>x.PlaylistID)
+            .WithKeepUnloadable()
             .Load();
 
         public static ManagedStore<VideoDownload> _downloading = new ManagedStore<VideoDownload>("downloads_ongoing")
             .WithUnique(x=>x.Video.ID)
+            .WithKeepUnloadable()
             .Load();
         public static ManagedStore<VideoLocal> _downloaded = new ManagedStore<VideoLocal>("downloaded")
             .WithUnique(x=>x.VideoDetails.ID)
+            .WithKeepUnloadable()
             .Load();
 
         public static StorageInfo GetDownloadStorageInfo() => StorageInfo.GetInfo(_downloadsDirectory.FullName);
@@ -187,14 +191,45 @@ namespace Grayjay.ClientServer.States
             foreach (var outdated in outdatedVideos)
                 RemoveDownloaded(outdated);
         }
-        public static async Task StartDownloadCycle()
+        public static Task StartDownloadCycle() => RunExclusiveDownloadCycle(RunDownloadCycle);
+
+        private static async Task RunExclusiveDownloadCycle(Func<Task> runCycle)
         {
             lock(_downloadLock)
             {
                 if (IsDownloading)
+                {
+                    // Picked up by the running cycle so a download queued while it finishes is not lost.
+                    _downloadCycleRequested = true;
                     return;
+                }
                 IsDownloading = true;
             }
+
+            while (true)
+            {
+                try
+                {
+                    await runCycle();
+                }
+                catch (Exception ex)
+                {
+                    Logger.e(nameof(StateDownloads), "Download cycle failed: " + ex.Message, ex);
+                }
+
+                lock (_downloadLock)
+                {
+                    if (!_downloadCycleRequested)
+                    {
+                        IsDownloading = false;
+                        return;
+                    }
+                    _downloadCycleRequested = false;
+                }
+            }
+        }
+        private static async Task RunDownloadCycle()
+        {
             Logger.i(nameof(StateDownloads), "Started downloading cycle");
 
 
@@ -207,7 +242,7 @@ namespace Grayjay.ClientServer.States
                     if(playlist == null)
                     {
                         StateDownloads.RemoveDownloadingPlaylist(playlistDownload.PlaylistID);
-                        return;
+                        continue;
                     }
 
                     await CheckOutdatedPlaylistVideos(playlist, playlistDownload);
@@ -244,7 +279,6 @@ namespace Grayjay.ClientServer.States
             }
 
             Logger.i(nameof(StateDownloads), "Ended downloading cycle");
-            IsDownloading = false;
         }
         private static async Task TryDownloadVideo(VideoDownload currentVideo, List<VideoDownload> ignore)
         {
@@ -273,7 +307,7 @@ namespace Grayjay.ClientServer.States
                     //StateDownloads.PreventPlaylistDownload(currentVideo);
                 }
                 else
-                    Logger.e(nameof(StateDownloads), $"Failed download [{currentVideo.Video.Name}]: {ex.Message}", ex);
+                    Logger.e(nameof(StateDownloads), $"Failed download [{currentVideo.Video?.Name ?? currentVideo.VideoDetails?.Name}]: {ex.Message}", ex);
 
                 if(ex is AggregateException ex2)
                 {
@@ -281,6 +315,7 @@ namespace Grayjay.ClientServer.States
                 }
                 else
                     currentVideo.Error = ex.Message;
+                currentVideo.PrepareTime = null;
                 currentVideo.ChangeState(DownloadState.ERROR);
                 ignore.Add(currentVideo);
 
@@ -298,7 +333,7 @@ namespace Grayjay.ClientServer.States
 
             if((download.PrepareTime?.DifferenceNowMinutes() ?? 99) > 15)
             {
-                Logger.w(nameof(StateDownloads), $"Video Download [{download.Video.Name}] expired, re-preparing");
+                Logger.w(nameof(StateDownloads), $"Video Download [{download.Video?.Name ?? download.VideoDetails?.Name}] expired, re-preparing");
                 download.VideoDetails = null;
 
                 if (download.TargetPixelCount == null && download.VideoSource != null)
@@ -314,7 +349,7 @@ namespace Grayjay.ClientServer.States
 
             Logger.i(nameof(StateDownloads), $"Preparing [{download.AudioFileName}] started");
             if (download.State == DownloadState.PREPARING)
-                download.Prepare(new ManagedHttpClient());
+                download.Prepare(new ManagedHttpClient(), cancel);
             download.ChangeState(DownloadState.DOWNLOADING);
             NotifyDownload(download);
 
@@ -351,11 +386,18 @@ namespace Grayjay.ClientServer.States
             NotifyDownload(download);
         }
 
-        public static void CleanupFiles()
+        public static void CleanupFiles() => CleanupFiles(GetDownloadsDirectory(), _downloaded);
+        private static void CleanupFiles(string dirPath, ManagedStore<VideoLocal> downloaded)
         {
-            var dirPath = GetDownloadsDirectory();
+            var unloadableIds = downloaded.UnloadableIds;
+            if (unloadableIds.Count > 0)
+            {
+                Logger.w(nameof(StateDownloads), $"Skipping downloads cleanup, {unloadableIds.Count} downloaded records could not be loaded [{string.Join(", ", unloadableIds)}]");
+                return;
+            }
             DirectoryInfo dir = new DirectoryInfo(dirPath);
-            var knownFiles = new HashSet<string>(GetDownloaded()
+            var knownFiles = new HashSet<string>(downloaded.GetObjects()
+                .Concat(downloaded.DuplicateObjects)
                 .SelectMany(x => x.VideoSources.Select(y => Path.GetFileName(y.FilePath))
                 .Concat(x.AudioSources.Select(z => Path.GetFileName(z.FilePath)))
                 .Concat(x.SubtitleSources.Select(z => Path.GetFileName(z.FilePath)))

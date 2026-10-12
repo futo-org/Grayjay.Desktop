@@ -41,6 +41,9 @@ namespace Grayjay.ClientServer.Models.Downloads
 
         public long? TargetPixelCount { get; set; }
         public long? TargetBitrate { get; set; }
+        // Set while the details are live when the chosen video carries the audio, so a re-pick keeps a muxed source.
+        // Saved details lose the descriptor type, so this is never derived from them.
+        public bool RequireMuxedVideo { get; set; }
         public string? TargetLanguage { get; set; }
         public string? SubtitleName { get; set; }
 
@@ -70,12 +73,17 @@ namespace Grayjay.ClientServer.Models.Downloads
         public ISubtitleSource? SubtitleSourceLive { get; set; }
         public ISubtitleSource? SubtitleSourcetoUse => SubtitleSourceLive ?? SubtitleSource;
 
+        // Not persisted: a restored download has no live sources and always prepares again.
+        [JsonIgnore]
         public DateTime? PrepareTime { get; set; }
         public double Progress { get; set; } = 0.0;
         [JsonIgnore]
         private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
         [JsonIgnore]
         public CancellationToken CancellationToken => _cancellationSource.Token;
+        // A download read fails (and is retried where supported) after this long without data, instead of waiting on a dead connection.
+        [JsonIgnore]
+        internal TimeSpan ReadIdleTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
         public long DownloadSpeedVideo { get; set; }
         public long DownloadSpeedAudio { get; set; }
@@ -150,6 +158,9 @@ namespace Grayjay.ClientServer.Models.Downloads
 
             RequireVideoSource = videoSource != null;
             RequireAudioSource = audioSource != null;
+            RequireMuxedVideo = videoSource != null && audioSource == null && VideoSourceHasAudio(video, videoSource);
+            //Live sources are fetched again in Prepare, as before
+            PrepareTime = (VideoSourceRequiresLive || AudioSourceRequiresLive || SubtitleSourceRequiresLive) ? null : DateTime.Now;
         }
 
         public VideoDownload WithGroup(string groupType, string groupId)
@@ -196,7 +207,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             OnStateChanged?.Invoke(this, state);
         }
 
-        public void Prepare(ManagedHttpClient client)
+        public void Prepare(ManagedHttpClient client, CancellationToken cancel = default)
         {
             if (Video == null && VideoDetails == null)
                 throw new InvalidOperationException("Missing information for download to complete");
@@ -238,104 +249,189 @@ namespace Grayjay.ClientServer.Models.Downloads
                 var originalContent = StatePlatform.GetContentDetails(Video.Url);
                 if (!(originalContent is PlatformVideoDetails))
                     throw new InvalidOperationException("Original content is not media");
-                var original = (PlatformVideoDetails)originalContent;
+                cancel.ThrowIfCancellationRequested();
+                SelectSources(client, (PlatformVideoDetails)originalContent, cancel);
+            }
+        }
 
-                if (original.Video.HasAnySource() && !original.IsDownloadable())
+        /// <summary>Picks the sources to download from freshly fetched details, using the targets for any source not already set.</summary>
+        internal void SelectSources(ManagedHttpClient client, PlatformVideoDetails original, CancellationToken cancel)
+        {
+            if (original.Video.HasAnySource() && !original.IsDownloadable())
+            {
+                Logger.i(nameof(VideoDownload), $"Attempted to download unsupported video [{original.Name}]:{original.Url}");
+                throw new DownloadException("Unsupported video for downloading", false);
+            }
+
+            VideoSourceMetaDataOverride = null;
+            VideoSourceMimeTypeOverride = null;
+            AudioSourceMetaDataOverride = null;
+            AudioSourceMimeTypeOverride = null;
+
+            VideoDetails = original;
+            var hlsMasterPlaylists = new Dictionary<IVideoSource, (MasterPlaylist Playlist, IRequestModifier? Modifier)>();
+            if (VideoSource == null && TargetPixelCount != null)
+            {
+                var videoSources = new List<IVideoSource>();
+                foreach (var source in VideoHelper.ExpandUMPVideoSources(original.Video.VideoSources))
                 {
-                    Logger.i(nameof(VideoDownload), $"Attempted to download unsupported video [{original.Name}]:{original.Url}");
-                    throw new DownloadException("Unsupported video for downloading", false);
-                }
-
-                VideoSourceMetaDataOverride = null;
-                VideoSourceMimeTypeOverride = null;
-                AudioSourceMetaDataOverride = null;
-                AudioSourceMimeTypeOverride = null;
-
-                VideoDetails = original;
-                if (VideoSource == null && TargetPixelCount != null)
-                {
-                    var videoSources = new List<IVideoSource>();
-                    foreach (var source in VideoHelper.ExpandUMPVideoSources(original.Video.VideoSources))
+                    if (source is IWidevineSource)
                     {
-                        if (source is IWidevineSource)
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        if (source is HLSManifestSource hlsManifestSource)
+                    if (source is HLSManifestSource hlsManifestSource)
+                    {
+                        try
                         {
-                            try
+                            var modifier = hlsManifestSource!.GetRequestModifier();
+                            var res = ModifierHttp.GetBytes(client, hlsManifestSource!.Url, modifier, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
+                            if (res.IsOk)
                             {
-                                var modifier = hlsManifestSource!.GetRequestModifier();
-                                var res = ModifierHttp.GetBytes(client, hlsManifestSource!.Url, modifier);
-                                if (res.IsOk)
+                                var content = Encoding.UTF8.GetString(res.Bytes);
+                                if (HLS.IsMediaPlaylist(content))
                                 {
-                                    var sources = HLS.ParseToVideoSources(source, Encoding.UTF8.GetString(res.Bytes), res.FinalUrl);
-                                    if (sources.Count == 0)
-                                    {
-                                        Logger.i(nameof(VideoDownload), $"HLS manifest has no variants to download, skipping source: {hlsManifestSource.Url}");
-                                    }
-                                    foreach (var subSource in sources)
-                                        if (subSource != null)
-                                            subSource.Modifier = modifier;
-                                    videoSources.AddRange(sources);
+                                    Logger.i(nameof(VideoDownload), $"HLS manifest has no variants to download, skipping source: {hlsManifestSource.Url}");
+                                    continue;
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.i(nameof(VideoDownload), $"Failed to fetch hls manifest: {ex.Message}");
+                                var masterPlaylist = HLS.ParseMasterPlaylist(content, res.FinalUrl);
+                                var sources = masterPlaylist.GetVideoSources();
+                                if (sources.Count == 0)
+                                {
+                                    Logger.i(nameof(VideoDownload), $"HLS manifest has no variants to download, skipping source: {hlsManifestSource.Url}");
+                                }
+                                foreach (var subSource in sources)
+                                {
+                                    subSource.Modifier = modifier;
+                                    hlsMasterPlaylists[subSource] = (masterPlaylist, modifier);
+                                }
+                                videoSources.AddRange(sources);
                             }
                         }
-                        else if (source.IsDownloadable())
-                            videoSources.Add(source);
-                    }
-
-                    var vsource = VideoHelper.SelectBestVideoSource(videoSources, (int)TargetPixelCount, new List<string>(), TargetLanguage, TargetLanguage != null);
-                    if (vsource != null)
-                    {
-                        if (vsource is VideoUrlSource || vsource is DashManifestRawSource || vsource is UMPVideoFormatSource)
-                            VideoSource = vsource;
-                        else
-                            throw new DownloadException("Video source is not supported for downloading (yet)", false);
-                    }
-                }
-
-                if (AudioSource == null && TargetBitrate != null)
-                {
-                    var audioSources = new List<IAudioSource>();
-                    audioSources.AddRange(VideoHelper.GetUMPAudioSources(original.Video.VideoSources).Where(x => x.IsDownloadable()));
-                    if (original.Video is UnMuxedVideoDescriptor unmuxed)
-                    {
-                        foreach (var source in unmuxed.AudioSources)
+                        catch (Exception ex) when (!cancel.IsCancellationRequested)
                         {
-                            if (source is HLSManifestAudioSource hLSManifestAudioSource)
-                            {
-                                continue;
-                            }
-                            else if (source.IsDownloadable())
-                                audioSources.Add(source);
+                            Logger.i(nameof(VideoDownload), $"Failed to fetch hls manifest: {ex.Message}");
                         }
                     }
-
-                    var asource = VideoHelper.SelectBestAudioSource(audioSources, new List<string>(), TargetLanguage, TargetBitrate, TargetLanguage != null);
-                    if (asource == null && VideoSource == null)
-                        throw new DownloadException("Could not find a valid video or audio source for download", false);
-
-                    if (asource == null)
-                        AudioSource = null;
-                    else if (asource is AudioUrlSource || asource is DashManifestRawAudioSource || asource is UMPAudioFormatSource)
-                        AudioSource = asource;
-                    else
-                        throw new DownloadException("Audio source is not supported for downloading (yet)", false);
+                    else if (source.IsDownloadable())
+                        videoSources.Add(source);
                 }
 
-                if (SubtitleSource == null && SubtitleName != null)
+                //A re-pick of a download whose video carried the audio must not fall back to a video-only source
+                if (RequireMuxedVideo && original.Video is UnMuxedVideoDescriptor)
                 {
-                    SubtitleSourceLive = original.Subtitles.FirstOrDefault(s => s.Name == SubtitleName);
-                    SubtitleSource = (!SubtitleSourceLive.HasFetch) ? new SubtitleSource.Serializable(SubtitleSourceLive) : null;
+                    videoSources = videoSources.Where(videoSource => VideoSourceHasAudio(original, videoSource)).ToList();
+                    if (videoSources.Count == 0)
+                        throw new DownloadException("No downloadable video source with audio found", true);
                 }
-                if (VideoSource == null && AudioSource == null)
-                    throw new DownloadException("No valid sources found for video/audio", false);
+
+                var vsource = VideoHelper.SelectBestVideoSource(videoSources, (int)TargetPixelCount, new List<string>(), TargetLanguage, TargetLanguage != null);
+                if (vsource != null)
+                {
+                    if (vsource is VideoUrlSource || vsource is DashManifestRawSource || vsource is UMPVideoFormatSource)
+                        VideoSource = vsource;
+                    else
+                        throw new DownloadException("Video source is not supported for downloading (yet)", false);
+                }
+
+                if (AudioSource == null && vsource is HLSVariantVideoUrlSource hlsVariant && hlsMasterPlaylists.TryGetValue(hlsVariant, out var hlsMaster))
+                {
+                    var renditions = hlsMaster.Playlist.GetAudioSourcesForVariant(hlsVariant.Url);
+                    foreach (var rendition in renditions)
+                        rendition.Modifier = hlsMaster.Modifier;
+                    AudioSource = SelectHLSAudioSource(renditions, TargetLanguage);
+                }
+            }
+
+            if (AudioSource == null && TargetBitrate != null)
+            {
+                var audioSources = new List<IAudioSource>();
+                audioSources.AddRange(VideoHelper.GetUMPAudioSources(original.Video.VideoSources).Where(audioSource => audioSource.IsDownloadable()));
+                if (original.Video is UnMuxedVideoDescriptor unmuxed)
+                {
+                    foreach (var source in unmuxed.AudioSources)
+                    {
+                        if (source is HLSManifestAudioSource hlsManifestAudioSource)
+                            audioSources.AddRange(ResolveHLSAudioSources(client, hlsManifestAudioSource, cancel, ReadIdleTimeout));
+                        else if (source.IsDownloadable())
+                            audioSources.Add(source);
+                    }
+                }
+
+                var asource = VideoHelper.SelectBestAudioSource(audioSources, new List<string>(), TargetLanguage, TargetBitrate, TargetLanguage != null);
+                if (asource == null && VideoSource == null)
+                    throw new DownloadException("Could not find a valid video or audio source for download", false);
+
+                if (asource == null)
+                    AudioSource = null;
+                else if (asource is AudioUrlSource || asource is DashManifestRawAudioSource || asource is UMPAudioFormatSource)
+                    AudioSource = asource;
+                else
+                    throw new DownloadException("Audio source is not supported for downloading (yet)", false);
+            }
+
+            if (RequireAudioSource && AudioSource == null && VideoSource != null && !VideoSourceHasAudio(original, VideoSource))
+                throw new DownloadException("No downloadable audio source found", true);
+
+            if (SubtitleSource == null && SubtitleName != null)
+            {
+                SubtitleSourceLive = original.Subtitles.FirstOrDefault(subtitle => subtitle.Name == SubtitleName);
+                SubtitleSource = (!SubtitleSourceLive.HasFetch) ? new SubtitleSource.Serializable(SubtitleSourceLive) : null;
+            }
+            if (VideoSource == null && AudioSource == null)
+                throw new DownloadException("No valid sources found for video/audio", false);
+            if (VideoSource != null && AudioSource == null && VideoSourceHasAudio(original, VideoSource))
+                RequireMuxedVideo = true;
+            PrepareTime = DateTime.Now;
+        }
+
+        /// <summary>True when the video file itself will contain audio: muxed descriptors, HLS variants and DASH manifests.</summary>
+        internal static bool VideoSourceHasAudio(PlatformVideoDetails? details, IVideoSource source)
+        {
+            return (details?.Video != null && details.Video is not UnMuxedVideoDescriptor) || source is HLSVariantVideoUrlSource || source is DashManifestRawSource
+                || source.Container == "application/vnd.apple.mpegurl";
+        }
+
+        /// <summary>Picks the HLS audio rendition matching the language (or the primary language), else the first, which is the default.</summary>
+        internal static HLSVariantAudioUrlSource? SelectHLSAudioSource(List<HLSVariantAudioUrlSource> sources, string? preferredLanguage)
+        {
+            preferredLanguage ??= GrayjaySettings.Instance.Playback.GetPrimaryLanguage();
+            return sources.FirstOrDefault(source => preferredLanguage != null && source.Language == preferredLanguage) ?? sources.FirstOrDefault();
+        }
+
+        /// <summary>Fetches an HLS audio manifest and expands it into downloadable playlists, empty when it cannot be fetched.</summary>
+        internal static List<HLSVariantAudioUrlSource> ResolveHLSAudioSources(ManagedHttpClient client, HLSManifestAudioSource source, CancellationToken cancel, TimeSpan? readIdleTimeout)
+        {
+            try
+            {
+                var modifier = source.GetRequestModifier();
+                var res = ModifierHttp.GetBytes(client, source.Url, modifier, cancel: cancel, readIdleTimeout: readIdleTimeout);
+                if (!res.IsOk)
+                {
+                    Logger.i(nameof(VideoDownload), $"Failed to fetch hls audio manifest [{res.Code}]: {source.Url}");
+                    return new List<HLSVariantAudioUrlSource>();
+                }
+
+                var sources = HLS.ParseToAudioSources(Encoding.UTF8.GetString(res.Bytes), res.FinalUrl);
+                foreach (var resolved in sources)
+                {
+                    resolved.Modifier = modifier;
+                    if (resolved.Language == Language.UNKNOWN && !string.IsNullOrEmpty(source.Language))
+                        resolved.Language = source.Language;
+                    if (resolved.Bitrate == 0)
+                        resolved.Bitrate = source.Bitrate;
+                    if (sources.Count == 1 && !string.IsNullOrEmpty(source.Name))
+                        resolved.Name = source.Name;
+                    resolved.Duration = source.Duration;
+                    resolved.Priority = source.Priority;
+                    resolved.Original = source.Original;
+                }
+                return sources;
+            }
+            catch (Exception ex) when (!cancel.IsCancellationRequested)
+            {
+                Logger.i(nameof(VideoDownload), $"Failed to fetch hls audio manifest: {ex.Message}");
+                return new List<HLSVariantAudioUrlSource>();
             }
         }
         public void Cancel()
@@ -356,6 +452,12 @@ namespace Grayjay.ClientServer.Models.Downloads
                 throw new InvalidOperationException("Video has no id");
 
             cancel.ThrowIfCancellationRequested();
+
+            if (AudioSourceToUse is HLSManifestAudioSource hlsManifestAudioSource)
+            {
+                AudioSourceLive = SelectHLSAudioSource(ResolveHLSAudioSources(client, hlsManifestAudioSource, cancel, ReadIdleTimeout), TargetLanguage)
+                    ?? throw new DownloadException("No downloadable audio found in HLS manifest", true);
+            }
 
             string videoDash = (VideoSource is DashManifestRawSource dVideoSource) ? dVideoSource.Generate() : null;
             List<DashRepresentation> videoRepresentations = (!string.IsNullOrEmpty(videoDash)) ? DashHelper.GetRepresentations(videoDash) : null;
@@ -570,13 +672,13 @@ namespace Grayjay.ClientServer.Models.Downloads
                     else
                     {
                         IRequestModifier modifier = null;
-                        if (VideoSourceToUse is JSSource jss)
+                        if (AudioSourceToUse is JSSource jss)
                             modifier = jss.GetRequestModifier();
 
                         switch (AudioSourceToUse.Container)
                         {
                             case "application/vnd.apple.mpegurl":
-                                if (AudioSourceToUse is HLSVariantAudioUrlSource)
+                                if (AudioSourceToUse is AudioUrlSource)
                                     await DownloadHLSSource("Audio", client, modifier, ((AudioUrlSource)AudioSourceToUse).Url, AudioFilePath, progressCallback, cancel);
                                 else
                                     throw new NotImplementedException();
@@ -604,10 +706,11 @@ namespace Grayjay.ClientServer.Models.Downloads
                             File.WriteAllText(SubtitleFilePath, File.ReadAllText(uri.AbsolutePath));
                         else
                         {
-                            var resp = client.GET(SubtitleSource.Url, new Engine.Models.HttpHeaders());
+                            var resp = ModifierHttp.GetBytes(client, SubtitleSource.Url, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
                             if (!resp.IsOk)
                                 throw new Exception("Failed to download subtitles.");
-                            File.WriteAllText(SubtitleFilePath, resp.Body.AsString());
+                            using var subtitleReader = new StreamReader(new MemoryStream(resp.Bytes));
+                            File.WriteAllText(SubtitleFilePath, subtitleReader.ReadToEnd());
                         }
                     }
                 }));
@@ -718,7 +821,7 @@ namespace Grayjay.ClientServer.Models.Downloads
 
                 try
                 {
-                    var res = ModifierHttp.GetStream(client, url, modifier, headers);
+                    var res = ModifierHttp.GetStream(client, url, modifier, headers, cancel, ReadIdleTimeout);
                     using var sourceStream = res.Stream;
                     if (!res.IsOk)
                         throw new InvalidDataException($"Failed to download source. Web[{res.Code}] Error");
@@ -854,7 +957,7 @@ namespace Grayjay.ClientServer.Models.Downloads
 
                 tasks.Add(StateApp.ThreadPoolDownload.Run(() =>
                 {
-                    return RequestByteRange(client, modifier, url, rangeStart, rangeEnd);
+                    return RequestByteRange(client, modifier, url, rangeStart, rangeEnd, cancel);
                 }, cancel));
                 readPosition = rangeEnd + 1;
             }
@@ -863,27 +966,46 @@ namespace Grayjay.ClientServer.Models.Downloads
                 items[i] = await tasks[i];
             return items;
         }
-        private (byte[] data, long start, long end) RequestByteRange(ManagedHttpClient client, IRequestModifier? modifier, string url, long rangeStart, long rangeEnd)
+        private (byte[] data, long start, long end) RequestByteRange(ManagedHttpClient client, IRequestModifier? modifier, string url, long rangeStart, long rangeEnd, CancellationToken cancel = default)
         {
             var toRead = rangeEnd - rangeStart;
             var headers = new Engine.Models.HttpHeaders() { { "range", $"bytes={rangeStart}-{rangeEnd}" } };
 
+            void Wait(int milliseconds)
+            {
+                if (cancel.WaitHandle.WaitOne(TimeSpan.FromMilliseconds(milliseconds)))
+                    cancel.ThrowIfCancellationRequested();
+            }
+            void WaitBeforeRetry(int attempt)
+            {
+                switch (attempt)
+                {
+                    case 2: Wait(2000 + (int)(Random.Shared.NextDouble() * 300)); break;
+                    case 3: Wait(3000 + (int)(Random.Shared.NextDouble() * 300)); break;
+                    default: Wait(1000 + (int)(Random.Shared.NextDouble() * 300)); break;
+                }
+            }
+
             BytesResult r = default;
             for (int i = 0; i <= 5; i++)
             {
-                r = ModifierHttp.GetBytes(client, url, modifier, headers);
+                try
+                {
+                    r = ModifierHttp.GetBytes(client, url, modifier, headers, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
+                }
+                catch (IOException ex) when (i < 4 && !cancel.IsCancellationRequested)
+                {
+                    Logger.w(nameof(VideoDownload), $"Range request read failed ({ex.Message}) retrying");
+                    WaitBeforeRetry(i);
+                    continue;
+                }
 
                 if (!r.IsOk)
                 {
                     if (i < 4)
                     {
                         Logger.w(nameof(VideoDownload), $"Range request failed code [{r.Code}] retrying");
-                        switch (i)
-                        {
-                            case 2: Thread.Sleep(2000 + (int)(Random.Shared.NextDouble() * 300)); break;
-                            case 3: Thread.Sleep(3000 + (int)(Random.Shared.NextDouble() * 300)); break;
-                            default: Thread.Sleep(1000 + (int)(Random.Shared.NextDouble() * 300)); break;
-                        }
+                        WaitBeforeRetry(i);
                         continue;
                     }
                     throw new InvalidDataException($"Range request failed Code [{r.Code}]");
@@ -899,7 +1021,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             if (data.LongLength < toRead)
                 throw new InvalidDataException($"Byte-Range request attempted to provide less ({data.LongLength} < {toRead})");
 
-            Thread.Sleep(300);
+            Wait(300);
             return (data, rangeStart, rangeEnd);
         }
 
@@ -1088,16 +1210,15 @@ namespace Grayjay.ClientServer.Models.Downloads
             if (segmentFiles == null || segmentFiles.Count == 0)
                 throw new ArgumentException("segmentFiles must not be empty", nameof(segmentFiles));
 
-            var concatInput = "concat:" + string.Join("|", segmentFiles.Select(x => x.FullName));
-
             var args = new string[]
             {
-                "-i", concatInput,
+                "-y",
+                "-i", "pipe:0",
                 "-c", "copy",
                 targetPath
             };
 
-            if (FFMPEG.ExecuteSafe(args, true) != 0)
+            if (FFMPEG.ExecuteSafeWithInputFiles(args, segmentFiles) != 0)
                 throw new InvalidDataException("Transcoding failed");
         }
 
@@ -1120,11 +1241,24 @@ namespace Grayjay.ClientServer.Models.Downloads
                     }
                 }
 
-                var res = ModifierHttp.GetBytes(httpClient, url, modifier, h);
-                if (!res.IsOk)
-                    throw new InvalidDataException($"Failed to download HLS resource ({url}): HTTP {res.Code}");
+                const int maxAttempts = 3;
+                for (int attempt = 1; ; attempt++)
+                {
+                    try
+                    {
+                        var res = ModifierHttp.GetBytes(httpClient, url, modifier, h, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
+                        if (!res.IsOk)
+                            throw new InvalidDataException($"Failed to download HLS resource ({url}): HTTP {res.Code}");
 
-                return res.Bytes;
+                        return res.Bytes;
+                    }
+                    catch (IOException ex) when (attempt < maxAttempts && !cancel.IsCancellationRequested)
+                    {
+                        Logger.w(nameof(VideoDownload), $"HLS resource read failed ({ex.Message}); retry {attempt}/{maxAttempts - 1}");
+                        if (cancel.WaitHandle.WaitOne(TimeSpan.FromMilliseconds(200 * attempt)))
+                            cancel.ThrowIfCancellationRequested();
+                    }
+                }
             }
 
             static byte[] HexToBytes(string hex)
@@ -1175,7 +1309,7 @@ namespace Grayjay.ClientServer.Models.Downloads
             }
 
             long downloadedTotalLength = 0;
-            var vp = ModifierHttp.GetBytes(client, hlsUrl, modifier);
+            var vp = ModifierHttp.GetBytes(client, hlsUrl, modifier, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
             if (!vp.IsOk)
                 throw new InvalidDataException("Failed to get variant playlist: " + vp.Code);
 
@@ -1194,7 +1328,7 @@ namespace Grayjay.ClientServer.Models.Downloads
                 if (keyCache.TryGetValue(key.KeyUrl, out var cachedKeyBytes))
                     return cachedKeyBytes;
 
-                var keyResponse = ModifierHttp.GetBytes(client, key.KeyUrl, modifier);
+                var keyResponse = ModifierHttp.GetBytes(client, key.KeyUrl, modifier, cancel: cancel, readIdleTimeout: ReadIdleTimeout);
                 if (!keyResponse.IsOk)
                     throw new InvalidDataException("Failed to download AES-128 key: " + keyResponse.Code);
 
