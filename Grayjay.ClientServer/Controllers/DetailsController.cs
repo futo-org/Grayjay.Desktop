@@ -2438,7 +2438,7 @@ namespace Grayjay.ClientServer.Controllers
                     {
                         Type = ExceptionModel.EXCEPTION_GENERAL,
                         Title = "Video unavailable",
-                        Message = "The video is not yet available, auto-reload is TODO."
+                        Message = "The video is not yet available"
                     });
 
                 if (bestVideoSourceIndex == -1 && bestAudioSourceIndex == -1 && video.Live != null)
