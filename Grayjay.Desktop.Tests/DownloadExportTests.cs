@@ -62,6 +62,20 @@ public class DownloadExportTests
         Assert.IsFalse(traversal.Contains('/') || traversal.Contains('\\'));
     }
 
+    [DataTestMethod]
+    [DataRow("C:\\Users\\user\\Downloads\\grayjay\\grayjay", "Video.mp4", "C:\\Users\\user\\Downloads\\grayjay\\grayjay.mp4")]
+    [DataRow("/home/user/Videos/clip", "Video.webm", "/home/user/Videos/clip.webm")]
+    [DataRow("/home/user/Videos/clip.mkv", "Video.webm", "/home/user/Videos/clip.mkv")]
+    [DataRow("/home/user/Videos/clip.", "Video.mp4", "/home/user/Videos/clip.mp4")]
+    [DataRow("/home/user/Videos/Ep. 1", "Video.mp4", "/home/user/Videos/Ep. 1.mp4")]
+    [DataRow("/home/user/Videos/Ep.1", "Video.mp4", "/home/user/Videos/Ep.1.mp4")]
+    [DataRow("/home/user/my.videos/clip", "Video.m4a", "/home/user/my.videos/clip.m4a")]
+    [DataRow("/home/user/Videos/clip.3gp", "Video.mp4", "/home/user/Videos/clip.3gp")]
+    public void ExportPathWithoutExtensionGetsTheDefaultExtension(string chosenPath, string defaultName, string expected)
+    {
+        Assert.AreEqual(expected, Call<string>("ExportFilePath", chosenPath, defaultName));
+    }
+
     [TestMethod]
     public void ExportOfMissingFileReportsTheFailure()
     {

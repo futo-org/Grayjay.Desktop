@@ -14,6 +14,7 @@ using Grayjay.Engine.Models.Video.Sources;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using PlatformID = Grayjay.Engine.Models.General.PlatformID;
 
 namespace Grayjay.ClientServer.Controllers
@@ -277,10 +278,12 @@ namespace Grayjay.ClientServer.Controllers
                 if (videoSource == null && audioSource == null)
                     throw new Exception("No sources found");
 
-                string outputFile = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(ExportFileName(download.Name, videoSource, audioSource), new (string, string)[0]);
+                string defaultName = ExportFileName(download.Name, videoSource, audioSource);
+                string? chosenFile = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(defaultName, new (string, string)[0]);
 
-                if (string.IsNullOrEmpty(outputFile))
+                if (string.IsNullOrEmpty(chosenFile))
                     throw DialogException.FromException("Export cancelled", new Exception("No valid export path provided"));
+                string outputFile = ExportFilePath(chosenFile, defaultName);
 
                 if ((videoSource != null || audioSource != null) && (videoSource == null || audioSource == null))
                 {
@@ -523,6 +526,15 @@ namespace Grayjay.ClientServer.Controllers
                 extension = audioSource!.Container.AudioContainerToExtension();
             return name.SanitizeFileName() + "." + extension;
         }
+
+        /// <summary>The chosen export path, with the default file name's extension added when it has none.</summary>
+        internal static string ExportFilePath(string chosenPath, string defaultName)
+        {
+            if (_fileExtension.IsMatch(Path.GetFileName(chosenPath)))
+                return chosenPath;
+            return chosenPath.TrimEnd('.') + Path.GetExtension(defaultName);
+        }
+        private static readonly Regex _fileExtension = new Regex(@"\.(?=[0-9]*[A-Za-z])[A-Za-z0-9]{1,5}$", RegexOptions.Compiled);
 
         internal enum ExportAudio
         {

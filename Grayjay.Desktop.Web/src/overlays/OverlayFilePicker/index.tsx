@@ -210,6 +210,10 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
         if (!exts.some(e => lower.endsWith('.' + e))) full = `${full}.${exts[0]}`;
       }
 
+      const defaultExtension = /\.[^.\\/]+$/.exec(props.defaultFileName ?? '')?.[0];
+      const typedName = full.split(/[\\/]/).pop() ?? '';
+      if (defaultExtension && !/\.(?=[0-9]*[A-Za-z])[A-Za-z0-9]{1,5}$/.test(typedName)) full = `${full.replace(/\.+$/, '')}${defaultExtension}`;
+
       try {
         const st2 = await LocalBackend.stat(full);
         if (st2?.type === 'folder') { setErrorMsg("Target is a folder. Pick a file name."); return; }
@@ -582,6 +586,12 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
                       if (!it) return;
                       const fp = fullPath();
                       if (!fp) return;
+
+                      // Saving keeps the typed file name; folders are only entered.
+                      if (isSaveMode() && it.type === 'folder') {
+                        setErrorMsg();
+                        return;
+                      }
 
                       if (allowMultiple() && e?.shiftKey && lastClickedIndex !== undefined) {
                         const lci = lastClickedIndex?.();
