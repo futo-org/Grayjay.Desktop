@@ -73,9 +73,9 @@ namespace Grayjay.ClientServer.States
             if (updateExisting)
             {
                 bool shouldUpdate = false;
-                if (positionBefore < 30 * 1000)
+                if (positionBefore < 30)
                     shouldUpdate = true;
-                else if (position > 30 * 1000)
+                else if (position > 30)
                     shouldUpdate = true;
 
                 if(shouldUpdate)
