@@ -695,6 +695,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
               position:relative;
               width: 420px; height: auto;
               grid-template-rows: auto 1fr auto;
+              grid-template-columns: minmax(0, 1fr);
               border-radius: 12px;
               border: 1px solid #2E2E2E;
               background: #141414;
@@ -728,7 +729,7 @@ const OverlayFilePicker: Component<OverlayFilePickerProps> = (props) => {
               </div>
             </div>
 
-            <div style="padding: 16px; color:#EDEDED; line-height:1.5; white-space:pre-wrap;">
+            <div style="padding: 16px; color:#EDEDED; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere;">
               {confirmState()!.message}
             </div>
 
