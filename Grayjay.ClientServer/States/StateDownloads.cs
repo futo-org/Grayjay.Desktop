@@ -51,6 +51,14 @@ namespace Grayjay.ClientServer.States
             string path = Path.Combine(StateApp.GetAppDirectory().FullName, "downloads");
             Directory.CreateDirectory(path);
             _downloadsDirectory = new DirectoryInfo(path);
+            try
+            {
+                ResolveMovedFiles(path, _downloaded);
+            }
+            catch (Exception ex)
+            {
+                Logger.e(nameof(StateDownloads), "Failed to resolve moved downloaded files", ex);
+            }
             OnDownloadCompleted += (download, local) =>
             {
                 if (local != null)
@@ -84,6 +92,64 @@ namespace Grayjay.ClientServer.States
                 File.Move(info.FullName, Path.Combine(newDirectory.FullName, info.Name));
             }
         }
+        /// <summary>Points records whose files no longer exist at their recorded path at the file of the same name in the downloads folder.</summary>
+        /// <returns>The number of records that were updated and saved.</returns>
+        internal static int ResolveMovedFiles(string downloadsDirectory, ManagedStore<VideoLocal> downloaded)
+        {
+            int updatedRecords = 0;
+            foreach (var local in downloaded.GetObjects())
+            {
+                bool changed = false;
+                foreach (var file in DownloadedFiles(local))
+                {
+                    if (string.IsNullOrEmpty(file.FilePath) || File.Exists(file.FilePath))
+                        continue;
+                    string candidate = Path.Combine(downloadsDirectory, FileNameOf(file.FilePath));
+                    if (!File.Exists(candidate))
+                        continue;
+                    Logger.i(nameof(StateDownloads), $"Downloaded file [{file.FilePath}] moved to [{candidate}]");
+                    //The DASH cache is keyed by the full file path, so the one next to the file is stale
+                    DeleteDashCache(candidate);
+                    file.SetFilePath(candidate);
+                    changed = true;
+                }
+                if (!changed)
+                    continue;
+                //A record that cannot be saved still works this session and must not stop the others
+                try
+                {
+                    downloaded.Save(local, onlyExisting: true);
+                    updatedRecords++;
+                }
+                catch (Exception ex)
+                {
+                    Logger.e(nameof(StateDownloads), $"Failed to save the moved files of [{local.VideoDetails?.ID?.Value}]", ex);
+                }
+            }
+            return updatedRecords;
+        }
+
+        private record DownloadedFile(string FilePath, Action<string> SetFilePath);
+        private static IEnumerable<DownloadedFile> DownloadedFiles(VideoLocal local)
+            => local.VideoSources.Select(source => new DownloadedFile(source.FilePath, path => source.FilePath = path))
+                .Concat(local.AudioSources.Select(source => new DownloadedFile(source.FilePath, path => source.FilePath = path)))
+                .Concat(local.SubtitleSources.Select(source => new DownloadedFile(source.FilePath, path => source.FilePath = path)));
+
+        /// <summary>The file name of a path written on any OS, so a Windows path also resolves on Linux.</summary>
+        internal static string FileNameOf(string filePath) => filePath.Split('\\', '/').Last();
+
+        private static void DeleteDashCache(string videoPath)
+        {
+            try
+            {
+                Transcoding.LocalDash.DeleteDownloadCache(videoPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.w(nameof(StateDownloads), $"Failed to delete DASH cache of [{videoPath}]", ex);
+            }
+        }
+
         public static string GetDownloadsDirectory()
         {
             if(!_downloadsDirectory.Exists)

@@ -277,6 +277,9 @@ namespace Grayjay.ClientServer.Controllers
 
                 if (videoSource == null && audioSource == null)
                     throw new Exception("No sources found");
+                string? missingFile = MissingExportFile(videoSource?.FilePath, audioSource?.FilePath);
+                if (missingFile != null)
+                    throw DialogException.FromException("Downloaded file is missing", new FileNotFoundException($"Grayjay could not find [{missingFile}]. It may have been moved or deleted. Delete this download and download it again to export it.", missingFile));
 
                 string defaultName = ExportFileName(download.Name, videoSource, audioSource);
                 string? chosenFile = await GrayjayServer.Instance.GetWindowProviderOrThrow().ShowSaveFileDialogAsync(defaultName, new (string, string)[0]);
@@ -302,94 +305,16 @@ namespace Grayjay.ClientServer.Controllers
                 }
                 else
                 {
-                    //throw DialogException.FromException("Merge not implemented yet", new NotImplementedException());
-
-                    FileInfo subtitleFile = null;
                     var subtitle = download.SubtitleSources?.FirstOrDefault();
-                    if (subtitle != null)
+                    string? subtitlePath = ExportSubtitlePath(subtitle?.FilePath);
+                    if (subtitle != null && subtitlePath == null)
                     {
-                        if (false)//subtitle is SubtitleRawSource subRaw && !string.IsNullOrEmpty(subRaw._Subtitles))
-                        {
-                            switch (subtitle.Format)
-                            {
-                                case "text/vtt":
-                                    subtitleFile = StateApp.GetTemporaryFile(".vtt", "sub");
-                                    //System.IO.File.WriteAllText(subtitleFile.FullName, subRaw._Subtitles);
-                                    break;
-                                case "application/x-subrip":
-                                    subtitleFile = StateApp.GetTemporaryFile(".srt", "sub");
-                                    //System.IO.File.WriteAllText(subtitleFile.FullName, subRaw._Subtitles);
-                                    break;
-                            }
-                        }
-                        else if(string.IsNullOrEmpty(subtitle.FilePath))
-                        {
-                            subtitleFile = new FileInfo(subtitle.FilePath);
-                        }
+                        Logger.w(nameof(DownloadController), $"Subtitle file [{subtitle.FilePath}] of [{download.Name}] is missing, exporting without subtitles");
+                        StateUI.Toast("The subtitle file is missing, exporting without subtitles");
                     }
-
-
-
-                    var subtitleCodec = Path.GetExtension(outputFile).ToLowerInvariant() switch
-                    {
-                        ".webm" => "webvtt",
-                        ".mkv" => "srt",
-                        _ => "mov_text"
-                    };
-                    StringBuilder ffmpegQuery = new StringBuilder();
-                    ffmpegQuery.Append($" -i \"{videoSource.FilePath}\"");
-                    ffmpegQuery.Append($" -i \"{audioSource.FilePath}\"");
-                    if(subtitle != null)
-                        ffmpegQuery.Append($" -i \"{subtitle.FilePath}\"");
-                    ffmpegQuery.Append(" -map 0:v");
-                    ffmpegQuery.Append(" -map 1:a");
-                    if (subtitle != null)
-                        ffmpegQuery.Append($" -map 2:s");
-                    ffmpegQuery.Append(" -c:v copy");
-                    ffmpegQuery.Append(" -c:a copy");
-                    if (subtitle != null)
-                        ffmpegQuery.Append($" -c:s {subtitleCodec}");
-                    ffmpegQuery.Append(" -y");
-                    ffmpegQuery.Append($" \"{outputFile}\"");
-
-                    string query = ffmpegQuery.ToString();
-                    List<string> args = new List<string>();
-                    args.AddRange(new string[]
-                    {
-                        "-i", videoSource.FilePath,
-                        "-i", audioSource.FilePath,
-                    });
-                    if (subtitle != null)
-                        args.AddRange(new string[]
-                        {
-                            "-i", subtitle.FilePath
-                        });
-                    args.AddRange(new string[]
-                    {
-                        "-map", "0:v",
-                        "-map", "1:a",
-                    });
-                    if (subtitle != null)
-                        args.AddRange(new string[]
-                        {
-                            "-map", "2:s"
-                        });
-                    args.AddRange(new string[]
-                    {
-                        "-c:v", "copy",
-                        "-c:a", "copy",
-                    });
-                    if(subtitle != null)
-                        args.AddRange(new string[]
-                        {
-                            "-c:s", subtitleCodec
-                        });
-                    args.Add("-y");
-                    args.Add(outputFile);
-
-
-                    Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + query);
-                    (var exitCode, var errors) = ExecuteExport(args.ToArray());
+                    string[] args = ExportMergeArguments(videoSource.FilePath, audioSource.FilePath, subtitlePath, outputFile);
+                    Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + string.Join(" ", args));
+                    (var exitCode, var errors) = ExecuteExport(args);
                     if (exitCode == 0)
                         return ExportFinished(download, outputFile, ExportAudio.HasAudio);
 
@@ -447,6 +372,9 @@ namespace Grayjay.ClientServer.Controllers
 
             if (videoSource == null && audioSource == null)
                 return "No sources found";
+            string? missingFile = MissingExportFile(videoSource?.FilePath, audioSource?.FilePath);
+            if (missingFile != null)
+                return $"Downloaded file is missing [{missingFile}]";
 
             string outputFile = Path.Combine(outputFolder, ExportFileName(download.Name, videoSource, audioSource));
 
@@ -461,17 +389,7 @@ namespace Grayjay.ClientServer.Controllers
                     return null;
                 }
 
-                string[] args = new string[]
-                {
-                    "-i", videoSource.FilePath,
-                    "-i", audioSource.FilePath,
-                    "-map", "0:v",
-                    "-map", "1:a",
-                    "-c:v", "copy",
-                    "-c:a", "copy",
-                    "-y",
-                    outputFile.SanitizeFileNameWithPath()
-                };
+                string[] args = ExportMergeArguments(videoSource.FilePath, audioSource.FilePath, null, outputFile.SanitizeFileNameWithPath());
                 Logger.i(nameof(DownloadController), "Exporting with FFMPEG:\n" + string.Join(" ", args));
                 (var exitCode, var errors) = ExecuteExport(args);
                 if (exitCode == 0)
@@ -526,6 +444,43 @@ namespace Grayjay.ClientServer.Controllers
                 extension = audioSource!.Container.AudioContainerToExtension();
             return name.SanitizeFileName() + "." + extension;
         }
+
+        /// <summary>The downloaded subtitle file to add to an export, or null when there is none or it is missing.</summary>
+        internal static string? ExportSubtitlePath(string? subtitlePath)
+            => !string.IsNullOrEmpty(subtitlePath) && System.IO.File.Exists(subtitlePath) ? subtitlePath : null;
+
+        /// <summary>FFmpeg arguments that merge a video and an audio file, and a subtitle file when given, without re-encoding.</summary>
+        internal static string[] ExportMergeArguments(string videoPath, string audioPath, string? subtitlePath, string outputFile)
+        {
+            var args = new List<string> { "-i", videoPath, "-i", audioPath };
+            if (subtitlePath != null)
+            {
+                args.AddRange(new[] { "-i", subtitlePath });
+            }
+            args.AddRange(new[] { "-map", "0:v", "-map", "1:a" });
+            if (subtitlePath != null)
+            {
+                args.AddRange(new[] { "-map", "2:s" });
+            }
+            args.AddRange(new[] { "-c:v", "copy", "-c:a", "copy" });
+            if (subtitlePath != null)
+            {
+                string subtitleCodec = Path.GetExtension(outputFile).ToLowerInvariant() switch
+                {
+                    ".webm" => "webvtt",
+                    ".mkv" => "srt",
+                    _ => "mov_text"
+                };
+                args.AddRange(new[] { "-c:s", subtitleCodec });
+            }
+            args.Add("-y");
+            args.Add(outputFile);
+            return args.ToArray();
+        }
+
+        /// <summary>The first given downloaded file that does not exist, or null when all exist.</summary>
+        internal static string? MissingExportFile(params string?[] filePaths)
+            => filePaths.FirstOrDefault(filePath => !string.IsNullOrEmpty(filePath) && !System.IO.File.Exists(filePath));
 
         /// <summary>The chosen export path, with the default file name's extension added when it has none.</summary>
         internal static string ExportFilePath(string chosenPath, string defaultName)

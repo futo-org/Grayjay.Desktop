@@ -571,7 +571,7 @@ const DownloadsPage: Component = () => {
               {toHumanBytesSize((storageInfo$()?.availableBytes ?? 0) + (storageInfo$()?.usedBytes ?? 0))}
             </div>
             <div class={styles.storagePath}>
-              <img src={folderIcon} style=" margin-top:0.5px; cursor: pointer;" onClick={()=>DownloadBackend.changeDownloadDirectory()} />
+              <img src={folderIcon} style=" margin-top:0.5px;" />
               <span style="vertical-align: top;">
                 {storageInfo$()?.storageLocation}
               </span>

@@ -347,6 +347,39 @@ public class DownloadExportTests
         }
     }
 
+    [TestMethod]
+    public void ExportSubtitlePathIgnoresMissingAndEmpty()
+    {
+        string existing = Path.GetTempFileName();
+        try
+        {
+            Assert.IsNull(Call<string?>("ExportSubtitlePath", new object?[] { null }));
+            Assert.IsNull(Call<string?>("ExportSubtitlePath", ""));
+            Assert.IsNull(Call<string?>("ExportSubtitlePath", existing + ".missing"));
+            Assert.AreEqual(existing, Call<string?>("ExportSubtitlePath", existing));
+        }
+        finally
+        {
+            File.Delete(existing);
+        }
+    }
+
+    [TestMethod]
+    public void MergeArgumentsWithoutSubtitleHaveNoSubtitleMap()
+    {
+        var args = Call<string[]>("ExportMergeArguments", "video.mp4", "audio.mp4a", null, "out.mp4");
+
+        CollectionAssert.AreEqual(new[] { "-i", "video.mp4", "-i", "audio.mp4a", "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-y", "out.mp4" }, args);
+    }
+
+    [TestMethod]
+    public void MergeArgumentsWithSubtitleMapIt()
+    {
+        var args = Call<string[]>("ExportMergeArguments", "video.mp4", "audio.mp4a", "sub.vtt", "out.mkv");
+
+        CollectionAssert.AreEqual(new[] { "-i", "video.mp4", "-i", "audio.mp4a", "-i", "sub.vtt", "-map", "0:v", "-map", "1:a", "-map", "2:s", "-c:v", "copy", "-c:a", "copy", "-c:s", "srt", "-y", "out.mkv" }, args);
+    }
+
     private static T Call<T>(string name, params object?[] arguments)
     {
         var method = typeof(DownloadController).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
