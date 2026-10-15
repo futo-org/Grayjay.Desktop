@@ -256,7 +256,7 @@ namespace Grayjay.ClientServer
                 case 2:
                     return (false, updaterVersion);
                 default:
-                    return (true, updaterVersion);
+                    return (false, updaterVersion);
             }
         }
         public static int GetLatestMacOSVersion(string server)
