@@ -359,7 +359,7 @@ namespace Grayjay.ClientServer.Settings
         {
 
             [SettingsField("Run Updater as Administrator", SettingsField.TOGGLE, "Runs the updater as administrator, may avoid issues for some users. (Only works for Windows)", 0)]
-            public bool UpdaterAsAdmin { get; set; } = true;
+            public bool UpdaterAsAdmin { get; set; } = false;
         }
 
         [SettingsField("Info", SettingsField.GROUP, "", 14)]
