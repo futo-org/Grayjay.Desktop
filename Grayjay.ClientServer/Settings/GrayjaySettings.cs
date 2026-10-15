@@ -352,7 +352,17 @@ namespace Grayjay.ClientServer.Settings
             public bool DisableSandbox { get; set; } = false;
         }
 
-        [SettingsField("Info", SettingsField.GROUP, "", 13)]
+        [SettingsField("Updater", SettingsField.GROUP, "", 13)]
+        public UpdaterSettings Updater { get; } = new UpdaterSettings();
+
+        public class UpdaterSettings
+        {
+
+            [SettingsField("Run Updater as Administrator", SettingsField.TOGGLE, "Runs the updater as administrator, may avoid issues for some users. (Only works for Windows)", 0)]
+            public bool UpdaterAsAdmin { get; set; } = true;
+        }
+
+        [SettingsField("Info", SettingsField.GROUP, "", 14)]
         public InfoData Info { get; } = new InfoData();
 
         public class InfoData

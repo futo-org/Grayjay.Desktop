@@ -1,4 +1,5 @@
-﻿using Grayjay.ClientServer.States;
+﻿using Grayjay.ClientServer.Settings;
+using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Desktop.POC.Port.States;
 using System;
@@ -161,13 +162,17 @@ namespace Grayjay.ClientServer
             {
                 Logger.i(nameof(Updater), "Starting updater directly");
 
-                Process.Start(new ProcessStartInfo()
+                var processStartInfo = new ProcessStartInfo()
                 {
                     FileName = executable,
                     Arguments = $"update -process_ids {string.Join(",", processIds)} -executable \"{GetSelfExecutablePath()}\"",
                     UseShellExecute = true,
                     WorkingDirectory = Environment.CurrentDirectory
-                });
+                };
+                if (OperatingSystem.IsWindows() && GrayjaySettings.Instance.Updater.UpdaterAsAdmin)
+                    processStartInfo.Verb = "runas";
+
+                Process.Start(processStartInfo);
 
                 processStarted = true;
             }
@@ -251,7 +256,7 @@ namespace Grayjay.ClientServer
                 case 2:
                     return (false, updaterVersion);
                 default:
-                    return (false, updaterVersion);
+                    return (true, updaterVersion);
             }
         }
         public static int GetLatestMacOSVersion(string server)
