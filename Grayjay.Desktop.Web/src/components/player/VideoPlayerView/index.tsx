@@ -1508,6 +1508,15 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         syncFullscreenToDom(!isFullscreen());
     };
 
+    const startPictureInPicture = () => {
+        if (!videoElement) return;
+        if (document.pictureInPictureElement === videoElement) {
+            document.exitPictureInPicture();
+        } else {
+            videoElement.requestPictureInPicture();
+        }
+    }
+
     const toggleVolume = async () => {
         if (isCasting()) {
             if (casting?.activeDevice.volume() > 0) {
@@ -1866,6 +1875,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                     handleFullscreen={toggleFullscreen}
                     handleSettingsMenu={props.onSettingsDialog}
                     handleTheatre={props.handleTheatre}
+                    handlePictureInPicture={startPictureInPicture}
                     handleEscape={handleEscape}
                     handleMinimize={handleMinimize}
                     eventMoved={props.eventMoved}

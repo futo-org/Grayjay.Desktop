@@ -342,6 +342,12 @@
     cursor: pointer;
 }
 
+.pictureInPicture {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
 .settings {
     width: 24px;
     height: 24px;

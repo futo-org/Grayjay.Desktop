@@ -10,6 +10,7 @@ import cast from '../../../assets/icons/icon_32_cast.svg';
 import settings from '../../../assets/icons/icon_32_settings.svg';
 import minimize from '../../../assets/icons/icon_32_minimize.svg';
 import iconTheatre from '../../../assets/icons/icon_theatre.svg';
+import iconPictureInPicture from '../../../assets/icons/icon_picture_in_picture.svg';
 import { dateFromAny, formatDuration } from "../../../utility";
 import { useCasting } from "../../../contexts/Casting";
 import { Event0 } from "../../../utility/Event";
@@ -34,6 +35,7 @@ export interface PlayerControlsProps {
     handlePause?: ()=>void;
     handlePlay?: ()=>void;
     handleTheatre?: () => void;
+    handlePictureInPicture?: () => void;
     handleToggleVolume?: () => void;
     onInteraction?: () => void;
     onToggleSubtitles?: () => void;
@@ -183,6 +185,13 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
         e.stopPropagation();
         e.preventDefault();
     };
+
+    const onPictureInPicture = (e: MouseEvent) => {
+        if (props.handlePictureInPicture)
+            props.handlePictureInPicture();
+        e.stopPropagation();
+        e.preventDefault();
+    }
 
     const onTheatre = (e: MouseEvent) => {
         if (props.handleTheatre)
@@ -597,6 +606,7 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 <Show when={props.handleTheatre}>
                     <img src={iconTheatre} class={styles.theatre} alt="theatre" onClick={onTheatre} onDblClick={(e) => e.stopPropagation()} />
                 </Show>
+                <img src={iconPictureInPicture} class={styles.pictureInPicture} alt="picture-in-picture" onClick={onPictureInPicture} onDblClick={(e) => e.stopPropagation()} />
                 <img src={cast} class={styles.cast} alt="cast" onClick={onCast} onDblClick={(e) => e.stopPropagation()} />
                 <img ref={(el)=>settingsButton = el} src={settings} class={styles.settings} alt="settings" onClick={(ev)=>onSettings(ev)} onDblClick={(e) => e.stopPropagation()} />
                 {props.buttons}
