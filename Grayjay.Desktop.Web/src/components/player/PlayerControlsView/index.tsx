@@ -23,6 +23,7 @@ export interface PlayerControlsProps {
     positionBuffered: Duration;
     isPlaying: boolean;
     isLive?: boolean;
+    isFullscreen?: boolean;
     video?: IPlatformVideoDetails,
     onSkip: ()=>void;
     onSetScrubbing?: (scrubbing: boolean) => void;
@@ -606,7 +607,9 @@ const PlayerControlsView: Component<PlayerControlsProps> = (props) => {
                 <Show when={props.handleTheatre}>
                     <img src={iconTheatre} class={styles.theatre} alt="theatre" onClick={onTheatre} onDblClick={(e) => e.stopPropagation()} />
                 </Show>
-                <img src={iconPictureInPicture} class={styles.pictureInPicture} alt="picture-in-picture" onClick={onPictureInPicture} onDblClick={(e) => e.stopPropagation()} />
+                <Show when={props.isFullscreen != null && !props.isFullscreen}>
+                    <img src={iconPictureInPicture} class={styles.pictureInPicture} alt="picture-in-picture" onClick={onPictureInPicture} onDblClick={(e) => e.stopPropagation()} />
+                </Show>
                 <img src={cast} class={styles.cast} alt="cast" onClick={onCast} onDblClick={(e) => e.stopPropagation()} />
                 <img ref={(el)=>settingsButton = el} src={settings} class={styles.settings} alt="settings" onClick={(ev)=>onSettings(ev)} onDblClick={(e) => e.stopPropagation()} />
                 {props.buttons}

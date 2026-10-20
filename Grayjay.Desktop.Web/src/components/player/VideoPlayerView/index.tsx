@@ -272,6 +272,10 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                 const req = containerRef.requestFullscreen;
                 if (req) {
                     await req.call(containerRef);
+                    
+                    if (document.pictureInPictureElement === videoElement) {
+                        document.exitPictureInPicture();
+                    }
                 } else {
                     console.warn("Fullscreen API not available on container.");
                 }
@@ -1868,6 +1872,7 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
                             void seek(Duration.fromMillis(Math.max(0, position().milliseconds - 1000 / (frameRate ?? 24))));
                     }}
                     isLive={props.source?.isLive}
+                    isFullscreen={isFullscreen()}
                     volume={currentVolume$()}
                     handlePause={togglePlay}
                     handleToggleVolume={toggleVolume}
