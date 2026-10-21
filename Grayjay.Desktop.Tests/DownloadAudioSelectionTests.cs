@@ -362,6 +362,37 @@ public class DownloadAudioSelectionTests
     }
 
     [TestMethod]
+    public async Task DialogVariantsResolveAgainstTheRedirectedManifest()
+    {
+        (var app, var baseUrl) = await StartServer(context =>
+        {
+            if (context.Request.Path == "/master.m3u8")
+            {
+                context.Response.Redirect("/cdn/token/master.m3u8");
+                return Task.CompletedTask;
+            }
+            return context.Request.Path == "/cdn/token/master.m3u8" ? WriteText(context, MasterWithAudioGroup) : NotFound(context);
+        });
+        try
+        {
+            var details = Details(new VideoDescriptor { VideoSources = new IVideoSource[] { new HLSManifestSource { Url = baseUrl + "/master.m3u8" } } });
+            DownloadController.LoadDownload(details);
+            var sources = (DownloadController.DownloadSources)typeof(DownloadController).GetField("_sources", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+            int manifestIndex = sources.ManifestSources[0].FindIndex(variant => variant.Url == baseUrl + "/cdn/token/video/360.m3u8");
+            Assert.IsTrue(manifestIndex >= 0, "Relative variant URIs must resolve against the URL the manifest was served from");
+
+            var method = typeof(DownloadController).GetMethod("SelectManifestVariant", BindingFlags.NonPublic | BindingFlags.Static)!;
+            var selected = ((IVideoSource Video, IAudioSource? Audio))Invoke(() => method.Invoke(null, new object?[] { sources, 0, manifestIndex, null }))!;
+            Assert.IsInstanceOfType(selected.Audio, typeof(HLSVariantAudioUrlSource));
+            StringAssert.StartsWith(((AudioUrlSource)selected.Audio!).Url, baseUrl + "/cdn/token/audio/");
+        }
+        finally
+        {
+            await StopServer(app);
+        }
+    }
+
+    [TestMethod]
     public void RequiredAudioWithoutCandidatesThrowsRetryable()
     {
         var details = Details(new UnMuxedVideoDescriptor

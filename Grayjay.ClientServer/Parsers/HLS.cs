@@ -266,11 +266,11 @@ public static class HLS
         var body = Encoding.UTF8.GetString(res.Bytes);
         try
         {
-            return ParseMasterPlaylist(body, url);
+            return ParseMasterPlaylist(body, res.FinalUrl);
         }
         catch
         {
-            return ParseVariantPlaylist(body, url);
+            return ParseVariantPlaylist(body, res.FinalUrl);
         }
     }
     public static List<HLSVariantVideoUrlSource> ParseToVideoSources(object parentSource, string content, string url)
