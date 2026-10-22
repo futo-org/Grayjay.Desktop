@@ -31,6 +31,32 @@ namespace Grayjay.Desktop
         private static readonly TimeSpan TimedOutProcessExitDelay = TimeSpan.FromSeconds(6);
         private static int _widevineRestartDialogShown;
 
+        private static void EnsureCefLibraryPath()
+        {
+            if (!OperatingSystem.IsLinux())
+                return;
+
+            string? cefDirectory = Utilities.FindDirectory("cef");
+            if (string.IsNullOrEmpty(cefDirectory))
+            {
+                Logger.w(nameof(Program), "Unable to locate the CEF directory");
+                return;
+            }
+
+            string? currentPath = Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
+            string[] paths = string.IsNullOrEmpty(currentPath)
+                ? Array.Empty<string>()
+                : currentPath.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            if (!paths.Contains(cefDirectory, StringComparer.Ordinal))
+            {
+                string updatedPath = string.IsNullOrEmpty(currentPath)
+                    ? cefDirectory
+                    : cefDirectory + Path.PathSeparator + currentPath;
+                Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", updatedPath);
+            }
+        }
+
         private static bool IsProcessRunningByPath(string path, out Process? matchingProcess)
         {
             matchingProcess = null;
@@ -568,6 +594,7 @@ namespace Grayjay.Desktop
             bool useSandbox = true;
             if (!isServer)
             {
+                EnsureCefLibraryPath();
                 var extraArgs = ReconstructArgs(args);
                 Logger.i(nameof(Program), "Extra args: " + extraArgs);
 
