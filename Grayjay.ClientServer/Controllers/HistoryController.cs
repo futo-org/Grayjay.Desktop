@@ -66,6 +66,12 @@ namespace Grayjay.ClientServer.Controllers
         }
 
 
+        [HttpPost]
+        public bool MarkAsWatched([FromBody] PlatformVideo video)
+        {
+            return StateHistory.MarkAsWatched(video);
+        }
+
         [HttpGet]
         public bool RemoveHistory(string url)
         {

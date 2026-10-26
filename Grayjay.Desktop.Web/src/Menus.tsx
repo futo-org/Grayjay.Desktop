@@ -7,14 +7,24 @@ import ic_addToPlaylist from './assets/icons/icon_add_to_playlist.svg';
 import ic_subscriptions from './assets/icons/icon_nav_subscriptions.svg';
 import ic_download from './assets/icons/icon24_download.svg';
 import ic_trash from './assets/icons/icon_trash.svg';
+import ic_history from './assets/icons/icon_nav_history.svg';
 
 import { ISourceConfigState } from "./backend/models/plugin/ISourceConfigState";
 import UIOverlay from "./state/UIOverlay";
 import { PlaylistsBackend } from "./backend/PlaylistsBackend";
 import { IPlaylist } from "./backend/models/IPlaylist";
 import { SubscriptionsBackend } from "./backend/SubscriptionsBackend";
+import { IPlatformVideo } from "./backend/models/content/IPlatformVideo";
+import { HistoryBackend } from "./backend/HistoryBackend";
 
 export class Menus {
+    static markAsWatchedButton(video: IPlatformVideo, onMarked?: () => void) {
+        return new MenuItemButton("Mark as watched", ic_history, undefined, async () => {
+            await HistoryBackend.markAsWatched(video);
+            onMarked?.();
+        });
+    }
+
     static getSubscriptionMenu(subscription: ISubscription, subscriptionSettings: ISubscriptionSettings, sourceState?: ISourceConfigState) {
         const hasStreams = (sourceState?.capabilitiesChannel?.types?.indexOf("STREAMS") ?? -1) !== -1;
         const hasVideos = (sourceState?.capabilitiesChannel?.types?.indexOf("VIDEOS") ?? -1) !== -1 
