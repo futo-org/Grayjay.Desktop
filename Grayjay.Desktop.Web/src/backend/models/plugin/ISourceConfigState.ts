@@ -76,8 +76,9 @@ export interface ISourceConfig {
     version: number;
     author: string;
     authorUrl: string;
-    iconUrl: string;
+    iconUrl: string; // <--- Static icon URL read directly from the plugin's JSON config file
     sourceUrl: string;
+    scriptUrl: string;
     scriptUrl: string;
     allowUrls: string[];
     packages: string[];
@@ -92,7 +93,7 @@ export interface ISourceConfig {
     supportedClaimTypes: number[];
     primaryClaimFieldType: number;
     settings: ISourceSetting[];
-    absoluteIconUrl?: string;
+    absoluteIconUrl?: string; // <--- Computed absolute URL derived from the static iconUrl above
     absoluteScriptUrl?: string;
 }
 
