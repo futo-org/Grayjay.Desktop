@@ -117,6 +117,26 @@ namespace Grayjay.ClientServer.Database
                 string tableQuery = $"CREATE TABLE {tq}\n({string.Join(",\n", definitions)})";
                 SQL((x) => x.Execute(tableQuery));
             }
+
+            // Create an index for every property marked [Indexed]. Uses
+            // IF NOT EXISTS so it also repairs existing databases whose table
+            // predates this: the [Indexed] attribute was declared on columns
+            // like subscriptionCache.Url/ChannelUrl but never actually created,
+            // leaving large tables unindexed and forcing a full table scan on
+            // every lookup (very slow startup for users with big caches).
+            var indexedProperties = properties
+                .Where(x => x.GetCustomAttribute<IndexedAttribute>() != null);
+            foreach (var prop in indexedProperties)
+            {
+                var ordering = prop.GetCustomAttribute<IndexedAttribute>()!.Ordering switch
+                {
+                    Ordering.Ascending => " ASC",
+                    Ordering.Descending => " DESC",
+                    _ => ""
+                };
+                var indexName = Quote($"idx_{table}_{prop.Name}");
+                SQL((x) => x.Execute($"CREATE INDEX IF NOT EXISTS {indexName} ON {tq} ({Quote(prop.Name)}{ordering})"));
+            }
         }
         private string GetSQLType(Type type)
         {
