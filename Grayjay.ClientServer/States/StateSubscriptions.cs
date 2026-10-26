@@ -178,20 +178,42 @@ namespace Grayjay.Desktop.POC.Port.States
             return (result.Pager, result.Exceptions);
         }
 
+        // Prevents a hung fetch from leaving IsGlobalUpdating=true forever, which blocks all later reloads.
+        private static readonly TimeSpan SubscriptionUpdateStuckTimeout = TimeSpan.FromMinutes(3);
+
         public static void UpdateSubscriptionFeed(bool onlyIfNull, Action<int, int> onProgress, string feedId = null)
         {
             var feed = (feedId == null) ? _global : GetFeed(feedId);
             Logger.v(nameof(StateSubscriptions), "updateSubscriptionFeed");
             StateApp.ThreadPool.Run(() =>
             {
+                int updateGeneration;
                 lock(feed.LockObject)
                 {
-                    if(feed.IsGlobalUpdating || (onlyIfNull && feed.Feed != null))
+                    if(feed.IsGlobalUpdating)
+                    {
+                        var elapsed = feed.UpdateStartedAt.HasValue
+                            ? DateTime.UtcNow - feed.UpdateStartedAt.Value
+                            : SubscriptionUpdateStuckTimeout;
+                        // Keep waiting unless the update looks stuck and a restart is useful.
+                        if(elapsed < SubscriptionUpdateStuckTimeout || (onlyIfNull && feed.Feed != null))
+                        {
+                            Logger.i(nameof(StateSubscriptions), "Already updating subscriptions or not required");
+                            return;
+                        }
+                        Logger.w(nameof(StateSubscriptions), $"Subscriptions update stuck ({elapsed}); forcing restart");
+                        feed.IsGlobalUpdating = false;
+                        feed.UpdateStartedAt = null;
+                    }
+                    else if(onlyIfNull && feed.Feed != null)
                     {
                         Logger.i(nameof(StateSubscriptions), "Already updating subscriptions or not required");
                         return;
                     }
+
+                    updateGeneration = ++feed.UpdateGeneration;
                     feed.IsGlobalUpdating = true;
+                    feed.UpdateStartedAt = DateTime.UtcNow;
                 }
                 try
                 {
@@ -201,16 +223,36 @@ namespace Grayjay.Desktop.POC.Port.States
                         feed.SetProgress(progress, total);
                         onProgress?.Invoke(progress, total);
                     });
+                    lock(feed.LockObject)
+                    {
+                        if(feed.UpdateGeneration != updateGeneration)
+                        {
+                            Logger.w(nameof(StateSubscriptions), "Discarding stale subscriptions update result");
+                            return;
+                        }
+                    }
                     feed.SetExceptions(exceptions);
                     feed.SetFeed(subsPager);
                 }
                 catch(Exception ex)
                 {
+                    lock(feed.LockObject)
+                    {
+                        if(feed.UpdateGeneration != updateGeneration)
+                            return;
+                    }
                     feed.SetFeedException(ex);
                 }
                 finally
                 {
-                    feed.IsGlobalUpdating = false;
+                    lock(feed.LockObject)
+                    {
+                        if(feed.UpdateGeneration == updateGeneration)
+                        {
+                            feed.IsGlobalUpdating = false;
+                            feed.UpdateStartedAt = null;
+                        }
+                    }
                     Logger.w(nameof(StateSubscriptions), "Finished Subscriptions update");
                 }
             });
@@ -563,6 +605,8 @@ namespace Grayjay.Desktop.POC.Port.States
 
             public ReusablePager<PlatformContent> Feed { get; set; }
             public bool IsGlobalUpdating { get; set; }
+            public DateTime? UpdateStartedAt { get; set; }
+            public int UpdateGeneration { get; set; }
             public List<Exception> Exceptions { get; set; }
 
             public int LastProgress { get; set; }
