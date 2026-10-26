@@ -126,6 +126,54 @@ public class StateWebsocket
         });
     }
 
+    public static void CloseVideo()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "CloseVideo");
+        });
+    }
+
+    public static void PauseVideo()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "PauseVideo");
+        });
+    }
+
+    public static void ResumeVideo()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "ResumeVideo");
+        });
+    }
+
+    public static void ToggleVideo()
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(null, "ToggleVideo");
+        });
+    }
+
+    public static void SeekVideo(double seconds)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(new { position = seconds }, "SeekVideo");
+        });
+    }
+
+    public static void SetVolume(double volume)
+    {
+        Task.Run(async () =>
+        {
+            await GrayjayServer.Instance.WebSocket.Broadcast(new { volume = volume }, "SetVolume");
+        });
+    }
+
     public static void LicenseStatusChanged(bool val)
     {
         Task.Run(async () =>

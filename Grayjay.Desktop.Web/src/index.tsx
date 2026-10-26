@@ -61,6 +61,83 @@ StateWebsocket.registerHandlerNew("OpenUrl", (packet)=>{
   }
 }, "main");
 
+StateWebsocket.registerHandlerNew("CloseVideo", (packet)=>{
+  const videoNow = video;
+  if(videoNow) {
+    videoNow.actions.closeVideo();
+  }
+}, "main");
+
+StateWebsocket.registerHandlerNew("PauseVideo", ()=>{
+  const el = document.querySelector('video') as HTMLVideoElement | null;
+  if(el) el.pause();
+}, "main");
+
+StateWebsocket.registerHandlerNew("ResumeVideo", ()=>{
+  const el = document.querySelector('video') as HTMLVideoElement | null;
+  if(el) el.play();
+}, "main");
+
+StateWebsocket.registerHandlerNew("ToggleVideo", ()=>{
+  const el = document.querySelector('video') as HTMLVideoElement | null;
+  if(el) {
+    if(el.paused) el.play();
+    else el.pause();
+  }
+}, "main");
+
+StateWebsocket.registerHandlerNew("SeekVideo", (packet)=>{
+  const el = document.querySelector('video') as HTMLVideoElement | null;
+  if(el && packet?.payload?.position != null) {
+    el.currentTime = packet.payload.position;
+  }
+}, "main");
+
+StateWebsocket.registerHandlerNew("SetVolume", (packet)=>{
+  const el = document.querySelector('video') as HTMLVideoElement | null;
+  if(el && packet?.payload?.volume != null) {
+    el.volume = Math.max(0, Math.min(1, packet.payload.volume / 100));
+  }
+}, "main");
+
+if (typeof window !== "undefined") {
+  (window as any).GrayjayPlayer = {
+    play: (url: string, positionSec?: number) => {
+      const v = video;
+      const n = navigate;
+      if (v && n) {
+        Globals.handleUrl(url, v, n, positionSec);
+      }
+    },
+    stop: () => {
+      video?.actions.closeVideo();
+    },
+    pause: () => {
+      const el = document.querySelector('video') as HTMLVideoElement | null;
+      if(el) el.pause();
+    },
+    resume: () => {
+      const el = document.querySelector('video') as HTMLVideoElement | null;
+      if(el) el.play();
+    },
+    toggle: () => {
+      const el = document.querySelector('video') as HTMLVideoElement | null;
+      if(el) {
+        if(el.paused) el.play();
+        else el.pause();
+      }
+    },
+    seek: (seconds: number) => {
+      const el = document.querySelector('video') as HTMLVideoElement | null;
+      if(el) el.currentTime = seconds;
+    },
+    volume: (vol: number) => {
+      const el = document.querySelector('video') as HTMLVideoElement | null;
+      if(el) el.volume = Math.max(0, Math.min(1, vol / 100));
+    }
+  };
+}
+
 const App: Component<RouteSectionProps> = (props) => {
   const [isDropping$, setIsDropping] = createSignal<boolean>();
 
