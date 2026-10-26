@@ -22,6 +22,7 @@ interface NavigationBarProps {
   childrenAfter?: JSX.Element | undefined;
   suggestionsVisible?: boolean;
   groupEscapeTo?: Partial<Record<Direction, string[]>>;
+  castGroupIndex?: number;
 }
 
 const NavigationBar: Component<NavigationBarProps> = (props) => {
@@ -66,7 +67,7 @@ const NavigationBar: Component<NavigationBarProps> = (props) => {
         onClick={() => casting?.actions.open()}
         focusableOpts={{
           groupId: 'nav-bar',
-          groupIndices: [props.childrenAfter ? 2 : 1],
+          groupIndices: [props.castGroupIndex ?? (props.childrenAfter ? 2 : 1)],
           groupType: 'horizontal',
           groupEscapeTo: props.groupEscapeTo,
           onPress: () => casting?.actions.open(),
