@@ -7,6 +7,7 @@ public class Playlist
     public required string Id { get; set; }
     public required string Name { get; set; }
     public List<PlatformVideo> Videos { get; set; } = new List<PlatformVideo>();
+    public Dictionary<string, long> VideoAdds { get; set; } = new Dictionary<string, long>();
     public DateTime DateCreation { get; set; }
     public DateTime DateUpdate { get; set; }
     public DateTime DatePlayed { get; set; }
@@ -25,11 +26,20 @@ public class Playlist
             videos.AddRange(newResults);
         }
 
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        Dictionary<string, long> videoAdds = new Dictionary<string, long>();
+        for (int i = 0; i < videos.Count; i++)
+        {
+            if (!string.IsNullOrEmpty(videos[i].Url))
+                videoAdds[videos[i].Url] = now - (videos.Count - i);
+        }
+
         return new Playlist()
         {
             Id = Guid.NewGuid().ToString(),
             Name = details.Name,
             Videos = videos,
+            VideoAdds = videoAdds,
             DateCreation = details.DateTime,
             DatePlayed = DateTime.MinValue,
             DateUpdate = DateTime.Now

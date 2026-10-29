@@ -60,6 +60,7 @@ public class StatePlaylists
     public static void AddContentToPlaylists(string[] playlistIds, PlatformVideo content)
     {
         List<Playlist> changed = new List<Playlist>();
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         foreach (var playlistId in playlistIds)
         {
             changed.Add(_playlists.Update(v => v.Id, playlistId, (playlist) =>
@@ -70,6 +71,9 @@ public class StatePlaylists
                 {
                     content
                 };
+                playlist.VideoAdds ??= new Dictionary<string, long>();
+                if (!string.IsNullOrEmpty(content.Url))
+                    playlist.VideoAdds[content.Url] = now;
             }));
         }
         BroadcastSyncPlaylists(changed);
@@ -91,8 +95,13 @@ public class StatePlaylists
             playlist.DatePlayed = DateTime.Now;
             playlist.DateUpdate = DateTime.Now;
             var newList = playlist.Videos.ToList();
+            var removedUrl = (index >= 0 && index < newList.Count) ? newList[index].Url : null;
             newList.RemoveAt(index);
             playlist.Videos = newList;
+            if (!string.IsNullOrEmpty(removedUrl) && playlist.VideoAdds != null && !newList.Any(x => x.Url == removedUrl))
+            {
+                playlist.VideoAdds.Remove(removedUrl);
+            }
 
             var dlPlaylist = StateDownloads.GetDownloadingPlaylist(playlistId);
             if (dlPlaylist != null)
@@ -123,6 +132,14 @@ public class StatePlaylists
             playlist.DateCreation = DateTime.Now;
             playlist.DatePlayed = DateTime.Now;
             playlist.DateUpdate = DateTime.Now;
+            playlist.VideoAdds ??= new Dictionary<string, long>();
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            for (int i = 0; i < playlist.Videos.Count; i++)
+            {
+                var url = playlist.Videos[i]?.Url;
+                if (!string.IsNullOrEmpty(url) && !playlist.VideoAdds.ContainsKey(url))
+                    playlist.VideoAdds[url] = now - (playlist.Videos.Count - i);
+            }
             return playlist;
         }, p =>
         {
@@ -130,6 +147,12 @@ public class StatePlaylists
             p.DateUpdate = DateTime.Now;
             p.Name = playlist.Name;
             p.Videos = playlist.Videos;
+            if (playlist.VideoAdds != null && playlist.VideoAdds.Count > 0)
+            {
+                p.VideoAdds ??= new Dictionary<string, long>();
+                foreach (var kv in playlist.VideoAdds)
+                    p.VideoAdds[kv.Key] = kv.Value;
+            }
         });
 
         OnPlaylistsChanged?.Invoke();

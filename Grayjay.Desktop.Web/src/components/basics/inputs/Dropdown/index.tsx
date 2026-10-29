@@ -1,4 +1,4 @@
-import { Component, createSignal, onCleanup, Show, Index, JSX, createMemo } from "solid-js";
+import { Component, createSignal, createEffect, onCleanup, Show, Index, JSX, createMemo } from "solid-js";
 import styles from './index.module.css';
 import { AnchorStyle } from "../../../../utility/Anchor";
 import chevDown from "../../../../assets/icons/icon_chrevron_down.svg"
@@ -37,6 +37,9 @@ export interface DropdownProps {
 
 const Dropdown: Component<DropdownProps> = (props) => {
     const [selectedIndex$, setSelectedIndex] = createSignal(props.value);
+    createEffect(() => {
+        setSelectedIndex(props.value);
+    });
     const [showOptions$, setShowOptions] = createSignal<{ show: boolean; inputSource?: InputSource }>({
         show: false,
         inputSource: undefined

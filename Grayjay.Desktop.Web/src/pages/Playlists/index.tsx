@@ -38,6 +38,9 @@ import { InputSource } from '../../nav';
 import HorizontalFlexibleArrayList from '../../components/containers/HorizontalFlexibleArrayList';
 import { useFocus } from '../../FocusProvider';
 
+import { SettingsBackend } from '../../backend/SettingsBackend';
+import { PlaylistSortOrder } from '../../components/PlaylistDetailView';
+
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
 
@@ -48,12 +51,21 @@ const PlaylistsPage: Component = () => {
     return await PlaylistsBackend.getAll();
   });
 
+  const [watchLaterSortBy$, setWatchLaterSortBy] = createSignal<PlaylistSortOrder>(PlaylistSortOrder.DateAddedNewest);
+
   StateWebsocket.registerHandlerNew("PlaylistsChanged", (packet)=>{
     playlistsResource.refetch();
   }, "playlistsPage");
 
   onMount(() => {
     video?.actions?.refetchWatchLater();
+    SettingsBackend.persistGet("playlist_sort_watch_later", PlaylistSortOrder.DateAddedNewest)
+      .then((val: number) => {
+        if (typeof val === "number" && val >= 0 && val <= PlaylistSortOrder.CustomReversed) {
+          setWatchLaterSortBy(val as PlaylistSortOrder);
+        }
+      })
+      .catch(() => {});
   });
 
   const addMediaMenuItems = (content: IPlatformVideo) => {
@@ -200,9 +212,40 @@ const PlaylistsPage: Component = () => {
 
   const MAX_WATCH_LATER_PREVIEW = 10;
 
+  const sortedWatchLater$ = createMemo(() => {
+    const source = video?.watchLater() ?? [];
+    const addTimes = video?.watchLaterAddTimes();
+    const indexed = source.map((v, index) => ({
+      video: v,
+      index,
+      addedTime: addTimes?.[v.url] ?? 0
+    }));
+
+    switch (watchLaterSortBy$()) {
+      case PlaylistSortOrder.DateAddedNewest:
+        indexed.sort((a, b) => (a.addedTime !== b.addedTime) ? (b.addedTime - a.addedTime) : (b.index - a.index));
+        break;
+      case PlaylistSortOrder.DateAddedOldest:
+        indexed.sort((a, b) => (a.addedTime !== b.addedTime) ? (a.addedTime - b.addedTime) : (a.index - b.index));
+        break;
+      case PlaylistSortOrder.AlphabeticalAZ:
+        indexed.sort((a, b) => a.video.name.localeCompare(b.video.name) || (a.index - b.index));
+        break;
+      case PlaylistSortOrder.AlphabeticalZA:
+        indexed.sort((a, b) => b.video.name.localeCompare(a.video.name) || (a.index - b.index));
+        break;
+      case PlaylistSortOrder.Custom:
+        break;
+      case PlaylistSortOrder.CustomReversed:
+        indexed.reverse();
+        break;
+    }
+
+    return indexed.map(item => item.video);
+  });
+
   const watchLaterPreview$ = createMemo(() => {
-    const list = video?.watchLater() ?? [];
-    return list.slice(0, 10);
+    return sortedWatchLater$().slice(0, MAX_WATCH_LATER_PREVIEW);
   });
 
   return (
@@ -231,8 +274,8 @@ const PlaylistsPage: Component = () => {
                       <VideoThumbnailView
                         video={item as IPlatformVideo}
                         onClick={() => {
-                          const queue = video?.watchLater();
-                          if (!queue) return;
+                          const queue = sortedWatchLater$();
+                          if (!queue.length) return;
                           video?.actions?.setQueue(i(), queue, false, false);
                         }}
                         onSettings={(e, content) => onSettingsClicked(e, content, "pointer")}
@@ -241,8 +284,8 @@ const PlaylistsPage: Component = () => {
                           groupType: "horizontal",
                           groupIndices: [i()],
                           onPress: () => {
-                            const queue = video?.watchLater();
-                            if (!queue) return;
+                            const queue = sortedWatchLater$();
+                            if (!queue.length) return;
                             video?.actions?.setQueue(i(), queue, false, false);
                           },
                           onOptions: (el, inputSource) => {

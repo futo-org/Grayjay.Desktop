@@ -14,16 +14,23 @@ const WatchLaterPage: Component = () => {
     <PlaylistDetailView type="Watch Later"
       name={"Watch Later"}
       videos={video?.watchLater()}
+      videoAdds={video?.watchLaterAddTimes()}
       isLoading={!video?.watchLater()}
-      onPlayAll={() => video?.actions?.setQueue(0, video?.watchLater() ?? [], false, false)}
-      onShuffleAll={() => video?.actions?.setQueue(0, video?.watchLater() ?? [], false, true)}
-      onPlay={(v) => {
-        const videos = video?.watchLater();
+      onPlayAll={(vs, sortedVideos) => {
+        const queue = sortedVideos ?? video?.watchLater() ?? [];
+        video?.actions?.setQueue(0, queue, false, false, vs);
+      }}
+      onShuffleAll={(vs, sortedVideos) => {
+        const queue = sortedVideos ?? video?.watchLater() ?? [];
+        video?.actions?.setQueue(0, queue, false, true, vs);
+      }}
+      onPlay={(v, vs, sortedVideos) => {
+        const videos = sortedVideos ?? video?.watchLater();
         if (!videos) {
           return;
         }
 
-        video?.actions?.setQueue(videos.findIndex(x => x === v), videos, false, false);
+        video?.actions?.setQueue(videos.findIndex(x => x === v), videos, false, false, vs);
       }}
       onRemove={async (v) => {
         await WatchLaterBackend.remove(v.url);

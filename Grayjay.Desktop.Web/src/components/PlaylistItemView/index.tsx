@@ -20,6 +20,7 @@ interface PlaylistItemViewProps {
   onSettings?: (e: HTMLElement) => void;
   onDragStart?: (e: MouseEvent, el: HTMLElement) => void;
   isEditable?: boolean;
+  isRemovable?: boolean;
   focusableOpts?: FocusableOptions;
 }
 
@@ -33,6 +34,7 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
   });
 
   const editable$ = createMemo(() => props.isEditable ?? true);
+  const removable$ = createMemo(() => props.isRemovable ?? editable$());
 
   return (
     <div class={styles.container} onClick={() => {{
@@ -64,7 +66,7 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
           </div>
         </div>
       </div>
-      <Show when={editable$() && focus?.isControllerMode() !== true}>
+      <Show when={removable$() && focus?.isControllerMode() !== true}>
         <IconButton icon={iconClose} style={{ "margin-left": "16px" }} onClick={(e) => {
           props.onRemove?.();
           e.preventDefault();

@@ -99,9 +99,11 @@ public class StateWatchLater
             _watchLaterOrderStore.Save(_watchLaterOrderStore.GetCopy().Where(x=>existing.Any(y=>y.Url == x))
                 .Concat(new string[] { video.Url }).ToArray());
         _watchLater.Save(video);
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (_watchLaterAdds.GetValue(video.Url, 0) == 0)
+            _watchLaterAdds.SetAndSave(video.Url, now);
         if (isUserInteraction)
         {
-            var now = DateTimeOffset.Now.ToUnixTimeSeconds();
             _watchLaterAdds.SetAndSave(video.Url, now);
             BroadcastAddition(video, now);
         }

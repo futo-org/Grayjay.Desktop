@@ -9,6 +9,10 @@ export abstract class WatchLaterBackend {
     static async getAll(): Promise<IOrderedPlatformVideo[]> {
         return await Backend.GET("/watchlater/GetAll") as IOrderedPlatformVideo[];
     }
+
+    static async getAddTimes(): Promise<Record<string, number>> {
+        return await Backend.GET("/watchlater/GetAddTimes") as Record<string, number>;
+    }
     
     //Obsolete
     static async setAll(videos: IOrderedPlatformVideo[]): Promise<void> {

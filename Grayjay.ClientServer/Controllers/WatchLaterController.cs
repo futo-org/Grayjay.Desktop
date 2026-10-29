@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.States;
+using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Feed;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +12,12 @@ namespace Grayjay.ClientServer.Controllers
         public ActionResult<List<PlatformVideo>> GetAll()
         {
             return Ok(StateWatchLater.Instance.GetWatchLater());
+        }
+
+        [HttpGet]
+        public ActionResult<Dictionary<string, long>> GetAddTimes()
+        {
+            return Ok(StateWatchLater.Instance.GetWatchLaterAddTimes());
         }
 
         /*

@@ -32,6 +32,7 @@ export interface VideoContextValue {
     index: Accessor<number | undefined>;
     queue: Accessor<IPlatformVideo[] | undefined>;
     watchLater: Accessor<IOrderedPlatformVideo[] | undefined>;
+    watchLaterAddTimes: Accessor<Record<string, number> | undefined>;
     video: Accessor<IPlatformVideo | undefined>;
     repeat: Accessor<boolean>;
     shuffle: Accessor<boolean>;
@@ -281,11 +282,18 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
     };
 
     const refetchWatchLater = async () => {
-        const videos = await WatchLaterBackend.getAll();
-        setWatchLater(videos);
+        const [videos, addTimes] = await Promise.all([
+            WatchLaterBackend.getAll(),
+            WatchLaterBackend.getAddTimes().catch(() => ({} as Record<string, number>))
+        ]);
+        batch(() => {
+            setWatchLater(videos);
+            setWatchLaterAddTimes(addTimes);
+        });
         console.log("set watch later", videos);
     }
     const [watchLater, setWatchLater] = createSignal<IOrderedPlatformVideo[]>();
+    const [watchLaterAddTimes, setWatchLaterAddTimes] = createSignal<Record<string, number>>();
     onMount(async () => {
         await refetchWatchLater();
     });
@@ -314,6 +322,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         index,
         queue,
         watchLater,
+        watchLaterAddTimes,
         state,
         repeat,
         shuffle,

@@ -1,4 +1,4 @@
-import { type Component, createMemo, createSignal, batch, Show } from 'solid-js';
+import { type Component, createMemo, createSignal, createEffect, batch, Show } from 'solid-js';
 import LoaderContainer from '../basics/loaders/LoaderContainer';
 import NavigationBar from '../topbars/NavigationBar';
 import styles from './index.module.css';
@@ -29,19 +29,40 @@ import { focusable } from '../../focusable'; void focusable;
 import { InputSource } from '../../nav';
 import { VideoState } from '../../contexts/VideoProvider';
 import IconButton from '../buttons/IconButton';
+import { SettingsBackend } from '../../backend/SettingsBackend';
+
+export enum PlaylistSortOrder {
+  DateAddedNewest = 0,
+  DateAddedOldest = 1,
+  AlphabeticalAZ = 2,
+  AlphabeticalZA = 3,
+  Custom = 4,
+  CustomReversed = 5
+}
+
+const SORT_OPTIONS = [
+  "Date Added (Newest)",
+  "Date Added (Oldest)",
+  "Name (A-Z)",
+  "Name (Z-A)",
+  "Custom",
+  "Custom (Reversed)"
+];
 
 interface PlaylistDetailViewProps {
   type: string;
   name?: string;
   videos?: IPlatformVideo[];
+  videoAdds?: Record<string, number>;
   isLoading: boolean;
   id?: string;
-  onPlayAll: (videoState?: VideoState) => void;
-  onShuffleAll: (videoState?: VideoState) => void;
+  onPlayAll: (videoState?: VideoState, sortedVideos?: IPlatformVideo[]) => void;
+  onShuffleAll: (videoState?: VideoState, sortedVideos?: IPlatformVideo[]) => void;
   onDragEnd: () => void;
   onRemove: (video: IPlatformVideo) => void;
-  onPlay: (video: IPlatformVideo, videoState?: VideoState) => void;
+  onPlay: (video: IPlatformVideo, videoState?: VideoState, sortedVideos?: IPlatformVideo[]) => void;
   onAddToQueue: (video: IPlatformVideo) => void;
+  onDownload?: () => void;
   refetch?: () => void;
 }
 
@@ -73,7 +94,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
           await UIOverlay.overlayAddToPlaylist(content, () => props.refetch?.());
         }),
         new MenuItemButton("Download", iconDownload, undefined, () => UIOverlay.overlayDownload(content.url)),
-        ... (isEditable$() ? [ 
+        ... (canRemove$() ? [ 
           new MenuSeperator(),
           new MenuItemButton("Remove", iconTrash, undefined, () => props.onRemove(content)) 
         ] : [])
@@ -101,17 +122,80 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
   }
 
   const [filterText$, setFilterText] = createSignal("");
-  
-  const isEditable$ = createMemo(() => (filterText$()?.length ?? 0) == 0);
-  const filteredVideos$ = createMemo(() => {
-    let result: IPlatformVideo[] | undefined;
-    
-    if (filterText$() && filterText$().length > 0)
-      result = props.videos?.filter(v => v.name.toLowerCase().indexOf(filterText$().toLowerCase()) !== -1);
-    else
-      result = props.videos?.slice();
+  const [sortBy$, setSortByInternal] = createSignal<PlaylistSortOrder>(PlaylistSortOrder.DateAddedNewest);
 
-    return result;
+  const persistKey$ = createMemo(() => props.id ? `playlist_sort_${props.id}` : `playlist_sort_watch_later`);
+
+  createEffect(() => {
+    const key = persistKey$();
+    SettingsBackend.persistGet(key, PlaylistSortOrder.DateAddedNewest)
+      .then((val: number) => {
+        if (typeof val === "number" && val >= 0 && val < SORT_OPTIONS.length) {
+          setSortByInternal(val as PlaylistSortOrder);
+        } else {
+          setSortByInternal(PlaylistSortOrder.DateAddedNewest);
+        }
+      })
+      .catch(() => {
+        setSortByInternal(PlaylistSortOrder.DateAddedNewest);
+      });
+  });
+
+  const setSortBy = (value: PlaylistSortOrder) => {
+    setSortByInternal(value);
+    SettingsBackend.persistSet(persistKey$(), value);
+  };
+
+  const canRemove$ = createMemo(() => true);
+  const isEditable$ = createMemo(() => (filterText$()?.length ?? 0) === 0 && (sortBy$() === PlaylistSortOrder.Custom || sortBy$() === PlaylistSortOrder.CustomReversed));
+
+  const filteredVideos$ = createMemo(() => {
+    const source = props.videos;
+    if (!source) return undefined;
+
+    const indexed = source.map((video, index) => ({
+      video,
+      index,
+      addedTime: props.videoAdds?.[video.url] ?? 0
+    }));
+
+    const filter = filterText$()?.toLowerCase() ?? "";
+    const filtered = filter.length > 0
+      ? indexed.filter(item => item.video.name.toLowerCase().indexOf(filter) !== -1)
+      : indexed;
+
+    switch (sortBy$()) {
+      case PlaylistSortOrder.DateAddedNewest:
+        filtered.sort((a, b) => {
+          if (a.addedTime !== b.addedTime) {
+            return b.addedTime - a.addedTime;
+          }
+          return b.index - a.index;
+        });
+        break;
+      case PlaylistSortOrder.DateAddedOldest:
+        filtered.sort((a, b) => {
+          if (a.addedTime !== b.addedTime) {
+            return a.addedTime - b.addedTime;
+          }
+          return a.index - b.index;
+        });
+        break;
+      case PlaylistSortOrder.AlphabeticalAZ:
+        filtered.sort((a, b) => a.video.name.localeCompare(b.video.name) || (a.index - b.index));
+        break;
+      case PlaylistSortOrder.AlphabeticalZA:
+        filtered.sort((a, b) => b.video.name.localeCompare(a.video.name) || (a.index - b.index));
+        break;
+      case PlaylistSortOrder.Custom:
+        // Keep underlying custom order (index ascending)
+        break;
+      case PlaylistSortOrder.CustomReversed:
+        filtered.reverse();
+        break;
+    }
+
+    return filtered.map(item => item.video);
   });
 
   let dragSession: DragSession | undefined;
@@ -146,6 +230,14 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                 setFilterText(v);
               }}
               focusable={true} />
+            <Dropdown
+              label="Sort by"
+              onSelectedChanged={(v) => setSortBy(v as PlaylistSortOrder)}
+              value={sortBy$()}
+              options={SORT_OPTIONS}
+              anchorStyle={AnchorStyle.BottomLeft}
+              style={{ "width": "240px", "flex-shrink": 0 }}
+            />
           <CustomButton
             text="Play all"
             icon={iconPlay}
@@ -153,9 +245,9 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               background: "linear-gradient(267deg, #01D6E6 -100.57%, #0182E7 90.96%)",
               "flex-shrink": 0
             }}
-            onClick={() => props.onPlayAll()}
+            onClick={() => props.onPlayAll(undefined, filteredVideos$())}
             focusableOpts={{
-              onPress: () => props.onPlayAll(VideoState.Fullscreen)
+              onPress: () => props.onPlayAll(VideoState.Fullscreen, filteredVideos$())
             }} />
           <CustomButton
             text="Shuffle"
@@ -164,9 +256,9 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               border: "1px solid #2E2E2E",
               "flex-shrink": 0
             }}
-            onClick={() => props.onShuffleAll()}
+            onClick={() => props.onShuffleAll(undefined, filteredVideos$())}
             focusableOpts={{
-              onPress: () => props.onShuffleAll(VideoState.Fullscreen)
+              onPress: () => props.onShuffleAll(VideoState.Fullscreen, filteredVideos$())
             }} />
             <Show when={props.id}>
               <IconButton
@@ -189,13 +281,18 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             items={filteredVideos$()}
             itemHeight={107}
             onSwap={(index1, index2) => {
-              //Only possible when unfiltered so directly modify the underlying array
               const videos = props.videos;
-              if (!videos) {
+              if (!videos || !isEditable$()) {
                 return;
               }
 
-              swap(videos, index1, index2);
+              if (sortBy$() === PlaylistSortOrder.CustomReversed) {
+                const realIdx1 = videos.length - 1 - index1;
+                const realIdx2 = videos.length - 1 - index2;
+                swap(videos, realIdx1, realIdx2);
+              } else {
+                swap(videos, index1, index2);
+              }
             }}
             onDragEnd={() => props.onDragEnd()}
             builder={(index, item, containerRef, dragControls) => {
@@ -203,6 +300,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
               return (
                 <PlaylistItemView item={video()} 
                   isEditable={isEditable$()}
+                  isRemovable={canRemove$()}
                   onRemove={() => {
                     const v = video();
                     if (!v) return;
@@ -214,6 +312,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                     onSettingsClicked(el, "pointer", v);
                   }} 
                   onDragStart={(e, el) => {
+                    if (!isEditable$()) return;
                     dragControls.startPointerDrag?.(e.pageY, containerRef!.getBoundingClientRect().top, el);
                     e.preventDefault();
                     e.stopPropagation();
@@ -221,7 +320,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                   onPlay={() => {
                     const v = video();
                     if (!v) return;
-                    props.onPlay(v);
+                    props.onPlay(v, undefined, filteredVideos$());
                   }}
                   focusableOpts={{
                     groupId: 'playlist',
@@ -231,7 +330,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                     onPress: () => {
                       const v = video();
                       if (!v) return;
-                      props.onPlay(v, VideoState.Fullscreen);
+                      props.onPlay(v, VideoState.Fullscreen, filteredVideos$());
                     },
                     onOptions: (el, inputSource) => {
                       const v = video();
@@ -247,7 +346,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                         dragSession = undefined;
                       }
                     },
-                    onActionLabel: "Reorder",
+                    onActionLabel: isEditable$() ? "Reorder" : undefined,
                     onDirection: (el, dir) => {
                       if (!dragSession || !dragSession.isActive()) return false;
                       if (dir === "up") {
