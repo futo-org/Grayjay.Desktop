@@ -1,4 +1,5 @@
 using Google.Protobuf.WellKnownTypes;
+using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.Store;
 using Grayjay.ClientServer.Sync;
 using Grayjay.ClientServer.Sync.Models;
@@ -37,9 +38,79 @@ public class StateWatchLater
         {
             StateWebsocket.WatchLaterChanged();
         };
+
+        StateHistory.OnHistoricVideoChanged += (video, position) =>
+        {
+            if (video == null || string.IsNullOrEmpty(video.Url))
+                return;
+
+            var wlVideo = _watchLater.FindObject(v => v.Url == video.Url);
+            if (wlVideo == null)
+                return;
+
+            long duration = video.Duration > 0 ? video.Duration : wlVideo.Duration;
+            bool isWatched = duration > 0 ? StateHistory.IsHistoryWatchedPercentage(position, duration) : position >= 30;
+
+            if (isWatched && GetAutoPurgeWatched())
+            {
+                Remove(video.Url, true);
+            }
+            else
+            {
+                StateWebsocket.WatchLaterChanged();
+            }
+        };
     }
 
-    public List<PlatformVideo> GetWatchLater() => _watchLater.GetObjects().OrderBy(v => { var index = _watchLaterOrderStore.IndexOf(v.Url); return (index >= 0) ? index : 9999; }).ToList();
+    public bool GetAutoPurgeWatched() => GrayjaySettings.Instance.Playlists.AutoPurgeWatchedWatchLater;
+
+    public void SetAutoPurgeWatched(bool enabled)
+    {
+        GrayjaySettings.Instance.Playlists.AutoPurgeWatchedWatchLater = enabled;
+        GrayjaySettings.Instance.Save();
+        StateWebsocket.SettingsChanged(GrayjaySettings.Instance);
+        if (enabled)
+        {
+            PurgeWatchedVideos(true);
+        }
+        else
+        {
+            StateWebsocket.WatchLaterChanged();
+        }
+    }
+
+    public static bool IsVideoWatched(PlatformVideo v)
+    {
+        long watched = StateHistory.GetHistoryPosition(v.Url);
+        if (v.Duration > 0)
+            return StateHistory.IsHistoryWatchedPercentage(watched, v.Duration);
+        return watched >= 30;
+    }
+
+    public int PurgeWatchedVideos(bool isUserInteraction = true)
+    {
+        var watchedVideos = _watchLater.GetObjects()
+            .Where(v => IsVideoWatched(v))
+            .ToList();
+
+        foreach (var v in watchedVideos)
+        {
+            Remove(v.Url, isUserInteraction);
+        }
+
+        return watchedVideos.Count;
+    }
+
+    public List<PlatformVideo> GetWatchLater() => _watchLater.GetObjects()
+        .OrderBy(v => { var index = _watchLaterOrderStore.IndexOf(v.Url); return (index >= 0) ? index : 9999; })
+        .Select(v =>
+        {
+            long watched = StateHistory.GetHistoryPosition(v.Url);
+            return v
+                .AddMetadata("position", watched)
+                .AddMetadata("watched", IsVideoWatched(v));
+        })
+        .ToList();
 
     public DateTimeOffset GetWatchLaterAddTime(string url) => DateTimeOffset.FromUnixTimeSeconds(_watchLaterAdds.GetValue(url, 0));
     public Dictionary<string, long> GetWatchLaterAddTimes() => _watchLaterAdds.All();
@@ -99,9 +170,11 @@ public class StateWatchLater
             _watchLaterOrderStore.Save(_watchLaterOrderStore.GetCopy().Where(x=>existing.Any(y=>y.Url == x))
                 .Concat(new string[] { video.Url }).ToArray());
         _watchLater.Save(video);
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (_watchLaterAdds.GetValue(video.Url, 0) == 0)
+            _watchLaterAdds.SetAndSave(video.Url, now);
         if (isUserInteraction)
         {
-            var now = DateTimeOffset.Now.ToUnixTimeSeconds();
             _watchLaterAdds.SetAndSave(video.Url, now);
             BroadcastAddition(video, now);
         }

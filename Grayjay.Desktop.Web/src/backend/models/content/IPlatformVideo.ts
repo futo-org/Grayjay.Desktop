@@ -8,4 +8,9 @@ export interface IPlatformVideo extends IPlatformContent {
     viewCount: number;
 
     isLive: boolean;
+    metadata?: {
+        position?: number;
+        watched?: boolean;
+        [key: string]: any;
+    };
 }

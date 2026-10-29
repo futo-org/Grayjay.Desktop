@@ -39,11 +39,18 @@ const PlaylistPage: Component = () => {
         id={playlist$()?.id}
         name={playlist$()?.name}
         videos={playlist$()?.videos}
+        videoAdds={playlist$()?.videoAdds}
         isLoading={!playlist$()}
-        onPlayAll={(vs) => video?.actions?.setQueue(0, playlist$()!.videos, false, false, vs)}
-        onShuffleAll={(vs) => video?.actions?.setQueue(0, playlist$()!.videos, false, true, vs)}
-        onPlay={(v, vs) => {
-          const videos = playlist$()?.videos;
+        onPlayAll={(vs, sortedVideos) => {
+          const queue = sortedVideos ?? playlist$()!.videos;
+          video?.actions?.setQueue(0, queue, false, false, vs);
+        }}
+        onShuffleAll={(vs, sortedVideos) => {
+          const queue = sortedVideos ?? playlist$()!.videos;
+          video?.actions?.setQueue(0, queue, false, true, vs);
+        }}
+        onPlay={(v, vs, sortedVideos) => {
+          const videos = sortedVideos ?? playlist$()?.videos;
           if (!videos) {
             return;
           }
@@ -57,6 +64,9 @@ const PlaylistPage: Component = () => {
               return;
             }
             const index = videos.indexOf(v);
+            if (index < 0) {
+              return;
+            }
             await PlaylistsBackend.removeContentFromPlaylists(id, index);
             refetch(id);
         }}

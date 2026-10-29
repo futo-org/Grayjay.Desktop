@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.States;
+using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Feed;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +12,12 @@ namespace Grayjay.ClientServer.Controllers
         public ActionResult<List<PlatformVideo>> GetAll()
         {
             return Ok(StateWatchLater.Instance.GetWatchLater());
+        }
+
+        [HttpGet]
+        public ActionResult<Dictionary<string, long>> GetAddTimes()
+        {
+            return Ok(StateWatchLater.Instance.GetWatchLaterAddTimes());
         }
 
         /*
@@ -42,6 +48,25 @@ namespace Grayjay.ClientServer.Controllers
         {
             StateWatchLater.Instance.Remove(url, true);
             return Ok();
+        }
+
+        [HttpGet]
+        public ActionResult<bool> GetAutoPurgeWatched()
+        {
+            return Ok(StateWatchLater.Instance.GetAutoPurgeWatched());
+        }
+
+        [HttpPost]
+        public ActionResult SetAutoPurgeWatched([FromBody] bool enabled)
+        {
+            StateWatchLater.Instance.SetAutoPurgeWatched(enabled);
+            return Ok();
+        }
+
+        [HttpPost]
+        public ActionResult<int> PurgeWatched()
+        {
+            return Ok(StateWatchLater.Instance.PurgeWatchedVideos(true));
         }
     }
 }

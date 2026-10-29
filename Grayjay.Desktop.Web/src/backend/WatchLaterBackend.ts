@@ -9,6 +9,10 @@ export abstract class WatchLaterBackend {
     static async getAll(): Promise<IOrderedPlatformVideo[]> {
         return await Backend.GET("/watchlater/GetAll") as IOrderedPlatformVideo[];
     }
+
+    static async getAddTimes(): Promise<Record<string, number>> {
+        return await Backend.GET("/watchlater/GetAddTimes") as Record<string, number>;
+    }
     
     //Obsolete
     static async setAll(videos: IOrderedPlatformVideo[]): Promise<void> {
@@ -25,5 +29,17 @@ export abstract class WatchLaterBackend {
 
     static async remove(url: string): Promise<void> {
         await Backend.GET("/watchlater/Remove?url=" + encodeURIComponent(url));
+    }
+
+    static async getAutoPurgeWatched(): Promise<boolean> {
+        return await Backend.GET("/watchlater/GetAutoPurgeWatched") as boolean;
+    }
+
+    static async setAutoPurgeWatched(enabled: boolean): Promise<void> {
+        await Backend.POST("/watchlater/SetAutoPurgeWatched", JSON.stringify(enabled), "application/json");
+    }
+
+    static async purgeWatched(): Promise<number> {
+        return await Backend.POST("/watchlater/PurgeWatched", "", "application/json") as number;
     }
 }
