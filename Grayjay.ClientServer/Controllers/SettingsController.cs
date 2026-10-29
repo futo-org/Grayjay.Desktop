@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+using System.Text.Json.Nodes;
 using Futo.PlatformPlayer.States;
 using Grayjay.ClientServer.Settings;
 using Grayjay.ClientServer.States;
@@ -46,6 +46,10 @@ namespace Grayjay.ClientServer.Controllers
 
             settings.Replace();
             Logger.i(nameof(SettingsController), "Saved settings");
+            if (GrayjaySettings.Instance.Playlists.AutoPurgeWatchedWatchLater)
+            {
+                StateWatchLater.Instance.PurgeWatchedVideos(true);
+            }
             StateApp.SettingsChanged(GrayjaySettings.Instance);
             StateWebsocket.SettingsChanged(GrayjaySettings.Instance);
             return true;

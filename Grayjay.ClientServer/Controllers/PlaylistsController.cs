@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Models;
+using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.States;
 using Grayjay.Desktop.POC;
 using Grayjay.Engine.Models.Feed;
@@ -12,7 +12,19 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public ActionResult<List<Playlist>> GetAll()
         {
-            return Ok(StatePlaylists.All);
+            var playlists = StatePlaylists.All;
+            foreach (var p in playlists)
+            {
+                if (p.Videos != null)
+                {
+                    foreach (var v in p.Videos)
+                    {
+                        if (v != null)
+                            StateHistory.AddVideoMetadata(v);
+                    }
+                }
+            }
+            return Ok(playlists);
         }
 
         [HttpPost]
@@ -57,7 +69,16 @@ namespace Grayjay.ClientServer.Controllers
         [HttpGet]
         public ActionResult<Playlist> Get(string id)
         {
-            return Ok(StatePlaylists.Get(id));
+            var playlist = StatePlaylists.Get(id);
+            if (playlist?.Videos != null)
+            {
+                foreach (var v in playlist.Videos)
+                {
+                    if (v != null)
+                        StateHistory.AddVideoMetadata(v);
+                }
+            }
+            return Ok(playlist);
         }
 
         [HttpDelete]

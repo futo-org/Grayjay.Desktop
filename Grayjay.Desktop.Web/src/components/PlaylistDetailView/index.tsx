@@ -10,7 +10,7 @@ import ScrollContainer from '../containers/ScrollContainer';
 import { swap } from '../../utility';
 import VirtualDragDropList, { DragSession } from '../containers/VirtualDragDropList';
 import { Portal } from 'solid-js/web';
-import SettingsMenu, { Menu, MenuItemButton, MenuSeperator } from '../menus/Overlays/SettingsMenu';
+import SettingsMenu, { Menu, MenuItem, MenuItemButton, MenuItemToggle, MenuSeperator } from '../menus/Overlays/SettingsMenu';
 import Anchor, { AnchorStyle } from '../../utility/Anchor';
 
 import iconQueue from '../../assets/icons/icon_add_to_queue.svg';
@@ -30,6 +30,8 @@ import { InputSource } from '../../nav';
 import { VideoState } from '../../contexts/VideoProvider';
 import IconButton from '../buttons/IconButton';
 import { SettingsBackend } from '../../backend/SettingsBackend';
+import { WatchLaterBackend } from '../../backend/WatchLaterBackend';
+import StateWebsocket from '../../state/StateWebsocket';
 
 export enum PlaylistSortOrder {
   DateAddedNewest = 0,
@@ -38,6 +40,12 @@ export enum PlaylistSortOrder {
   AlphabeticalZA = 3,
   Custom = 4,
   CustomReversed = 5
+}
+
+export enum PlaylistWatchFilter {
+  All = 0,
+  Unwatched = 1,
+  Watched = 2
 }
 
 const SORT_OPTIONS = [
@@ -49,6 +57,23 @@ const SORT_OPTIONS = [
   "Custom (Reversed)"
 ];
 
+const WATCH_FILTER_OPTIONS = [
+  "All",
+  "Not watched",
+  "Watched"
+];
+
+export const isVideoWatched = (video: IPlatformVideo): boolean => {
+  if (video.metadata?.watched !== undefined) {
+    return Boolean(video.metadata.watched);
+  }
+  const pos = video.metadata?.position ?? 0;
+  if (video.duration > 0) {
+    return pos > video.duration * 0.7;
+  }
+  return pos >= 30;
+};
+
 interface PlaylistDetailViewProps {
   type: string;
   name?: string;
@@ -56,6 +81,7 @@ interface PlaylistDetailViewProps {
   videoAdds?: Record<string, number>;
   isLoading: boolean;
   id?: string;
+  showWatchFilter?: boolean;
   onPlayAll: (videoState?: VideoState, sortedVideos?: IPlatformVideo[]) => void;
   onShuffleAll: (videoState?: VideoState, sortedVideos?: IPlatformVideo[]) => void;
   onDragEnd: () => void;
@@ -69,21 +95,77 @@ interface PlaylistDetailViewProps {
 const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
   const navigate = useNavigate();
 
+  const isWatchLater$ = createMemo(() => !props.id && props.type === "Watch Later");
+  const [autoPurgeWatched$, setAutoPurgeWatched] = createSignal(false);
+
+  createEffect(() => {
+    if (isWatchLater$()) {
+      WatchLaterBackend.getAutoPurgeWatched()
+        .then((val) => setAutoPurgeWatched(Boolean(val)))
+        .catch(() => {});
+    }
+  });
+
+  StateWebsocket.registerHandlerNew("SettingsChanged", (packet) => {
+    if (isWatchLater$()) {
+      WatchLaterBackend.getAutoPurgeWatched()
+        .then((val) => setAutoPurgeWatched(Boolean(val)))
+        .catch(() => {});
+    }
+  }, "playlistDetailView");
+
+  const purgeWatchedVideos = () => {
+    UIOverlay.overlayConfirm({
+      yes: async () => {
+        const removedCount = await WatchLaterBackend.purgeWatched();
+        UIOverlay.toast(`Removed ${removedCount} watched ${removedCount === 1 ? "video" : "videos"}`);
+        props.refetch?.();
+      }
+    }, "Are you sure you want to remove all watched videos from Watch Later?");
+  };
+
   const [settingsContent$, setSettingsContent] = createSignal<IPlatformVideo>();
   const [settingsInputSource$, setSettingsInputSource] = createSignal<InputSource>();
   const settingsMenu$ = createMemo(() => {
     const content = settingsContent$();
     if (!content) {
       const id = props.id;
-      return id ? {
-        title: "",
-        items: Menus.getPlaylistItems(id, () => {
-          navigate("/web/playlists");
-        })
-      } : {
+      if (id) {
+        return {
+          title: "",
+          items: Menus.getPlaylistItems(id, () => {
+            navigate("/web/playlists");
+          })
+        } as Menu;
+      }
+
+      if (isWatchLater$()) {
+        const items: MenuItem[] = [
+          new MenuItemToggle({
+            name: "Auto-purge watched videos",
+            description: "Automatically remove videos from Watch Later once watched",
+            isSelected: autoPurgeWatched$(),
+            onToggle: async (val) => {
+              setAutoPurgeWatched(val);
+              await WatchLaterBackend.setAutoPurgeWatched(val);
+              props.refetch?.();
+            }
+          }),
+          new MenuSeperator(),
+          new MenuItemButton("Purge watched videos now", iconTrash, undefined, () => {
+            purgeWatchedVideos();
+          })
+        ];
+        return {
+          title: "",
+          items
+        } as Menu;
+      }
+
+      return {
         title: "",
         items: []
-      };
+      } as Menu;
     }
 
     return {
@@ -123,8 +205,10 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
 
   const [filterText$, setFilterText] = createSignal("");
   const [sortBy$, setSortByInternal] = createSignal<PlaylistSortOrder>(PlaylistSortOrder.DateAddedNewest);
+  const [watchFilter$, setWatchFilterInternal] = createSignal<PlaylistWatchFilter>(PlaylistWatchFilter.All);
 
   const persistKey$ = createMemo(() => props.id ? `playlist_sort_${props.id}` : `playlist_sort_watch_later`);
+  const watchFilterPersistKey$ = createMemo(() => props.id ? `playlist_watch_filter_${props.id}` : `playlist_watch_filter_watch_later`);
 
   createEffect(() => {
     const key = persistKey$();
@@ -139,6 +223,21 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
       .catch(() => {
         setSortByInternal(PlaylistSortOrder.DateAddedNewest);
       });
+
+    if (props.showWatchFilter || isWatchLater$()) {
+      const wfKey = watchFilterPersistKey$();
+      SettingsBackend.persistGet(wfKey, PlaylistWatchFilter.All)
+        .then((val: number) => {
+          if (typeof val === "number" && val >= 0 && val < WATCH_FILTER_OPTIONS.length) {
+            setWatchFilterInternal(val as PlaylistWatchFilter);
+          } else {
+            setWatchFilterInternal(PlaylistWatchFilter.All);
+          }
+        })
+        .catch(() => {
+          setWatchFilterInternal(PlaylistWatchFilter.All);
+        });
+    }
   });
 
   const setSortBy = (value: PlaylistSortOrder) => {
@@ -146,8 +245,17 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
     SettingsBackend.persistSet(persistKey$(), value);
   };
 
+  const setWatchFilter = (value: PlaylistWatchFilter) => {
+    setWatchFilterInternal(value);
+    SettingsBackend.persistSet(watchFilterPersistKey$(), value);
+  };
+
   const canRemove$ = createMemo(() => true);
-  const isEditable$ = createMemo(() => (filterText$()?.length ?? 0) === 0 && (sortBy$() === PlaylistSortOrder.Custom || sortBy$() === PlaylistSortOrder.CustomReversed));
+  const isEditable$ = createMemo(() =>
+    (filterText$()?.length ?? 0) === 0 &&
+    (!(props.showWatchFilter || isWatchLater$()) || watchFilter$() === PlaylistWatchFilter.All) &&
+    (sortBy$() === PlaylistSortOrder.Custom || sortBy$() === PlaylistSortOrder.CustomReversed)
+  );
 
   const filteredVideos$ = createMemo(() => {
     const source = props.videos;
@@ -160,9 +268,18 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
     }));
 
     const filter = filterText$()?.toLowerCase() ?? "";
-    const filtered = filter.length > 0
+    let filtered = filter.length > 0
       ? indexed.filter(item => item.video.name.toLowerCase().indexOf(filter) !== -1)
       : indexed;
+
+    if (props.showWatchFilter || isWatchLater$()) {
+      const wf = watchFilter$();
+      if (wf === PlaylistWatchFilter.Unwatched) {
+        filtered = filtered.filter(item => !isVideoWatched(item.video));
+      } else if (wf === PlaylistWatchFilter.Watched) {
+        filtered = filtered.filter(item => isVideoWatched(item.video));
+      }
+    }
 
     switch (sortBy$()) {
       case PlaylistSortOrder.DateAddedNewest:
@@ -230,6 +347,27 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
                 setFilterText(v);
               }}
               focusable={true} />
+            <Show when={props.showWatchFilter || isWatchLater$()}>
+              <CustomButton
+                text="Purge watched"
+                icon={iconTrash}
+                style={{
+                  border: "1px solid #f621215c",
+                  "flex-shrink": 0
+                }}
+                onClick={() => purgeWatchedVideos()}
+                focusableOpts={{
+                  onPress: () => purgeWatchedVideos()
+                }} />
+              <Dropdown
+                label="Filter"
+                onSelectedChanged={(v) => setWatchFilter(v as PlaylistWatchFilter)}
+                value={watchFilter$()}
+                options={WATCH_FILTER_OPTIONS}
+                anchorStyle={AnchorStyle.BottomLeft}
+                style={{ "width": "180px", "flex-shrink": 0 }}
+              />
+            </Show>
             <Dropdown
               label="Sort by"
               onSelectedChanged={(v) => setSortBy(v as PlaylistSortOrder)}
@@ -260,7 +398,7 @@ const PlaylistDetailView: Component<PlaylistDetailViewProps> = (props) => {
             focusableOpts={{
               onPress: () => props.onShuffleAll(VideoState.Fullscreen, filteredVideos$())
             }} />
-            <Show when={props.id}>
+            <Show when={props.id || isWatchLater$()}>
               <IconButton
                 icon={iconSettings}
                 variant="none"

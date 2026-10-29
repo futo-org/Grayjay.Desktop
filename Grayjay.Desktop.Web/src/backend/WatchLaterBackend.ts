@@ -30,4 +30,16 @@ export abstract class WatchLaterBackend {
     static async remove(url: string): Promise<void> {
         await Backend.GET("/watchlater/Remove?url=" + encodeURIComponent(url));
     }
+
+    static async getAutoPurgeWatched(): Promise<boolean> {
+        return await Backend.GET("/watchlater/GetAutoPurgeWatched") as boolean;
+    }
+
+    static async setAutoPurgeWatched(enabled: boolean): Promise<void> {
+        await Backend.POST("/watchlater/SetAutoPurgeWatched", JSON.stringify(enabled), "application/json");
+    }
+
+    static async purgeWatched(): Promise<number> {
+        return await Backend.POST("/watchlater/PurgeWatched", "", "application/json") as number;
+    }
 }

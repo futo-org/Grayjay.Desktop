@@ -39,7 +39,7 @@ import HorizontalFlexibleArrayList from '../../components/containers/HorizontalF
 import { useFocus } from '../../FocusProvider';
 
 import { SettingsBackend } from '../../backend/SettingsBackend';
-import { PlaylistSortOrder } from '../../components/PlaylistDetailView';
+import { isVideoWatched, PlaylistSortOrder, PlaylistWatchFilter } from '../../components/PlaylistDetailView';
 
 const PlaylistsPage: Component = () => {
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -52,6 +52,7 @@ const PlaylistsPage: Component = () => {
   });
 
   const [watchLaterSortBy$, setWatchLaterSortBy] = createSignal<PlaylistSortOrder>(PlaylistSortOrder.DateAddedNewest);
+  const [watchLaterWatchFilter$, setWatchLaterWatchFilter] = createSignal<PlaylistWatchFilter>(PlaylistWatchFilter.All);
 
   StateWebsocket.registerHandlerNew("PlaylistsChanged", (packet)=>{
     playlistsResource.refetch();
@@ -63,6 +64,13 @@ const PlaylistsPage: Component = () => {
       .then((val: number) => {
         if (typeof val === "number" && val >= 0 && val <= PlaylistSortOrder.CustomReversed) {
           setWatchLaterSortBy(val as PlaylistSortOrder);
+        }
+      })
+      .catch(() => {});
+    SettingsBackend.persistGet("playlist_watch_filter_watch_later", PlaylistWatchFilter.All)
+      .then((val: number) => {
+        if (typeof val === "number" && val >= 0 && val <= PlaylistWatchFilter.Watched) {
+          setWatchLaterWatchFilter(val as PlaylistWatchFilter);
         }
       })
       .catch(() => {});
@@ -215,11 +223,18 @@ const PlaylistsPage: Component = () => {
   const sortedWatchLater$ = createMemo(() => {
     const source = video?.watchLater() ?? [];
     const addTimes = video?.watchLaterAddTimes();
-    const indexed = source.map((v, index) => ({
+    let indexed = source.map((v, index) => ({
       video: v,
       index,
       addedTime: addTimes?.[v.url] ?? 0
     }));
+
+    const wf = watchLaterWatchFilter$();
+    if (wf === PlaylistWatchFilter.Unwatched) {
+      indexed = indexed.filter(item => !isVideoWatched(item.video));
+    } else if (wf === PlaylistWatchFilter.Watched) {
+      indexed = indexed.filter(item => isVideoWatched(item.video));
+    }
 
     switch (watchLaterSortBy$()) {
       case PlaylistSortOrder.DateAddedNewest:

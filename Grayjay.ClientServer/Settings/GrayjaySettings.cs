@@ -51,6 +51,14 @@ namespace Grayjay.ClientServer.Settings
             public bool ProgressBar { get; set; } = true;
         }
 
+        [SettingsField("Playlists", "group", "Configure playlists and Watch Later behavior", 4)]
+        public PlaylistsSettings Playlists { get; set; } = new PlaylistsSettings();
+        public class PlaylistsSettings
+        {
+            [SettingsField("Automatically Remove Watched Videos from Watch Later", SettingsField.TOGGLE, "Automatically purge videos from Watch Later once they have been watched", 0)]
+            public bool AutoPurgeWatchedWatchLater { get; set; } = false;
+        }
+
         [SettingsField("Subscriptions", "group", "Configure how your subscriptions works and feels", 4)]
         public SubscriptionsSettings Subscriptions { get; set; } = new SubscriptionsSettings();
         public class SubscriptionsSettings

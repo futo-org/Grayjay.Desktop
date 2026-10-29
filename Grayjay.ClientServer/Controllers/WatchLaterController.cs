@@ -49,5 +49,24 @@ namespace Grayjay.ClientServer.Controllers
             StateWatchLater.Instance.Remove(url, true);
             return Ok();
         }
+
+        [HttpGet]
+        public ActionResult<bool> GetAutoPurgeWatched()
+        {
+            return Ok(StateWatchLater.Instance.GetAutoPurgeWatched());
+        }
+
+        [HttpPost]
+        public ActionResult SetAutoPurgeWatched([FromBody] bool enabled)
+        {
+            StateWatchLater.Instance.SetAutoPurgeWatched(enabled);
+            return Ok();
+        }
+
+        [HttpPost]
+        public ActionResult<int> PurgeWatched()
+        {
+            return Ok(StateWatchLater.Instance.PurgeWatchedVideos(true));
+        }
     }
 }

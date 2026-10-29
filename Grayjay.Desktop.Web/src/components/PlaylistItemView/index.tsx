@@ -35,6 +35,14 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
 
   const editable$ = createMemo(() => props.isEditable ?? true);
   const removable$ = createMemo(() => props.isRemovable ?? editable$());
+  const progress$ = createMemo(() => {
+    const pos = props.item?.metadata?.position;
+    const dur = props.item?.duration;
+    if (pos && dur && dur > 0) {
+      return Math.min(1, pos / dur);
+    }
+    return props.item?.metadata?.watched ? 1 : 0;
+  });
 
   return (
     <div class={styles.container} onClick={() => {{
@@ -43,7 +51,14 @@ const PlaylistItemView: Component<PlaylistItemViewProps> = (props) => {
       <Show when={props.onDragStart && editable$() && focus?.isControllerMode() !== true} fallback={<div style="width: 12px"></div>}>
         <img src={iconDrag} style="width: 24px; height: 24px; padding: 20px; cursor: pointer;" onMouseDown={(e) => props.onDragStart?.(e, e.target as HTMLElement)} />
       </Show>
-      <img src={bestThumbnail$()?.url} style="width: auto; height: 100%; border-radius: 6px; aspect-ratio: 16/9; background-size: cover; cursor: pointer;" referrerPolicy='no-referrer' />
+      <div style="position: relative; width: auto; height: 100%; border-radius: 6px; aspect-ratio: 16/9; overflow: hidden; flex-shrink: 0; cursor: pointer;">
+        <img src={bestThumbnail$()?.url} style="width: 100%; height: 100%; object-fit: cover; display: block;" referrerPolicy='no-referrer' />
+        <Show when={progress$() > 0}>
+          <div style="position: absolute; bottom: 0px; left: 0px; right: 0px; height: 3px; background-color: rgba(255, 255, 255, 0.2);">
+            <div style={{ height: "100%", "background-color": "#019BE7", width: `${progress$() * 100}%` }} />
+          </div>
+        </Show>
+      </div>
       <div style="display: flex; flex-direction: column; flex-grow: 1; margin-left: 20px; margin-right: 20px; height: 100%; cursor: pointer;">
         <div class={styles.itemTitle}>{props.item?.name}</div>
         <div class={styles.authorBottomRow}>

@@ -13,6 +13,7 @@ const WatchLaterPage: Component = () => {
   return (
     <PlaylistDetailView type="Watch Later"
       name={"Watch Later"}
+      showWatchFilter={true}
       videos={video?.watchLater()}
       videoAdds={video?.watchLaterAddTimes()}
       isLoading={!video?.watchLater()}
