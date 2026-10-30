@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Controllers;
+using Grayjay.ClientServer.Controllers;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Models;
 using Grayjay.ClientServer.Models.Downloads;
@@ -213,6 +213,56 @@ namespace Grayjay.ClientServer.States
             var vid = GetDownloadingVideo(id);
             RemoveDownloading(vid);
         }
+
+        public static bool PrioritizeDownload(PlatformID id)
+        {
+            var vid = GetDownloadingVideo(id);
+            if (vid == null)
+                return false;
+
+            int maxPriority = GetDownloading().Select(x => x.Priority).DefaultIfEmpty(0).Max();
+            vid.Priority = Math.Max(1, maxPriority + 1);
+            vid.IsDeferred = false;
+            vid.NextRetryAfter = null;
+            vid.Error = null;
+            if (vid.State == DownloadState.ERROR)
+                vid.ChangeState(DownloadState.QUEUE);
+
+            UpdateDownloading(vid);
+            NotifyDownload(vid);
+            OnDownloadsChanged?.Invoke();
+            StartDownloadCycle();
+            return true;
+        }
+
+        public static bool SetDownloadDeferred(PlatformID id, bool deferred)
+        {
+            var vid = GetDownloadingVideo(id);
+            if (vid == null)
+                return false;
+
+            vid.IsDeferred = deferred;
+            if (deferred)
+            {
+                vid.Priority = 0;
+                vid.NextRetryAfter = DateTime.UtcNow.AddHours(24);
+            }
+            else
+            {
+                vid.NextRetryAfter = null;
+                vid.FailCount = 0;
+                vid.Error = null;
+                if (vid.State == DownloadState.ERROR)
+                    vid.ChangeState(DownloadState.QUEUE);
+            }
+
+            UpdateDownloading(vid);
+            NotifyDownload(vid);
+            OnDownloadsChanged?.Invoke();
+            if (!deferred)
+                StartDownloadCycle();
+            return true;
+        }
         public static void RemoveDownloading(VideoDownload download)
         {
             if (_downloading.Delete(download))
@@ -335,17 +385,31 @@ namespace Grayjay.ClientServer.States
 
 
             List<VideoDownload> ignore = new List<VideoDownload>();
-            var currentVideo = StateDownloads.GetDownloading().FirstOrDefault();
+            var currentVideo = SelectNextDownload(ignore);
             while (currentVideo != null)
             {
                 await TryDownloadVideo(currentVideo, ignore);
 
                 Thread.Sleep(500);
-                currentVideo = StateDownloads.GetDownloading().Where(x => !ignore.Contains(x)).FirstOrDefault();
+                currentVideo = SelectNextDownload(ignore);
             }
 
             Logger.i(nameof(StateDownloads), "Ended downloading cycle");
         }
+
+        internal static VideoDownload? SelectNextDownload(List<VideoDownload> ignore)
+            => SelectNextDownload(StateDownloads.GetDownloading(), ignore);
+
+        internal static VideoDownload? SelectNextDownload(IEnumerable<VideoDownload> candidates, ICollection<VideoDownload> ignore)
+        {
+            return candidates
+                .Where(x => !ignore.Contains(x) && x.IsDueForRetry)
+                .OrderBy(x => x.IsDeferred ? 1 : 0)
+                .ThenByDescending(x => x.Priority)
+                .ThenBy(x => x.FailCount)
+                .FirstOrDefault();
+        }
+
         private static async Task TryDownloadVideo(VideoDownload currentVideo, List<VideoDownload> ignore)
         {
             try
@@ -382,7 +446,16 @@ namespace Grayjay.ClientServer.States
                 else
                     currentVideo.Error = ex.Message;
                 currentVideo.PrepareTime = null;
+                currentVideo.FailCount++;
+                if (currentVideo.FailCount >= 3)
+                    currentVideo.IsDeferred = true;
+                int backoffHours = currentVideo.IsDeferred
+                    ? 24
+                    : Math.Min(12, 1 << Math.Min(currentVideo.FailCount - 1, 4));
+                currentVideo.NextRetryAfter = DateTime.UtcNow.AddHours(backoffHours);
                 currentVideo.ChangeState(DownloadState.ERROR);
+                StateDownloads.UpdateDownloading(currentVideo);
+                NotifyDownload(currentVideo);
                 ignore.Add(currentVideo);
 
                 //TODO: Handle cancel

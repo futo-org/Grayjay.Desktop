@@ -14,6 +14,11 @@ export interface IVideoDownload {
 
     error: string,
 
+    priority?: number,
+    isDeferred?: boolean,
+    failCount?: number,
+    nextRetryAfter?: string,
+
     groupType?: string,
     groupID?: string,
 

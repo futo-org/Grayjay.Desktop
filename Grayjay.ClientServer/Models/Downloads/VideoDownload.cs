@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Constants;
+using Grayjay.ClientServer.Constants;
 using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
 using Grayjay.ClientServer.Parsers;
@@ -90,6 +90,14 @@ namespace Grayjay.ClientServer.Models.Downloads
         public long DownloadSpeed => DownloadSpeedVideo + DownloadSpeedAudio;
 
         public string? Error { get; set; }
+
+        public int Priority { get; set; } = 0;
+        public bool IsDeferred { get; set; } = false;
+        public int FailCount { get; set; } = 0;
+        public DateTime? NextRetryAfter { get; set; } = null;
+
+        [JsonIgnore]
+        public bool IsDueForRetry => NextRetryAfter == null || DateTime.UtcNow >= NextRetryAfter.Value;
 
 
         public string? VideoFilePath { get; set; }

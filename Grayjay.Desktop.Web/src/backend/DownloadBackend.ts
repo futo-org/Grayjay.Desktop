@@ -40,6 +40,12 @@ export abstract class DownloadBackend {
     static async deleteDownload(id: IPlatformID): Promise<boolean> {
         return await Backend.POST("/download/DeleteDownload", JSON.stringify(id), "application/json");
     }
+    static async prioritizeDownload(id: IPlatformID): Promise<boolean> {
+        return await Backend.POST("/download/PrioritizeDownload", JSON.stringify(id), "application/json");
+    }
+    static async deferDownload(id: IPlatformID, deferred: boolean = true): Promise<boolean> {
+        return await Backend.POST("/download/DeferDownload?deferred=" + deferred, JSON.stringify(id), "application/json");
+    }
     static async deleteDownloadPlaylist(id: string): Promise<boolean> {
         return await Backend.GET("/download/DeleteDownloadPlaylist?id=" + id);
     }

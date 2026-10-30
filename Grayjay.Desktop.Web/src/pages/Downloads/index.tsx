@@ -58,6 +58,7 @@ const DownloadsPage: Component = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [isDownloadingRetryable$, setIsDownloadingRetryable] = createSignal(false);
+  const [downloadingFilter$, setDownloadingFilter] = createSignal<"all" | "queued" | "failed" | "deferred">("all", { equals: false });
   const [storageInfo$, storageInfoResource] = createResourceDefault(async () => [], async () => await DownloadBackend.getStorageInfo());
   const [downloading$, downloadingResource] = createResourceDefault(async () => [], 
   
@@ -74,14 +75,49 @@ const DownloadsPage: Component = () => {
       } as IVideoDownload})
     ));*/
     async () => {
-      let result = (await DownloadBackend.getDownloading()).sort((a,b)=>b.state - a.state);
+      const rank = (x: IVideoDownload) => {
+        if (x.isDeferred) return 0;
+        if (x.state >= 2 && x.state <= 5) return 4;
+        if (x.state < 2) return 3;
+        if (x.state == 7) return 1;
+        return 2;
+      };
+      let result = (await DownloadBackend.getDownloading()).sort((a, b) =>
+        rank(b) - rank(a) || (b.priority ?? 0) - (a.priority ?? 0) || (a.failCount ?? 0) - (b.failCount ?? 0)
+      );
 
       const wasRetryable = isDownloadingRetryable$();
-      const isRetryable = result && (result?.length ?? 0) > 0 && !!result?.find(x=>x.state == 7) && !result?.find(x=>x.state != 7);
+      const isRetryable = result && (result?.length ?? 0) > 0 && !!result?.find(x => x.state == 7 && !x.isDeferred);
       if(wasRetryable != isRetryable)
         setIsDownloadingRetryable(isRetryable);
       return result;
     });
+  const queuedCount$ = createMemo(() => downloading$()?.filter(x => !x.isDeferred && x.state !== 7).length ?? 0);
+  const failedCount$ = createMemo(() => downloading$()?.filter(x => !x.isDeferred && x.state === 7).length ?? 0);
+  const deferredCount$ = createMemo(() => downloading$()?.filter(x => x.isDeferred).length ?? 0);
+  const nonDeferredCount$ = createMemo(() => downloading$()?.filter(x => !x.isDeferred).length ?? 0);
+
+  createEffect(() => {
+    const filter = downloadingFilter$();
+    if (filter === "deferred" && deferredCount$() === 0) setDownloadingFilter("all");
+    else if (filter === "failed" && failedCount$() === 0) setDownloadingFilter("all");
+    else if (filter === "queued" && queuedCount$() === 0) setDownloadingFilter("all");
+  });
+
+  const visibleDownloading$ = createMemo(() => {
+    const all = downloading$() ?? [];
+    switch (downloadingFilter$()) {
+      case "queued":
+        return all.filter(x => !x.isDeferred && x.state !== 7);
+      case "failed":
+        return all.filter(x => !x.isDeferred && x.state === 7);
+      case "deferred":
+        return all.filter(x => x.isDeferred);
+      case "all":
+      default:
+        return all.filter(x => !x.isDeferred);
+    }
+  });
   const [downloadingPlaylists$, downloadingPlaylistsResource] = createResourceDefault(async ()=> [], async () => await DownloadBackend.getDownloadingPlaylists());
 
   
@@ -608,20 +644,41 @@ const DownloadsPage: Component = () => {
         </div>
         </Show>
         <Show when={downloading$() && downloading$()!.length > 0}>
-          <div style="margin-left: 30px; margin-right: 30px; margin-bottom: 30px; white-space: nowrap; overflow-y: hidden; min-height: 300px; position: relative;">
-            <h2>Downloading</h2>
-            <Show when={isDownloadingRetryable$()}>
-              <div style="position: absolute; right: 16px; top: 16px">
-                <Button text='Retry' style={{"height": "42px", "padding-top": "10px"}} onClick={()=>{DownloadBackend.downloadCycle()}} focusableOpts={{
-                  onPress: () => DownloadBackend.downloadCycle()
-                }} />
+          <div style={{
+            "margin-left": "30px",
+            "margin-right": "30px",
+            "margin-bottom": "30px",
+            "position": "relative"
+          }}>
+            <div class={styles.downloadFilterBar} style="margin-bottom: 14px;">
+              <h2 style="margin: 0;">Downloading</h2>
+              <div class={styles.filters}>
+                <TogglePill name={`All (${nonDeferredCount$()})`} value={downloadingFilter$() == "all"} onToggle={() => setDownloadingFilter("all")} focusableOpts={{}} />
+                <Show when={queuedCount$() > 0}>
+                  <TogglePill name={`Queued (${queuedCount$()})`} value={downloadingFilter$() == "queued"} onToggle={(v) => setDownloadingFilter(v ? "queued" : "all")} focusableOpts={{}} />
+                </Show>
+                <Show when={failedCount$() > 0}>
+                  <TogglePill name={`Failed (${failedCount$()})`} value={downloadingFilter$() == "failed"} onToggle={(v) => setDownloadingFilter(v ? "failed" : "all")} focusableOpts={{}} />
+                </Show>
+                <Show when={deferredCount$() > 0}>
+                  <TogglePill name={`Put Aside (${deferredCount$()})`} value={downloadingFilter$() == "deferred"} onToggle={(v) => setDownloadingFilter(v ? "deferred" : "all")} focusableOpts={{}} />
+                </Show>
+              </div>
+              <div class={styles.viewTypes}>
+                <div style={{ "visibility": (isDownloadingRetryable$() && downloadingFilter$() != "deferred") ? "visible" : "hidden" }}>
+                  <Button text='Retry' style={{"height": "38px", "padding-top": "8px"}} onClick={()=>{DownloadBackend.downloadCycle()}} focusableOpts={{
+                    onPress: () => DownloadBackend.downloadCycle()
+                  }} />
+                </div>
+              </div>
+            </div>
+            <Show when={visibleDownloading$().length > 0}>
+              <div style="white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 255px;">
+                <For each={visibleDownloading$()}>{ downloading =>
+                  <DownloadingView downloading={downloading} />
+                }</For>
               </div>
             </Show>
-            <div>
-              <For each={downloading$()}>{ downloading =>
-                <DownloadingView downloading={downloading} />
-              }</For>
-            </div>
           </div>
         </Show>
 

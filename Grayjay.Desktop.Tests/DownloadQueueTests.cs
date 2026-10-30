@@ -1,4 +1,5 @@
 using System.Reflection;
+using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.States;
 
 namespace Grayjay.Desktop.Tests;
@@ -88,5 +89,44 @@ public class DownloadQueueTests
         });
         Assert.AreEqual(1, runs);
         Assert.IsFalse(StateDownloads.IsDownloading);
+    }
+
+    [TestMethod]
+    public void SelectNextDownloadPrioritizesManualPriorityAndFreshItemsOverDeferredAndFailed()
+    {
+        var stuckPlaylistItem = new VideoDownload { FailCount = 3, IsDeferred = true, NextRetryAfter = DateTime.UtcNow.AddMinutes(-1) };
+        var failedOnceItem = new VideoDownload { FailCount = 1, NextRetryAfter = DateTime.UtcNow.AddMinutes(-1) };
+        var normalQueuedItem = new VideoDownload { FailCount = 0, Priority = 0 };
+        var prioritizedItem = new VideoDownload { FailCount = 0, Priority = 2 };
+        var coolingDownItem = new VideoDownload { FailCount = 1, Priority = 10, NextRetryAfter = DateTime.UtcNow.AddHours(2) };
+
+        var queue = new List<VideoDownload>
+        {
+            stuckPlaylistItem,
+            failedOnceItem,
+            normalQueuedItem,
+            prioritizedItem,
+            coolingDownItem
+        };
+        var ignore = new List<VideoDownload>();
+
+        var first = StateDownloads.SelectNextDownload(queue, ignore);
+        Assert.AreSame(prioritizedItem, first, "Prioritized due item must be selected first");
+        ignore.Add(first!);
+
+        var second = StateDownloads.SelectNextDownload(queue, ignore);
+        Assert.AreSame(normalQueuedItem, second, "Fresh queued item (FailCount=0) must precede previously failed items");
+        ignore.Add(second!);
+
+        var third = StateDownloads.SelectNextDownload(queue, ignore);
+        Assert.AreSame(failedOnceItem, third, "Non-deferred retryable item must precede deferred items");
+        ignore.Add(third!);
+
+        var fourth = StateDownloads.SelectNextDownload(queue, ignore);
+        Assert.AreSame(stuckPlaylistItem, fourth, "Deferred item is checked last only when due");
+        ignore.Add(fourth!);
+
+        var fifth = StateDownloads.SelectNextDownload(queue, ignore);
+        Assert.IsNull(fifth, "Items with future NextRetryAfter must be skipped");
     }
 }

@@ -40,11 +40,14 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
 
   function statusString(downloading: IVideoDownload): string{
     const parts = [];
+    if(downloading.isDeferred)
+      return "Put Aside";
+
     if(downloading.state == 7)
       return "Error";
 
     if(downloading.state < 3)
-      return "Download Queued"
+      return (downloading.priority ?? 0) > 0 ? "Prioritized" : "Download Queued";
 
     if(downloading.progress)
       parts.push(Math.floor(downloading.progress * 100) + "%");
@@ -85,23 +88,57 @@ const DownloadingView: Component<CreatorViewProps> = (props) => {
   }
 
   function clicked() {
-    if(downloading$().state == 7 && downloading$().error) {
+    const d = downloading$();
+    if(d.state == 7 || d.isDeferred) {
       UIOverlay.dialog({
-        title: "Download failed",
-        description: "[" + downloading$().video.name + "] failed to download due to:\n\n" + downloading$().error + "\n\nDownloads are automatically retried on occasion",
+        title: d.isDeferred ? "Deferred Download" : "Download failed",
+        description: "[" + d.video.name + "]" + (d.error ? " failed to download due to:\n\n" + d.error : "") + "\n\n" + (d.isDeferred ? "This item is put aside and only checked periodically." : "Downloads are automatically retried with backoff."),
         buttons: [
           {
             title: "Delete",
             style: "accent",
             onClick() {
-              DownloadBackend.deleteDownload(downloading$().video.id);
+              DownloadBackend.deleteDownload(d.video.id);
             }
           } as DialogButton,
           {
-            title: "Ok",
+            title: d.isDeferred ? "Restore to Queue" : "Put Aside",
+            onClick() {
+              DownloadBackend.deferDownload(d.video.id, !d.isDeferred);
+            }
+          } as DialogButton,
+          {
+            title: "Retry Now",
             style: "primary",
             onClick() {
-              
+              DownloadBackend.prioritizeDownload(d.video.id);
+            }
+          } as DialogButton
+        ]
+      } as DialogDescriptor)
+    } else if(d.state < 3) {
+      UIOverlay.dialog({
+        title: "Queued Download",
+        description: "[" + d.video.name + "]",
+        buttons: [
+          {
+            title: "Cancel",
+            style: "accent",
+            onClick() {
+              DownloadBackend.deleteDownload(d.video.id);
+            }
+          } as DialogButton,
+          {
+            title: "Put Aside",
+            onClick() {
+              DownloadBackend.deferDownload(d.video.id, true);
+            }
+          } as DialogButton,
+          {
+            title: "Prioritize",
+            style: "primary",
+            onClick() {
+              DownloadBackend.prioritizeDownload(d.video.id);
             }
           } as DialogButton
         ]

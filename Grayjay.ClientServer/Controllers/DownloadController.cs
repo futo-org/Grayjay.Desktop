@@ -1,4 +1,4 @@
-﻿using Grayjay.ClientServer.Exceptions;
+using Grayjay.ClientServer.Exceptions;
 using Grayjay.ClientServer.Helpers;
 using Grayjay.ClientServer.Models.Downloads;
 using Grayjay.ClientServer.States;
@@ -218,6 +218,18 @@ namespace Grayjay.ClientServer.Controllers
             StateDownloads.RemoveDownloading(id);
             StateDownloads.RemoveDownloaded(id);
             return true;
+        }
+
+        [HttpPost]
+        public bool PrioritizeDownload([FromBody] PlatformID id)
+        {
+            return StateDownloads.PrioritizeDownload(id);
+        }
+
+        [HttpPost]
+        public bool DeferDownload([FromBody] PlatformID id, [FromQuery] bool deferred = true)
+        {
+            return StateDownloads.SetDownloadDeferred(id, deferred);
         }
 
         [HttpGet]
