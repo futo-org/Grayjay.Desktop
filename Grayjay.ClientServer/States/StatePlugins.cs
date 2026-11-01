@@ -38,6 +38,12 @@ namespace Grayjay.Desktop.POC.Port.States
         {
             descriptor.OnAuthChanged += () => OnPluginAuthChanged?.Invoke(descriptor);
             descriptor.OnCaptchaChanged += () => OnPluginCaptchaChanged?.Invoke(descriptor);
+            SaveOnAuthCookiesUpdated(descriptor);
+        }
+
+        private static void SaveOnAuthCookiesUpdated(PluginDescriptor descriptor)
+        {
+            descriptor.OnAuthCookiesUpdated += () => _plugins.SaveAsync(descriptor, onlyExisting: true);
         }
 
         public static bool CheckForUpdate(PluginConfig plugin, bool alwaysUpdate = true)
@@ -95,6 +101,8 @@ namespace Grayjay.Desktop.POC.Port.States
             _plugins = new ManagedStore<PluginDescriptor>("plugins")
                 .WithEncryption()
                 .Load();
+            foreach (var plugin in _plugins.GetObjects())
+                SaveOnAuthCookiesUpdated(plugin);
         }
 
         public static bool HasPlugin(string id)
